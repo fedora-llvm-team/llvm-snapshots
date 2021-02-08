@@ -10,3 +10,7 @@
 	path = rpms/llvm-test-suite
 	url = https://src.fedoraproject.org/rpms/llvm-test-suite.git
 	branch = rawhide
+[submodule "rpms/compiler-rt"]
+	path = rpms/compiler-rt
+	url = https://src.fedoraproject.org/rpms/compiler-rt.git
+	branch = rawhide
