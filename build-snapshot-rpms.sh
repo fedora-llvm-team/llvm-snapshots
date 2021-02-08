@@ -114,7 +114,8 @@ for proj in $projects; do
         ${llvm_version_minor} \
         ${llvm_version_patch} \
         ${project_archive_url} \
-        ${changelog_entry} \ 
+        ${changelog_entry} \
+        ${release} \
         ${snapshot_name}' < "spec-files/$proj.spec" > rpms/$proj/$proj.spec
 
     # Download files from the specfile into the project directory
