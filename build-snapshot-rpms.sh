@@ -91,7 +91,7 @@ curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz
   | tar -C ${llvm_src_dir} --strip-components=1 -xzf -
 
 for proj in $projects; do
-    tarball_path=${out_dir}/$proj-${snapshot_name}.src.tar.xz
+    tarball_path=rpms/$proj/$proj-${snapshot_name}.src.tar.xz
     project_src_dir=${llvm_src_dir}/$proj-${snapshot_name}.src
     echo "Creating tarball for $proj in $tarball_path from $project_src_dir ..."
     mv $llvm_src_dir/$proj $project_src_dir
