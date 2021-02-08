@@ -102,16 +102,16 @@ EOF
 # NOTE: DO NOT MAKE THIS AN ABSOLUTE PATH!!!
 llvm_src_dir=llvm-project
 # Create a fresh llvm-project directory
-rm -rf llvm-project
-mkdir -pv llvm-project
+rm -rf ${out_dir}/llvm-project
+mkdir -pv ${out_dir}/llvm-project
 curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz \
-  | tar -C llvm-project --strip-components=1 -xzf -
+  | tar -C ${out_dir}/llvm-project --strip-components=1 -xzf -
 
 for proj in $projects; do
     tarball_name=$proj-$snapshot_name.src.tar.xz
-    mv llvm-project/$proj llvm-project/$proj-$snapshot_name.src
-    tar -C llvm-project -cJf llvm-project/$tarball_name $proj-$snapshot_name.src
-    mv -v llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
+    mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
+    tar -C ${out_dir}/llvm-project -cJf ${out_dir}/llvm-project/$tarball_name $proj-$snapshot_name.src
+    mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
 
     # For envsubst to work below, we need to export variables as environment variables.
     export project_src_dir=$(basename $project_src_dir)
