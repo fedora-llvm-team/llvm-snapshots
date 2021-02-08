@@ -35,16 +35,16 @@ set -eux
 # in the pipeline.
 set -o pipefail
 
+# Clean submodules and remove untracked files
+git submodule foreach --recursive git clean -f
+
 # Define for which projects we want to build RPMS.
 # See https://github.com/tstellar/llvm-project/blob/release-automation/llvm/utils/release/export.sh#L16
 # projects=${projects:-"llvm clang test-suite compiler-rt libcxx libcxxabi clang-tools-extra polly lldb lld openmp libunwind"}
 projects=${projects:-"llvm"}
 # TODO(kwk): Projects not covered yet: clang-tools-extra and openmp
 
-cur_dir=$(pwd)
-out_dir=${cur_dir}/out
-tmp_dir=${out_dir}/tmp
-mkdir -pv $out_dir/{rpms,srpms,tmp}
+
 
 # Get LLVM's latest git version and shorten it for the snapshot name
 # NOTE(kwk): By specifying latest_git_sha=<git_sha> on the cli, this can be overwritten.  
@@ -54,11 +54,20 @@ if [ -z "${latest_git_sha}"]; then
 fi
 latest_git_sha_short=${latest_git_sha:0:8}
 
-# In case we need to do a rebuild, let's save the latest git sha that we've build by appending it to a log 
-echo $latest_git_sha >> ${out_dir}/latest_git_sha.log
-
 # Get the UTC date in yyyymmdd format
 yyyymmdd=$(date --date='TZ="UTC"' +'%Y%m%d')
+
+cur_dir=$(pwd)
+projects_dir=${cur_dir}/projects
+spec_files_dir=${cur_dir}/spec_files
+out_dir=${cur_dir}/out/${yyyymmdd}.latest_git_sha_short
+tmp_dir=${out_dir}/tmp
+rpms_dir=${out_dir}/rpms
+srpms_dir=${out_dir}/srpms
+mkdir -pv ${out_dir}/{rpms,srpms,tmp}
+
+# In case we need to do a rebuild, let's save the latest git sha that we've build by appending it to a log 
+echo $latest_git_sha >> ${out_dir}/latest_git_sha.log
 
 # For snapshot naming, see https://docs.fedoraproject.org/en-US/packaging-guidelines/Versioning/#_snapshots 
 snapshot_name="${yyyymmdd}.${latest_git_sha_short}"
@@ -91,8 +100,8 @@ curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz
   | tar -C ${llvm_src_dir} --strip-components=1 -xzf -
 
 for proj in $projects; do
-    tarball_path=${cur_dir}/rpms/$proj/$proj-${snapshot_name}.src.tar.xz
-    project_src_dir=${llvm_src_dir}/$proj-${snapshot_name}.src
+    tarball_path=$projects_dir/$proj/$proj-$snapshot_name.src.tar.xz
+    project_src_dir=$llvm_src_dir/$proj-$snapshot_name.src
     echo "Creating tarball for $proj in $tarball_path from $project_src_dir ..."
     mv $llvm_src_dir/$proj $project_src_dir
     tar -C $llvm_src_dir -cJf $tarball_path $project_src_dir
@@ -104,21 +113,21 @@ for proj in $projects; do
     export llvm_version_minor
     export llvm_version_patch
     export project_archive_url=$(basename $tarball_path)
-    export changelog_entry=$(cat ${out_dir}/changelog_entry)
+    export changelog_entry=$(cat $out_dir/changelog_entry)
     # TODO(kwk): Does this work for all LLVM sub-projects?
     export release="%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}.${snapshot_name}%{?dist}"
 
-    envsubst '${project_src_dir} \
-        ${latest_git_sha} \
-        ${llvm_version_major} \
-        ${llvm_version_minor} \
-        ${llvm_version_patch} \
-        ${project_archive_url} \
-        ${changelog_entry} \
-        ${release} \
-        ${snapshot_name}' < "spec-files/$proj.spec" > rpms/$proj/$proj.spec
+    envsubst '$project_src_dir \
+        $latest_git_sha \
+        $llvm_version_major \
+        $llvm_version_minor \
+        $llvm_version_patch \
+        $project_archive_url \
+        $changelog_entry \
+        $release \
+        $snapshot_name' < "$spec_files_dir/$proj.spec" > $projects_dir/$proj/$proj.spec
 
-    pushd rpms/$proj
+    pushd $projects/$proj
 
     # Download files from the specfile into the project directory
     spectool -R -g -A -C . $proj.spec
@@ -128,14 +137,14 @@ for proj in $projects; do
         --spec=$proj.spec \
         --sources=$PWD \
         --buildsrpm \
-        --resultdir=$out_dir/srpms \
+        --resultdir=$srpms_dir \
         --no-cleanup-after \
         --isolation=simple
 
     # Build RPM
     time mock -r ${cur_dir}/rawhide-mock.cfg \
-        --rebuild $out_dir/srpms/${proj}-${llvm_version}-0.${snapshot_name}.fc${fc_version}.src.rpm \
-        --resultdir=$out_dir/rpms \
+        --rebuild $srpms_dir/${proj}-${llvm_version}-0.${snapshot_name}.fc${fc_version}.src.rpm \
+        --resultdir=$rpms_dir \
         --no-cleanup-after \
         --isolation=simple
 
