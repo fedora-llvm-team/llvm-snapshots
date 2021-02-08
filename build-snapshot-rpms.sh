@@ -54,6 +54,9 @@ if [ -z "${latest_git_sha}"]; then
 fi
 latest_git_sha_short=${latest_git_sha:0:8}
 
+# In case we need to do a rebuild, let's save the latest git sha that we've build by appending it to a log 
+echo $latest_git_sha >> ${out_dir}/latest_git_sha.log
+
 # Get the UTC date in yyyymmdd format
 yyyymmdd=$(date --date='TZ="UTC"' +'%Y%m%d')
 
