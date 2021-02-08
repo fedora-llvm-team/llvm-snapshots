@@ -7,7 +7,7 @@
 	url = https://src.fedoraproject.org/rpms/clang.git
 	branch = rawhide
 [submodule "rpms/llvm-test-suite"]
-	path = rpms/llvm-test-suite
+	path = rpms/test-suite
 	url = https://src.fedoraproject.org/rpms/llvm-test-suite.git
 	branch = rawhide
 [submodule "rpms/compiler-rt"]
