@@ -10,12 +10,11 @@
 
 %global llvm_libdir %{_libdir}/%{name}
 %global build_llvm_libdir %{buildroot}%{llvm_libdir}
-%global rc_ver 1
-%global baserelease 1
-%global llvm_srcdir llvm-%{version}%{?rc_ver:rc%{rc_ver}}.src
-%global maj_ver 12
-%global min_ver 0
-%global patch_ver 0
+%global baserelease 0
+%global llvm_srcdir ${project_src_dir}
+%global maj_ver ${llvm_version_major}
+%global min_ver ${llvm_version_minor}
+%global patch_ver ${llvm_version_patch}
 
 %if %{with compat_build}
 %global pkg_name llvm%{maj_ver}.%{min_ver}
@@ -47,14 +46,12 @@
 
 Name:		%{pkg_name}
 Version:	%{maj_ver}.%{min_ver}.%{patch_ver}
-Release:	%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}%{?dist}
+Release:	${release}
 Summary:	The Low Level Virtual Machine
 
 License:	NCSA
 URL:		http://llvm.org
-Source0:	https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}%{?rc_ver:-rc%{rc_ver}}/%{llvm_srcdir}.tar.xz
-Source1:	https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}%{?rc_ver:-rc%{rc_ver}}/%{llvm_srcdir}.tar.xz.sig
-Source2:	tstellar-gpg-key.asc
+Source0:	${project_archive_url}
 
 %if %{without compat_build}
 Source3:	run-lit-tests
@@ -173,7 +170,6 @@ LLVM's modified googletest sources.
 %endif
 
 %prep
-%{gpgverify} --keyring='%{SOURCE2}' --signature='%{SOURCE1}' --data='%{SOURCE0}'
 %autosetup -n %{llvm_srcdir} -p2
 
 pathfix.py -i %{__python3} -pn \
@@ -542,6 +538,8 @@ fi
 %endif
 
 %changelog
+${changelog_entry}
+
 * Tue Feb 2 2021 Serge Guelton - 12.0.0-0.1.rc1
 - 12.0.0-rc1 release
 

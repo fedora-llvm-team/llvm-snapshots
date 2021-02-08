@@ -59,9 +59,6 @@ yyyymmdd=$(date --date='TZ="UTC"' +'%Y%m%d')
 # For snapshot naming, see https://docs.fedoraproject.org/en-US/packaging-guidelines/Versioning/#_snapshots 
 snapshot_name="${yyyymmdd}.${latest_git_sha_short}"
 
-# TODO(kwk): How to integrate the snapshot_name into the RELEASE below?
-# RELEASE="%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}.${snapshot_name}%{?dist}"
-
 # Get LLVM version from CMakeLists.txt
 wget -O tmp/CMakeLists.txt https://raw.githubusercontent.com/llvm/llvm-project/${LATEST_GIT_SHA}/llvm/CMakeLists.txt
 llvm_version_major=$(grep --regexp="set(\s*LLVM_VERSION_MAJOR" tmp/CMakeLists.txt | tr -d -c '[0-9]')
@@ -87,7 +84,6 @@ mkdir -pv ${llvm_src_dir}
 curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz \
   | tar -C ${llvm_src_dir} --strip-components=1 -xzf -
 
-
 for proj in $projects; do
     tarball_path=${out_dir}/$proj-${snapshot_name}.src.tar.xz
     project_src_dir=${llvm_scr_dir}/$proj-${snapshot_name}.src
@@ -103,15 +99,8 @@ for proj in $projects; do
     export llvm_version_patch
     export project_archive_url=$(basename $tarball_path)
     export changelog_entry=$(cat ${out_dir}/changelog_entry)
-
-    # Resolve spec file and project if it's a link
-    # TODO(kwk): We wouldn't need this if the openmp was called libomp 
-    spec_file="spec-files/$proj.spec"
-    if [ -L $spec_file ]; then
-        spec_file=$(readlink $spec_file)
-    fi
-    spec_file=$(basename $spec_file)
-    proj_sanitized=$(basename $spec_file .spec)
+    # TODO(kwk): Does this work for all LLVM sub-projects?
+    export release="%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}.${snapshot_name}%{?dist}"
 
     envsubst '${project_src_dir} \
         ${latest_git_sha} \
@@ -120,15 +109,15 @@ for proj in $projects; do
         ${llvm_version_patch} \
         ${project_archive_url} \
         ${changelog_entry} \ 
-        ${snapshot_name}' < spec_files/$spec_file > rpms/$proj_sanitized/$proj_sanitized.spec
+        ${snapshot_name}' < "spec-files/$proj.spec" > rpms/$proj/$proj.spec
 
     # Download files from the specfile into the project directory
-    spectool -R -g -A -C rpms/$proj_sanitized/ $proj_sanitized.spec
+    spectool -R -g -A -C rpms/$proj/ $proj.spec
 
     # Build SRPM
     time mock -r rawhide-mock.cfg \
-        --spec=$proj_sanitized.spec \
-        --sources=rpms/$proj_sanitized/ \
+        --spec=$proj.spec \
+        --sources=rpms/$proj/ \
         --buildsrpm \
         --resultdir=$out_dir/srpms \
         --no-cleanup-after \
@@ -136,7 +125,7 @@ for proj in $projects; do
 
     # Build RPM
     time mock -r rawhide-mock.cfg \
-        --rebuild $out_dir/srpms/${proj_sanitized}-${llvm_version}-0.${snapshot_name}.fc${fc_version}.src.rpm \
+        --rebuild $out_dir/srpms/${proj}-${llvm_version}-0.${snapshot_name}.fc${fc_version}.src.rpm \
         --resultdir=$out_dir/rpms \
         --no-cleanup-after \
         --isolation=simple
