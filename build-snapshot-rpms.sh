@@ -132,7 +132,7 @@ for proj in $projects; do
         $release \
         $snapshot_name' < "$spec_files_dir/$proj.spec" > $projects_dir/$proj/$proj.spec
 
-    pushd $projects/$proj
+    pushd $projects_dir/$proj
 
     # Download files from the specfile into the project directory
     spectool -R -g -A -C . $proj.spec
