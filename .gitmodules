@@ -34,3 +34,7 @@
 	path = rpms/lld
 	url = https://src.fedoraproject.org/rpms/lld.git
 	branch = rawhide
+[submodule "rpms/libunwind"]
+	path = rpms/libunwind
+	url = https://src.fedoraproject.org/rpms/libunwind.git
+	branch = rawhide
