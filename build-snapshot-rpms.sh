@@ -91,7 +91,7 @@ curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz
   | tar -C ${llvm_src_dir} --strip-components=1 -xzf -
 
 for proj in $projects; do
-    tarball_path=rpms/$proj/$proj-${snapshot_name}.src.tar.xz
+    tarball_path=${out_dir}/$proj-${snapshot_name}.src.tar.xz
     project_src_dir=${llvm_src_dir}/$proj-${snapshot_name}.src
     echo "Creating tarball for $proj in $tarball_path from $project_src_dir ..."
     mv $llvm_src_dir/$proj $project_src_dir
@@ -118,15 +118,13 @@ for proj in $projects; do
         ${release} \
         ${snapshot_name}' < "spec-files/$proj.spec" > rpms/$proj/$proj.spec
 
-    pushd rpms/$proj
-
     # Download files from the specfile into the project directory
-    spectool -R -g -A -C . $proj.spec
+    spectool -R -g -A -C $out_dir rpms/$proj/$proj.spec
 
     # Build SRPM
     time mock -r rawhide-mock.cfg \
         --spec=$proj.spec \
-        --sources=$PWD \
+        --sources=$out_dir \
         --buildsrpm \
         --resultdir=$out_dir/srpms \
         --no-cleanup-after \
@@ -138,6 +136,4 @@ for proj in $projects; do
         --resultdir=$out_dir/rpms \
         --no-cleanup-after \
         --isolation=simple
-    
-    popd
 done
