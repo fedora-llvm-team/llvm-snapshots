@@ -60,7 +60,7 @@ yyyymmdd=$(date --date='TZ="UTC"' +'%Y%m%d')
 cur_dir=$(pwd)
 projects_dir=${cur_dir}/projects
 spec_files_dir=${cur_dir}/spec_files
-out_dir=${cur_dir}/out/${yyyymmdd}.latest_git_sha_short
+out_dir=${cur_dir}/out/${yyyymmdd}.${latest_git_sha_short}
 tmp_dir=${out_dir}/tmp
 rpms_dir=${out_dir}/rpms
 srpms_dir=${out_dir}/srpms
