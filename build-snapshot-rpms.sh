@@ -83,7 +83,7 @@ EOF
 
 # Get and extract the tarball of the latest LLVM version
 # -R is for preserving the upstream timestamp (https://docs.fedoraproject.org/en-US/packaging-guidelines/#_timestamps)
-llvm_src_dir=${out_dir}/llvm_project
+llvm_src_dir=${out_dir}/llvm-project
 # Create a fresh llvm-project directory
 rm -rf ${llvm_src_dir}
 mkdir -pv ${llvm_src_dir}
