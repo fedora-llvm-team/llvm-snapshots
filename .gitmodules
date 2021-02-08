@@ -22,3 +22,7 @@
 	path = rpms/libcxxabi
 	url = https://src.fedoraproject.org/rpms/libcxxabi.git
 	branch = rawhide
+[submodule "rpms/polly"]
+	path = rpms/polly
+	url = https://src.fedoraproject.org/rpms/polly.git
+	branch = rawhide
