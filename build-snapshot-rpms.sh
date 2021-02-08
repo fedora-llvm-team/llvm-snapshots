@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Go to end of file to see logging
+(
+
 # NOTES TO MYSELF(kwk):
 # ---------------------
 # Login to build host (e.g. tofan)
@@ -55,7 +58,8 @@ fi
 latest_git_sha_short=${latest_git_sha:0:8}
 
 # Get the UTC date in yyyymmdd format
-yyyymmdd=$(date --date='TZ="UTC"' +'%Y%m%d')
+#yyyymmdd=$(date --date='TZ="UTC"' +'%Y%m%d')
+yyyymmdd=$(date +'%Y%m%d')
 
 cur_dir=$(pwd)
 projects_dir=${cur_dir}/projects
@@ -84,7 +88,8 @@ llvm_version="${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}"
 fc_version=$(grep -F "config_opts['releasever'] = " /etc/mock/templates/fedora-rawhide.tpl | tr -d -c '0-9')
 
 # Create a changelog entry for all packages
-changelog_date=$(date --date='TZ="UTC"' +'%a %b %d %Y')
+# changelog_date=$(date --date='TZ="UTC"' +'%a %b %d %Y')
+changelog_date=$(date +'%a %b %d %Y')
 cat <<EOF > ${out_dir}/changelog_entry
 * ${changelog_date} Konrad Kleine <kkleine@redhat.com> ${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}-0.${snapshot_name}
 - Daily build of ${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}-0.${snapshot_name}
@@ -150,3 +155,5 @@ for proj in $projects; do
 
     popd
 done
+
+) |& tee combined.$(date --iso-8601=seconds).log
