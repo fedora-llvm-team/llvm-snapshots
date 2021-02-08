@@ -118,13 +118,15 @@ for proj in $projects; do
         ${release} \
         ${snapshot_name}' < "spec-files/$proj.spec" > rpms/$proj/$proj.spec
 
+    pushd rpms/$proj
+
     # Download files from the specfile into the project directory
-    spectool -R -g -A -C rpms/$proj/ rpms/$proj/$proj.spec
+    spectool -R -g -A -C . $proj.spec
 
     # Build SRPM
     time mock -r rawhide-mock.cfg \
-        --spec=rpms/$proj/$proj.spec \
-        --sources=rpms/$proj/ \
+        --spec=$proj.spec \
+        --sources=$PWD \
         --buildsrpm \
         --resultdir=$out_dir/srpms \
         --no-cleanup-after \
@@ -136,4 +138,6 @@ for proj in $projects; do
         --resultdir=$out_dir/rpms \
         --no-cleanup-after \
         --isolation=simple
+    
+    popd
 done
