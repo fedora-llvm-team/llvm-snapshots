@@ -2,3 +2,7 @@
 	path = rpms/llvm
 	url = https://src.fedoraproject.org/rpms/llvm.git
 	branch = rawhide
+[submodule "rpms/clang"]
+	path = rpms/clang
+	url = https://src.fedoraproject.org/rpms/clang.git
+	branch = rawhide
