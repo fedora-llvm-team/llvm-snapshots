@@ -1,0 +1,4 @@
+[submodule "rpms/llvm"]
+	path = rpms/llvm
+	url = https://src.fedoraproject.org/rpms/llvm.git
+	branch = rawhide
