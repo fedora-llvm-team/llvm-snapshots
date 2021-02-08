@@ -60,7 +60,7 @@ yyyymmdd=$(date --date='TZ="UTC"' +'%Y%m%d')
 snapshot_name="${yyyymmdd}.${latest_git_sha_short}"
 
 # Get LLVM version from CMakeLists.txt
-wget -O tmp/CMakeLists.txt https://raw.githubusercontent.com/llvm/llvm-project/${LATEST_GIT_SHA}/llvm/CMakeLists.txt
+wget -O tmp/CMakeLists.txt https://raw.githubusercontent.com/llvm/llvm-project/${latest_git_sha}/llvm/CMakeLists.txt
 llvm_version_major=$(grep --regexp="set(\s*LLVM_VERSION_MAJOR" tmp/CMakeLists.txt | tr -d -c '[0-9]')
 llvm_version_minor=$(grep --regexp="set(\s*LLVM_VERSION_MINOR" tmp/CMakeLists.txt | tr -d -c '[0-9]')
 llvm_version_patch=$(grep --regexp="set(\s*LLVM_VERSION_PATCH" tmp/CMakeLists.txt | tr -d -c '[0-9]')
