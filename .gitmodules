@@ -30,3 +30,7 @@
 	path = rpms/lldb
 	url = https://src.fedoraproject.org/rpms/lldb.git
 	branch = rawhide
+[submodule "rpms/lld"]
+	path = rpms/lld
+	url = https://src.fedoraproject.org/rpms/lld.git
+	branch = rawhide
