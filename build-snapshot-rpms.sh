@@ -109,7 +109,7 @@ curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz
 for proj in $projects; do
     tarball_name=$proj-$snapshot_name.src.tar.xz
     mv $llvm_src_dir/$proj $llvm_src_dir/$proj-$snapshot_name.src
-    tar -C $llvm_src_dir -cJf $tarball_name $llvm_src_dir/$proj-$snapshot_name.src
+    tar -C $llvm_src_dir -cJf $tarball_name $proj-$snapshot_name.src
     mv -v $llvm_src_dir/$tarball_name $projects_dir/$proj/$tarball_name
 
     # For envsubst to work below, we need to export variables as environment variables.
