@@ -43,7 +43,8 @@ projects=${projects:-"llvm"}
 
 cur_dir=$(pwd)
 out_dir=${cur_dir}/out
-mkdir -pv $out_dir/{rpms,srpms}
+tmp_dir=${out_dir}/tmp
+mkdir -pv $out_dir/{rpms,srpms,tmp}
 
 # Get LLVM's latest git version and shorten it for the snapshot name
 # NOTE(kwk): By specifying latest_git_sha=<git_sha> on the cli, this can be overwritten.  
@@ -60,10 +61,10 @@ yyyymmdd=$(date --date='TZ="UTC"' +'%Y%m%d')
 snapshot_name="${yyyymmdd}.${latest_git_sha_short}"
 
 # Get LLVM version from CMakeLists.txt
-wget -O tmp/CMakeLists.txt https://raw.githubusercontent.com/llvm/llvm-project/${latest_git_sha}/llvm/CMakeLists.txt
-llvm_version_major=$(grep --regexp="set(\s*LLVM_VERSION_MAJOR" tmp/CMakeLists.txt | tr -d -c '[0-9]')
-llvm_version_minor=$(grep --regexp="set(\s*LLVM_VERSION_MINOR" tmp/CMakeLists.txt | tr -d -c '[0-9]')
-llvm_version_patch=$(grep --regexp="set(\s*LLVM_VERSION_PATCH" tmp/CMakeLists.txt | tr -d -c '[0-9]')
+wget -O ${tmp_dir}/CMakeLists.txt https://raw.githubusercontent.com/llvm/llvm-project/${latest_git_sha}/llvm/CMakeLists.txt
+llvm_version_major=$(grep --regexp="set(\s*LLVM_VERSION_MAJOR" ${tmp_dir}/CMakeLists.txt | tr -d -c '[0-9]')
+llvm_version_minor=$(grep --regexp="set(\s*LLVM_VERSION_MINOR" ${tmp_dir}/CMakeLists.txt | tr -d -c '[0-9]')
+llvm_version_patch=$(grep --regexp="set(\s*LLVM_VERSION_PATCH" ${tmp_dir}/CMakeLists.txt | tr -d -c '[0-9]')
 llvm_version="${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}"
 
 # Extract for which Fedora Core version (e.g. fc34) we build packages.
