@@ -18,3 +18,7 @@
 	path = rpms/libcxx
 	url = https://src.fedoraproject.org/rpms/libcxx.git
 	branch = rawhide
+[submodule "rpms/libcxxabi"]
+	path = rpms/libcxxabi
+	url = https://src.fedoraproject.org/rpms/libcxxabi.git
+	branch = rawhide
