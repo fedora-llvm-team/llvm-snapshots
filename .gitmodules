@@ -38,4 +38,7 @@
 	path = rpms/libunwind
 	url = https://src.fedoraproject.org/rpms/libunwind.git
 	branch = rawhide
-	
+[submodule "rpms/libomp"]
+	path = rpms/libomp
+	url = https://src.fedoraproject.org/rpms/libomp.git
+	branch = rawhide
