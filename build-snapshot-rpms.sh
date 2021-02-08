@@ -39,6 +39,8 @@ set -eux
 set -o pipefail
 
 # Clean submodules and remove untracked files
+git submodule init
+git submodule update
 git submodule foreach --recursive git clean -f
 
 # Define for which projects we want to build RPMS.
