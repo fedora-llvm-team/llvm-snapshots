@@ -118,7 +118,7 @@ for proj in $projects; do
         ${snapshot_name}' < "spec-files/$proj.spec" > rpms/$proj/$proj.spec
 
     # Download files from the specfile into the project directory
-    spectool -R -g -A -C rpms/$proj/ $proj.spec
+    spectool -R -g -A -C rpms/$proj/ rpms/$proj/$proj.spec
 
     # Build SRPM
     time mock -r rawhide-mock.cfg \
