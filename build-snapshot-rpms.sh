@@ -122,7 +122,7 @@ for proj in $projects; do
 
     # Build SRPM
     time mock -r rawhide-mock.cfg \
-        --spec=$proj.spec \
+        --spec=rpms/$proj/$proj.spec \
         --sources=rpms/$proj/ \
         --buildsrpm \
         --resultdir=$out_dir/srpms \
