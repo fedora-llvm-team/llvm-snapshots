@@ -99,18 +99,19 @@ EOF
 
 # Get and extract the tarball of the latest LLVM version
 # -R is for preserving the upstream timestamp (https://docs.fedoraproject.org/en-US/packaging-guidelines/#_timestamps)
+# NOTE: DO NOT MAKE THIS AN ABSOLUTE PATH!!!
 llvm_src_dir=llvm-project
 # Create a fresh llvm-project directory
-rm -rf ${llvm_src_dir}
-mkdir -pv ${llvm_src_dir}
+rm -rf llvm-project
+mkdir -pv llvm-project
 curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz \
-  | tar -C ${llvm_src_dir} --strip-components=1 -xzf -
+  | tar -C llvm-project --strip-components=1 -xzf -
 
 for proj in $projects; do
     tarball_name=$proj-$snapshot_name.src.tar.xz
-    mv $llvm_src_dir/$proj $llvm_src_dir/$proj-$snapshot_name.src
-    tar -C $llvm_src_dir -cJf $tarball_name $proj-$snapshot_name.src
-    mv -v $llvm_src_dir/$tarball_name $projects_dir/$proj/$tarball_name
+    mv llvm-project/$proj llvm-project/$proj-$snapshot_name.src
+    tar -C llvm-project -cJf llvm-project/$tarball_name $proj-$snapshot_name.src
+    mv -v llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
 
     # For envsubst to work below, we need to export variables as environment variables.
     export project_src_dir=$(basename $project_src_dir)
