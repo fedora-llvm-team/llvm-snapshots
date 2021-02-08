@@ -81,6 +81,8 @@ EOF
 # Get and extract the tarball of the latest LLVM version
 # -R is for preserving the upstream timestamp (https://docs.fedoraproject.org/en-US/packaging-guidelines/#_timestamps)
 llvm_src_dir=${out_dir}/llvm_project
+# Create a fresh llvm-project directory
+rm -rf ${llvm_src_dir}
 mkdir -pv ${llvm_src_dir}
 curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz \
   | tar -C ${llvm_src_dir} --strip-components=1 -xzf -
