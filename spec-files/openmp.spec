@@ -1,1 +1,0 @@
-spec-files/libomp.spec
