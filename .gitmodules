@@ -14,3 +14,7 @@
 	path = rpms/compiler-rt
 	url = https://src.fedoraproject.org/rpms/compiler-rt.git
 	branch = rawhide
+[submodule "rpms/libcxx"]
+	path = rpms/libcxx
+	url = https://src.fedoraproject.org/rpms/libcxx.git
+	branch = rawhide
