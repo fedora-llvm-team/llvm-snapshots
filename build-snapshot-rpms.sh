@@ -94,7 +94,7 @@ fc_version=$(grep -F "config_opts['releasever'] = " /etc/mock/templates/fedora-r
 # Create a changelog entry for all packages
 # changelog_date=$(date --date='TZ="UTC"' +'%a %b %d %Y')
 changelog_date=$(date +'%a %b %d %Y')
-cat <<EOF > ${out_dir}/changelog_entry
+cat <<EOF > ${out_dir}/changelog_entry.txt
 * ${changelog_date} Konrad Kleine <kkleine@redhat.com> ${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}-0.${snapshot_name}
 - Daily build of ${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}-0.${snapshot_name}
 EOF
@@ -122,7 +122,7 @@ for proj in $projects; do
     export llvm_version_minor
     export llvm_version_patch
     export project_archive_url=$tarball_name
-    export changelog_entry=$(cat $out_dir/changelog_entry)
+    export changelog_entry=$(cat $out_dir/changelog_entry.txt)
     # TODO(kwk): Does this work for all LLVM sub-projects?
     export release="%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}.${snapshot_name}%{?dist}"
 

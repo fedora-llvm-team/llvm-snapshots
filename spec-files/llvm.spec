@@ -65,6 +65,7 @@ BuildRequires:	ninja-build
 BuildRequires:	zlib-devel
 BuildRequires:	libffi-devel
 BuildRequires:	ncurses-devel
+BuildRequires:	python3-psutil
 BuildRequires:	python3-sphinx
 BuildRequires:	python3-recommonmark
 BuildRequires:	multilib-rpm-config
