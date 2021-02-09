@@ -43,7 +43,7 @@ git submodule init
 git submodule update
 git submodule foreach --recursive git clean -f
 git submodule foreach --recursive git clean -f -d
-git submodule foreach --recursive git reset --head HEAD
+git submodule foreach --recursive git reset --hard HEAD
 
 # Define for which projects we want to build RPMS.
 # See https://github.com/tstellar/llvm-project/blob/release-automation/llvm/utils/release/export.sh#L16
