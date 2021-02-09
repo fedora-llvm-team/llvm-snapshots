@@ -1,10 +1,9 @@
 %global compat_build 0
 
-%global maj_ver 11
-%global min_ver 1
-%global patch_ver 0
-%global rc_ver 2
-%global baserelease 4
+%global maj_ver ${llvm_version_major}
+%global min_ver ${llvm_version_minor}
+%global patch_ver ${llvm_version_patch}
+%global baserelease 0
 
 %global clang_tools_binaries \
 	%{_bindir}/clang-apply-replacements \
@@ -67,21 +66,19 @@
 %global _smp_mflags -j8
 %endif
 
-%global clang_srcdir clang-%{version}%{?rc_ver:rc%{rc_ver}}.src
-%global clang_tools_srcdir clang-tools-extra-%{version}%{?rc_ver:rc%{rc_ver}}.src
+%global clang_srcdir clang-${snapshot_name}.src
+%global clang_tools_srcdir clang-tools-extra-${snapshot_name}.src
 
 Name:		%pkg_name
 Version:	%{maj_ver}.%{min_ver}.%{patch_ver}
-Release:	%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}%{?dist}
+Release:	${release}
 Summary:	A C language family front-end for LLVM
 
 License:	NCSA
 URL:		http://llvm.org
-Source0:	https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}%{?rc_ver:-rc%{rc_ver}}/%{clang_srcdir}.tar.xz
-Source3:	https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}%{?rc_ver:-rc%{rc_ver}}/%{clang_srcdir}.tar.xz.sig
+Source0:	clang-${snapshot_name}.src.tar.xz
 %if !0%{?compat_build}
-Source1:	https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}%{?rc_ver:-rc%{rc_ver}}/%{clang_tools_srcdir}.tar.xz
-Source2:	https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}%{?rc_ver:-rc%{rc_ver}}/%{clang_tools_srcdir}.tar.xz.sig
+Source1:	clang-tools-extra-${snapshot_name}.src.tar.xz
 %endif
 Source4:	tstellar-gpg-key.asc
 
@@ -253,13 +250,11 @@ Requires:      python3
 
 
 %prep
-%{gpgverify} --keyring='%{SOURCE4}' --signature='%{SOURCE3}' --data='%{SOURCE0}'
 
 %if 0%{?compat_build}
 %autosetup -n %{clang_srcdir} -p1
 %else
 
-%{gpgverify} --keyring='%{SOURCE4}' --signature='%{SOURCE2}' --data='%{SOURCE1}'
 %setup -T -q -b 1 -n %{clang_tools_srcdir}
 
 

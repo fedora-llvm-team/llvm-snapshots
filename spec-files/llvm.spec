@@ -11,7 +11,7 @@
 %global llvm_libdir %{_libdir}/%{name}
 %global build_llvm_libdir %{buildroot}%{llvm_libdir}
 %global baserelease 0
-%global llvm_srcdir ${project_src_dir}
+%global llvm_srcdir llvm-${snapshot_name}.src
 %global maj_ver ${llvm_version_major}
 %global min_ver ${llvm_version_minor}
 %global patch_ver ${llvm_version_patch}
@@ -51,7 +51,7 @@ Summary:	The Low Level Virtual Machine
 
 License:	NCSA
 URL:		http://llvm.org
-Source0:	${project_archive_url}
+Source0:	llvm-${snapshot_name}.src.tar.xz
 
 %if %{without compat_build}
 Source3:	run-lit-tests

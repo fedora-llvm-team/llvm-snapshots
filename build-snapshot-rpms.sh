@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Go to end of file to see logging
-(
+# (
 
 # NOTES TO MYSELF(kwk):
 # ---------------------
@@ -45,13 +45,13 @@ git submodule foreach --recursive git clean -f
 git submodule foreach --recursive git clean -f -d
 git submodule foreach --recursive git reset --hard HEAD
 
-# Define for which projects we want to build RPMS.
+# Define for which projects CAN be built.
 # See https://github.com/tstellar/llvm-project/blob/release-automation/llvm/utils/release/export.sh#L16
-# projects=${projects:-"llvm clang test-suite compiler-rt libcxx libcxxabi clang-tools-extra polly lldb lld openmp libunwind"}
-projects=${projects:-"llvm"}
-# TODO(kwk): Projects not covered yet: clang-tools-extra and openmp
+# TODO(kwk): clang-tools-extra is built when building clang and there's no project's directory => remove from list of projects to build?
+all_projects="llvm clang test-suite compiler-rt libcxx libcxxabi clang-tools-extra polly lldb lld libomp libunwind"
 
-
+# Define which projects WILL be built.
+projects=${projects:-"llvm clang"}
 
 # Get LLVM's latest git version and shorten it for the snapshot name
 # NOTE(kwk): By specifying latest_git_sha=<git_sha> on the cli, this can be overwritten.  
@@ -109,29 +109,35 @@ mkdir -pv ${out_dir}/llvm-project
 curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz \
   | tar -C ${out_dir}/llvm-project --strip-components=1 -xzf -
 
-for proj in $projects; do
+# Firstly, create tarballs for all projects.
+# This is needed because for example clang requires clang-tools-extra as well to be present.
+for proj in $all_projects; do
     tarball_name=$proj-$snapshot_name.src.tar.xz
     mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
     tar -C ${out_dir}/llvm-project -cJf ${out_dir}/llvm-project/$tarball_name $proj-$snapshot_name.src
     mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
+done
+
+for proj in $projects; do
+    # tarball_name=$proj-$snapshot_name.src.tar.xz
+    # mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
+    # tar -C ${out_dir}/llvm-project -cJf ${out_dir}/llvm-project/$tarball_name $proj-$snapshot_name.src
+    # mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
 
     # For envsubst to work below, we need to export variables as environment variables.
-    export project_src_dir="$(basename $tarball_name .tar.xz)"
     export latest_git_sha
     export llvm_version_major
     export llvm_version_minor
     export llvm_version_patch
-    export project_archive_url=$tarball_name
     export changelog_entry=$(cat $out_dir/changelog_entry.txt)
     # TODO(kwk): Does this work for all LLVM sub-projects?
     export release="%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}.${snapshot_name}%{?dist}"
 
-    envsubst '$project_src_dir \
+    envsubst ' \
         $latest_git_sha \
         $llvm_version_major \
         $llvm_version_minor \
         $llvm_version_patch \
-        $project_archive_url \
         $changelog_entry \
         $release \
         $snapshot_name' < "$spec_files_dir/$proj.spec" > $projects_dir/$proj/$proj.spec
@@ -160,4 +166,4 @@ for proj in $projects; do
     popd
 done
 
-) |& tee combined.$(date --iso-8601=seconds).log
+# ) |& tee combined.$(date --iso-8601=seconds).log
