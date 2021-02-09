@@ -116,7 +116,7 @@ for proj in $projects; do
     mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
 
     # For envsubst to work below, we need to export variables as environment variables.
-    export project_src_dir="$proj-$snapshot_name"
+    export project_src_dir="$(basename $tarball_name .tar.xz)"
     export latest_git_sha
     export llvm_version_major
     export llvm_version_minor
