@@ -45,30 +45,7 @@ git submodule foreach --recursive git clean -f
 git submodule foreach --recursive git clean -f -d
 git submodule foreach --recursive git reset --hard HEAD
 
-# Define for which projects CAN be built.
-# See https://github.com/tstellar/llvm-project/blob/release-automation/llvm/utils/release/export.sh#L16
-# TODO(kwk): clang-tools-extra is built when building clang and there's no project's directory => remove from list of projects to build?
-all_projects="llvm clang" # test-suite compiler-rt libcxx libcxxabi clang-tools-extra polly lldb lld openmp libunwind"
-
-# # How to map spec file to directory in llvm-project
-# declare -A project_mapping
-# project_mapping=(
-#     ["llvm"]="llvm"
-#     ["clang"]="clang"
-#     ["test"]="test"
-#     ["compiler-rt"]="compiler-rt"
-#     ["libcxx"]="libcxx"
-#     ["libcxxabi"]="libcxxabi"
-#     ["clang-tools-extra"]="clang-tools-extra"
-#     ["polly"]="polly"
-#     ["lldb"]="lldb"
-#     ["lld"]="lld"
-#     ["openmp"]="libomp"
-#     ["libunwind"]="libunwind"
-# )
-# echo "${project_mapping[@]}"
-
-# Define which projects WILL be built.
+# Define which projects we build.
 projects=${projects:-"llvm clang"}
 
 # Get LLVM's latest git version and shorten it for the snapshot name
@@ -129,7 +106,7 @@ curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz
 
 # Firstly, create tarballs for all projects.
 # This is needed because for example clang requires clang-tools-extra as well to be present.
-for proj in $all_projects; do
+for proj in "llvm clang clang-tools-extra"; do
     tarball_name=$proj-$snapshot_name.src.tar.xz
     mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
     tar -C ${out_dir}/llvm-project -cJf ${out_dir}/llvm-project/$tarball_name $proj-$snapshot_name.src
@@ -180,8 +157,8 @@ for proj in $projects; do
         --rebuild $srpms_dir/${proj}-${llvm_version}-0.${snapshot_name}.fc${fc_version}.src.rpm \
         --resultdir=$rpms_dir \
         --no-cleanup-after \
-        --isolation=simple
-
+        --isolation=simple 
+        
     popd
 done
 
