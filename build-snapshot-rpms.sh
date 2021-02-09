@@ -48,7 +48,25 @@ git submodule foreach --recursive git reset --hard HEAD
 # Define for which projects CAN be built.
 # See https://github.com/tstellar/llvm-project/blob/release-automation/llvm/utils/release/export.sh#L16
 # TODO(kwk): clang-tools-extra is built when building clang and there's no project's directory => remove from list of projects to build?
-all_projects="llvm clang test-suite compiler-rt libcxx libcxxabi clang-tools-extra polly lldb lld libomp libunwind"
+all_projects="llvm clang" # test-suite compiler-rt libcxx libcxxabi clang-tools-extra polly lldb lld openmp libunwind"
+
+# # How to map spec file to directory in llvm-project
+# declare -A project_mapping
+# project_mapping=(
+#     ["llvm"]="llvm"
+#     ["clang"]="clang"
+#     ["test"]="test"
+#     ["compiler-rt"]="compiler-rt"
+#     ["libcxx"]="libcxx"
+#     ["libcxxabi"]="libcxxabi"
+#     ["clang-tools-extra"]="clang-tools-extra"
+#     ["polly"]="polly"
+#     ["lldb"]="lldb"
+#     ["lld"]="lld"
+#     ["openmp"]="libomp"
+#     ["libunwind"]="libunwind"
+# )
+# echo "${project_mapping[@]}"
 
 # Define which projects WILL be built.
 projects=${projects:-"llvm clang"}
