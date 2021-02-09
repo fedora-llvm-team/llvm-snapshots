@@ -38,10 +38,12 @@ set -eux
 # in the pipeline.
 set -o pipefail
 
-# Clean submodules and remove untracked files
+# Clean submodules and remove untracked files and reset back to content from upstream
 git submodule init
 git submodule update
 git submodule foreach --recursive git clean -f
+git submodule foreach --recursive git clean -f -d
+git submodule foreach --recursive git reset --head HEAD
 
 # Define for which projects we want to build RPMS.
 # See https://github.com/tstellar/llvm-project/blob/release-automation/llvm/utils/release/export.sh#L16
@@ -114,7 +116,7 @@ for proj in $projects; do
     mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
 
     # For envsubst to work below, we need to export variables as environment variables.
-    export project_src_dir=$(basename $project_src_dir)
+    export project_src_dir="$proj-$snapshot_name"
     export latest_git_sha
     export llvm_version_major
     export llvm_version_minor

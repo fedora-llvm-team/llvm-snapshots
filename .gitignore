@@ -1,3 +1,4 @@
 tmp/
 out/*
 !out/README.md
+combined.*.log
