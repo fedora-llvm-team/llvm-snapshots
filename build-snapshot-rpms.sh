@@ -106,7 +106,7 @@ curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz
 
 # Firstly, create tarballs for all projects.
 # This is needed because for example clang requires clang-tools-extra as well to be present.
-for proj in "llvm clang clang-tools-extra"; do
+for proj in llvm clang clang-tools-extra; do
     tarball_name=$proj-$snapshot_name.src.tar.xz
     mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
     tar -C ${out_dir}/llvm-project -cJf ${out_dir}/llvm-project/$tarball_name $proj-$snapshot_name.src
