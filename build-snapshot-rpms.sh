@@ -121,7 +121,7 @@ for proj in $projects; do
     export llvm_version_major
     export llvm_version_minor
     export llvm_version_patch
-    export project_archive_url=$(basename $tarball_path)
+    export project_archive_url=$tarball_name
     export changelog_entry=$(cat $out_dir/changelog_entry)
     # TODO(kwk): Does this work for all LLVM sub-projects?
     export release="%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}.${snapshot_name}%{?dist}"
