@@ -110,7 +110,12 @@ for proj in "llvm clang clang-tools-extra"; do
     tarball_name=$proj-$snapshot_name.src.tar.xz
     mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
     tar -C ${out_dir}/llvm-project -cJf ${out_dir}/llvm-project/$tarball_name $proj-$snapshot_name.src
-    mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
+    
+    if [ "$proj" == "clang-tools-extra" ]; then
+        mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/clang/$tarball_name
+    else
+        mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
+    fi
 done
 
 for proj in $projects; do
