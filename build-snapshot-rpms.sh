@@ -162,9 +162,15 @@ for proj in $projects; do
         --rebuild $srpms_dir/${proj}-${llvm_version}-0.${snapshot_name}.fc${fc_version}.src.rpm \
         --resultdir=$rpms_dir \
         --no-cleanup-after \
-        --isolation=simple 
+        --isolation=simple \
+        --postinstall
         
     popd
 done
+
+# Build compat packages
+# git clone -b rawhide https://src.fedoraproject.org/rpms/llvm.git
+# cd llvm
+# fedpkg mockbuild --with compat_build
 
 # ) |& tee combined.$(date --iso-8601=seconds).log
