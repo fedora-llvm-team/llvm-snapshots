@@ -118,6 +118,17 @@ for proj in llvm clang clang-tools-extra; do
     fi
 done
 
+# Remove the chroot and start fresh
+mock -r ${cur_dir}/rawhide-mock.cfg --clean
+
+# Install LLVM 11 compat packages
+packages=""
+for pkg in "" libs- static-; do
+    url="https://kojipkgs.fedoraproject.org//packages/llvm11.0/11.1.0/0.1.rc2.fc34/x86_64/llvm11.0-${pkg}11.1.0-0.1.rc2.fc34.x86_64.rpm"
+    packages+=" $url"
+done
+mock -r ${cur_dir}/rawhide-mock.cfg --dnf-cmd install ${packages}
+
 for proj in $projects; do
     # tarball_name=$proj-$snapshot_name.src.tar.xz
     # mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
@@ -145,6 +156,8 @@ for proj in $projects; do
 
     pushd $projects_dir/$proj
 
+    # TODO(kwk): If project==clang => fix patch 0001-Make-funwind-tables-the-default-for-all-archs.patch
+
     # Download files from the specfile into the project directory
     spectool -R -g -A -C . $proj.spec
 
@@ -155,6 +168,8 @@ for proj in $projects; do
         --buildsrpm \
         --resultdir=$srpms_dir \
         --no-cleanup-after \
+        --no-clean \
+        --nocheck \
         --isolation=simple
 
     # Build RPM
@@ -162,9 +177,13 @@ for proj in $projects; do
         --rebuild $srpms_dir/${proj}-${llvm_version}-0.${snapshot_name}.fc${fc_version}.src.rpm \
         --resultdir=$rpms_dir \
         --no-cleanup-after \
+        --no-clean \
+        --nocheck \
         --isolation=simple \
         --postinstall
-        
+    
+    # TODO(kwk): Remove --nocheck once ready
+
     popd
 done
 
