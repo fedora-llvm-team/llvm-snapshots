@@ -1,0 +1,1 @@
+![Applicability of Fedora RPM patches on upstream LLVM](https://github.com/kwk/llvm-daily-fedora-rpms/workflows/Applicability%20of%20Fedora%20RPM%20patches%20on%20upstream%20LLVM/badge.svg)
