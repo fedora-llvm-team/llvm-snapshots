@@ -1,44 +1,44 @@
-[submodule "rpms/llvm"]
-	path = projects/llvm
-	url = https://src.fedoraproject.org/rpms/llvm.git
-	branch = rawhide
-[submodule "rpms/clang"]
+[submodule "projects/clang"]
 	path = projects/clang
-	url = https://src.fedoraproject.org/rpms/clang.git
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/clang.git
 	branch = rawhide
-[submodule "rpms/llvm-test-suite"]
-	path = projects/llvm-test-suite
-	url = https://src.fedoraproject.org/rpms/llvm-test-suite.git
-	branch = rawhide
-[submodule "rpms/compiler-rt"]
+[submodule "projects/compiler-rt"]
 	path = projects/compiler-rt
-	url = https://src.fedoraproject.org/rpms/compiler-rt.git
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/compiler-rt.git
 	branch = rawhide
-[submodule "rpms/libcxx"]
+[submodule "projects/libcxx"]
 	path = projects/libcxx
-	url = https://src.fedoraproject.org/rpms/libcxx.git
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/libcxx.git
 	branch = rawhide
-[submodule "rpms/libcxxabi"]
+[submodule "projects/libcxxabi"]
 	path = projects/libcxxabi
-	url = https://src.fedoraproject.org/rpms/libcxxabi.git
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/libcxxabi.git
 	branch = rawhide
-[submodule "rpms/polly"]
-	path = projects/polly
-	url = https://src.fedoraproject.org/rpms/polly.git
-	branch = rawhide
-[submodule "rpms/lldb"]
-	path = projects/lldb
-	url = https://src.fedoraproject.org/rpms/lldb.git
-	branch = rawhide
-[submodule "rpms/lld"]
-	path = projects/lld
-	url = https://src.fedoraproject.org/rpms/lld.git
-	branch = rawhide
-[submodule "rpms/libunwind"]
-	path = projects/libunwind
-	url = https://src.fedoraproject.org/rpms/libunwind.git
-	branch = rawhide
-[submodule "rpms/libomp"]
+[submodule "projects/libomp"]
 	path = projects/libomp
-	url = https://src.fedoraproject.org/rpms/libomp.git
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/libomp.git
+	branch = rawhide
+[submodule "projects/libunwind"]
+	path = projects/libunwind
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/libunwind.git
+	branch = rawhide
+[submodule "projects/lld"]
+	path = projects/lld
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/lld.git
+	branch = rawhide
+[submodule "projects/lldb"]
+	path = projects/lldb
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/lldb.git
+	branch = rawhide
+[submodule "projects/llvm-test-suite"]
+	path = projects/llvm-test-suite
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/llvm-test-suite.git
+	branch = rawhide
+[submodule "projects/polly"]
+	path = projects/polly
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/polly.git
+	branch = rawhide
+[submodule "projects/llvm"]
+	path = projects/llvm
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git
 	branch = rawhide
