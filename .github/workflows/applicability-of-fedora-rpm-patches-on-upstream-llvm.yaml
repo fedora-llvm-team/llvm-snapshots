@@ -1,0 +1,62 @@
+name: Applicability of Fedora RPM patches on upstream LLVM
+
+on:
+  push:
+    branches:
+      - "main"
+
+  # Uncomment to be able to trigger the workflow manually
+  # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
+  # workflow_dispatch: {}
+    
+jobs:
+  apply-patches:
+    runs-on: [ubuntu-latest]
+    strategy:
+      # Don't cancel any in-progress jobs if any matrix job fails
+      # See https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idstrategyfail-fast
+      fail-fast: false
+      matrix:
+        llvm-branch: [main]
+        fedora-rpm-branch: [rawhide]
+        rpm: [llvm, clang, lld, compiler-rt, libcxx, libcxxabi, libomp, libunwind, lldb, llvm-test-suite, polly]
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15'
+
+      - name: Checkout this repo 
+        uses: actions/checkout@v2
+        with:
+          path: this
+          ref: main
+          submodules: true
+
+      - name: Checkout patch application test
+        uses: actions/checkout@v2
+        with:
+          repository: kwk/apply-patches-from-spec-file
+          path: apply-patches-from-spec-file
+          ref: main
+
+      - name: Checkout LLVM monorepo
+        uses: actions/checkout@v2
+        with:
+          repository: llvm/llvm-project
+          path: llvm-project
+          ref: ${{ matrix.llvm-branch }}
+
+      - name: "Apply Fedora ${{ matrix.fedora-rpm-branch }} patches of the ${{ matrix.rpm }} RPMs to the LLVM (branch=${{ matrix.llvm-branch}})"
+        if: always()
+        shell: bash
+        run: |
+          
+          go run apply-patches-from-spec-file/main.go this/projects/${{ matrix.rpm }}/${{ matrix.rpm }}.spec llvm-project/${{ matrix.rpm }}
+
+      # - name: Google Chat Notification for llvm package
+      #   if: ${{ failure() && matrix.llvm-branch == 'main' && matrix.fedora-rpm-branch == 'rawhide' }}
+      #   uses: Co-qn/google-chat-notification@releases/v1
+      #   with:
+      #     name: The Fedora ${{ matrix.fedora-rpm-branch }} "${{ matrix.rpm }}" RPMs contain patches that can not be applied to upstream LLVM (branch=${{ matrix.llvm-branch}})
+      #     url: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
+      #     status: ${{ job.status }}
