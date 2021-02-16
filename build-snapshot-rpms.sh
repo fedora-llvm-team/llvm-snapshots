@@ -40,13 +40,13 @@ set -o pipefail
 
 # Clean submodules and remove untracked files and reset back to content from upstream
 git submodule init
-git submodule update
+git submodule update --force
 git submodule foreach --recursive git clean -f
 git submodule foreach --recursive git clean -f -d
 git submodule foreach --recursive git reset --hard HEAD
 
 # Define which projects we build.
-projects=${projects:-"llvm clang"}
+projects=${projects:-"llvm clang lld"}
 
 # Get LLVM's latest git version and shorten it for the snapshot name
 # NOTE(kwk): By specifying latest_git_sha=<git_sha> on the cli, this can be overwritten.  
