@@ -145,6 +145,7 @@ for proj in $projects; do
     # TODO(kwk): Does this work for all LLVM sub-projects?
     export release="%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}.${snapshot_name}%{?dist}"
 
+    cp $projects_dir/$proj/$proj.spec $tmp_dir/$proj.spec.in
     envsubst ' \
         $latest_git_sha \
         $llvm_version_major \
@@ -152,7 +153,7 @@ for proj in $projects; do
         $llvm_version_patch \
         $changelog_entry \
         $release \
-        $snapshot_name' < "$spec_files_dir/$proj.spec" > $projects_dir/$proj/$proj.spec
+        $snapshot_name' < $tmp_dir/$proj.spec.in > $projects_dir/$proj/$proj.spec
 
     pushd $projects_dir/$proj
 
