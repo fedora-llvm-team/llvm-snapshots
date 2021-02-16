@@ -1,44 +1,44 @@
 [submodule "projects/clang"]
 	path = projects/clang
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/clang.git
-	branch = rawhide
+	branch = snapshot-build
 [submodule "projects/compiler-rt"]
 	path = projects/compiler-rt
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/compiler-rt.git
-	branch = rawhide
+	branch = snapshot-build
 [submodule "projects/libcxx"]
 	path = projects/libcxx
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/libcxx.git
-	branch = rawhide
+	branch = snapshot-build
 [submodule "projects/libcxxabi"]
 	path = projects/libcxxabi
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/libcxxabi.git
-	branch = rawhide
+	branch = snapshot-build
 [submodule "projects/libomp"]
 	path = projects/libomp
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/libomp.git
-	branch = rawhide
+	branch = snapshot-build
 [submodule "projects/libunwind"]
 	path = projects/libunwind
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/libunwind.git
-	branch = rawhide
+	branch = snapshot-build
 [submodule "projects/lld"]
 	path = projects/lld
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/lld.git
-	branch = rawhide
+	branch = snapshot-build
 [submodule "projects/lldb"]
 	path = projects/lldb
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/lldb.git
-	branch = rawhide
+	branch = snapshot-build
 [submodule "projects/llvm-test-suite"]
 	path = projects/llvm-test-suite
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/llvm-test-suite.git
-	branch = rawhide
+	branch = snapshot-build
 [submodule "projects/polly"]
 	path = projects/polly
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/polly.git
-	branch = rawhide
+	branch = snapshot-build
 [submodule "projects/llvm"]
 	path = projects/llvm
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git
-	branch = rawhide
+	branch = snapshot-build
