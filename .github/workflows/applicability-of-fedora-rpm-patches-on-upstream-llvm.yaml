@@ -50,9 +50,15 @@ jobs:
         if: always()
         shell: bash
         run: |
-          
           go run apply-patches-from-spec-file/main.go this/projects/${{ matrix.rpm }}/${{ matrix.rpm }}.spec llvm-project/${{ matrix.rpm }}
 
+      # Upload potential rejects
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: ${{ matrix.rpm }}-patch-rejects
+          path: llvm-project/**/*.rej
+      
       # - name: Google Chat Notification for llvm package
       #   if: ${{ failure() && matrix.llvm-branch == 'main' && matrix.fedora-rpm-branch == 'rawhide' }}
       #   uses: Co-qn/google-chat-notification@releases/v1
