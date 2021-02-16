@@ -121,6 +121,9 @@ done
 # Remove the chroot and start fresh
 mock -r ${cur_dir}/rawhide-mock.cfg --clean
 
+# Scrub every Monday
+[[ `date +%A` == "Monday" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scub all
+
 # Install LLVM 11 compat packages
 packages=""
 for pkg in "" libs- static-; do
