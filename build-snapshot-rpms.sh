@@ -191,6 +191,21 @@ for proj in $projects; do
     popd
 done
 
+# # Create dnf/yum repo
+# mkdir -pv $out_dir/repo/fedora/$fc_version/$(arch)/base
+# mv -v $rpms_dir/*.rpm $out_dir/repo/fedora/$fc_version/$(arch)/base
+# createrepo $out_dir/repo/fedora/$fc_version/$(arch)/base
+
+# cat <<EOF > /etc/yum.repos.d/llvm-snapshots.repo
+# [llvm-snapshots]
+# name=LLVM Snapshots
+# failovermethod=priority
+# baseurl=http://tofan.yyz.redhat.com:33229/fedora/$releasever/$basearch/base
+# enabled=1
+# gpgcheck=0
+# EOF
+# yum update
+
 # Build compat packages
 # git clone -b rawhide https://src.fedoraproject.org/rpms/llvm.git
 # cd llvm
