@@ -38,12 +38,26 @@ set -eux
 # in the pipeline.
 set -o pipefail
 
+keep_all=${KEEP_ALL:-0}
+if [ "$keep_all" == "1" ]; then
+    echo "Keeping all."
+    KEEP_LLVM_DIR=1
+    KEEP_PROJECT_TARBALLS=1
+    KEEP_CHROOT=1
+    KEEP_SUBMODULES=1
+fi
+
 # Clean submodules and remove untracked files and reset back to content from upstream
 git submodule init
-git submodule update --force
-git submodule foreach --recursive git clean -f
-git submodule foreach --recursive git clean -f -d
-git submodule foreach --recursive git reset --hard HEAD
+keep_submodules=${KEEP_SUBMODULES:-0}
+if [ "$keep_submodules" == "1" ]; then
+    echo "Keep submodules uncleaned"
+else
+    git submodule update --force
+    git submodule foreach --recursive git clean -f
+    git submodule foreach --recursive git clean -f -d
+    git submodule foreach --recursive git reset --hard HEAD
+fi
 
 # Define which projects we build.
 projects=${projects:-"llvm clang lld"}
@@ -98,14 +112,6 @@ EOF
 # -R is for preserving the upstream timestamp (https://docs.fedoraproject.org/en-US/packaging-guidelines/#_timestamps)
 # NOTE: DO NOT MAKE THIS AN ABSOLUTE PATH!!!
 llvm_src_dir=llvm-project
-
-keep_all=${KEEP_ALL:-0}
-if [ "$keep_all" == "1" ]; then
-    echo "Keeping all."
-    KEEP_LLVM_DIR=1
-    KEEP_PROJECT_TARBALLS=1
-    KEEP_CHROOT=1
-fi
 
 keep_llvm_dir=${KEEP_LLVM_DIR:-0}
 if [ "$keep_llvm_dir" == "1" ]; then
