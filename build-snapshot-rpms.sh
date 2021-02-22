@@ -99,15 +99,18 @@ EOF
 # NOTE: DO NOT MAKE THIS AN ABSOLUTE PATH!!!
 llvm_src_dir=llvm-project
 
-keep_all=${KEEP_ALL:-}
-if [ -z "$keep_all" ]; then
+keep_all=${KEEP_ALL:0}
+if [ "$keep_all" == "1" ]; then
+    echo "Keeping all."
     KEEP_LLVM_DIR=1
     KEEP_PROJECT_TARBALLS=1
     KEEP_CHROOT=1
 fi
 
-keep_llvm_dir=${KEEP_LLVM_DIR:-}
-if [ -z "$keep_llvm_dir" ]; then
+keep_llvm_dir=${KEEP_LLVM_DIR:0}
+if [ "$keep_llvm_dir" == "1" ]; then
+    echo "Keeping LLVM directory."
+fi
     # Create a fresh llvm-project directory
     rm -rf ${out_dir}/llvm-project
     mkdir -pv ${out_dir}/llvm-project
@@ -118,7 +121,9 @@ fi
 # Firstly, create tarballs for all projects.
 # This is needed because for example clang requires clang-tools-extra as well to be present.
 keep_project_tarballs=${KEEP_PROJECT_TARBALLS:-}
-if [ -z "$keep_project_tarballs" ]; then
+if [ "$keep_project_tarballs" == "1" ]; then
+    echo "Keeping projects tarballs."
+else
     for proj in llvm clang clang-tools-extra; do
         tarball_name=$proj-$snapshot_name.src.tar.xz
         mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
@@ -134,7 +139,9 @@ fi
 
 # Remove the chroot and start fresh
 keep_chroot=${KEEP_CHROOT:-}
-if [ -z "$keep_chroot" ]; then
+if [ "$keep_chroot" == "1" ]; then
+    echo "Keeping mock directory uncleaned."
+else
     mock -r ${cur_dir}/rawhide-mock.cfg --clean
 fi
 
