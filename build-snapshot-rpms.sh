@@ -98,28 +98,45 @@ EOF
 # -R is for preserving the upstream timestamp (https://docs.fedoraproject.org/en-US/packaging-guidelines/#_timestamps)
 # NOTE: DO NOT MAKE THIS AN ABSOLUTE PATH!!!
 llvm_src_dir=llvm-project
-# Create a fresh llvm-project directory
-rm -rf ${out_dir}/llvm-project
-mkdir -pv ${out_dir}/llvm-project
-curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz \
-  | tar -C ${out_dir}/llvm-project --strip-components=1 -xzf -
+
+keep_all=${KEEP_ALL:-}
+if [ -z "$keep_all" ]; then
+    KEEP_LLVM_DIR=1
+    KEEP_PROJECT_TARBALLS=1
+    KEEP_CHROOT=1
+fi
+
+keep_llvm_dir=${KEEP_LLVM_DIR:-}
+if [ -z "$keep_llvm_dir" ]; then
+    # Create a fresh llvm-project directory
+    rm -rf ${out_dir}/llvm-project
+    mkdir -pv ${out_dir}/llvm-project
+    curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz \
+    | tar -C ${out_dir}/llvm-project --strip-components=1 -xzf -
+fi
 
 # Firstly, create tarballs for all projects.
 # This is needed because for example clang requires clang-tools-extra as well to be present.
-for proj in llvm clang clang-tools-extra; do
-    tarball_name=$proj-$snapshot_name.src.tar.xz
-    mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
-    tar -C ${out_dir}/llvm-project -cJf ${out_dir}/llvm-project/$tarball_name $proj-$snapshot_name.src
-    
-    if [ "$proj" == "clang-tools-extra" ]; then
-        mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/clang/$tarball_name
-    else
-        mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
-    fi
-done
+keep_project_tarballs=${KEEP_PROJECT_TARBALLS:-}
+if [ -z "$keep_project_tarballs" ]; then
+    for proj in llvm clang clang-tools-extra; do
+        tarball_name=$proj-$snapshot_name.src.tar.xz
+        mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
+        tar -C ${out_dir}/llvm-project -cJf ${out_dir}/llvm-project/$tarball_name $proj-$snapshot_name.src
+        
+        if [ "$proj" == "clang-tools-extra" ]; then
+            mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/clang/$tarball_name
+        else
+            mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
+        fi
+    done
+fi
 
 # Remove the chroot and start fresh
-mock -r ${cur_dir}/rawhide-mock.cfg --clean
+keep_chroot=${KEEP_CHROOT:-}
+if [ -z "$keep_chroot" ]; then
+    mock -r ${cur_dir}/rawhide-mock.cfg --clean
+fi
 
 # Scrub every Monday
 #[[ `date +%A` == "Monday" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
