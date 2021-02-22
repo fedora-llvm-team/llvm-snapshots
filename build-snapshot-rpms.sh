@@ -99,7 +99,7 @@ EOF
 # NOTE: DO NOT MAKE THIS AN ABSOLUTE PATH!!!
 llvm_src_dir=llvm-project
 
-keep_all=${KEEP_ALL:0}
+keep_all=${KEEP_ALL:-0}
 if [ "$keep_all" == "1" ]; then
     echo "Keeping all."
     KEEP_LLVM_DIR=1
@@ -107,7 +107,7 @@ if [ "$keep_all" == "1" ]; then
     KEEP_CHROOT=1
 fi
 
-keep_llvm_dir=${KEEP_LLVM_DIR:0}
+keep_llvm_dir=${KEEP_LLVM_DIR:-0}
 if [ "$keep_llvm_dir" == "1" ]; then
     echo "Keeping LLVM directory."
 fi
@@ -120,7 +120,7 @@ fi
 
 # Firstly, create tarballs for all projects.
 # This is needed because for example clang requires clang-tools-extra as well to be present.
-keep_project_tarballs=${KEEP_PROJECT_TARBALLS:-}
+keep_project_tarballs=${KEEP_PROJECT_TARBALLS:-0}
 if [ "$keep_project_tarballs" == "1" ]; then
     echo "Keeping projects tarballs."
 else
@@ -138,7 +138,7 @@ else
 fi
 
 # Remove the chroot and start fresh
-keep_chroot=${KEEP_CHROOT:-}
+keep_chroot=${KEEP_CHROOT:-0}
 if [ "$keep_chroot" == "1" ]; then
     echo "Keeping mock directory uncleaned."
 else
