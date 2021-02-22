@@ -122,7 +122,7 @@ done
 mock -r ${cur_dir}/rawhide-mock.cfg --clean
 
 # Scrub every Monday
-[[ `date +%A` == "Monday" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scub all
+#[[ `date +%A` == "Monday" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
 
 # Install LLVM 11 compat packages
 packages=""
