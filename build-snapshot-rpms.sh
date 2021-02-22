@@ -110,7 +110,7 @@ fi
 keep_llvm_dir=${KEEP_LLVM_DIR:-0}
 if [ "$keep_llvm_dir" == "1" ]; then
     echo "Keeping LLVM directory."
-fi
+else
     # Create a fresh llvm-project directory
     rm -rf ${out_dir}/llvm-project
     mkdir -pv ${out_dir}/llvm-project
