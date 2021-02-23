@@ -160,12 +160,13 @@ for pkg in "" libs- static-; do
     url="https://kojipkgs.fedoraproject.org//packages/llvm11.0/11.1.0/0.1.rc2.fc34/x86_64/llvm11.0-${pkg}11.1.0-0.1.rc2.fc34.x86_64.rpm"
     packages+=" $url"
 done
-mock -r ${cur_dir}/rawhide-mock.cfg --dnf-cmd install ${packages}
 
 # Create a local repo in order to install build RPMs in a chain of RPMs
 repo_dir=$cur_dir/repos/$snapshot_name
 mkdir -pv $repo_dir
 envsubst '$repo_dir ' < ${cur_dir}/rawhide-mock.cfg.in > ${cur_dir}/rawhide-mock.cfg
+
+mock -r ${cur_dir}/rawhide-mock.cfg --dnf-cmd install ${packages}
 
 for proj in $projects; do
     # tarball_name=$proj-$snapshot_name.src.tar.xz
