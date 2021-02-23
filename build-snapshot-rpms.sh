@@ -162,7 +162,7 @@ for pkg in "" libs- static-; do
 done
 
 # Create a local repo in order to install build RPMs in a chain of RPMs
-repo_dir=$cur_dir/repos/$snapshot_name
+export repo_dir=$cur_dir/repos/$snapshot_name
 mkdir -pv $repo_dir
 createrepo $repo_dir --update
 envsubst '$repo_dir ' < ${cur_dir}/rawhide-mock.cfg.in > ${cur_dir}/rawhide-mock.cfg
