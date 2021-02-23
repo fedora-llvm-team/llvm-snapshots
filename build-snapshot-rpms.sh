@@ -164,6 +164,7 @@ done
 # Create a local repo in order to install build RPMs in a chain of RPMs
 repo_dir=$cur_dir/repos/$snapshot_name
 mkdir -pv $repo_dir
+createrepo $repo_dir --update
 envsubst '$repo_dir ' < ${cur_dir}/rawhide-mock.cfg.in > ${cur_dir}/rawhide-mock.cfg
 
 mock -r ${cur_dir}/rawhide-mock.cfg --dnf-cmd install ${packages}
