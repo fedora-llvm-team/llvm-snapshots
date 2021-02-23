@@ -28,3 +28,29 @@ config_opts['plugin_conf']['showrc_enable'] = True
 # Improve speed (requires nosync package)
 # See https://github.com/rpm-software-management/mock/wiki/Feature-nosync
 config_opts['nosync'] = True
+
+# Inspired by jwakely's https://gitlab.com/jonathan-wakely/fedora-boost-rebuilds/-/blob/master/mock.cfg.in
+config_opts['yum.conf'] = """
+[main]
+keepcache=1
+debuglevel=2
+reposdir=/dev/null
+logfile=/var/log/yum.log
+retries=20
+obsoletes=1
+gpgcheck=0
+assumeyes=1
+syslog_ident=mock
+syslog_device=
+install_weak_deps=0
+metadata_expire=0
+best=1
+
+# repos
+
+[local]
+name=local
+baseurl=${REPODIR}
+enabled=1
+"""
+

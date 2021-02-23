@@ -162,6 +162,11 @@ for pkg in "" libs- static-; do
 done
 mock -r ${cur_dir}/rawhide-mock.cfg --dnf-cmd install ${packages}
 
+# Create a local repo in order to install build RPMs in a chain of RPMs
+repo_dir=$cur_dir/repos/$snapshot_name
+mkdir -pv $repo_dir
+envsubst '$repo_dir ' < ${cur_dir}/rawhide-mock.cfg.in > ${cur_dir}/rawhide-mock.cfg
+
 for proj in $projects; do
     # tarball_name=$proj-$snapshot_name.src.tar.xz
     # mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
@@ -216,7 +221,13 @@ for proj in $projects; do
         --isolation=simple \
         --postinstall
     
-    # TODO(kwk): Remove --nocheck once ready
+    # Link RPMs to repo dir and update the repository
+    pushd $repo_dir
+    ln -sfv $rpms_dir/*.rpm .
+    createrepo . --update
+    popd
+
+    # TODO(kwk): Remove --nocheck once ready?
 
     popd
 done

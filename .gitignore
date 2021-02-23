@@ -2,3 +2,8 @@ tmp/
 out/*
 !out/README.md
 combined.*.log
+
+# We only version the cfg.in file
+rawhide-mock.cfg
+
+repos/*
