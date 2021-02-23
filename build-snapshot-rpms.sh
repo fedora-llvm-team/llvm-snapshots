@@ -130,7 +130,7 @@ keep_project_tarballs=${KEEP_PROJECT_TARBALLS:-0}
 if [ "$keep_project_tarballs" == "1" ]; then
     echo "Keeping projects tarballs."
 else
-    for proj in llvm clang clang-tools-extra; do
+    for proj in llvm clang clang-tools-extra lld compiler-rt; do
         tarball_name=$proj-$snapshot_name.src.tar.xz
         mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
         tar -C ${out_dir}/llvm-project -cJf ${out_dir}/llvm-project/$tarball_name $proj-$snapshot_name.src
