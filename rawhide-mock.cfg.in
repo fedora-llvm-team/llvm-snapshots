@@ -29,6 +29,8 @@ config_opts['plugin_conf']['showrc_enable'] = True
 # See https://github.com/rpm-software-management/mock/wiki/Feature-nosync
 config_opts['nosync'] = True
 
+config_opts['package_manager'] = 'dnf'
+
 # Inspired by jwakely's https://gitlab.com/jonathan-wakely/fedora-boost-rebuilds/-/blob/master/mock.cfg.in
 config_opts['yum.conf'] = """
 [main]
@@ -50,7 +52,7 @@ best=1
 
 [local]
 name=local
-baseurl=${REPODIR}
+baseurl=${repo_dir}
 enabled=1
 """
 
