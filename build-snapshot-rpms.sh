@@ -72,7 +72,7 @@ latest_git_sha_short=${latest_git_sha:0:8}
 
 # Get the UTC date in yyyymmdd format
 #yyyymmdd=$(date --date='TZ="UTC"' +'%Y%m%d')
-yyyymmdd=$(date +'%Y%m%d')
+yyyymmdd=${yyyymmdd:-$(date +'%Y%m%d')}
 
 cur_dir=$(pwd)
 projects_dir=${cur_dir}/projects
@@ -102,7 +102,7 @@ fc_version=$(grep -F "config_opts['releasever'] = " /etc/mock/templates/fedora-r
 
 # Create a changelog entry for all packages
 # changelog_date=$(date --date='TZ="UTC"' +'%a %b %d %Y')
-changelog_date=$(date +'%a %b %d %Y')
+changelog_date=$(date --date="$yyyymmdd" +'%a %b %d %Y')
 cat <<EOF > ${out_dir}/changelog_entry.txt
 * ${changelog_date} Konrad Kleine <kkleine@redhat.com> ${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}-0.${snapshot_name}
 - Daily build of ${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}-0.${snapshot_name}
