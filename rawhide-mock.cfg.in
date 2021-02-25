@@ -33,7 +33,12 @@ config_opts['package_manager'] = 'dnf'
 
 # Inspired by jwakely's https://gitlab.com/jonathan-wakely/fedora-boost-rebuilds/-/blob/master/mock.cfg.in
 config_opts['yum.conf'] = """
-# [main]
+[main]
+# WARNING: reposdir option is not set in yum config. That means Yum/DNF
+# will use system-wide repos. To suppress that behavior, put
+# reposdir=/dev/null to your yum.conf in mock config.
+reposdir=/dev/null
+
 # keepcache=1
 # debuglevel=2
 # reposdir=/dev/null
@@ -49,6 +54,8 @@ config_opts['yum.conf'] = """
 # best=1
 
 # repos
+
+
 
 [local]
 name=local
