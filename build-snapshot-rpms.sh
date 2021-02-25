@@ -192,7 +192,7 @@ for proj in $projects; do
         $llvm_version_patch \
         $changelog_entry \
         $release \
-        $snapshot_name' < $tmp_dir/$proj.spec.in > $projects_dir/$proj/$proj.spec
+        $snapshot_name' < $projects_dir/$proj/$proj.spec.in > $projects_dir/$proj/$proj.spec
 
     pushd $projects_dir/$proj
 
