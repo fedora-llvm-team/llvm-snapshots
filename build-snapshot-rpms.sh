@@ -60,7 +60,7 @@ else
 fi
 
 # Define which projects we build.
-projects=${projects:-"llvm clang lld"}
+projects=${projects:-"llvm clang lld compiler-rt"}
 
 # Get LLVM's latest git version and shorten it for the snapshot name
 # NOTE(kwk): By specifying latest_git_sha=<git_sha> on the cli, this can be overwritten.  
@@ -88,6 +88,12 @@ echo $latest_git_sha >> ${out_dir}/latest_git_sha.log
 
 # For snapshot naming, see https://docs.fedoraproject.org/en-US/packaging-guidelines/Versioning/#_snapshots 
 snapshot_name="${yyyymmdd}.${latest_git_sha_short}"
+
+# Create a local repo in order to install build RPMs in a chain of RPMs
+export repo_dir=$cur_dir/repos/$snapshot_name
+mkdir -pv $repo_dir
+createrepo $repo_dir --update
+envsubst '$repo_dir ' < ${cur_dir}/rawhide-mock.cfg.in > ${cur_dir}/rawhide-mock.cfg
 
 # Get LLVM version from CMakeLists.txt
 wget -O ${tmp_dir}/CMakeLists.txt https://raw.githubusercontent.com/llvm/llvm-project/${latest_git_sha}/llvm/CMakeLists.txt
@@ -155,19 +161,13 @@ fi
 #[[ `date +%A` == "Monday" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
 
 # Install LLVM 11 compat packages
-packages=""
-for pkg in "" libs- static-; do
-    url="https://kojipkgs.fedoraproject.org//packages/llvm11.0/11.1.0/0.1.rc2.fc34/x86_64/llvm11.0-${pkg}11.1.0-0.1.rc2.fc34.x86_64.rpm"
-    packages+=" $url"
-done
+#packages=""
+#for pkg in "" libs- static-; do
+#    url="https://kojipkgs.fedoraproject.org//packages/llvm11.0/11.1.0/0.1.rc2.fc34/x86_64/llvm11.0-${pkg}11.1.0-0.1.rc2.fc34.x86_64.rpm"
+#    packages+=" $url"
+#done
+#mock -r ${cur_dir}/rawhide-mock.cfg --dnf-cmd install ${packages}
 
-# Create a local repo in order to install build RPMs in a chain of RPMs
-export repo_dir=$cur_dir/repos/$snapshot_name
-mkdir -pv $repo_dir
-createrepo $repo_dir --update
-envsubst '$repo_dir ' < ${cur_dir}/rawhide-mock.cfg.in > ${cur_dir}/rawhide-mock.cfg
-
-mock -r ${cur_dir}/rawhide-mock.cfg --dnf-cmd install ${packages}
 
 for proj in $projects; do
     # tarball_name=$proj-$snapshot_name.src.tar.xz
