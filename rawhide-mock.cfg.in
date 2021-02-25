@@ -29,38 +29,38 @@ config_opts['plugin_conf']['showrc_enable'] = True
 # See https://github.com/rpm-software-management/mock/wiki/Feature-nosync
 config_opts['nosync'] = True
 
-config_opts['package_manager'] = 'dnf'
+# config_opts['package_manager'] = 'dnf'
 
-# Inspired by jwakely's https://gitlab.com/jonathan-wakely/fedora-boost-rebuilds/-/blob/master/mock.cfg.in
-config_opts['yum.conf'] = """
-[main]
-# WARNING: reposdir option is not set in yum config. That means Yum/DNF
-# will use system-wide repos. To suppress that behavior, put
-# reposdir=/dev/null to your yum.conf in mock config.
-reposdir=/dev/null
-
-# keepcache=1
-# debuglevel=2
+# # Inspired by jwakely's https://gitlab.com/jonathan-wakely/fedora-boost-rebuilds/-/blob/master/mock.cfg.in
+# config_opts['yum.conf'] = """
+# [main]
+# # WARNING: reposdir option is not set in yum config. That means Yum/DNF
+# # will use system-wide repos. To suppress that behavior, put
+# # reposdir=/dev/null to your yum.conf in mock config.
 # reposdir=/dev/null
-# logfile=/var/log/yum.log
-# retries=20
-# obsoletes=1
+
+# # keepcache=1
+# # debuglevel=2
+# # reposdir=/dev/null
+# # logfile=/var/log/yum.log
+# # retries=20
+# # obsoletes=1
+# # gpgcheck=0
+# # assumeyes=1
+# # syslog_ident=mock
+# # syslog_device=
+# # install_weak_deps=0
+# # metadata_expire=0
+# # best=1
+
+# # repos
+
+
+
+# [local]
+# name=local
+# baseurl=${repo_dir}
+# enabled=1
 # gpgcheck=0
-# assumeyes=1
-# syslog_ident=mock
-# syslog_device=
-# install_weak_deps=0
-# metadata_expire=0
-# best=1
-
-# repos
-
-
-
-[local]
-name=local
-baseurl=${repo_dir}
-enabled=1
-gpgcheck=0
-"""
+# """
 
