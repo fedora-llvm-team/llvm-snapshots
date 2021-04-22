@@ -38,14 +38,7 @@ set -eux
 # in the pipeline.
 set -o pipefail
 
-keep_all=${KEEP_ALL:-0}
-if [ "$keep_all" == "1" ]; then
-    echo "Keeping all."
-    KEEP_LLVM_DIR=1
-    KEEP_PROJECT_TARBALLS=1
-    KEEP_CHROOT=1
-    KEEP_SUBMODULES=1
-fi
+projects=${projects:-"llvm clang lld compiler-rt"}
 
 # Clean submodules and remove untracked files and reset back to content from upstream
 git submodule init
@@ -59,95 +52,84 @@ else
     git submodule foreach --recursive git reset --hard HEAD
 fi
 
-# Define which projects we build.
-projects=${projects:-"llvm clang lld compiler-rt"}
+new_snapshot_spec_file() {
+    local orig_file=$1
+    local out_file=$2
+    local llvm_snapshot_version=$3
+    local llvm_snapshot_git_revision=$4
 
-# Get LLVM's latest git version and shorten it for the snapshot name
-# NOTE(kwk): By specifying latest_git_sha=<git_sha> on the cli, this can be overwritten.  
-latest_git_sha=${latest_git_sha:-}
-if [ -z "${latest_git_sha}"]; then
-    latest_git_sha=$(curl -s -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/llvm/llvm-project/commits | jq -r '.[].sha' | head -1)
-fi
-latest_git_sha_short=${latest_git_sha:0:8}
+    cat <<EOF > ${out_file}
+################################################################################
+# BEGIN SNAPSHOT PREFIX
+################################################################################
 
-# Get the UTC date in yyyymmdd format
-#yyyymmdd=$(date --date='TZ="UTC"' +'%Y%m%d')
-yyyymmdd=${yyyymmdd:-$(date +'%Y%m%d')}
+%global _with_snapshot_build 1
+# Optionally enable snapshot build with \`--with=snapshot_build\` or \`--define
+# "_with_snapshot_build 1"\`.
+%bcond_with snapshot_build
+
+%if %{with snapshot_build}
+%global llvm_snapshot_yyyymmdd %{lua: print(os.date("%Y%m%d"))}
+%global llvm_snapshot_version ${llvm_snapshot_version}
+%global llvm_snapshot_git_revision ${llvm_snapshot_git_revision}
+
+# Split version
+%global llvm_snapshot_version_major %{lua: print(string.match(rpm.expand("%{llvm_snapshot_version}"), "[0-9]+"));}
+%global llvm_snapshot_version_minor %{lua: print(string.match(rpm.expand("%{llvm_snapshot_version}"), "%p([0-9]+)%p"));}
+%global llvm_snapshot_version_patch %{lua: print(string.match(rpm.expand("%{llvm_snapshot_version}"), "%p([0-9]+)$"));}
+
+# Shorten git revision
+%global llvm_snapshot_git_revision_short %{lua: print(string.sub(rpm.expand("%llvm_snapshot_git_revision"), 0, 14));}
+%endif
+
+################################################################################
+# END SNAPSHOT PREFIX
+################################################################################
+
+EOF
+    
+    cat ${orig_file} >> ${out_file}
+}
+
+yyyymmdd=$(date +%Y%m%d)
+llvm_snapshot_version=$(curl -sL https://github.com/kwk/llvm-project/releases/download/source-snapshot/llvm-release-${yyyymmdd}.txt)
+llvm_snapshot_git_revision=$(curl -sL https://github.com/kwk/llvm-project/releases/download/source-snapshot/llvm-git-revision-${yyyymmdd}.txt)
+
+# temp_file=$(mktemp)
+# new_snapshot_spec_file "/home/kkleine/dev/rpms/llvm/llvm.spec" ${temp_file} ${llvm_snapshot_version} ${llvm_snapshot_git_revision}
+# rpmspec -q ${temp_file}
 
 cur_dir=$(pwd)
 projects_dir=${cur_dir}/projects
 spec_files_dir=${cur_dir}/spec-files
-out_dir=${cur_dir}/out/${yyyymmdd}.${latest_git_sha_short}
+out_dir=${cur_dir}/out
 tmp_dir=${out_dir}/tmp
 rpms_dir=${out_dir}/rpms
 srpms_dir=${out_dir}/srpms
 mkdir -pv ${out_dir}/{rpms,srpms,tmp}
 
-# In case we need to do a rebuild, let's save the latest git sha that we've build by appending it to a log 
-echo $latest_git_sha >> ${out_dir}/latest_git_sha.log
-
-# For snapshot naming, see https://docs.fedoraproject.org/en-US/packaging-guidelines/Versioning/#_snapshots 
-snapshot_name="${yyyymmdd}.${latest_git_sha_short}"
-
-# Create a local repo in order to install build RPMs in a chain of RPMs
-export repo_dir=$cur_dir/repos/$snapshot_name
+# # Create a local repo in order to install build RPMs in a chain of RPMs
+repo_dir=$cur_dir/${yyyymmdd}.${llvm_snapshot_git_revision}
 mkdir -pv $repo_dir
-createrepo $repo_dir --update
-envsubst '$repo_dir ' < ${cur_dir}/rawhide-mock.cfg.in > ${cur_dir}/rawhide-mock.cfg
-
-# Get LLVM version from CMakeLists.txt
-wget -O ${tmp_dir}/CMakeLists.txt https://raw.githubusercontent.com/llvm/llvm-project/${latest_git_sha}/llvm/CMakeLists.txt
-llvm_version_major=$(grep --regexp="set(\s*LLVM_VERSION_MAJOR" ${tmp_dir}/CMakeLists.txt | tr -d -c '[0-9]')
-llvm_version_minor=$(grep --regexp="set(\s*LLVM_VERSION_MINOR" ${tmp_dir}/CMakeLists.txt | tr -d -c '[0-9]')
-llvm_version_patch=$(grep --regexp="set(\s*LLVM_VERSION_PATCH" ${tmp_dir}/CMakeLists.txt | tr -d -c '[0-9]')
-llvm_version="${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}"
+# createrepo $repo_dir --update
+# envsubst '$repo_dir ' < ${cur_dir}/rawhide-mock.cfg.in > ${cur_dir}/rawhide-mock.cfg
 
 # Extract for which Fedora Core version (e.g. fc34) we build packages.
 # This is like the ongoing version number for the rolling Fedora "rawhide" release.
-fc_version=$(grep -F "config_opts['releasever'] = " /etc/mock/templates/fedora-rawhide.tpl | tr -d -c '0-9')
+fc_version=$(grep -ioP "config_opts\['releasever'\] = '\K[0-9]+" /etc/mock/templates/fedora-rawhide.tpl)
 
-# Create a changelog entry for all packages
-# changelog_date=$(date --date='TZ="UTC"' +'%a %b %d %Y')
-changelog_date=$(date --date="$yyyymmdd" +'%a %b %d %Y')
-cat <<EOF > ${out_dir}/changelog_entry.txt
-* ${changelog_date} Konrad Kleine <kkleine@redhat.com> ${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}-0.${snapshot_name}
-- Daily build of ${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}-0.${snapshot_name}
-EOF
+# # Create a changelog entry for all packages
+# # changelog_date=$(date --date='TZ="UTC"' +'%a %b %d %Y')
+# changelog_date=$(date --date="$yyyymmdd" +'%a %b %d %Y')
+# cat <<EOF > ${out_dir}/changelog_entry.txt
+# * ${changelog_date} Konrad Kleine <kkleine@redhat.com>
+# - Daily build of ${llvm_version_major}.${llvm_version_minor}.${llvm_version_patch}~${yyyymmdd}.g${llvm_snapshot_git_revision}
+# EOF
 
-# Get and extract the tarball of the latest LLVM version
-# -R is for preserving the upstream timestamp (https://docs.fedoraproject.org/en-US/packaging-guidelines/#_timestamps)
-# NOTE: DO NOT MAKE THIS AN ABSOLUTE PATH!!!
-llvm_src_dir=llvm-project
-
-keep_llvm_dir=${KEEP_LLVM_DIR:-0}
-if [ "$keep_llvm_dir" == "1" ]; then
-    echo "Keeping LLVM directory."
-else
-    # Create a fresh llvm-project directory
-    rm -rf ${out_dir}/llvm-project
-    mkdir -pv ${out_dir}/llvm-project
-    curl -R -L https://github.com/llvm/llvm-project/archive/${latest_git_sha}.tar.gz \
-    | tar -C ${out_dir}/llvm-project --strip-components=1 -xzf -
-fi
-
-# Firstly, create tarballs for all projects.
-# This is needed because for example clang requires clang-tools-extra as well to be present.
-keep_project_tarballs=${KEEP_PROJECT_TARBALLS:-0}
-if [ "$keep_project_tarballs" == "1" ]; then
-    echo "Keeping projects tarballs."
-else
-    for proj in llvm clang clang-tools-extra lld compiler-rt; do
-        tarball_name=$proj-$snapshot_name.src.tar.xz
-        mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
-        tar -C ${out_dir}/llvm-project -cJf ${out_dir}/llvm-project/$tarball_name $proj-$snapshot_name.src
-        
-        if [ "$proj" == "clang-tools-extra" ]; then
-            mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/clang/$tarball_name
-        else
-            mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
-        fi
-    done
-fi
+# # Get and extract the tarball of the latest LLVM version
+# # -R is for preserving the upstream timestamp (https://docs.fedoraproject.org/en-US/packaging-guidelines/#_timestamps)
+# # NOTE: DO NOT MAKE THIS AN ABSOLUTE PATH!!!
+# llvm_src_dir=llvm-project
 
 # Remove the chroot and start fresh
 keep_chroot=${KEEP_CHROOT:-0}
@@ -157,100 +139,81 @@ else
     mock -r ${cur_dir}/rawhide-mock.cfg --clean
 fi
 
-# Scrub every Monday
-#[[ `date +%A` == "Monday" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
+# # Scrub mock build root every Monday
+# #[[ `date +%A` == "Monday" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
 
-# Install LLVM 11 compat packages
-#packages=""
-#for pkg in "" libs- static-; do
-#    url="https://kojipkgs.fedoraproject.org//packages/llvm11.0/11.1.0/0.1.rc2.fc34/x86_64/llvm11.0-${pkg}11.1.0-0.1.rc2.fc34.x86_64.rpm"
-#    packages+=" $url"
-#done
-#mock -r ${cur_dir}/rawhide-mock.cfg --dnf-cmd install ${packages}
+# # Install LLVM 11 compat packages
+# #packages=""
+# #for pkg in "" libs- static-; do
+# #    url="https://kojipkgs.fedoraproject.org//packages/llvm11.0/11.1.0/0.1.rc2.fc34/x86_64/llvm11.0-${pkg}11.1.0-0.1.rc2.fc34.x86_64.rpm"
+# #    packages+=" $url"
+# #done
+# #mock -r ${cur_dir}/rawhide-mock.cfg --dnf-cmd install ${packages}
 
 
 for proj in $projects; do
-    # tarball_name=$proj-$snapshot_name.src.tar.xz
-    # mv ${out_dir}/llvm-project/$proj ${out_dir}/llvm-project/$proj-$snapshot_name.src
-    # tar -C ${out_dir}/llvm-project -cJf ${out_dir}/llvm-project/$tarball_name $proj-$snapshot_name.src
-    # mv -v ${out_dir}/llvm-project/$tarball_name $projects_dir/$proj/$tarball_name
-
-    # For envsubst to work below, we need to export variables as environment variables.
-    export latest_git_sha
-    export llvm_version_major
-    export llvm_version_minor
-    export llvm_version_patch
-    export snapshot_name
-    export changelog_entry=$(cat $out_dir/changelog_entry.txt)
-    # TODO(kwk): Does this work for all LLVM sub-projects?
-    export release="%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}.${snapshot_name}%{?dist}"
-
-    envsubst ' \
-        $latest_git_sha \
-        $llvm_version_major \
-        $llvm_version_minor \
-        $llvm_version_patch \
-        $changelog_entry \
-        $release \
-        $snapshot_name' < $projects_dir/$proj/$proj.spec.in > $projects_dir/$proj/$proj.spec
+    tarball_name=${proj}-${yyyymmdd}.src.tar.xz
+    wget -O $projects_dir/$proj/$tarball_name https://github.com/kwk/llvm-project/releases/download/source-snapshot/${tarball_name}
 
     pushd $projects_dir/$proj
 
-    # TODO(kwk): If project==clang => fix patch 0001-Make-funwind-tables-the-default-for-all-archs.patch
+    new_spec_file=$(mktemp)
+    new_snapshot_spec_file "$projects_dir/$proj/$proj.spec" ${new_spec_file} ${llvm_snapshot_version} ${llvm_snapshot_git_revision}
+    rpmspec -q ${new_spec_file}
 
     # Download files from the specfile into the project directory
-    spectool -R -g -A -C . $proj.spec
+    spectool -R -g -A -C . $new_spec_file.spec
 
-    # Build SRPM
-    time mock -r ${cur_dir}/rawhide-mock.cfg \
-        --spec=$proj.spec \
-        --sources=$PWD \
-        --buildsrpm \
-        --resultdir=$srpms_dir \
-        --no-cleanup-after \
-        --no-clean \
-        --nocheck \
-        --isolation=simple
+#     # Build SRPM
+#     time mock -r ${cur_dir}/rawhide-mock.cfg \
+#         --spec=$proj.spec \
+#         --sources=$PWD \
+#         --buildsrpm \
+#         --resultdir=$srpms_dir \
+#         --no-cleanup-after \
+#         --no-clean \
+#         --nocheck \
+#         --isolation=simple
 
-    # Build RPM
-    time mock -r ${cur_dir}/rawhide-mock.cfg \
-        --rebuild $srpms_dir/${proj}-${llvm_version}-0.${snapshot_name}.fc${fc_version}.src.rpm \
-        --resultdir=$rpms_dir \
-        --no-cleanup-after \
-        --no-clean \
-        --nocheck \
-        --isolation=simple \
-        --postinstall
+#     # Build RPM
+#     time mock -r ${cur_dir}/rawhide-mock.cfg \
+#         --rebuild $srpms_dir/${proj}-${llvm_version}-0.${snapshot_name}.fc${fc_version}.src.rpm \
+#         --resultdir=$rpms_dir \
+#         --no-cleanup-after \
+#         --no-clean \
+#         --nocheck \
+#         --isolation=simple \
+#         --postinstall
     
-    # Link RPMs to repo dir and update the repository
-    pushd $repo_dir
-    ln -sfv $rpms_dir/*.rpm .
-    createrepo . --update
-    popd
+#     # Link RPMs to repo dir and update the repository
+#     pushd $repo_dir
+#     ln -sfv $rpms_dir/*.rpm .
+#     createrepo . --update
+#     popd
 
-    # TODO(kwk): Remove --nocheck once ready?
+#     # TODO(kwk): Remove --nocheck once ready?
 
     popd
 done
 
-# # Create dnf/yum repo
-# mkdir -pv $out_dir/repo/fedora/$fc_version/$(arch)/base
-# mv -v $rpms_dir/*.rpm $out_dir/repo/fedora/$fc_version/$(arch)/base
-# createrepo $out_dir/repo/fedora/$fc_version/$(arch)/base
+# # # Create dnf/yum repo
+# # mkdir -pv $out_dir/repo/fedora/$fc_version/$(arch)/base
+# # mv -v $rpms_dir/*.rpm $out_dir/repo/fedora/$fc_version/$(arch)/base
+# # createrepo $out_dir/repo/fedora/$fc_version/$(arch)/base
 
-# cat <<EOF > /etc/yum.repos.d/llvm-snapshots.repo
-# [llvm-snapshots]
-# name=LLVM Snapshots
-# failovermethod=priority
-# baseurl=http://tofan.yyz.redhat.com:33229/fedora/$releasever/$basearch/base
-# enabled=1
-# gpgcheck=0
-# EOF
-# yum update
+# # cat <<EOF > /etc/yum.repos.d/llvm-snapshots.repo
+# # [llvm-snapshots]
+# # name=LLVM Snapshots
+# # failovermethod=priority
+# # baseurl=http://tofan.yyz.redhat.com:33229/fedora/$releasever/$basearch/base
+# # enabled=1
+# # gpgcheck=0
+# # EOF
+# # yum update
 
-# Build compat packages
-# git clone -b rawhide https://src.fedoraproject.org/rpms/llvm.git
-# cd llvm
-# fedpkg mockbuild --with compat_build
+# # Build compat packages
+# # git clone -b rawhide https://src.fedoraproject.org/rpms/llvm.git
+# # cd llvm
+# # fedpkg mockbuild --with compat_build
 
-# ) |& tee combined.$(date --iso-8601=seconds).log
+# # ) |& tee combined.$(date --iso-8601=seconds).log
