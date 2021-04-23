@@ -8,5 +8,5 @@ rawhide-mock.cfg
 
 repos/*
 
-koji-serverca.pem
-koji-cert.crt
+koji-psi-platform-tools-ci.pem
+koji-serverca.crt
