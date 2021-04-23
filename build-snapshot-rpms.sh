@@ -1,35 +1,7 @@
 #!/bin/bash
 
-# Go to end of file to see logging
-# (
-
-# NOTES TO MYSELF(kwk):
-# ---------------------
-# Login to build host (e.g. tofan)
-#  
-#       ssh tofan
-#
-# Start of recover a previous session:
-#
-#       screen or screen -dr
-#
-# Work on non-NFS drive:
-#
-#       cd /opt/notnfs/$USER
-#
-# Clone this repo:
-#
-#       git clone --recurse-submodules https://github.com/kwk/llvm-daily-fedora-rpms.git
-#
-# Ensure %{_sourcdir} points to a writable location
-#
-#       mkdir -p /opt/notnfs/$USER/rpmbuild/SOURCES
-#       echo '%_topdir /opt/notnfs/$USER/rpmbuild' >> ~/.rpmmacros
-#
-# The following should show /opt/notnfs/$USER/rpmbuild/SOURCES
-#
-#       rpm --eval '%{_sourcedir}'
-#
+# To build the SRPMs with koji use:
+# koji -p koji-clang build f35-llvm-snapshot out/srpms/llvm-13.0.0~pre20210422.gf6d8cf7798440f-1.fc35.src.rpm
 
 set -eux
 
@@ -153,27 +125,29 @@ fi
 
 for proj in $projects; do
     tarball_name=${proj}-${yyyymmdd}.src.tar.xz
-    wget -O $projects_dir/$proj/$tarball_name https://github.com/kwk/llvm-project/releases/download/source-snapshot/${tarball_name}
+    # wget -O $projects_dir/$proj/$tarball_name https://github.com/kwk/llvm-project/releases/download/source-snapshot/${tarball_name}
 
     pushd $projects_dir/$proj
 
-    new_spec_file=$(mktemp)
+    new_spec_file=$(mktemp --suffix=.spec)
     new_snapshot_spec_file "$projects_dir/$proj/$proj.spec" ${new_spec_file} ${llvm_snapshot_version} ${llvm_snapshot_git_revision}
     rpmspec -q ${new_spec_file}
 
     # Download files from the specfile into the project directory
-    spectool -R -g -A -C . $new_spec_file.spec
+    rpmdev-spectool -g -a -C . $new_spec_file
 
-#     # Build SRPM
-#     time mock -r ${cur_dir}/rawhide-mock.cfg \
-#         --spec=$proj.spec \
-#         --sources=$PWD \
-#         --buildsrpm \
-#         --resultdir=$srpms_dir \
-#         --no-cleanup-after \
-#         --no-clean \
-#         --nocheck \
-#         --isolation=simple
+    # Build SRPM
+    time mock -r ${cur_dir}/rawhide-mock.cfg \
+        --spec=$new_spec_file \
+        --sources=$PWD \
+        --buildsrpm \
+        --resultdir=$srpms_dir \
+        --no-cleanup-after \
+        --no-clean \
+        --nocheck \
+        --isolation=simple
+
+    koji -p koji-clang build f35-llvm-snapshot ${out_dir}/srpms/${proj}-${llvm_snapshot_version}~pre${yyyymmdd}.g*.src.rpm
 
 #     # Build RPM
 #     time mock -r ${cur_dir}/rawhide-mock.cfg \
@@ -195,6 +169,37 @@ for proj in $projects; do
 
     popd
 done
+
+# Go to end of file to see logging
+# (
+
+# NOTES TO MYSELF(kwk):
+# ---------------------
+# Login to build host (e.g. tofan)
+#  
+#       ssh tofan
+#
+# Start of recover a previous session:
+#
+#       screen or screen -dr
+#
+# Work on non-NFS drive:
+#
+#       cd /opt/notnfs/$USER
+#
+# Clone this repo:
+#
+#       git clone --recurse-submodules https://github.com/kwk/llvm-daily-fedora-rpms.git
+#
+# Ensure %{_sourcdir} points to a writable location
+#
+#       mkdir -p /opt/notnfs/$USER/rpmbuild/SOURCES
+#       echo '%_topdir /opt/notnfs/$USER/rpmbuild' >> ~/.rpmmacros
+#
+# The following should show /opt/notnfs/$USER/rpmbuild/SOURCES
+#
+#       rpm --eval '%{_sourcedir}'
+#
 
 # # # Create dnf/yum repo
 # # mkdir -pv $out_dir/repo/fedora/$fc_version/$(arch)/base
