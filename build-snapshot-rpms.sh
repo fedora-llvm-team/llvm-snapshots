@@ -146,8 +146,9 @@ for proj in $projects; do
         --no-clean \
         --nocheck \
         --isolation=simple
+    popd
 
-    koji --config=${cur_dir}/koji.conf -p koji-clang build ${fc_version}-llvm-snapshot ${out_dir}/srpms/${proj}-${llvm_snapshot_version}~pre${yyyymmdd}.g*.src.rpm
+    koji --config=koji.conf -p koji-clang build ${fc_version}-llvm-snapshot ${out_dir}/srpms/${proj}-${llvm_snapshot_version}~pre${yyyymmdd}.g*.src.rpm
 
 #     # Build RPM
 #     time mock -r ${cur_dir}/rawhide-mock.cfg \
@@ -166,8 +167,6 @@ for proj in $projects; do
 #     popd
 
 #     # TODO(kwk): Remove --nocheck once ready?
-
-    popd
 done
 
 # Go to end of file to see logging
