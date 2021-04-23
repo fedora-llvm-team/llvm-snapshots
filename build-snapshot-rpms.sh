@@ -147,7 +147,7 @@ for proj in $projects; do
         --nocheck \
         --isolation=simple
 
-    koji -p koji-clang build f35-llvm-snapshot ${out_dir}/srpms/${proj}-${llvm_snapshot_version}~pre${yyyymmdd}.g*.src.rpm
+    koji --config=koji.conf -p koji-clang build ${fc_version}-llvm-snapshot ${out_dir}/srpms/${proj}-${llvm_snapshot_version}~pre${yyyymmdd}.g*.src.rpm
 
 #     # Build RPM
 #     time mock -r ${cur_dir}/rawhide-mock.cfg \

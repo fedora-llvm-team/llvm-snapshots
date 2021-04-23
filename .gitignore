@@ -7,3 +7,6 @@ combined.*.log
 rawhide-mock.cfg
 
 repos/*
+
+koji-serverca.pem
+koji-cert.crt
