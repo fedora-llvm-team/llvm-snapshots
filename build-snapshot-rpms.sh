@@ -99,7 +99,7 @@ EOF
 }
 
 # # Create a local repo in order to install build RPMs in a chain of RPMs
-repo_dir=$cur_dir/${yyyymmdd}.${llvm_git_revision}
+repo_dir=$out_dir/repo-${yyyymmdd}.${llvm_git_revision}
 mkdir -pv $repo_dir
 # createrepo $repo_dir --update
 # envsubst '$repo_dir ' < ${cur_dir}/rawhide-mock.cfg.in > ${cur_dir}/rawhide-mock.cfg
