@@ -151,7 +151,7 @@ for proj in $projects; do
 
     # Build RPM
     time mock -r ${cur_dir}/rawhide-mock.cfg \
-        --rebuild ${srpms_dir}/${proj}-${llvm_snapshot_version}~pre${yyyymmdd}.g*.src.rpm \
+        --rebuild ${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm \
         --resultdir=$rpms_dir \
         --no-cleanup-after \
         --no-clean \
