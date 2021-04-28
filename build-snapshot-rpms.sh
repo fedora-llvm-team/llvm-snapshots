@@ -124,7 +124,7 @@ for proj in $projects; do
     pushd $projects_dir/$proj
 
     new_spec_file=$(mktemp --suffix=.spec)
-    new_snapshot_spec_file "$projects_dir/$proj/$proj.spec" ${new_spec_file} ${llvm_snapshot_version} ${llvm_snapshot_git_revision}
+    new_snapshot_spec_file "$projects_dir/$proj/$proj.spec" ${new_spec_file} ${llvm_version} ${llvm_git_revision}
     
     # Show which packages will be build with this spec file
     rpmspec -q ${new_spec_file}
