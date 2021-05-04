@@ -7,6 +7,14 @@ set -eu
 # in the pipeline.
 set -o pipefail
 
+# Setup some directories for later use
+cur_dir=$(pwd)
+projects_dir=${cur_dir}/projects
+out_dir=${cur_dir}/out
+rpms_dir=${out_dir}/rpms
+srpms_dir=${out_dir}/srpms
+mkdir -pv ${out_dir} ${rpms_dir} ${srpms_dir}
+
 #############################################################################
 # These vars can be adjusted with the options passing to this script:
 #############################################################################
@@ -36,14 +44,6 @@ verbose=""
 
 #############################################################################
 #############################################################################
-
-# Setup some directories for later use
-cur_dir=$(pwd)
-projects_dir=${cur_dir}/projects
-out_dir=${cur_dir}/out
-rpms_dir=${out_dir}/rpms
-srpms_dir=${out_dir}/srpms
-mkdir -pv ${out_dir}/{rpms,srpms,tmp}
 
 
 usage() {
