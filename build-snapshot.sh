@@ -299,7 +299,6 @@ while [ $# -gt 0 ]; do
             koji_config_profile="$1"
             ;;
         --verbose )
-            shift
             verbose="1"
             ;;
         -h | -help | --help )
