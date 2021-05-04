@@ -90,7 +90,7 @@ OPTIONS
   Misc:
 
   --update-projects                         Fetch the latest updates for each LLVM sub-project before building.
-  --verbose                                 Toggle on output from "set -e".
+  --verbose                                 Toggle on output from "set -x".
 
 EXAMPLE VALUES FOR PLACEHOLDERS
 -------------------------------
@@ -314,7 +314,7 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-[[ "${verbose}" != "" ]] && set -e
+[[ "${verbose}" != "" ]] && set -x
 
 build_snapshot
 exit 0
