@@ -30,7 +30,7 @@ koji_build_rpm=""
 update_projects=""
 koji_wait_for_build_option="--nowait"
 koji_config_path="koji.conf"
-koji_config_profile=""
+koji_config_profile="koji-clang"
 
 #############################################################################
 #############################################################################
