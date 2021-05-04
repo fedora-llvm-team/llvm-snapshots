@@ -31,6 +31,7 @@ update_projects=""
 koji_wait_for_build_option="--nowait"
 koji_config_path="koji.conf"
 koji_config_profile="koji-clang"
+verbose=""
 
 #############################################################################
 #############################################################################
@@ -59,7 +60,8 @@ Usage: $(basename $0)
             [--koji-config-path "/path/to/koji.conf"]
             [--koji-config-profile "profile"]
             [--update-projects]
-            [--projects "llvm clang lld compiler-rt"] 
+            [--projects "llvm clang lld compiler-rt"]
+            [--verbose]
 
 OPTIONS
 -------
@@ -88,6 +90,7 @@ OPTIONS
   Misc:
 
   --update-projects                         Fetch the latest updates for each LLVM sub-project before building.
+  --verbose                                 Toggle on output from "set -e".
 
 EXAMPLE VALUES FOR PLACEHOLDERS
 -------------------------------
@@ -295,6 +298,10 @@ while [ $# -gt 0 ]; do
             shift
             koji_config_profile="$1"
             ;;
+        --verbose )
+            shift
+            verbose="1"
+            ;;
         -h | -help | --help )
             usage
             exit 0
@@ -307,6 +314,8 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+[[ "${verbose}" != "" ]] && set -e
 
 build_snapshot
 exit 0
