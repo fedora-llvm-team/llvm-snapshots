@@ -30,7 +30,7 @@ projects="llvm clang lld compiler-rt"
 # snapshot of LLVM is being built.
 yyyymmdd="$(date +%Y%m%d)"
 
-mock_clean_before=""
+mock_clean_before="1"
 mock_scrub=""
 mock_build_rpm=""
 mock_check_option="--nocheck"
