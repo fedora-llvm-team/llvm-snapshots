@@ -106,7 +106,7 @@ mkdir -pv $repo_dir
 
 # Remove the chroot and start fresh
 noclean=${noclean:-""}
-[[ "${noclean}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
+[[ "${noclean}" == "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
 
 # # Scrub mock build root every Monday
 # [[ `date +%A` == "Monday" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
