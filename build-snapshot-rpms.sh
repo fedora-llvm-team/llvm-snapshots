@@ -23,8 +23,8 @@ mkdir -pv ${out_dir}/{rpms,srpms,tmp}
 projects=${projects:-"llvm clang lld compiler-rt"}
 
 # The current date (e.g. 20210427) is used to determine from which tarball a
-# snapshot of LLVM is being built. 
-yyyymmdd=$(date +%Y%m%d)
+# snapshot of LLVM is being built.
+yyyymmdd=${yyyymmdd:-$(date +%Y%m%d)}
 
 # Get the current snapshot version and git revision for today
 llvm_version=$(curl -sL https://github.com/kwk/llvm-project/releases/download/source-snapshot/llvm-release-${yyyymmdd}.txt)
@@ -105,7 +105,8 @@ mkdir -pv $repo_dir
 # envsubst '$repo_dir ' < ${cur_dir}/rawhide-mock.cfg.in > ${cur_dir}/rawhide-mock.cfg
 
 # Remove the chroot and start fresh
-mock -r ${cur_dir}/rawhide-mock.cfg --clean
+noclean=${noclean:-""}
+[[ "${noclean}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
 
 # # Scrub mock build root every Monday
 # [[ `date +%A` == "Monday" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
@@ -147,7 +148,7 @@ for proj in $projects; do
     #     --config=koji.conf \
     #     -p koji-clang \
     #     build \
-    #     f${fc_version}-llvm-snapshot ${srpms_di}/${proj}-${llvm_snapshot_version}~pre${yyyymmdd}.g*.src.rpm
+    #     f${fc_version}-llvm-snapshot ${srpms_dir}/${proj}-${llvm_snapshot_version}~pre${yyyymmdd}.g*.src.rpm
 
     # Build RPM
     time mock -r ${cur_dir}/rawhide-mock.cfg \
