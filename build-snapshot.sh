@@ -204,7 +204,7 @@ build_snapshot() {
     clean_submodules
 
     [[ "${update_projects}" != "" ]] && update_submodules
-    [[ "${mock_clean}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
+    [[ "${mock_clean_before}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
     [[ "${mock_scrub}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
 
     for proj in $projects; do
