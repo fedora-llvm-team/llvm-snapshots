@@ -26,6 +26,7 @@ mock_clean_before=""
 mock_scrub=""
 mock_build_rpm=""
 mock_check_option="--nocheck"
+mock_config_path="${cur_dir}/rawhide-mock.cfg"
 koji_build_rpm=""
 update_projects=""
 koji_wait_for_build_option="--nowait"
@@ -55,6 +56,7 @@ Usage: $(basename $0)
             [--mock-scrub]
             [--mock-build-rpm]
             [--mock-check-rpm]
+            [--mock-config-path "/path/to/mock.cfg"]
             [--koji-build-rpm]
             [--koji-wait-for-build]
             [--koji-config-path "/path/to/koji.conf"]
@@ -78,6 +80,7 @@ OPTIONS
   --mock-check-rpm                          Omit the "--nocheck" option from any mock call. (Reasoning: for snapshots we don't want to run "make check".)
   --mock-no-clean-before                    Don't clean the mock environment upon each new script invocation.
   --mock-scrub                              Wipe away the entire mock environment upon each script invocation.
+  --mock-config-path                        Path to mock configuration file (defaults to "${cur_dir}/rawhide-mock.cfg").
 
   Koji related:
 
@@ -280,6 +283,10 @@ while [ $# -gt 0 ]; do
             ;;
         --mock-check-rpm )
             mock_check_option=""
+            ;;
+        --mock-config-path )
+            shift
+            mock_config_path="$1"
             ;;
         --koji-build-rpm )
             koji_build_rpm="1"
