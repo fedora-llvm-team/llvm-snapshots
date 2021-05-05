@@ -272,8 +272,8 @@ while [ $# -gt 0 ]; do
             shift
             projects="$1"
             ;;
-        --mock-no-clean )
-            mock_clean=""
+        --mock-no-clean-before )
+            mock_clean_before=""
             ;;
         --mock-scrub )
             mock_scrub="1"
