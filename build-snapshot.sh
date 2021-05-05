@@ -35,6 +35,8 @@ mock_scrub=""
 mock_build_rpm=""
 mock_check_option="--nocheck"
 mock_config_path="${cur_dir}/rawhide-mock.cfg"
+mock_build_compat_packages=""
+mock_install_compat_packages=""
 koji_build_rpm=""
 update_projects=""
 koji_wait_for_build_option="--nowait"
@@ -81,6 +83,11 @@ OPTIONS
   --mock-no-clean-before                    Don't clean the mock environment upon each new script invocation.
   --mock-scrub                              Wipe away the entire mock environment upon each script invocation.
   --mock-config-path                        Path to mock configuration file (defaults to "${cur_dir}/rawhide-mock.cfg").
+  --mock-build-compat-packages              Will build the compatibility packages of the given projects (by passing
+                                            "--with=compat_build" to mock).
+                                            NOTE: When this option is given, no snapshot package will be built. Just invoke the script a second time.
+  --mock-install-compat-packages            Installs the compatibility packages for the given projects into the mock environment.
+                                            Make sure you've build them before (using "--mock-build-compat-packages").
 
   Koji related:
 
@@ -98,7 +105,7 @@ OPTIONS
 EXAMPLE VALUES FOR PLACEHOLDERS
 -------------------------------
 
-  * "<X,Y,Z>"    -> "llvm clang lld compiler-rt"
+  * "<X Y Z>"    -> "llvm clang lld compiler-rt"
   * "<YYYYMMDD>" -> "20210414"
 
 EXAMPLES
@@ -216,24 +223,30 @@ build_snapshot() {
     for proj in $projects; do
         pushd $projects_dir/$proj
 
-        new_spec_file=$(mktemp --suffix=.spec)
-        new_snapshot_spec_file "$projects_dir/$proj/$proj.spec" ${new_spec_file} ${llvm_version} ${llvm_git_revision} ${yyyymmdd}
+        spec_file=$(mktemp --suffix=.spec)
+        new_snapshot_spec_file "$projects_dir/$proj/$proj.spec" ${spec_file} ${llvm_version} ${llvm_git_revision} ${yyyymmdd}
         
-        # Show which packages will be build with this spec file
-        rpmspec -q ${new_spec_file}
+        with_compat=""
+        if [ "${mock_build_compat_packages}" != "" ]; then
+            spec_file="$projects_dir/$proj/$proj.spec"
+            with_compat="--with=compat_build"
+        fi
 
+        # Show which packages will be build with this spec file
+        rpmspec -q ${with_compat} ${spec_file}  
+        
         # Download files from the specfile into the project directory
-        rpmdev-spectool -g -a -C . $new_spec_file
+        rpmdev-spectool -g -a -C . $spec_file
 
         # Build SRPM
         time mock -r ${cur_dir}/rawhide-mock.cfg \
-            --spec=$new_spec_file \
+            --spec=$spec_file \
             --sources=$PWD \
             --buildsrpm \
             --resultdir=$srpms_dir \
             --no-cleanup-after \
             --no-clean \
-            --isolation=simple ${mock_check_option}
+            --isolation=simple ${mock_check_option} ${with_compat}
         popd
         
         if [ "${koji_build_rpm}" != "" ]; then
@@ -254,9 +267,22 @@ build_snapshot() {
                 --no-cleanup-after \
                 --no-clean \
                 --isolation=simple \
-                --postinstall ${mock_check_option}
+                --postinstall ${mock_check_option} ${with_compat}
             popd
         fi
+
+        if [ "${mock_install_compat_packages}" != "" ]; then
+            compat_packages="$(rpmspec -q --with=compat_build $projects_dir/$proj/$proj.spec)"
+            mock_installs=""
+            for p in "${compat_packages}"; do
+                mock_installs="$mock_installs -i ${rpms_dir}/$p.rpm"
+            done
+            if [ "${mock_installs}" != "" ]; then
+                pushd $projects_dir/$proj
+                time mock -r ${cur_dir}/rawhide-mock.cfg ${mock_installs}
+                popd
+            fi
+        fi         
     done
 }
 
@@ -287,6 +313,13 @@ while [ $# -gt 0 ]; do
         --mock-config-path )
             shift
             mock_config_path="$1"
+            ;;
+        --mock-build-compat-packages )
+            mock_build_compat_packages="1"
+            mock_build_rpm="1"
+            ;;
+        --mock-install-compat-packages )
+            mock_install_compat_packages="1"
             ;;
         --koji-build-rpm )
             koji_build_rpm="1"
