@@ -102,6 +102,7 @@ Usage: ${script}
             [--update-projects]
             [--clean-projects]
             [--verbose]
+            [--generate-snapshot-spec-files]
             
 
 OPTIONS
@@ -141,6 +142,8 @@ OPTIONS
                                             to content from upstream.
   --verbose                                 Toggle on output from "set -x".
   --show-llvm-version                       Prints the version for the given date (see --yyyymmdd) and exits.
+  --generate-snapshot-spec-files            Generates snapshot spec files for the given date (see --yyyymmdd)
+                                            and projects (see --projects), then exits.
 
 EXAMPLE VALUES FOR PLACEHOLDERS
 -------------------------------
@@ -233,7 +236,8 @@ EOF
 build_snapshot() {
     get_llvm_version
     show_llvm_version
-
+    generate_snapshot_spec_files
+    
     # Extract for which Fedora Core version (e.g. fc34) we build packages.
     # This is like the ongoing version number for the rolling Fedora "rawhide" release.
     fc_version=$(grep -ioP "config_opts\['releasever'\] = '\K[0-9]+" /etc/mock/templates/fedora-rawhide.tpl)
@@ -241,9 +245,8 @@ build_snapshot() {
     for proj in $projects; do
         pushd $projects_dir/$proj
 
-        spec_file=$projects_dir/$proj.snapshot.spec
-        new_snapshot_spec_file "$projects_dir/$proj/$proj.spec" ${spec_file} ${llvm_version} ${llvm_git_revision} ${yyyymmdd}
-        
+        spec_file=$projects_dir/$proj/$proj.snapshot.spec
+
         with_compat=""
         if [ "${mock_build_compat_packages}" != "" ]; then
             spec_file="$projects_dir/$proj/$proj.spec"
@@ -304,6 +307,16 @@ build_snapshot() {
     done
 }
 
+generate_snapshot_spec_files() {
+    if [[ "${llvm_version}" == "" ]]; then
+        get_llvm_version
+    fi
+    for proj in $projects; do
+        spec_file=$projects_dir/$proj/$proj.snapshot.spec
+        new_snapshot_spec_file "$projects_dir/$proj/$proj.spec" ${spec_file} ${llvm_version} ${llvm_git_revision} ${yyyymmdd}
+    done
+}
+
 # Clean submodules and remove untracked files and reset back to content from
 # upstream. If you need to update a submodule to the latest version, please do
 # git submodule update --remote projects/<YOURPROJECT>. 
@@ -333,6 +346,7 @@ opt_verbose=""
 opt_clean_projects=""
 opt_update_projects=""
 opt_show_llvm_version=""
+opt_generate_snapshot_spec_files=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -398,6 +412,10 @@ while [ $# -gt 0 ]; do
         --verbose )
             opt_verbose="1"
             ;;
+        --generate-snapshot-spec-files )
+            opt_generate_snapshot_spec_files="1"
+            exit_right_away=1
+            ;;
         -h | -help | --help )
             usage
             exit 0
@@ -417,6 +435,7 @@ done
 [[ "${opt_mock_clean}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
 [[ "${opt_clean_projects}" != "" ]] && clean_submodules
 [[ "${opt_update_projects}" != "" ]] && update_submodules
+[[ "${opt_generate_snapshot_spec_files}" != "" ]] && generate_snapshot_spec_files
 [[ "${exit_right_away}" != "" ]] && exit 0
 
 build_snapshot
