@@ -30,31 +30,67 @@ projects="llvm clang lld compiler-rt"
 # snapshot of LLVM is being built.
 yyyymmdd="$(date +%Y%m%d)"
 
-mock_clean_before="1"
-mock_scrub=""
 mock_build_rpm=""
 mock_check_option="--nocheck"
 mock_config_path="${cur_dir}/rawhide-mock.cfg"
 mock_build_compat_packages=""
 mock_install_compat_packages=""
 koji_build_rpm=""
-update_projects=""
 koji_wait_for_build_option="--nowait"
 koji_config_path="koji.conf"
 koji_config_profile="koji-clang"
-verbose=""
 
 #############################################################################
 #############################################################################
 
+# To be filled out by get_llvm_version() below.
+llvm_version=""
+llvm_git_revision=""
+llvm_version_major=""
+llvm_version_minor=""
+llvm_version_patch=""
+
+get_llvm_version() {
+    url="https://github.com/kwk/llvm-project/releases/download/source-snapshot/llvm-release-${yyyymmdd}.txt"
+    llvm_version=$(curl -sfL "$url")
+    ret=$?
+    if [[ $ret -ne 0 ]]; then
+        echo "ERROR: failed to get llvm version from $url"
+        exit 1
+    fi
+    
+    url="https://github.com/kwk/llvm-project/releases/download/source-snapshot/llvm-git-revision-${yyyymmdd}.txt"
+    llvm_git_revision=$(curl -sfL "$url")
+    ret=$?
+    if [[ $ret -ne 0 ]]; then
+        echo "ERROR: failed to get llvm git revision from $url"
+        exit 1
+    fi
+    llvm_version_major=$(echo $llvm_version | grep -ioP '^[0-9]+')
+    llvm_version_minor=$(echo $llvm_version | grep -ioP '\.\K[0-9]+' | head -n1)
+    llvm_version_patch=$(echo $llvm_version | grep -ioP '\.\K[0-9]+$')
+}
+
+show_llvm_version() {
+    cat <<EOF
+Date:               ${yyyymmdd}
+LLVM Version:       ${llvm_version}
+LLVM Git Revision:  ${llvm_git_revision}
+LLVM Major Version: ${llvm_version_major}
+LLVM Minor Version: ${llvm_version_minor}
+LLVM Patch Version: ${llvm_version_patch}
+EOF
+}
 
 usage() {
+script=$(basename $0)
 cat <<EOF
 Build LLVM snapshot SRPMs using mock and optionally RPMs using mock and/or koji.
 
-Usage: $(basename $0) 
+Usage: ${script}
             [--yyyymmdd <YYYYMMDD>]
-            [--mock-no-clean-before]
+            [--projects "llvm clang lld compiler-rt"]
+            [--mock-clean]
             [--mock-scrub]
             [--mock-build-rpm]
             [--mock-check-rpm]
@@ -64,8 +100,9 @@ Usage: $(basename $0)
             [--koji-config-path "/path/to/koji.conf"]
             [--koji-config-profile "profile"]
             [--update-projects]
-            [--projects "llvm clang lld compiler-rt"]
+            [--clean-projects]
             [--verbose]
+            
 
 OPTIONS
 -------
@@ -80,8 +117,8 @@ OPTIONS
   --mock-build-rpm                          Build RPMs (also) using mock. (Please note that SRPMs are always built with mock.)
                                             Please note that --koji-build-rpm and --mock-build-rpm are not mutually exclusive.
   --mock-check-rpm                          Omit the "--nocheck" option from any mock call. (Reasoning: for snapshots we don't want to run "make check".)
-  --mock-no-clean-before                    Don't clean the mock environment upon each new script invocation.
-  --mock-scrub                              Wipe away the entire mock environment upon each script invocation.
+  --mock-clean                              Clean the mock environment and exit.
+  --mock-scrub                              Wipe away the entire mock environment and exit.
   --mock-config-path                        Path to mock configuration file (defaults to "${cur_dir}/rawhide-mock.cfg").
   --mock-build-compat-packages              Will build the compatibility packages of the given projects (by passing
                                             "--with=compat_build" to mock).
@@ -99,8 +136,11 @@ OPTIONS
   
   Misc:
 
-  --update-projects                         Fetch the latest updates for each LLVM sub-project before building.
+  --update-projects                         Fetch the latest updates for all git submodules and exit.
+  --clean-projects                          Clean git project submodules and exit. Removes untracked files and reset back
+                                            to content from upstream.
   --verbose                                 Toggle on output from "set -x".
+  --show-llvm-version                       Prints the version for the given date (see --yyyymmdd) and exits.
 
 EXAMPLE VALUES FOR PLACEHOLDERS
 -------------------------------
@@ -111,47 +151,35 @@ EXAMPLE VALUES FOR PLACEHOLDERS
 EXAMPLES
 --------
 
-  $0
+    Show the LLVM version for a May 6th 2021 date. Depending on the retention time
+    for source snapshots, this might not work for a given date.
 
-  Will build SRPMs for "llvm clang lld compiler-rt". No RPM will be build.
+        ${script} --show-llvm-version --yyyymmdd 20210505
 
-  $0 --projects "llvm clang"
+        Date:               20210505
+        LLVM Version:       13.0.0
+        LLVM Git Revision:  88ec05b654758fecfe7147064dce84a09e2e20a8
+        LLVM Major Version: 13
+        LLVM Minor Version: 0
+        LLVM Patch Version: 0
 
-  Will build SRPMs for llvm and clang. No RPMs will be build
+    Build SRPMs for llvm and clang. No RPMs will be build because no method (mock or koji was selected).
 
-  $0 --projects "llvm clang" --mock-build-rpm
+        ${script} --projects "llvm clang"
 
-  Will build SRPMs and RPMs for llvm and clang using mock.
+    Build SRPMs and RPMs for llvm and clang using mock.
 
-  $0 --projects "llvm clang" --mock-build-rpm --koji-build-rpm
+        ${script} --projects "llvm clang" --mock-build-rpm
 
-  Will build SRPMs and RPMs for llvm and clang using mock and also in koji. 
+    Build SRPMs and RPMs for llvm and clang using mock and also in koji. 
 
+        ${script} --projects "llvm clang" --mock-build-rpm --koji-build-rpm
+
+    Clean the mock environment.
+
+        ${script} --mock-clean --mock-scrub
 EOF
 }
-
-
-# Clean submodules and remove untracked files and reset back to content from
-# upstream. If you need to update a submodule to the latest version, please do
-# git submodule update --remote projects/<YOURPROJECT>. 
-clean_submodules() {
-    pushd $cur_dir
-    git submodule init
-    git submodule update --force
-    git submodule foreach --recursive git clean -f
-    git submodule foreach --recursive git clean -f -d
-    git submodule foreach --recursive git reset --hard HEAD
-    popd
-}
-
-# Updates the LLVM sub-project submodules with the latest version of the tracked
-# branch.
-update_submodules() {
-    pushd $cur_dir
-    git submodule update --remote
-    popd
-}
-
 
 # Takes an original spec file and prefixes snapshot information to it. Then it
 # writes the generated spec file to a new location.
@@ -203,27 +231,17 @@ EOF
 
 
 build_snapshot() {
-    # Get the current snapshot version and git revision for today
-    llvm_version=$(curl -sL https://github.com/kwk/llvm-project/releases/download/source-snapshot/llvm-release-${yyyymmdd}.txt)
-    llvm_git_revision=$(curl -sL https://github.com/kwk/llvm-project/releases/download/source-snapshot/llvm-git-revision-${yyyymmdd}.txt)
-    llvm_version_major=$(echo $llvm_version | grep -ioP '^[0-9]+')
-    llvm_version_minor=$(echo $llvm_version | grep -ioP '\.\K[0-9]+' | head -n1)
-    llvm_version_patch=$(echo $llvm_version | grep -ioP '\.\K[0-9]+$')
+    get_llvm_version
+    show_llvm_version
 
     # Extract for which Fedora Core version (e.g. fc34) we build packages.
     # This is like the ongoing version number for the rolling Fedora "rawhide" release.
     fc_version=$(grep -ioP "config_opts\['releasever'\] = '\K[0-9]+" /etc/mock/templates/fedora-rawhide.tpl)
 
-    clean_submodules
-
-    [[ "${update_projects}" != "" ]] && update_submodules
-    [[ "${mock_clean_before}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
-    [[ "${mock_scrub}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
-
     for proj in $projects; do
         pushd $projects_dir/$proj
 
-        spec_file=$(mktemp --suffix=.spec)
+        spec_file=$projects_dir/$proj.snapshot.spec
         new_snapshot_spec_file "$projects_dir/$proj/$proj.spec" ${spec_file} ${llvm_version} ${llvm_git_revision} ${yyyymmdd}
         
         with_compat=""
@@ -273,20 +291,48 @@ build_snapshot() {
 
         if [ "${mock_install_compat_packages}" != "" ]; then
             compat_packages="$(rpmspec -q --with=compat_build $projects_dir/$proj/$proj.spec)"
-            mock_installs=""
+            mock_compat_install_cmd=""
             for p in "${compat_packages}"; do
-                mock_installs="$mock_installs -i ${rpms_dir}/$p.rpm"
+                mock_compat_install_cmd="$mock_compat_install_cmd -i ${rpms_dir}/$p.rpm"
             done
-            if [ "${mock_installs}" != "" ]; then
+            if [ "${mock_compat_install_cmd}" != "" ]; then
                 pushd $projects_dir/$proj
-                time mock -r ${cur_dir}/rawhide-mock.cfg ${mock_installs}
+                time mock -r ${cur_dir}/rawhide-mock.cfg ${mock_compat_install_cmd}
                 popd
             fi
         fi         
     done
 }
 
+# Clean submodules and remove untracked files and reset back to content from
+# upstream. If you need to update a submodule to the latest version, please do
+# git submodule update --remote projects/<YOURPROJECT>. 
+clean_submodules() {
+    pushd $cur_dir
+    git submodule init
+    git submodule update --force
+    git submodule foreach --recursive git clean -f
+    git submodule foreach --recursive git clean -f -d
+    git submodule foreach --recursive git reset --hard HEAD
+    popd
+}
 
+# Updates the LLVM sub-project submodules with the latest version of the tracked
+# branch.
+update_submodules() {
+    pushd $cur_dir
+    git submodule update --remote
+    popd
+}
+
+
+exit_right_away=""
+opt_mock_clean=""
+opt_mock_scrub=""
+opt_verbose=""
+opt_clean_projects=""
+opt_update_projects=""
+opt_show_llvm_version=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -298,11 +344,13 @@ while [ $# -gt 0 ]; do
             shift
             projects="$1"
             ;;
-        --mock-no-clean-before )
-            mock_clean_before=""
+        --mock-clean )
+            opt_mock_clean="1"
+            exit_right_away=1
             ;;
         --mock-scrub )
-            mock_scrub="1"
+            opt_mock_scrub="1"
+            exit_right_away=1
             ;;
         --mock-build-rpm )
             mock_build_rpm="1"
@@ -325,7 +373,12 @@ while [ $# -gt 0 ]; do
             koji_build_rpm="1"
             ;;
         --update-projects )
-            update_projects="1"
+            opt_update_projects="1"
+            exit_right_away=1
+            ;;
+        --clean-projects )
+            opt_clean_projects="1"
+            exit_right_away=1
             ;;
         --koji-wait-for-build )
             koji_wait_for_build_option=""
@@ -338,8 +391,12 @@ while [ $# -gt 0 ]; do
             shift
             koji_config_profile="$1"
             ;;
+        --show-llvm-version )
+            opt_show_llvm_version="1"
+            exit_right_away=1
+            ;;
         --verbose )
-            verbose="1"
+            opt_verbose="1"
             ;;
         -h | -help | --help )
             usage
@@ -354,7 +411,14 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-[[ "${verbose}" != "" ]] && set -x
+[[ "${opt_verbose}" != "" ]] && set -x
+[[ "${opt_show_llvm_version}" != "" ]] && get_llvm_version && show_llvm_version
+[[ "${opt_mock_scrub}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
+[[ "${opt_mock_clean}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
+[[ "${opt_clean_projects}" != "" ]] && clean_submodules
+[[ "${opt_update_projects}" != "" ]] && update_submodules
+[[ "${exit_right_away}" != "" ]] && exit 0
 
 build_snapshot
+
 exit 0
