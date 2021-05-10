@@ -264,7 +264,7 @@ build_snapshot() {
         rpmspec ${verbose_flag} -q ${with_compat} ${spec_file}  
         
         # Download files from the specfile into the project directory
-        rpmdev-spectool -g -a -C . $spec_file
+        rpmdev-spectool -f -g -a -C . $spec_file
 
         # Build SRPM
         time mock ${verbose_flag} -r ${cur_dir}/rawhide-mock.cfg \
