@@ -15,13 +15,6 @@ rpms_dir=${out_dir}/rpms
 srpms_dir=${out_dir}/srpms
 mkdir -pv ${out_dir} ${rpms_dir} ${srpms_dir}
 
-v_flag=""
-verbose_flag=""
-s_flag="-s"
-silent_flag="--silent"
-q_flag="-q"
-quiet_flag="--quiet"
-
 #############################################################################
 # These vars can be adjusted with the options passing to this script:
 #############################################################################
@@ -147,7 +140,7 @@ OPTIONS
   --update-projects                         Fetch the latest updates for all git submodules and exit.
   --clean-projects                          Clean git project submodules and exit. Removes untracked files and reset back
                                             to content from upstream.
-  --verbose                                 Toggle on output from "set -x" and add --verbose/-v flags to supported commands.
+  --verbose                                 Toggle on output from "set -x".
   --show-llvm-version                       Prints the version for the given date (see --yyyymmdd) and exits.
   --generate-snapshot-spec-files            Generates snapshot spec files for the given date (see --yyyymmdd)
                                             and projects (see --projects), then exits.
@@ -261,13 +254,13 @@ build_snapshot() {
         fi
 
         # Show which packages will be build with this spec file
-        rpmspec ${verbose_flag} -q ${with_compat} ${spec_file}  
+        rpmspec -q ${with_compat} ${spec_file}  
         
         # Download files from the specfile into the project directory
         rpmdev-spectool -f -g -a -C . $spec_file
 
         # Build SRPM
-        time mock ${verbose_flag} -r ${cur_dir}/rawhide-mock.cfg \
+        time mock -r ${cur_dir}/rawhide-mock.cfg \
             --spec=$spec_file \
             --sources=$PWD \
             --buildsrpm \
@@ -279,7 +272,7 @@ build_snapshot() {
         
         if [ "${koji_build_rpm}" != "" ]; then
             pushd $cur_dir
-            koji ${quiet_flag} \
+            koji \
                 --config=${koji_config_path} \
                 -p ${koji_config_profile} \
                 build ${koji_wait_for_build_option} \
@@ -289,7 +282,7 @@ build_snapshot() {
 
         if [ "${mock_build_rpm}" != "" ]; then
             pushd $projects_dir/$proj
-            time mock ${verbose_flag} -r ${cur_dir}/rawhide-mock.cfg \
+            time mock -r ${cur_dir}/rawhide-mock.cfg \
                 --rebuild ${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm \
                 --resultdir=${rpms_dir} \
                 --no-cleanup-after \
@@ -307,7 +300,7 @@ build_snapshot() {
             done
             if [ "${mock_compat_install_cmd}" != "" ]; then
                 pushd $projects_dir/$proj
-                time mock ${verbose_flag} -r ${cur_dir}/rawhide-mock.cfg ${mock_compat_install_cmd}
+                time mock -r ${cur_dir}/rawhide-mock.cfg ${mock_compat_install_cmd}
                 popd
             fi
         fi         
@@ -420,13 +413,6 @@ while [ $# -gt 0 ]; do
             ;;
         --verbose )
             opt_verbose="1"
-            # Flip switches
-            v_flag="-v"
-            verbose_flag="--verbose"
-            s_flag=""
-            silent_flag=""
-            q_flag=""
-            quiet_flag=""
             ;;
         --generate-snapshot-spec-files )
             opt_generate_snapshot_spec_files="1"
@@ -447,8 +433,8 @@ done
 
 [[ "${opt_verbose}" != "" ]] && set -x
 [[ "${opt_show_llvm_version}" != "" ]] && get_llvm_version && show_llvm_version
-[[ "${opt_mock_scrub}" != "" ]] && mock ${verbose_flag} ${quiet_flag} -r ${cur_dir}/rawhide-mock.cfg --scrub all
-[[ "${opt_mock_clean}" != "" ]] && mock ${verbose_flag} ${quiet_flag} -r ${cur_dir}/rawhide-mock.cfg --clean
+[[ "${opt_mock_scrub}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
+[[ "${opt_mock_clean}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
 [[ "${opt_clean_projects}" != "" ]] && clean_submodules
 [[ "${opt_update_projects}" != "" ]] && update_submodules
 [[ "${opt_generate_snapshot_spec_files}" != "" ]] && generate_snapshot_spec_files
