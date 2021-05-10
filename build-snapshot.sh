@@ -24,7 +24,7 @@ mkdir -pv ${out_dir} ${rpms_dir} ${srpms_dir}
 # NOTE: When overwriting this from the outside, only shorten the list of
 # projects to build or add to it but do not pick out individual projects to
 # build. This is not tested.
-projects="llvm clang lld compiler-rt"
+projects="python-lit llvm clang lld compiler-rt"
 
 # The current date (e.g. 20210427) is used to determine from which tarball a
 # snapshot of LLVM is being built.
@@ -109,7 +109,7 @@ OPTIONS
 -------
 
   --yyyymmdd "<YYYYMMDD>"                   The date digits in reverse form of for which to build the snapshot (defaults to today, e.g. "$(date +%Y%m%d)").
-  --projects "<X Y Z>"                      LLVM sub-projects to build (defaults to "llvm clang lld compiler-rt").
+  --projects "<X Y Z>"                      LLVM sub-projects to build (defaults to "python-lit llvm clang lld compiler-rt").
                                             Please note that the order is important and packages depend on each other.
                                             Only tweak if you know what you're doing.
   

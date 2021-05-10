@@ -42,3 +42,7 @@
 	path = projects/llvm
 	url = https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git
 	branch = snapshot-build
+[submodule "projects/python-lit"]
+	path = projects/python-lit
+	url = https://src.fedoraproject.org/forks/kkleine/rpms/python-lit.git
+	branch = snapshot-build
