@@ -334,7 +334,9 @@ clean_submodules() {
 # branch.
 update_submodules() {
     pushd $cur_dir
-    git submodule update --remote
+    for proj in $projects; do
+        git submodule update --remote projects/$proj
+    done
     popd
 }
 
