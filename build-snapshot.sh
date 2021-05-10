@@ -257,7 +257,7 @@ build_snapshot() {
         rpmspec -q ${with_compat} ${spec_file}  
         
         # Download files from the specfile into the project directory
-        rpmdev-spectool -f -g -a -C . $spec_file
+        rpmdev-spectool --force -g -a -C . $spec_file
 
         # Build SRPM
         time mock -r ${cur_dir}/rawhide-mock.cfg \
@@ -281,9 +281,13 @@ build_snapshot() {
         fi
 
         if [ "${mock_build_rpm}" != "" ]; then
+            srpm="${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm"
+            if [[ "${with_compat}" != "" ]]; then
+                srpm=$(find ${srpms_dir} -regex ".*${proj}[0-9]+-.*")
+            fi
             pushd $projects_dir/$proj
             time mock -r ${cur_dir}/rawhide-mock.cfg \
-                --rebuild ${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm \
+                --rebuild ${srpm} \
                 --resultdir=${rpms_dir} \
                 --no-cleanup-after \
                 --no-clean \
