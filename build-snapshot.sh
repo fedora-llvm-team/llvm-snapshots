@@ -13,7 +13,7 @@ projects_dir=${cur_dir}/projects
 out_dir=${cur_dir}/out
 rpms_dir=${out_dir}/rpms
 srpms_dir=${out_dir}/srpms
-mkdir -pv ${out_dir} ${rpms_dir} ${srpms_dir}
+mkdir -pv ${out_dir} ${rpms_dir} ${srpms_dir} ${projects_dir}
 
 #############################################################################
 # These vars can be adjusted with the options passing to this script:
@@ -137,9 +137,8 @@ OPTIONS
   
   Misc:
 
-  --update-projects                         Fetch the latest updates for all git submodules and exit.
-  --clean-projects                          Clean git project submodules and exit. Removes untracked files and reset back
-                                            to content from upstream.
+  --reset-projects                          Remove projects and fetch them again.
+  --clean-projects                          Removes untracked files in each project and resets it back to HEAD.
   --verbose                                 Toggle on output from "set -x".
   --show-llvm-version                       Prints the version for the given date (see --yyyymmdd) and exits.
   --generate-snapshot-spec-files            Generates snapshot spec files for the given date (see --yyyymmdd)
@@ -234,6 +233,7 @@ EOF
 
 
 build_snapshot() {
+    [[ -d ${projects_dir} ]] && reset_projects
     get_llvm_version
     show_llvm_version
     generate_snapshot_spec_files
@@ -321,27 +321,24 @@ generate_snapshot_spec_files() {
     done
 }
 
-# Clean submodules and remove untracked files and reset back to content from
-# upstream. If you need to update a submodule to the latest version, please do
-# git submodule update --remote projects/<YOURPROJECT>. 
-clean_submodules() {
-    pushd $cur_dir
-    git submodule init
-    git submodule update --force
-    git submodule foreach --recursive git clean -f
-    git submodule foreach --recursive git clean -f -d
-    git submodule foreach --recursive git reset --hard HEAD
-    popd
+# Clean projects and remove untracked files and reset back to content from
+# HEAD. 
+clean_projects() {
+    for proj in $projects; do
+        git -C ${projects_dir}/$proj clean -f
+        git -C ${projects_dir}/$proj clean -f -d
+        git -C ${projects_dir}/$proj reset --hard HEAD
+    done
 }
 
-# Updates the LLVM sub-project submodules with the latest version of the tracked
-# branch.
-update_submodules() {
-    pushd $cur_dir
+# Updates the LLVM projects with the latest version of the tracked branch.
+reset_projects() {
+    rm -rf $projects_dir
     for proj in $projects; do
-        git submodule update --remote projects/$proj
+        git clone --origin kkleine --branch snapshot-build https://src.fedoraproject.org/forks/kkleine/rpms/$proj.git ${projects_dir}/$proj
+        git -C ${projects_dir}/$proj remote add upstream https://src.fedoraproject.org/rpms/$proj.git
+        git -C ${projects_dir}/$proj fetch upstream
     done
-    popd
 }
 
 
@@ -350,7 +347,7 @@ opt_mock_clean=""
 opt_mock_scrub=""
 opt_verbose=""
 opt_clean_projects=""
-opt_update_projects=""
+opt_reset_projects=""
 opt_show_llvm_version=""
 opt_generate_snapshot_spec_files=""
 
@@ -392,8 +389,8 @@ while [ $# -gt 0 ]; do
         --koji-build-rpm )
             koji_build_rpm="1"
             ;;
-        --update-projects )
-            opt_update_projects="1"
+        --reset-projects )
+            opt_reset_projects="1"
             exit_right_away=1
             ;;
         --clean-projects )
@@ -439,8 +436,8 @@ done
 [[ "${opt_show_llvm_version}" != "" ]] && get_llvm_version && show_llvm_version
 [[ "${opt_mock_scrub}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
 [[ "${opt_mock_clean}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
-[[ "${opt_clean_projects}" != "" ]] && clean_submodules
-[[ "${opt_update_projects}" != "" ]] && update_submodules
+[[ "${opt_clean_projects}" != "" ]] && clean_projects
+[[ "${opt_reset_projects}" != "" ]] && reset_projects
 [[ "${opt_generate_snapshot_spec_files}" != "" ]] && generate_snapshot_spec_files
 [[ "${exit_right_away}" != "" ]] && exit 0
 
