@@ -233,7 +233,21 @@ EOF
 
 
 build_snapshot() {
-    [[ -d ${projects_dir} ]] && reset_projects
+    [[ ! -d ${projects_dir} ]] && reset_projects
+
+    # Checkout rawhide branch from upstream if building compat package
+    if [ "${mock_build_compat_packages}" != "" ]; then    
+        for proj in $projects; do
+            git -C ${projects_dir}/$proj reset --hard upstream/rawhide
+        done
+    else
+        for proj in $projects; do
+            git -C ${projects_dir}/$proj reset --hard kkleine/snapshot-build
+        done
+    fi
+
+    clean_projects
+
     get_llvm_version
     show_llvm_version
     generate_snapshot_spec_files

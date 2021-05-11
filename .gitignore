@@ -4,6 +4,7 @@ out/*
 combined.*.log
 
 repos/*
+projects/*
 
 koji-psi-platform-tools-ci.pem
 koji-serverca.crt
