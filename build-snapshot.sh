@@ -33,12 +33,13 @@ yyyymmdd="$(date +%Y%m%d)"
 mock_build_rpm=""
 mock_check_option="--nocheck"
 mock_config_path="${cur_dir}/rawhide-mock.cfg"
-mock_build_compat_packages=""
 mock_install_compat_packages=""
 koji_build_rpm=""
 koji_wait_for_build_option="--nowait"
 koji_config_path="koji.conf"
 koji_config_profile="koji-clang"
+
+build_compat_packages=""
 
 #############################################################################
 #############################################################################
@@ -102,7 +103,7 @@ Usage: ${script}
             [--update-projects]
             [--clean-projects]
             [--verbose]
-            [--generate-snapshot-spec-files]
+            [--generate-spec-files]
             
 
 OPTIONS
@@ -121,8 +122,6 @@ OPTIONS
   --mock-clean                              Clean the mock environment and exit.
   --mock-scrub                              Wipe away the entire mock environment and exit.
   --mock-config-path                        Path to mock configuration file (defaults to "${cur_dir}/rawhide-mock.cfg").
-  --mock-build-compat-packages              Will build the compatibility packages of the given projects (by passing
-                                            "--with=compat_build" to mock).
                                             NOTE: When this option is given, no snapshot package will be built. Just invoke the script a second time.
   --mock-install-compat-packages            Installs the compatibility packages for the given projects into the mock environment.
                                             Make sure you've build them before (using "--mock-build-compat-packages").
@@ -137,12 +136,15 @@ OPTIONS
   
   Misc:
 
+  --build-compat-packages                   Will build the compatibility packages of the given projects (by having a spec file
+                                            that activates the compat_build build condition).
   --reset-projects                          Remove projects and fetch them again.
   --clean-projects                          Removes untracked files in each project and resets it back to HEAD.
   --verbose                                 Toggle on output from "set -x".
   --show-llvm-version                       Prints the version for the given date (see --yyyymmdd) and exits.
-  --generate-snapshot-spec-files            Generates snapshot spec files for the given date (see --yyyymmdd)
-                                            and projects (see --projects), then exits.
+  --generate-spec-files                     Generates snapshot spec files for the given date (see --yyyymmdd)
+                                            and projects (see --projects), then exits. When --build-compat-packages is given
+                                            the spec file is not snapshot specific.
 
 EXAMPLE VALUES FOR PLACEHOLDERS
 -------------------------------
@@ -231,12 +233,33 @@ EOF
     cat ${orig_file} >> ${out_file}
 }
 
+new_compat_spec_file() {
+    local orig_file=$1
+    local out_file=$2
+
+    cat <<EOF > ${out_file}
+################################################################################
+# BEGIN COMPAT PREFIX
+################################################################################
+
+%global _with_compat_build 1
+
+################################################################################
+# END COMPAT PREFIX
+################################################################################
+
+EOF
+    
+    cat ${orig_file} >> ${out_file}
+}
+
+
 
 build_snapshot() {
     reset_projects
     
     # Checkout rawhide branch from upstream if building compat package
-    if [ "${mock_build_compat_packages}" != "" ]; then    
+    if [ "${build_compat_packages}" != "" ]; then    
         for proj in $projects; do
             git -C ${projects_dir}/$proj reset --hard upstream/rawhide
         done
@@ -250,7 +273,7 @@ build_snapshot() {
 
     get_llvm_version
     show_llvm_version
-    generate_snapshot_spec_files
+    generate_spec_files
     
     # Extract for which Fedora Core version (e.g. fc34) we build packages.
     # This is like the ongoing version number for the rolling Fedora "rawhide" release.
@@ -262,8 +285,8 @@ build_snapshot() {
         spec_file=$projects_dir/$proj/$proj.snapshot.spec
 
         with_compat=""
-        if [ "${mock_build_compat_packages}" != "" ]; then
-            spec_file="$projects_dir/$proj/$proj.spec"
+        if [ "${build_compat_packages}" != "" ]; then
+            spec_file="$projects_dir/$proj/$proj.compat.spec"
             with_compat="--with=compat_build"
         fi
 
@@ -326,13 +349,18 @@ build_snapshot() {
     done
 }
 
-generate_snapshot_spec_files() {
+generate_spec_files() {
     if [[ "${llvm_version}" == "" ]]; then
         get_llvm_version
     fi
     for proj in $projects; do
-        spec_file=$projects_dir/$proj/$proj.snapshot.spec
-        new_snapshot_spec_file "$projects_dir/$proj/$proj.spec" ${spec_file} ${llvm_version} ${llvm_git_revision} ${yyyymmdd}
+        if [ "${build_compat_packages}" != "" ]; then
+            spec_file=$projects_dir/$proj/$proj.compat.spec
+            new_compat_spec_file "$projects_dir/$proj/$proj.spec" ${spec_file}
+        else
+            spec_file=$projects_dir/$proj/$proj.snapshot.spec
+            new_snapshot_spec_file "$projects_dir/$proj/$proj.spec" ${spec_file} ${llvm_version} ${llvm_git_revision} ${yyyymmdd}
+        fi
     done
 }
 
@@ -364,7 +392,7 @@ opt_verbose=""
 opt_clean_projects=""
 opt_reset_projects=""
 opt_show_llvm_version=""
-opt_generate_snapshot_spec_files=""
+opt_generate_spec_files=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -394,9 +422,8 @@ while [ $# -gt 0 ]; do
             shift
             mock_config_path="$1"
             ;;
-        --mock-build-compat-packages )
-            mock_build_compat_packages="1"
-            mock_build_rpm="1"
+        --build-compat-packages )
+            build_compat_packages="1"
             ;;
         --mock-install-compat-packages )
             mock_install_compat_packages="1"
@@ -430,8 +457,8 @@ while [ $# -gt 0 ]; do
         --verbose )
             opt_verbose="1"
             ;;
-        --generate-snapshot-spec-files )
-            opt_generate_snapshot_spec_files="1"
+        --generate-spec-files )
+            opt_generate_spec_files="1"
             exit_right_away=1
             ;;
         -h | -help | --help )
@@ -453,7 +480,7 @@ done
 [[ "${opt_mock_clean}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
 [[ "${opt_clean_projects}" != "" ]] && clean_projects
 [[ "${opt_reset_projects}" != "" ]] && reset_projects
-[[ "${opt_generate_snapshot_spec_files}" != "" ]] && generate_snapshot_spec_files
+[[ "${opt_generate_spec_files}" != "" ]] && generate_spec_files
 [[ "${exit_right_away}" != "" ]] && exit 0
 
 build_snapshot
