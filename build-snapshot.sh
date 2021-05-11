@@ -233,8 +233,8 @@ EOF
 
 
 build_snapshot() {
-    [[ ! -d ${projects_dir} ]] && reset_projects
-
+    reset_projects
+    
     # Checkout rawhide branch from upstream if building compat package
     if [ "${mock_build_compat_packages}" != "" ]; then    
         for proj in $projects; do
@@ -284,21 +284,22 @@ build_snapshot() {
             --isolation=simple ${mock_check_option} ${with_compat}
         popd
         
+        srpm="${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm"
+        if [[ "${with_compat}" != "" ]]; then
+            srpm=$(find ${srpms_dir} -regex ".*${proj}[0-9]+-.*")
+        fi
+
         if [ "${koji_build_rpm}" != "" ]; then
             pushd $cur_dir
             koji \
                 --config=${koji_config_path} \
                 -p ${koji_config_profile} \
                 build ${koji_wait_for_build_option} \
-                f${fc_version}-llvm-snapshot ${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm
+                f${fc_version}-llvm-snapshot ${srpm}
             popd
         fi
 
         if [ "${mock_build_rpm}" != "" ]; then
-            srpm="${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm"
-            if [[ "${with_compat}" != "" ]]; then
-                srpm=$(find ${srpms_dir} -regex ".*${proj}[0-9]+-.*")
-            fi
             pushd $projects_dir/$proj
             time mock -r ${cur_dir}/rawhide-mock.cfg \
                 --rebuild ${srpm} \
