@@ -15,6 +15,11 @@ rpms_dir=${out_dir}/rpms
 srpms_dir=${out_dir}/srpms
 mkdir -pv ${out_dir} ${rpms_dir} ${srpms_dir} ${projects_dir}
 
+# Write a fresh mock config
+export REPO_DIR=$rpms_dir
+cat $cur_dir/mock.cfg.in | envsubst '$REPO_DIR' > $cur_dir/mock.cfg
+unset REPO_DIR
+
 #############################################################################
 # These vars can be adjusted with the options passing to this script:
 #############################################################################
@@ -119,8 +124,7 @@ OPTIONS
   --mock-build-rpm                          Build RPMs (also) using mock. (Please note that SRPMs are always built with mock.)
                                             Please note that --koji-build-rpm and --mock-build-rpm are not mutually exclusive.
   --mock-check-rpm                          Omit the "--nocheck" option from any mock call. (Reasoning: for snapshots we don't want to run "make check".)
-  --mock-clean                              Clean the mock environment and exit.
-  --mock-scrub                              Wipe away the entire mock environment and exit.
+  --mock-clean                              Remove mock chroot and cache and exit.
   --mock-config-path                        Path to mock configuration file (defaults to "${cur_dir}/rawhide-mock.cfg").
                                             NOTE: When this option is given, no snapshot package will be built. Just invoke the script a second time.
   --mock-install-compat-packages            Installs the compatibility packages for the given projects into the mock environment.
@@ -297,13 +301,11 @@ build_snapshot() {
         rpmdev-spectool --force -g -a -C . $spec_file
 
         # Build SRPM
-        time mock -r ${cur_dir}/rawhide-mock.cfg \
+        time mock -r ${cur_dir}/mock.cfg \
             --spec=$spec_file \
             --sources=$PWD \
             --buildsrpm \
             --resultdir=$srpms_dir \
-            --no-cleanup-after \
-            --no-clean \
             --isolation=simple ${mock_check_option} ${with_compat}
         popd
         
@@ -322,15 +324,19 @@ build_snapshot() {
             popd
         fi
 
+        # Let's create or update the snapshot repo directory with whatever
+        # packages are currently in there.
+        createrepo --update $rpms_dir
+
         if [ "${mock_build_rpm}" != "" ]; then
             pushd $projects_dir/$proj
-            time mock -r ${cur_dir}/rawhide-mock.cfg \
+            time mock -r ${cur_dir}/mock.cfg \
                 --rebuild ${srpm} \
                 --resultdir=${rpms_dir} \
                 --no-cleanup-after \
                 --no-clean \
                 --isolation=simple \
-                --postinstall ${mock_check_option} ${with_compat}
+                ${mock_check_option} ${with_compat}
             popd
         fi
 
@@ -342,7 +348,7 @@ build_snapshot() {
             done
             if [ "${mock_compat_install_cmd}" != "" ]; then
                 pushd $projects_dir/$proj
-                time mock -r ${cur_dir}/rawhide-mock.cfg ${mock_compat_install_cmd}
+                time mock -r ${cur_dir}/mock.cfg ${mock_compat_install_cmd}
                 popd
             fi
         fi         
@@ -408,12 +414,9 @@ while [ $# -gt 0 ]; do
             opt_mock_clean="1"
             exit_right_away=1
             ;;
-        --mock-scrub )
-            opt_mock_scrub="1"
-            exit_right_away=1
-            ;;
         --mock-build-rpm )
             mock_build_rpm="1"
+            exit_right_away=""
             ;;
         --mock-check-rpm )
             mock_check_option=""
@@ -427,9 +430,11 @@ while [ $# -gt 0 ]; do
             ;;
         --mock-install-compat-packages )
             mock_install_compat_packages="1"
+            exit_right_away=""
             ;;
         --koji-build-rpm )
             koji_build_rpm="1"
+            exit_right_away=""
             ;;
         --reset-projects )
             opt_reset_projects="1"
@@ -476,8 +481,8 @@ done
 
 [[ "${opt_verbose}" != "" ]] && set -x
 [[ "${opt_show_llvm_version}" != "" ]] && get_llvm_version && show_llvm_version
-[[ "${opt_mock_scrub}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --scrub all
-[[ "${opt_mock_clean}" != "" ]] && mock -r ${cur_dir}/rawhide-mock.cfg --clean
+[[ "${opt_mock_scrub}" != "" ]] && mock -r ${cur_dir}/mock.cfg --scrub all
+[[ "${opt_mock_clean}" != "" ]] && mock -r ${cur_dir}/mock.cfg --clean
 [[ "${opt_clean_projects}" != "" ]] && clean_projects
 [[ "${opt_reset_projects}" != "" ]] && reset_projects
 [[ "${opt_generate_spec_files}" != "" ]] && generate_spec_files

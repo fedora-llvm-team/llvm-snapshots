@@ -2,6 +2,7 @@ tmp/
 out/*
 !out/README.md
 combined.*.log
+mock.cfg
 
 repos/*
 projects/*
