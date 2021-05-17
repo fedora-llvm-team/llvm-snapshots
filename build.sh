@@ -323,7 +323,7 @@ build_snapshot() {
                 f${fc_version}-llvm-snapshot ${srpm}
             popd
         fi
-        
+
         if [ "${mock_build_rpm}" != "" ]; then
             # Let's create or update the snapshot repo directory with whatever
             # packages are currently in there.
@@ -385,7 +385,8 @@ reset_projects() {
     rm -rf $projects_dir
     for proj in $projects; do
         git clone --origin kkleine --branch snapshot-build https://src.fedoraproject.org/forks/kkleine/rpms/$proj.git ${projects_dir}/$proj
-        git -C ${projects_dir}/$proj remote add upstream https://src.fedoraproject.org/rpms/$proj.git
+        # TODO(kwk): Once upstream does work, change back to: https://src.fedoraproject.org/rpms/$proj.git
+        git -C ${projects_dir}/$proj remote add upstream https://src.fedoraproject.org/forks/kkleine/rpms/$proj.git
         git -C ${projects_dir}/$proj fetch upstream
     done
 }
