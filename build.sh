@@ -323,21 +323,21 @@ build_snapshot() {
                 f${fc_version}-llvm-snapshot ${srpm}
             popd
         fi
-
-        # Let's create or update the snapshot repo directory with whatever
-        # packages are currently in there.
-        createrepo --update $rpms_dir
-
+        
         if [ "${mock_build_rpm}" != "" ]; then
+            # Let's create or update the snapshot repo directory with whatever
+            # packages are currently in there.
+            createrepo --update $rpms_dir
+
             pushd $projects_dir/$proj
             time mock -r ${cur_dir}/mock.cfg \
                 --rebuild ${srpm} \
                 --resultdir=${rpms_dir} \
-                --no-cleanup-after \
-                --no-clean \
                 --isolation=simple \
                 ${mock_check_option} ${with_compat}
             popd
+
+            createrepo --update $rpms_dir
         fi
 
         if [ "${mock_install_compat_packages}" != "" ]; then
