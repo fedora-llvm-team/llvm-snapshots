@@ -96,8 +96,7 @@ Build LLVM snapshot SRPMs using mock and optionally RPMs using mock and/or koji.
 Usage: ${script}
             [--yyyymmdd <YYYYMMDD>]
             [--projects "llvm clang lld compiler-rt"]
-            [--mock-clean]
-            [--mock-scrub]
+            [--mock-wipe]
             [--mock-build-rpm]
             [--mock-check-rpm]
             [--mock-config-path "/path/to/mock.cfg"]
@@ -124,7 +123,7 @@ OPTIONS
   --mock-build-rpm                          Build RPMs (also) using mock. (Please note that SRPMs are always built with mock.)
                                             Please note that --koji-build-rpm and --mock-build-rpm are not mutually exclusive.
   --mock-check-rpm                          Omit the "--nocheck" option from any mock call. (Reasoning: for snapshots we don't want to run "make check".)
-  --mock-clean                              Remove mock chroot and cache and exit.
+  --mock-wipe                               Remove mock chroot and cache and exit.
   --mock-config-path                        Path to mock configuration file (defaults to "${cur_dir}/rawhide-mock.cfg").
                                             NOTE: When this option is given, no snapshot package will be built. Just invoke the script a second time.
   --mock-install-compat-packages            Installs the compatibility packages for the given projects into the mock environment.
@@ -286,6 +285,9 @@ build_snapshot() {
     for proj in $projects; do
         pushd $projects_dir/$proj
 
+        # Clean mock before building.
+        mock -r ${cur_dir}/mock.cfg --clean
+        
         spec_file=$projects_dir/$proj/$proj.snapshot.spec
 
         with_compat=""
@@ -334,6 +336,7 @@ build_snapshot() {
                 --rebuild ${srpm} \
                 --resultdir=${rpms_dir} \
                 --isolation=simple \
+                --no-cleanup-after \
                 ${mock_check_option} ${with_compat}
             popd
 
@@ -393,8 +396,7 @@ reset_projects() {
 
 
 exit_right_away=""
-opt_mock_clean=""
-opt_mock_scrub=""
+opt_mock_wipe=""
 opt_verbose=""
 opt_clean_projects=""
 opt_reset_projects=""
@@ -411,8 +413,8 @@ while [ $# -gt 0 ]; do
             shift
             projects="$1"
             ;;
-        --mock-clean )
-            opt_mock_clean="1"
+        --mock-wipe )
+            opt_mock_wipe="1"
             exit_right_away=1
             ;;
         --mock-build-rpm )
@@ -482,8 +484,7 @@ done
 
 [[ "${opt_verbose}" != "" ]] && set -x
 [[ "${opt_show_llvm_version}" != "" ]] && get_llvm_version && show_llvm_version
-[[ "${opt_mock_scrub}" != "" ]] && mock -r ${cur_dir}/mock.cfg --scrub all
-[[ "${opt_mock_clean}" != "" ]] && mock -r ${cur_dir}/mock.cfg --clean
+[[ "${opt_mock_wipe}" != "" ]] && mock -r ${cur_dir}/mock.cfg --scrub all
 [[ "${opt_clean_projects}" != "" ]] && clean_projects
 [[ "${opt_reset_projects}" != "" ]] && reset_projects
 [[ "${opt_generate_spec_files}" != "" ]] && generate_spec_files
