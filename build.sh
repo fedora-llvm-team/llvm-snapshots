@@ -30,7 +30,7 @@ unset REPO_DIR
 # NOTE: When overwriting this from the outside, only shorten the list of
 # projects to build or add to it but do not pick out individual projects to
 # build. This is not tested.
-projects="python-lit llvm clang lld compiler-rt"
+projects="python-lit llvm clang lld compiler-rt"g
 
 # The current date (e.g. 20210427) is used to determine from which tarball a
 # snapshot of LLVM is being built.
@@ -58,9 +58,9 @@ llvm_version_minor=""
 llvm_version_patch=""
 
 get_llvm_version() {
-    url="https://github.com/kwk/llvm-project/releases/download/source-snapshot/llvm-release-${yyyymmdd}.txt"
+    local url="https://github.com/kwk/llvm-project/releases/download/source-snapshot/llvm-release-${yyyymmdd}.txt"
     llvm_version=$(curl -sfL "$url")
-    ret=$?
+    local ret=$?
     if [[ $ret -ne 0 ]]; then
         echo "ERROR: failed to get llvm version from $url"
         exit 1
@@ -90,7 +90,7 @@ EOF
 }
 
 usage() {
-script=$(basename $0)
+local script=$(basename $0)
 cat <<EOF
 Build LLVM snapshot SRPMs using mock and optionally RPMs using mock and/or koji.
 
@@ -281,7 +281,7 @@ build_snapshot() {
     
     # Extract for which Fedora Core version (e.g. fc34) we build packages.
     # This is like the ongoing version number for the rolling Fedora "rawhide" release.
-    fc_version=$(grep -ioP "config_opts\['releasever'\] = '\K[0-9]+" /etc/mock/templates/fedora-rawhide.tpl)
+    local fc_version=$(grep -ioP "config_opts\['releasever'\] = '\K[0-9]+" /etc/mock/templates/fedora-rawhide.tpl)
 
     for proj in $projects; do
         pushd $projects_dir/$proj
@@ -289,9 +289,9 @@ build_snapshot() {
         # Clean mock before building.
         mock -r ${cur_dir}/mock.cfg --clean
         
-        spec_file=$projects_dir/$proj/$proj.snapshot.spec
+        local spec_file=$projects_dir/$proj/$proj.snapshot.spec
 
-        with_compat=""
+        local with_compat=""
         if [ "${build_compat_packages}" != "" ]; then
             spec_file="$projects_dir/$proj/$proj.compat.spec"
             with_compat="--with=compat_build"
@@ -312,7 +312,7 @@ build_snapshot() {
             --isolation=simple ${mock_check_option} ${with_compat}
         popd
         
-        srpm="${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm"
+        local srpm="${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm"
         if [[ "${with_compat}" != "" ]]; then
             srpm=$(find ${srpms_dir} -regex ".*${proj}[0-9]+-.*")
         fi
@@ -345,8 +345,8 @@ build_snapshot() {
         fi
 
         if [ "${mock_install_compat_packages}" != "" ]; then
-            compat_packages="$(rpmspec -q --with=compat_build $projects_dir/$proj/$proj.spec)"
-            mock_compat_install_cmd=""
+            local compat_packages="$(rpmspec -q --with=compat_build $projects_dir/$proj/$proj.spec)"
+            local mock_compat_install_cmd=""
             for p in "${compat_packages}"; do
                 mock_compat_install_cmd="$mock_compat_install_cmd -i ${rpms_dir}/$p.rpm"
             done
