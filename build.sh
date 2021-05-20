@@ -16,6 +16,7 @@ srpms_dir=${out_dir}/srpms
 mkdir -pv ${out_dir} ${rpms_dir} ${srpms_dir} ${projects_dir}
 
 # Write a fresh mock config
+createrepo --update $rpms_dir
 export REPO_DIR=$rpms_dir
 cat $cur_dir/mock.cfg.in | envsubst '$REPO_DIR' > $cur_dir/mock.cfg
 unset REPO_DIR
