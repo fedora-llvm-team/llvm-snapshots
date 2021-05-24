@@ -30,7 +30,7 @@ unset REPO_DIR
 # NOTE: When overwriting this from the outside, only shorten the list of
 # projects to build or add to it but do not pick out individual projects to
 # build. This is not tested.
-projects="python-lit llvm clang lld compiler-rt mlir"
+projects="python-lit llvm clang lld compiler-rt mlir lldb"
 
 # The current date (e.g. 20210427) is used to determine from which tarball a
 # snapshot of LLVM is being built.
