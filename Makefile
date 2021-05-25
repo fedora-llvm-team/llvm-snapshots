@@ -1,4 +1,4 @@
-yyyymmdd := $(shell date +%Y%m%d)
+yyyymmdd ?= $(shell date +%Y%m%d)
 
 .PHONY: all
 all: snapshot
@@ -8,7 +8,7 @@ clean:
 	rm -rf out/
 
 .PHONY: snapshot
-snapshot: compat-llvm compat-clang llvm clang lld compiler-rt mlir lldb
+snapshot: compat-llvm compat-clang python-lit llvm clang lld compiler-rt mlir lldb
 	
 .PHONY: compat-llvm
 compat-llvm:
