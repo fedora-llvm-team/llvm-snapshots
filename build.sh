@@ -115,7 +115,7 @@ OPTIONS
 -------
 
   --yyyymmdd "<YYYYMMDD>"                   The date digits in reverse form of for which to build the snapshot (defaults to today, e.g. "$(date +%Y%m%d)").
-  --projects "<X Y Z>"                      LLVM sub-projects to build (defaults to "python-lit llvm clang lld compiler-rt").
+  --projects "<X Y Z>"                      LLVM sub-projects to build (defaults to "python-lit llvm clang lld compiler-rt mlir lldb").
                                             Please note that the order is important and packages depend on each other.
                                             Only tweak if you know what you're doing.
   
@@ -123,12 +123,10 @@ OPTIONS
 
   --mock-build-rpm                          Build RPMs (also) using mock. (Please note that SRPMs are always built with mock.)
                                             Please note that --koji-build-rpm and --mock-build-rpm are not mutually exclusive.
-  --mock-check-rpm                          Omit the "--nocheck" option from any mock call. (Reasoning: for snapshots we don't want to run "make check".)
+  --mock-check-rpm                          Omit the "--nocheck" option from any mock call.
   --mock-wipe                               Remove mock chroot and cache and exit.
-  --mock-config-path                        Path to mock configuration file (defaults to "${cur_dir}/rawhide-mock.cfg").
+  --mock-config-path                        Path to mock configuration file (defaults to "${cur_dir}/mock.cfg").
                                             NOTE: When this option is given, no snapshot package will be built. Just invoke the script a second time.
-  --mock-install-compat-packages            Installs the compatibility packages for the given projects into the mock environment.
-                                            Make sure you've build them before (using "--mock-build-compat-packages").
 
   Koji related:
 
@@ -153,7 +151,7 @@ OPTIONS
 EXAMPLE VALUES FOR PLACEHOLDERS
 -------------------------------
 
-  * "<X Y Z>"    -> "llvm clang lld compiler-rt"
+  * "<X Y Z>"    -> "llvm clang lld compiler-rt mlir lldb"
   * "<YYYYMMDD>" -> "20210414"
 
 EXAMPLES
@@ -342,20 +340,7 @@ build_snapshot() {
             popd
 
             createrepo --update $rpms_dir
-        fi
-
-        if [ "${mock_install_compat_packages}" != "" ]; then
-            local compat_packages="$(rpmspec -q --with=compat_build $projects_dir/$proj/$proj.spec)"
-            local mock_compat_install_cmd=""
-            for p in "${compat_packages}"; do
-                mock_compat_install_cmd="$mock_compat_install_cmd -i ${rpms_dir}/$p.rpm"
-            done
-            if [ "${mock_compat_install_cmd}" != "" ]; then
-                pushd $projects_dir/$proj
-                time mock -r ${cur_dir}/mock.cfg ${mock_compat_install_cmd}
-                popd
-            fi
-        fi         
+        fi     
     done
 }
 
@@ -431,10 +416,6 @@ while [ $# -gt 0 ]; do
             ;;
         --build-compat-packages )
             build_compat_packages="1"
-            ;;
-        --mock-install-compat-packages )
-            mock_install_compat_packages="1"
-            exit_right_away=""
             ;;
         --koji-build-rpm )
             koji_build_rpm="1"
