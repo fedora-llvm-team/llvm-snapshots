@@ -45,5 +45,5 @@ python-lit llvm clang lld compiler-rt mlir lldb:
 
 .PHONY: compat-llvm compat-clang
 compat-llvm compat-clang:
-	$(eval pkg:=$(subst koji-compat-,,$@))
+	$(eval pkg:=$(subst compat-,,$@))
 	./build.sh --mock-build-rpm --mock-check-rpm --build-compat-packages --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}"

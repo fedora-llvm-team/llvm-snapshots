@@ -183,7 +183,7 @@ EXAMPLES
 
     Clean the mock environment.
 
-        ${script} --mock-clean --mock-scrub
+        ${script} --mock-wipe
 EOF
 }
 
