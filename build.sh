@@ -18,13 +18,15 @@ bootstrap() {
     out_dir=$(realpath $out_dir)
     projects_dir=$out_dir/projects
     rpms_dir=$out_dir/rpms
-    srpms_dir=$out_dir/srpms
+    [[ -z "$srpms_dir" ]] && srpms_dir=$out_dir/srpms
+    srpms_dir=$(realpath $srpms_dir)
     mkdir -pv $out_dir $rpms_dir $srpms_dir $projects_dir
 
     # Write a fresh mock config
+    # TODO(kwk): Find a better place to do this...
     createrepo --update $rpms_dir
     export REPO_DIR=$rpms_dir
-    cat $cur_dir/mock.cfg.in | envsubst '$REPO_DIR' > $cur_dir/mock.cfg
+    cat $cur_dir/mock.cfg.in | envsubst '$REPO_DIR' > $out_dir/mock.cfg
     unset REPO_DIR
 }
 
@@ -53,6 +55,8 @@ koji_config_path="koji.conf"
 koji_config_profile="koji-clang"
 
 build_compat_packages=""
+
+opt_skip_srpm_generation=""
 
 #############################################################################
 #############################################################################
@@ -105,6 +109,8 @@ Usage: ${script}
             [--yyyymmdd <YYYYMMDD>]
             [--projects "llvm clang lld compiler-rt"]
             [--out-dir "out"]
+            [--srpms-dir "out/srpms"]
+            [--skip-srpm-generation]
             [--mock-wipe]
             [--mock-build-rpm]
             [--mock-check-rpm]
@@ -123,19 +129,23 @@ OPTIONS
 -------
 
   --yyyymmdd "<YYYYMMDD>"                   The date digits in reverse form of for which to build the snapshot (defaults to today, e.g. "$(date +%Y%m%d)").
-  --projects "<X Y Z>"                      LLVM sub-projects to build (defaults to "python-lit llvm clang lld compiler-rt mlir lldb").
+  --projects "<X Y Z>"                      LLVM sub-projects to build (defaults to "python-lit llvm clang lld compiler-rt libomp mlir lldb").
                                             Please note that the order is important and packages depend on each other.
                                             Only tweak if you know what you're doing.
   --out-dir "out"                           Directory in which to store all the artifacts (defaults to "${cur_dir}/out").
                                             The directory will be created if it doesn't exist.
-   
+  --srpms-dir "out/srpms"                   Directory in which to store srpms. Usually this is in "out/srpms". But in case you want
+                                            to reuse existing SRPMs, you can store them elsewhere. The directory will be created if it doesn't exist. 
+  --skip-srpm-generation                    By default, an SRPM is being build. But if you pass this option, it won't build one.
+                                            This makes most sense if you have pre-built them and you tell with --srpms-dir where
+                                            they exist
   Mock related:
 
   --mock-build-rpm                          Build RPMs (also) using mock. (Please note that SRPMs are always built with mock.)
                                             Please note that --koji-build-rpm and --mock-build-rpm are not mutually exclusive.
   --mock-check-rpm                          Omit the "--nocheck" option from any mock call.
   --mock-wipe                               Remove mock chroot and cache and exit.
-  --mock-config-path                        Path to mock configuration file (defaults to "${cur_dir}/mock.cfg").
+  --mock-config-path                        Path to mock configuration file (defaults to "${out_dir}/mock.cfg").
                                             NOTE: When this option is given, no snapshot package will be built. Just invoke the script a second time.
 
   Koji related:
@@ -295,7 +305,7 @@ build_snapshot() {
         pushd $projects_dir/$proj
 
         # Clean mock before building.
-        mock -r ${cur_dir}/mock.cfg --clean
+        mock -r ${out_dir}/mock.cfg --clean
         
         local spec_file=$projects_dir/$proj/$proj.snapshot.spec
 
@@ -312,12 +322,14 @@ build_snapshot() {
         rpmdev-spectool --force -g -a -C . $spec_file
 
         # Build SRPM
-        time mock -r ${cur_dir}/mock.cfg \
-            --spec=$spec_file \
-            --sources=$PWD \
-            --buildsrpm \
-            --resultdir=$srpms_dir \
-            --isolation=simple ${mock_check_option} ${with_compat}
+        if [ "${opt_skip_srpm_generation}" == "" ]; then
+            time mock -r ${out_dir}/mock.cfg \
+                --spec=$spec_file \
+                --sources=$PWD \
+                --buildsrpm \
+                --resultdir=$srpms_dir \
+                --isolation=simple ${mock_check_option} ${with_compat}
+        fi
         popd
         
         local srpm="${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm"
@@ -341,7 +353,7 @@ build_snapshot() {
             createrepo --update $rpms_dir
 
             pushd $projects_dir/$proj
-            time mock -r ${cur_dir}/mock.cfg \
+            time mock -r ${out_dir}/mock.cfg \
                 --rebuild ${srpm} \
                 --resultdir=${rpms_dir} \
                 --isolation=simple \
@@ -467,6 +479,13 @@ while [ $# -gt 0 ]; do
             shift
             out_dir="$1"
             ;;
+        --srpms-dir )
+            shift
+            srpms_dir="$1"
+            ;;
+        --skip-srpm-generation )
+            opt_skip_srpm_generation="1"
+            ;;
         -h | -help | --help )
             usage
             exit 0
@@ -485,7 +504,7 @@ done
 bootstrap
 
 [[ "${opt_show_llvm_version}" != "" ]] && get_llvm_version && show_llvm_version
-[[ "${opt_mock_wipe}" != "" ]] && mock -r ${cur_dir}/mock.cfg --scrub all
+[[ "${opt_mock_wipe}" != "" ]] && mock -r ${out_dir}/mock.cfg --scrub all
 [[ "${opt_clean_projects}" != "" ]] && clean_projects
 [[ "${opt_reset_projects}" != "" ]] && reset_projects
 [[ "${opt_generate_spec_files}" != "" ]] && generate_spec_files
