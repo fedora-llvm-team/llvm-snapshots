@@ -36,18 +36,18 @@ koji-snapshot: 	koji-python-lit \
 .PHONY: koji-python-lit  koji-llvm koji-clang koji-lld koji-compiler-rt koji-libomp koji-mlir koji-lldb
 koji-python-lit koji-llvm koji-clang koji-lld koji-compiler-rt koji-libomp koji-mlir koji-lldb:
 	$(eval pkg:=$(subst koji-,,$@))
-	./build.sh --out-dir=koji-out --koji-build-rpm --koji-wait-for-build --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}"
+	./build.sh --out-dir koji-out --koji-build-rpm --koji-wait-for-build --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}"
 
 .PHONY: koji-compat-llvm koji-compat-clang
 koji-compat-llvm koji-compat-clang:
 	$(eval pkg:=$(subst koji-compat-,,$@))
-	./build.sh --out-dir=koji-out --koji-build-rpm --koji-wait-for-build --build-compat-packages --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}"
+	./build.sh --out-dir koji-out --koji-build-rpm --koji-wait-for-build --build-compat-packages --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}"
 
 .PHONY:  python-lit llvm clang lld compiler-rt libomp mlir lldb
 python-lit llvm clang lld compiler-rt libomp mlir lldb:
-	./build.sh --out-dir=mock-out --mock-build-rpm --mock-check-rpm --yyyymmdd ${yyyymmdd} --verbose --projects "$@"
+	./build.sh --out-dir mock-out --mock-build-rpm --mock-check-rpm --yyyymmdd ${yyyymmdd} --verbose --projects "$@"
 
 .PHONY: compat-llvm compat-clang
 compat-llvm compat-clang:
 	$(eval pkg:=$(subst compat-,,$@))
-	./build.sh --out-dir=mock-out --mock-build-rpm --mock-check-rpm --build-compat-packages --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}"
+	./build.sh --out-dir mock-out --mock-build-rpm --mock-check-rpm --build-compat-packages --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}"
