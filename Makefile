@@ -19,6 +19,7 @@ snapshot:	compat-llvm \
 			clang \
 			lld \
 			compiler-rt \
+			libomp \
 			mlir \
 			lldb
 
@@ -28,11 +29,12 @@ koji-snapshot: 	koji-python-lit \
 				koji-clang \
 				koji-lld \
 				koji-compiler-rt \
+				koji-libomp \
 				koji-mlir \
 				koji-lldb
 
-.PHONY: koji-python-lit  koji-llvm koji-clang koji-lld koji-compiler-rt koji-mlir koji-lldb
-koji-python-lit koji-llvm koji-clang koji-lld koji-compiler-rt koji-mlir koji-lldb:
+.PHONY: koji-python-lit  koji-llvm koji-clang koji-lld koji-compiler-rt koji-libomp koji-mlir koji-lldb
+koji-python-lit koji-llvm koji-clang koji-lld koji-compiler-rt koji-libomp koji-mlir koji-lldb:
 	$(eval pkg:=$(subst koji-,,$@))
 	./build.sh --out-dir=koji-out --koji-build-rpm --koji-wait-for-build --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}"
 
@@ -41,8 +43,8 @@ koji-compat-llvm koji-compat-clang:
 	$(eval pkg:=$(subst koji-compat-,,$@))
 	./build.sh --out-dir=koji-out --koji-build-rpm --koji-wait-for-build --build-compat-packages --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}"
 
-.PHONY:  python-lit llvm clang lld compiler-rt mlir lldb
-python-lit llvm clang lld compiler-rt mlir lldb:
+.PHONY:  python-lit llvm clang lld compiler-rt libomp mlir lldb
+python-lit llvm clang lld compiler-rt libomp mlir lldb:
 	./build.sh --out-dir=mock-out --mock-build-rpm --mock-check-rpm --yyyymmdd ${yyyymmdd} --verbose --projects "$@"
 
 .PHONY: compat-llvm compat-clang
