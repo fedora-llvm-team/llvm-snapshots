@@ -5,7 +5,7 @@ all: snapshot
 
 .PHONY: clean
 clean:
-	rm -rfv out/
+	rm -rfv out koji-out mock-out
 
 .PHONY: koji-compat
 koji-compat: koji-compat-llvm \
