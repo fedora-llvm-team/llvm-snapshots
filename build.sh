@@ -9,17 +9,23 @@ set -o pipefail
 
 # Setup some directories for later use
 cur_dir=$(pwd)
-projects_dir=${cur_dir}/projects
-out_dir=${cur_dir}/out
-rpms_dir=${out_dir}/rpms
-srpms_dir=${out_dir}/srpms
-mkdir -pv ${out_dir} ${rpms_dir} ${srpms_dir} ${projects_dir}
+out_dir=$(pwd)/out
+projects_dir=
+rpms_dir=
+srpms_dir=
 
-# Write a fresh mock config
-createrepo --update $rpms_dir
-export REPO_DIR=$rpms_dir
-cat $cur_dir/mock.cfg.in | envsubst '$REPO_DIR' > $cur_dir/mock.cfg
-unset REPO_DIR
+bootstrap() {
+    projects_dir=$out_dir/projects
+    rpms_dir=$out_dir/rpms
+    srpms_dir=$out_dir/srpms
+    mkdir -pv $out_dir $rpms_dir $srpms_dir $projects_dir
+
+    # Write a fresh mock config
+    createrepo --update $rpms_dir
+    export REPO_DIR=$rpms_dir
+    cat $cur_dir/mock.cfg.in | envsubst '$REPO_DIR' > $cur_dir/mock.cfg
+    unset REPO_DIR
+}
 
 #############################################################################
 # These vars can be adjusted with the options passing to this script:
@@ -97,6 +103,7 @@ Build LLVM snapshot SRPMs using mock and optionally RPMs using mock and/or koji.
 Usage: ${script}
             [--yyyymmdd <YYYYMMDD>]
             [--projects "llvm clang lld compiler-rt"]
+            [--out-dir "out"]
             [--mock-wipe]
             [--mock-build-rpm]
             [--mock-check-rpm]
@@ -118,7 +125,9 @@ OPTIONS
   --projects "<X Y Z>"                      LLVM sub-projects to build (defaults to "python-lit llvm clang lld compiler-rt mlir lldb").
                                             Please note that the order is important and packages depend on each other.
                                             Only tweak if you know what you're doing.
-  
+  --out-dir "out"                           Directory in which to store all the artifacts (defaults to "${cur_dir}/out").
+                                            The directory will be created if it doesn't exist.
+   
   Mock related:
 
   --mock-build-rpm                          Build RPMs (also) using mock. (Please note that SRPMs are always built with mock.)
@@ -363,9 +372,11 @@ generate_spec_files() {
 # HEAD. 
 clean_projects() {
     for proj in $projects; do
-        git -C ${projects_dir}/$proj clean -f
-        git -C ${projects_dir}/$proj clean -f -d
-        git -C ${projects_dir}/$proj reset --hard HEAD
+        if [ -d $projects_dir/$proj ]; then
+            git -C ${projects_dir}/$proj clean -f
+            git -C ${projects_dir}/$proj clean -f -d
+            git -C ${projects_dir}/$proj reset --hard HEAD
+        fi
     done
 }
 
@@ -451,6 +462,10 @@ while [ $# -gt 0 ]; do
             opt_generate_spec_files="1"
             exit_right_away=1
             ;;
+        --out-dir )
+            shift
+            out_dir="$1"
+            ;;
         -h | -help | --help )
             usage
             exit 0
@@ -465,6 +480,9 @@ while [ $# -gt 0 ]; do
 done
 
 [[ "${opt_verbose}" != "" ]] && set -x
+
+bootstrap
+
 [[ "${opt_show_llvm_version}" != "" ]] && get_llvm_version && show_llvm_version
 [[ "${opt_mock_wipe}" != "" ]] && mock -r ${cur_dir}/mock.cfg --scrub all
 [[ "${opt_clean_projects}" != "" ]] && clean_projects
