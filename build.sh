@@ -15,6 +15,7 @@ rpms_dir=
 srpms_dir=
 
 bootstrap() {
+    out_dir=$(realpath $out_dir)
     projects_dir=$out_dir/projects
     rpms_dir=$out_dir/rpms
     srpms_dir=$out_dir/srpms
