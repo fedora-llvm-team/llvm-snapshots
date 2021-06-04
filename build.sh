@@ -278,6 +278,9 @@ EOF
 
 
 build_snapshot() {
+    get_llvm_version
+    show_llvm_version
+
     if [ "${opt_skip_srpm_generation}" == "" ]; then    
         reset_projects
         
@@ -293,8 +296,6 @@ build_snapshot() {
         fi
 
         clean_projects
-        get_llvm_version
-        show_llvm_version
         generate_spec_files
     fi
     
@@ -311,7 +312,7 @@ build_snapshot() {
             spec_file="$projects_dir/$proj/$proj.compat.spec"
             with_compat="--with=compat_build"
         fi
-        
+
         # Build SRPM
         if [ "${opt_skip_srpm_generation}" == "" ]; then
             pushd $projects_dir/$proj
