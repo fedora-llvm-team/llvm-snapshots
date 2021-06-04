@@ -16,8 +16,8 @@ koji-compat: koji-compat-llvm \
 srpms:
 	rm -rfv shared
 	mkdir -pv shared
-	./build.sh --yyyymmdd ${yyyymmdd} --verbose --out-dir shared --projects "llvm clang" --build-compat-packages |& tee --append shared/make.log
-	./build.sh --yyyymmdd ${yyyymmdd} --verbose --out-dir shared |& tee shared/make.log
+	./build.sh --yyyymmdd ${yyyymmdd} --verbose --out-dir shared --projects "llvm clang" --build-compat-packages |& tee shared/make.log
+	./build.sh --yyyymmdd ${yyyymmdd} --verbose --out-dir shared |& tee --append shared/make.log
 
 .PHONY: snapshot
 snapshot:	compat-llvm \

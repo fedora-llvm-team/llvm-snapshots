@@ -281,7 +281,7 @@ build_snapshot() {
     get_llvm_version
     show_llvm_version
 
-    if [ "${opt_skip_srpm_generation}" == "" ]; then    
+    if [ "${opt_skip_srpm_generation}" == "" ]; then
         reset_projects
         
         # Checkout rawhide branch from upstream if building compat package
@@ -299,13 +299,9 @@ build_snapshot() {
         generate_spec_files
     fi
     
-    # Extract for which Fedora Core version (e.g. fc34) we build packages.
-    # This is like the ongoing version number for the rolling Fedora "rawhide" release.
-    local fc_version=$(grep -ioP "config_opts\['releasever'\] = '\K[0-9]+" /etc/mock/templates/fedora-rawhide.tpl)
-
     for proj in $projects; do
         # Clean mock before building.
-        mock -r ${out_dir}/mock.cfg --clean --quiet
+        #mock -r ${out_dir}/mock.cfg --clean --quiet
 
         local with_compat=""
         if [ "${build_compat_packages}" != "" ]; then
@@ -324,12 +320,13 @@ build_snapshot() {
             # Download files from the specfile into the project directory
             rpmdev-spectool --force -g -a -C . $spec_file
 
-            time mock -r ${out_dir}/mock.cfg \
-                --spec=$spec_file \
-                --sources=$PWD \
-                --buildsrpm \
-                --resultdir=$srpms_dir \
-                --isolation=simple ${mock_check_option} ${with_compat}
+            rpmbuild -bs $spec_file ${with_compat}
+            # time mock -r ${out_dir}/mock.cfg \
+            #     --spec=$spec_file \
+            #     --sources=$PWD \
+            #     --buildsrpm \
+            #     --resultdir=$srpms_dir \
+            #     --isolation=simple ${mock_check_option} ${with_compat}
             popd
         fi
         
@@ -339,6 +336,10 @@ build_snapshot() {
         fi
 
         if [ "${koji_build_rpm}" != "" ]; then
+            # Extract for which Fedora Core version (e.g. fc34) we build packages.
+            # This is like the ongoing version number for the rolling Fedora "rawhide" release.
+            local fc_version=$(grep -ioP "config_opts\['releasever'\] = '\K[0-9]+" /etc/mock/templates/fedora-rawhide.tpl)
+
             pushd $cur_dir
             koji \
                 --config=${koji_config_path} \
