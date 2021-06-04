@@ -306,23 +306,23 @@ build_snapshot() {
 
         # Clean mock before building.
         mock -r ${out_dir}/mock.cfg --clean
-        
-        local spec_file=$projects_dir/$proj/$proj.snapshot.spec
-
-        local with_compat=""
-        if [ "${build_compat_packages}" != "" ]; then
-            spec_file="$projects_dir/$proj/$proj.compat.spec"
-            with_compat="--with=compat_build"
-        fi
-
-        # Show which packages will be build with this spec file
-        rpmspec -q ${with_compat} ${spec_file}  
-        
-        # Download files from the specfile into the project directory
-        rpmdev-spectool --force -g -a -C . $spec_file
 
         # Build SRPM
         if [ "${opt_skip_srpm_generation}" == "" ]; then
+            local spec_file=$projects_dir/$proj/$proj.snapshot.spec
+
+            local with_compat=""
+            if [ "${build_compat_packages}" != "" ]; then
+                spec_file="$projects_dir/$proj/$proj.compat.spec"
+                with_compat="--with=compat_build"
+            fi
+
+            # Show which packages will be build with this spec file
+            rpmspec -q ${with_compat} ${spec_file}  
+            
+            # Download files from the specfile into the project directory
+            rpmdev-spectool --force -g -a -C . $spec_file
+
             time mock -r ${out_dir}/mock.cfg \
                 --spec=$spec_file \
                 --sources=$PWD \
