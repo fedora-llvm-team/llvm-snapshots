@@ -278,37 +278,37 @@ EOF
 
 
 build_snapshot() {
-    reset_projects
-    
-    # Checkout rawhide branch from upstream if building compat package
-    if [ "${build_compat_packages}" != "" ]; then    
-        for proj in $projects; do
-            git -C ${projects_dir}/$proj reset --hard upstream/rawhide
-        done
-    else
-        for proj in $projects; do
-            git -C ${projects_dir}/$proj reset --hard kkleine/snapshot-build
-        done
+    if [ "${opt_skip_srpm_generation}" == "" ]; then    
+        reset_projects
+        
+        # Checkout rawhide branch from upstream if building compat package
+        if [ "${build_compat_packages}" != "" ]; then    
+            for proj in $projects; do
+                git -C ${projects_dir}/$proj reset --hard upstream/rawhide
+            done
+        else
+            for proj in $projects; do
+                git -C ${projects_dir}/$proj reset --hard kkleine/snapshot-build
+            done
+        fi
+
+        clean_projects
+        get_llvm_version
+        show_llvm_version
+        generate_spec_files
     fi
-
-    clean_projects
-
-    get_llvm_version
-    show_llvm_version
-    generate_spec_files
     
     # Extract for which Fedora Core version (e.g. fc34) we build packages.
     # This is like the ongoing version number for the rolling Fedora "rawhide" release.
     local fc_version=$(grep -ioP "config_opts\['releasever'\] = '\K[0-9]+" /etc/mock/templates/fedora-rawhide.tpl)
 
     for proj in $projects; do
-        pushd $projects_dir/$proj
-
         # Clean mock before building.
-        mock -r ${out_dir}/mock.cfg --clean
+        mock -r ${out_dir}/mock.cfg --clean --quiet
 
         # Build SRPM
         if [ "${opt_skip_srpm_generation}" == "" ]; then
+            pushd $projects_dir/$proj
             local spec_file=$projects_dir/$proj/$proj.snapshot.spec
 
             local with_compat=""
@@ -329,8 +329,8 @@ build_snapshot() {
                 --buildsrpm \
                 --resultdir=$srpms_dir \
                 --isolation=simple ${mock_check_option} ${with_compat}
+            popd
         fi
-        popd
         
         local srpm="${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm"
         if [[ "${with_compat}" != "" ]]; then
