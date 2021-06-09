@@ -1,10 +1,4 @@
-tmp/
 out/*
-!out/README.md
-mock.cfg
-
-repos/*
-projects/*
-
-koji-psi-platform-tools-ci.pem
-koji-serverca.crt
+dnf-cache/*
+home/johndoe/cfg/koji-psi-platform-tools-ci.pem
+home/johndoe/cfg/koji-serverca.crt
