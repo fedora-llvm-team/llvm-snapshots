@@ -18,10 +18,53 @@ CONTAINER_PERMS ?= -u $(shell id -u $(USER)):$(shell id -g $(USER))
 # Whether to run a container interactively or not.
 CONTAINER_INTERACTIVE_SWITCH ?= -i
 CONTAINER_RUN_OPTS =  -t --rm $(CONTAINER_INTERACTIVE_SWITCH) $(CONTAINER_PERMS) $(CONTAINER_DNF_CACHE) -v $(shell pwd)/cfg:/home/johndoe/cfg:ro
-CONTAINER_DEPENDENCIES = image ./dnf-cache
+CONTAINER_DEPENDENCIES = container-image ./dnf-cache
 
-# .PHONY: all
-# all: snapshot
+define build-project
+	$(eval project:=$(1))
+	$(eval mounts:=$(2))
+	$(eval enabled_repos:=$(3))
+	mkdir -pv out/${project}
+	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
+		-v $(shell pwd)/out/${project}:/home/johndoe/rpmbuild:Z ${mounts} \
+		builder \
+			--reset-project \
+			--generate-spec-file \
+			--build-srpm \
+			--install-build-dependencies \
+			--build-rpm \
+			--generate-dnf-repo \
+			--yyyymmdd ${yyyymmdd} \
+			--project ${project} ${enabled_repos} \
+	|& tee out/build-${project}.log
+endef
+
+define mount-opts
+-v $(shell pwd)/out/$(1)/RPMS:/repo-$(1):Z
+endef
+
+define enable-dnf-repo
+--enable-dnf-repo /repo-$(1)
+endef
+
+mounts_python_lit :=
+mounts_llvm := $(call mount-opts,python-lit)
+mounts_clang := $(foreach p,python-lit llvm,$(call mount-opts,$(p)))
+mounts_lld := $(foreach p,python-lit llvm clang,$(call mount-opts,$(p)))
+
+mounts_python_lit :=
+repos_llvm := $(call enable-dnf-repo,python-lit)
+repos_clang := $(foreach p,python-lit llvm,$(call enable-dnf-repo,$(p)))
+repos_lld := $(foreach p,python-lit llvm clang,$(call enable-dnf-repo,$(p)))
+
+
+
+# TARGETS:
+
+
+
+.PHONY: all
+all: python-lit compat-llvm compat-clang llvm clang lld
 
 .PHONY: clean
 clean:
@@ -31,210 +74,49 @@ clean:
 clean-cache:
 	rm -rf dnf-cache
 
-.PHONY: koji-compat
-koji-compat: koji-compat-llvm \
-			 koji-compat-clang
-
-.PHONY: srpms
-srpms:
-	rm -rfv shared
-	mkdir -pv shared
-	./build.sh --yyyymmdd ${yyyymmdd} --verbose --out-dir shared --projects "llvm clang" --build-compat-packages |& tee shared/make.log
-	./build.sh --yyyymmdd ${yyyymmdd} --verbose --out-dir shared |& tee --append shared/make.log
-
-.PHONY: snapshot
-snapshot:	compat-llvm \
-			compat-clang \
-			python-lit \
-			llvm \
-			clang \
-			lld \
-			compiler-rt \
-			libomp \
-			mlir \
-			lldb
-
-.PHONY: koji-snapshot
-koji-snapshot: 	koji-python-lit \
-				koji-llvm \
-				koji-clang \
-				koji-lld \
-				koji-compiler-rt \
-				koji-libomp \
-				koji-mlir \
-				koji-lldb
-
-.PHONY: koji-python-lit  koji-llvm koji-clang koji-lld koji-compiler-rt koji-libomp koji-mlir koji-lldb
-koji-python-lit koji-llvm koji-clang koji-lld koji-compiler-rt koji-libomp koji-mlir koji-lldb:
-	$(eval pkg:=$(subst koji-,,$@))
-	./build.sh --out-dir koji-out --koji-build-rpm --koji-wait-for-build --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}" --skip-srpm-generation --srpms-dir shared/srpms |& tee koji-out/build-${pkg}.log
-
-.PHONY: koji-compat-llvm koji-compat-clang
-koji-compat-llvm koji-compat-clang:
-	$(eval pkg:=$(subst koji-compat-,,$@))
-	./build.sh --out-dir koji-out --koji-build-rpm --koji-wait-for-build --build-compat-packages --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}" --skip-srpm-generation --srpms-dir shared/srpms |& tee koji-out/build-${pkg}.log
-
-.PHONY:  python-lit llvm clang lld compiler-rt libomp mlir lldb
-python-lit llvm clang lld compiler-rt libomp mlir lldb:
-	./build.sh --out-dir mock-out --mock-build-rpm --mock-check-rpm --yyyymmdd ${yyyymmdd} --verbose --projects "$@" --skip-srpm-generation --srpms-dir shared/srpms |& tee mock-out/build-${pkg}.log
-
-.PHONY: compat-llvm compat-clang
-compat-llvm compat-clang:
-	$(eval pkg:=$(subst compat-,,$@))
-	./build.sh --out-dir mock-out --mock-build-rpm --mock-check-rpm --build-compat-packages --yyyymmdd ${yyyymmdd} --verbose --projects "${pkg}" --skip-srpm-generation --srpms-dir shared/srpms |& tee mock-out/build-${pkg}.log
-
-
-# .PHONY: docker-build-python-lit
-# docker-build-python-lit: docker-image
-# 	docker run -it --rm \
-# 		-v $(shell pwd)/out/projects/python-lit:/home/johndoe/rpmbuild:Z \
-# 		builder \
-# 		build-srpm.sh --spec-file SPECS/python-lit.snapshot.spec
-# 		./build.sh --out-dir out --mock-build-rpm --mock-check-rpm --yyyymmdd ${yyyymmdd} --verbose --projects "$@" --skip-srpm-generation --srpms-dir shared/srpms |& tee mock-out/build-${pkg}.log
-
-
-# 		# -u $(shell id -u $(USER)):$(shell id -g $(USER)) \
-
 ./out/python-lit:
 	@mkdir -pv ./out/python-lit
-
 
 ./dnf-cache:
 	mkdir -p dnf-cache
 
-define dependency-pkgs
-[[ "$(1)" == "clang" ]] && echo "llvm"; \
-[[ "$(1)" == "lld" ]] && echo "llvm1";
-endef
-
-.PHONY: foo
-foo:
-	$(call dependency-pkgs,clang)
-
-a.c:
-	echo "a"
-b.c: a.c
-	echo "b"
-c.c: b.c
-	echo "c"
-
-.PHONY: image
-image: ./dnf-cache
+.PHONY: container-image
+container-image: ./dnf-cache
 	$(CONTAINER_TOOL) build --quiet --tag builder .
 
-.PHONY: one-python-lit one-llvm one-clang one-lld one-compiler-rt one-libomp one-mlir one-lldb
-one-python-lit one-llvm one-clang one-lld one-compiler-rt one-libomp one-mlir one-lldb: $(CONTAINER_DEPENDENCIES)
-	$(eval pkg:=$(subst one-,,$@))
-	mkdir -pv out/${pkg}
-	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
-		-v $(shell pwd)/out/${pkg}:/home/johndoe/rpmbuild:Z \
-		builder \
-			--reset-project \
-			--generate-spec-file \
-			--build-srpm \
-			--install-build-dependencies \
-			--build-rpm \
-			--generate-dnf-repo \
-			--yyyymmdd ${yyyymmdd} \
-			--project ${pkg} \
-	|& tee out/${pkg}-allinone.log
+.PHONY: python-lit
+python-lit: $(CONTAINER_DEPENDENCIES)
+	$(call build-project,python-lit)
 
-.PHONY: reset-python-lit reset-llvm reset-clang reset-lld reset-compiler-rt reset-libomp reset-mlir reset-lldb
-reset-python-lit reset-llvm reset-clang reset-lld reset-compiler-rt reset-libomp reset-mlir reset-lldb: $(CONTAINER_DEPENDENCIES)
-	$(eval pkg:=$(subst spec-,,$@))
-	mkdir -pv out/${pkg}
-	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
-		-v $(shell pwd)/out/${pkg}:/home/johndoe/rpmbuild:Z \
-		builder \
-			--verbose \
-			--reset-project \
-			--yyyymmdd ${yyyymmdd} \
-			--project ${pkg} \
-	|& tee out/${pkg}-spec.log
+.PHONY: llvm
+llvm: $(CONTAINER_DEPENDENCIES)
+	$(call build-project,llvm,$(mounts_llvm),$(repos_llvm))
 
-.PHONY: spec-python-lit spec-llvm spec-clang spec-lld spec-compiler-rt spec-libomp spec-mlir spec-lldb
-spec-python-lit spec-llvm spec-clang spec-lld spec-compiler-rt spec-libomp spec-mlir spec-lldb: $(CONTAINER_DEPENDENCIES)
-	$(eval pkg:=$(subst spec-,,$@))
-	mkdir -pv out/${pkg}
-	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
-		-v $(shell pwd)/out/${pkg}:/home/johndoe/rpmbuild:Z \
-		builder \
-			--generate-spec-file \
-			--yyyymmdd ${yyyymmdd} \
-			--project ${pkg} \
-	|& tee out/${pkg}-spec.log
+.PHONY: clang
+clang: $(CONTAINER_DEPENDENCIES)
+	$(call build-project,clang,$(mounts_clang),$(repos_clang))
 
-.PHONY: srpm-python-lit srpm-llvm srpm-clang srpm-lld srpm-compiler-rt srpm-libomp srpm-mlir srpm-lldb
-srpm-python-lit srpm-llvm srpm-clang srpm-lld srpm-compiler-rt srpm-libomp srpm-mlir srpm-lldb: $(CONTAINER_DEPENDENCIES)
-	$(eval pkg:=$(subst srpm-,,$@))
-	mkdir -pv out/${pkg}
-	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
-		-v $(shell pwd)/out/${pkg}:/home/johndoe/rpmbuild:Z \
-		builder \
-			--build-srpm \
-			--yyyymmdd ${yyyymmdd} \
-			--project ${pkg} \
-	|& tee out/${pkg}-srpm.log
+.PHONY: lld
+lld: $(CONTAINER_DEPENDENCIES)
+	$(call build-project,lld,${mounts_lld},$(repos_lld))
 
-.PHONY: rpm-python-lit rpm-llvm rpm-clang rpm-lld rpm-compiler-rt rpm-libomp rpm-mlir rpm-lldb
-rpm-python-lit rpm-llvm rpm-clang rpm-lld rpm-compiler-rt rpm-libomp rpm-mlir rpm-lldb: $(CONTAINER_DEPENDENCIES)
-	$(eval pkg:=$(subst rpm-,,$@))
-	mkdir -pv out/${pkg}
-	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
-		-v $(shell pwd)/out/${pkg}:/home/johndoe/rpmbuild:Z \
-		builder \
-			--install-build-dependencies \
-			--build-rpm \
-			--generate-dnf-repo \
-			--yyyymmdd ${yyyymmdd} \
-			--project ${pkg} \
-	|& tee out/${pkg}-rpm.log
 
-.PHONY: all
-all: spec-python-lit srpm-python-lit rpm-python-lit \
-	 spec-llvm srpm-llvm rpm-llvm
 
-.PHONY: test
-test: image
+# SPECIAL TARGETS:
+
+
+
+# This mounts a project and with all dependent repos mounted (expecting they
+# exist) and then enter a bash-shell for experiments or rerunning tests and
+# whatnot ;)
+.PHONY: shell-%
+shell-%:
+	$(eval project:=$(subst shell-,,$@))
+	$(eval project_var:=$(subst -,_,$(project)))
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
-		-v $(shell pwd)/out/python-lit:/home/johndoe/rpmbuild:Z \
-		-v $(shell pwd)/out/python-lit/RPMS:/home/johndoe/repo-python-lit:ro \
+		-v $(shell pwd)/out/$(project):/home/johndoe/rpmbuild:Z $(mounts_$(project_var)) \
 		builder \
 			--shell \
-			--enable-dnf-repo /home/johndoe/repo-python-lit \
 			--yyyymmdd ${yyyymmdd} \
-			--project python-lit \
-
-
-# \
-
-# docker run \
-# 	-it \
-# 	--rm \
-# 	-v $(shell pwd)/out/python-lit:/home/johndoe/rpmbuild:Z \
-# 	-u $(shell id -u $(USER)):$(shell id -g $(USER)) \
-# 	builder \
-# 	    --yyyymmdd ${yyyymmdd} \
-# 		--project python-lit \
-# |& tee -a out/build-python-lit.log
-
-# docker run \
-# 	-it \
-# 	--rm \
-# 	-v $(shell pwd)/out/python-lit:/home/johndoe/rpmbuild:Z \
-# 	builder \
-# 	build.sh \
-# 		--yyyymmdd ${yyyymmdd} \
-# 		--verbose \
-# 		--project python-lit \
-# |& tee --append out/build-python-lit.log
-
-# -u $(shell id -u $(USER)):$(shell id -g $(USER)) \
-
-# .PHONY: docker-build-python-lit
-# docker-build-python-lit: image
-# 	docker run -it --rm \
-# 		-v $(shell pwd)/out/projects/python-lit:/home/johndoe/rpmbuild:Z \
-# 		builder \
-# 		build-srpm.sh --spec-file SPECS/python-lit.snapshot.spec
-# 		# -u $(shell id -u $(USER)):$(shell id -g $(USER)) \
+			--project $(project) $(repos_$(project_var)) \
+	|& tee out/shell-$(project).log
