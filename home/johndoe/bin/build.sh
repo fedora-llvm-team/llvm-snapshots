@@ -300,12 +300,16 @@ while [ $# -gt 0 ]; do
         --project )
             shift
             proj="$1"
+            # NOTE: Implicitly enabling a compatibility build when the project's
+            # name begins with "compat-". The project's name is automatically
+            # cleaned from the "compat-" prefix.
+            if [[ $proj = compat-* ]]; then
+                proj=$(echo $proj | sed 's/^compat-//')
+                opt_build_compat_packages="1"
+            fi  
             ;;
         --install-build-dependencies )
             opt_install_build_dependencies="1"
-            ;;
-        --build-compat-packages )
-            opt_build_compat_packages="1"
             ;;
         --koji-build-rpm )
             koji_build_rpm="1"
