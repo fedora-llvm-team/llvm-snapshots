@@ -17,7 +17,7 @@ CONTAINER_DNF_CACHE ?= -v $(shell pwd)/dnf-cache:/var/cache/dnf:Z
 CONTAINER_PERMS ?= -u $(shell id -u $(USER)):$(shell id -g $(USER))
 # Whether to run a container interactively or not.
 CONTAINER_INTERACTIVE_SWITCH ?= -i
-CONTAINER_RUN_OPTS =  -t --rm $(CONTAINER_INTERACTIVE_SWITCH) $(CONTAINER_PERMS) $(CONTAINER_DNF_CACHE) -v $(shell pwd)/cfg:/home/johndoe/cfg:ro
+CONTAINER_RUN_OPTS =  -t --rm $(CONTAINER_INTERACTIVE_SWITCH) $(CONTAINER_PERMS) $(CONTAINER_DNF_CACHE)
 CONTAINER_DEPENDENCIES = container-image ./dnf-cache
 
 define build-project-srpm
@@ -55,7 +55,7 @@ define mount-opts
 -v $(shell pwd)/out/$(1)/RPMS:/repo-$(1):Z
 endef
 
-define enable-dnf-repo
+define repo-opts
 --enable-dnf-repo /repo-$(1)
 endef
 
@@ -67,11 +67,11 @@ mounts_clang := $(foreach p,python-lit llvm,$(call mount-opts,$(p)))
 mounts_lld := $(foreach p,python-lit llvm clang,$(call mount-opts,$(p)))
 
 repos_compat_llvm :=
-repos_compat_clang := $(call enable-dnf-repo,compat-llvm) 
+repos_compat_clang := $(call repo-opts,compat-llvm) 
 repos_python_lit :=
-repos_llvm := $(call enable-dnf-repo,python-lit)
-repos_clang := $(foreach p,python-lit llvm,$(call enable-dnf-repo,$(p)))
-repos_lld := $(foreach p,python-lit llvm clang,$(call enable-dnf-repo,$(p)))
+repos_llvm := $(call repo-opts,python-lit)
+repos_clang := $(foreach p,python-lit llvm,$(call repo-opts,$(p)))
+repos_lld := $(foreach p,python-lit llvm clang,$(call repo-opts,$(p)))
 
 
 
