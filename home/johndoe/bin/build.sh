@@ -259,19 +259,7 @@ EOF
     local srpm="${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm"
     if [[ "${with_compat}" != "" ]]; then
         srpm=$(find ${srpms_dir} -regex ".*${proj}[0-9]+-.*")
-    fi
-
-    if [ "${opt_koji_build_rpm}" != "" ]; then
-        # Extract for which Fedora Core version (e.g. fc34) we build packages.
-        # This is like the ongoing version number for the rolling Fedora "rawhide" release.
-        local fc_version=$(grep -ioP "config_opts\['releasever'\] = '\K[0-9]+" /etc/mock/templates/fedora-rawhide.tpl)
-
-        koji \
-            --config=/home/johndoe/cfg/koji.cfg \
-            -p koji-clang \
-            build ${opt_koji_wait_for_build_option} \
-            f${fc_version}-llvm-snapshot ${srpm}
-    fi     
+    fi   
 }
 
 
@@ -311,17 +299,11 @@ while [ $# -gt 0 ]; do
         --install-build-dependencies )
             opt_install_build_dependencies="1"
             ;;
-        --koji-build-rpm )
-            koji_build_rpm="1"
-            ;;
         --reset-project )
             opt_reset_project="1"
             ;;
         --clean-project )
             opt_clean_project="1"
-            ;;
-        --koji-wait-for-build )
-            koji_wait_for_build_option=""
             ;;
         -v | --verbose )
             opt_verbose="1"
@@ -385,6 +367,3 @@ if [ "${opt_shell}" != "" ]; then
 fi
 
 exit 0
-
-# TODO(kwk): Tag once koji is done?
-# TODO(kwk): Use koji chain-build

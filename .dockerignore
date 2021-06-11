@@ -1,2 +1,4 @@
 out/*
 dnf-cache/*
+koji-psi-platform-tools-ci.pem
+koji-serverca.crt

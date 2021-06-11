@@ -94,6 +94,52 @@ srpm-%: $(CONTAINER_DEPENDENCIES)
 	$(eval project:=$(subst srpm-,,$@))
 	$(call build-project-srpm,$(project))
 
+.PHONY: koji-no-compat
+## Initiate a koji chain build of python-lit, llvm, clang and lld using the
+## SRPMs for these packages.
+## NOTE: The SRPMs have to be generated using "make all-srpms".
+koji-no-compat:
+	koji \
+		--config=koji.cfg \
+		-p koji-clang \
+		chain-build \
+		f35-llvm-snapshot \
+			out/python-lit/SRPMS/*.src.rpm \
+			out/llvm-lit/SRPMS/*.src.rpm \
+			out/clang-lit/SRPMS/*.src.rpm \
+			out/lld-lit/SRPMS/*.src.rpm
+
+.PHONY: koji-compat
+## Initiate a koji chain build of compat-llvm and compat-clang using the
+## SRPMs for these packages.
+## NOTE: The SRPMs have to be generated using "make all-srpms".
+koji-compat:
+	koji \
+		--config=koji.cfg \
+		-p koji-clang \
+		chain-build \
+		f35-llvm-snapshot \
+			out/compat-llvm/SRPMS/*.src.rpm \
+			out/compat-clang/SRPMS/*.src.rpm
+
+.PHONY: koji-chain-build
+## Initiate a chain build of python-lit, llvm, clang and lld using the
+## SRPMs for these packages.
+## NOTE: The SRPMs have to be generated using "make all-srpms"
+koji-chain-build:
+	koji \
+		--config=koji.cfg \
+		-p koji-clang \
+		chain-build \
+		f35-llvm-snapshot \
+			out/python-lit/SRPMS/*.src.rpm \
+			out/llvm-lit/SRPMS/*.src.rpm \
+			out/clang-lit/SRPMS/*.src.rpm \
+			out/lld-lit/SRPMS/*.src.rpm
+
+		
+#$(shell find out/ -path "*/compat-*/" -prune -false -o -path "*/SRPMS/*.rpm" -type f)
+
 .PHONY: clean
 ## Remove the ./out artifacts directory.
 ## NOTE: You can also call "make clean-<PROJECT>" to remove the artifacts for an
@@ -150,7 +196,6 @@ clang: srpm-clang $(CONTAINER_DEPENDENCIES)
 ## Build LLVM's lld sub-project.
 lld: srpm-lld $(CONTAINER_DEPENDENCIES)
 	$(call build-project-rpm,lld,${mounts_lld},$(repos_lld))
-
 
 
 # SPECIAL TARGETS:
