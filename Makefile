@@ -121,22 +121,6 @@ koji-compat:
 		f35-llvm-snapshot \
 			out/compat-llvm/SRPMS/*.src.rpm \
 			out/compat-clang/SRPMS/*.src.rpm
-
-.PHONY: koji-chain-build
-## Initiate a chain build of python-lit, llvm, clang and lld using the
-## SRPMs for these packages.
-## NOTE: The SRPMs have to be generated using "make all-srpms"
-koji-chain-build:
-	koji \
-		--config=koji.cfg \
-		-p koji-clang \
-		chain-build \
-		f35-llvm-snapshot \
-			out/python-lit/SRPMS/*.src.rpm \
-			out/llvm-lit/SRPMS/*.src.rpm \
-			out/clang-lit/SRPMS/*.src.rpm \
-			out/lld-lit/SRPMS/*.src.rpm
-
 		
 #$(shell find out/ -path "*/compat-*/" -prune -false -o -path "*/SRPMS/*.rpm" -type f)
 

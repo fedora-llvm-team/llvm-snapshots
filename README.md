@@ -10,9 +10,6 @@ Available targets
 <dt><code>koji-compat</code></dt><dd>Initiate a koji chain build of compat-llvm and compat-clang using the<br/>
  SRPMs for these packages.<br/>
  NOTE: The SRPMs have to be generated using "make all-srpms".</dd>
-<dt><code>koji-chain-build</code></dt><dd>Initiate a chain build of python-lit, llvm, clang and lld using the<br/>
- SRPMs for these packages.<br/>
- NOTE: The SRPMs have to be generated using "make all-srpms"</dd>
 <dt><code>clean</code></dt><dd>Remove the ./out artifacts directory.<br/>
  NOTE: You can also call "make clean-<PROJECT>" to remove the artifacts for an<br/>
  individual project only.</dd>
