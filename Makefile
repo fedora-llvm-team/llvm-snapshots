@@ -100,7 +100,7 @@ srpm-%: $(CONTAINER_DEPENDENCIES)
 ## NOTE: The SRPMs have to be generated using "make all-srpms".
 koji-no-compat:
 	koji \
-		--config=koji.cfg \
+		--config=koji.conf \
 		-p koji-clang \
 		chain-build \
 		f35-llvm-snapshot \
@@ -115,7 +115,7 @@ koji-no-compat:
 ## NOTE: The SRPMs have to be generated using "make all-srpms".
 koji-compat:
 	koji \
-		--config=koji.cfg \
+		--config=koji.conf \
 		-p koji-clang \
 		chain-build \
 		f35-llvm-snapshot \
