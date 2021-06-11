@@ -243,7 +243,7 @@ EOF
         rpmdev-spectool --force -g -a -C ${sources_dir} ${spec_file}
         
         info "Build SRPM"
-        rpmbuild ${with_compat} -bs ${spec_file} 
+        rpmbuild ${with_compat} -bs ${spec_file}
     fi
 
     if [ "${opt_build_rpm}" != "" ]; then
