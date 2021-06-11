@@ -93,37 +93,7 @@ all-srpms: srpm-python-lit srpm-compat-llvm srpm-compat-clang srpm-llvm srpm-cla
 srpm-%: $(CONTAINER_DEPENDENCIES)
 	$(eval project:=$(subst srpm-,,$@))
 	$(call build-project-srpm,$(project))
-
-.PHONY: koji-no-compat
-## Initiate a koji chain build of python-lit, llvm, clang and lld using the
-## SRPMs for these packages.
-## NOTE: The SRPMs have to be generated using "make all-srpms".
-koji-no-compat:
-	koji \
-		--config=koji.conf \
-		-p koji-clang \
-		chain-build \
-		f35-llvm-snapshot \
-			out/python-lit/SRPMS/*.src.rpm \
-			out/llvm-lit/SRPMS/*.src.rpm \
-			out/clang-lit/SRPMS/*.src.rpm \
-			out/lld-lit/SRPMS/*.src.rpm
-
-.PHONY: koji-compat
-## Initiate a koji chain build of compat-llvm and compat-clang using the
-## SRPMs for these packages.
-## NOTE: The SRPMs have to be generated using "make all-srpms".
-koji-compat:
-	koji \
-		--config=koji.conf \
-		-p koji-clang \
-		chain-build \
-		f35-llvm-snapshot \
-			out/compat-llvm/SRPMS/*.src.rpm \
-			out/compat-clang/SRPMS/*.src.rpm
 		
-#$(shell find out/ -path "*/compat-*/" -prune -false -o -path "*/SRPMS/*.rpm" -type f)
-
 .PHONY: clean
 ## Remove the ./out artifacts directory.
 ## NOTE: You can also call "make clean-<PROJECT>" to remove the artifacts for an
@@ -199,6 +169,25 @@ shell-%:
 			--yyyymmdd ${yyyymmdd} \
 			--project $(project) $(repos_$(project_var)) \
 	|& tee out/shell-$(project).log
+
+
+.PHONY: koji-compat
+## Initiate a koji build of compat-llvm and compat-clang using the
+## SRPMs for these packages.
+## NOTE: The SRPMs can be generated using "make all-srpms".
+koji-compat: koji-compat-llvm koji-compat-clang
+
+.PHONY: koji-no-compat
+## Initiate a koji build of python-lit, llvm, clang and lld using the
+## SRPMs for these packages.
+## NOTE: The SRPMs can be generated using "make all-srpms".
+## NOTE: You can also build an individual koji project using "make koji-<PROJECT>"
+koji-compat: koji-python koji-llvm koji-clang koji-lld
+
+.PHONY: koji-%
+koji-%:
+	$(eval project:=$(subst koji-,,$@))
+	koji --config=koji.conf -p koji-clang build --wait f35-llvm-snapshot out/$(project)/SRPMS/*.src.rpm
 
 # Provide "make help"
 include ./help.mk

@@ -4,12 +4,6 @@ Available targets
 <dt><code>all-srpms</code></dt><dd>Build all SRPMS for all of LLVM's sub-projects.<br/>
  NOTE: With "make srpm-<PROJECT> you can build an SRPM for an individual LLVM<br/>
  sub-project.</dd>
-<dt><code>koji-no-compat</code></dt><dd>Initiate a koji chain build of python-lit, llvm, clang and lld using the<br/>
- SRPMs for these packages.<br/>
- NOTE: The SRPMs have to be generated using "make all-srpms".</dd>
-<dt><code>koji-compat</code></dt><dd>Initiate a koji chain build of compat-llvm and compat-clang using the<br/>
- SRPMs for these packages.<br/>
- NOTE: The SRPMs have to be generated using "make all-srpms".</dd>
 <dt><code>clean</code></dt><dd>Remove the ./out artifacts directory.<br/>
  NOTE: You can also call "make clean-<PROJECT>" to remove the artifacts for an<br/>
  individual project only.</dd>
@@ -22,6 +16,13 @@ Available targets
 <dt><code>llvm</code></dt><dd>Build LLVM's llvm sub-project.</dd>
 <dt><code>clang</code></dt><dd>Build LLVM's clang sub-project.</dd>
 <dt><code>lld</code></dt><dd>Build LLVM's lld sub-project.</dd>
+<dt><code>koji-compat</code></dt><dd>Initiate a koji build of compat-llvm and compat-clang using the<br/>
+ SRPMs for these packages.<br/>
+ NOTE: The SRPMs can be generated using "make all-srpms".</dd>
+<dt><code>koji-compat</code></dt><dd>Initiate a koji build of python-lit, llvm, clang and lld using the<br/>
+ SRPMs for these packages.<br/>
+ NOTE: The SRPMs can be generated using "make all-srpms".<br/>
+ NOTE: You can also build an individual koji project using "make koji-<PROJECT>"</dd>
 <dt><code>help</code></dt><dd>Display this help text.</dd>
 <dt><code>help-html</code></dt><dd>Display this help text as an HTML definition list for better documentation generation</dd>
 </dl>
