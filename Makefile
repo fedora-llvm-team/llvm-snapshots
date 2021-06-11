@@ -78,11 +78,6 @@ repos_lld := $(foreach p,python-lit llvm clang,$(call repo-opts,$(p)))
 # TARGETS:
 
 
-
-.PHONY: all
-## Build all of LLVM's sub-projects in the correct order.
-all: all-srpms python-lit compat-llvm compat-clang llvm clang lld
-
 .PHONY: all-srpms
 ## Build all SRPMS for all of LLVM's sub-projects.
 ## NOTE: With "make srpm-<PROJECT> you can build an SRPM for an individual LLVM
@@ -93,7 +88,11 @@ all-srpms: srpm-python-lit srpm-compat-llvm srpm-compat-clang srpm-llvm srpm-cla
 srpm-%: $(CONTAINER_DEPENDENCIES)
 	$(eval project:=$(subst srpm-,,$@))
 	$(call build-project-srpm,$(project))
-		
+
+.PHONY: all-rpms
+## Build all of LLVM's sub-projects in the correct order.
+all-rpms: python-lit compat-llvm compat-clang llvm clang lld
+
 .PHONY: clean
 ## Remove the ./out artifacts directory.
 ## NOTE: You can also call "make clean-<PROJECT>" to remove the artifacts for an
@@ -182,7 +181,7 @@ koji-compat: koji-compat-llvm koji-compat-clang
 ## SRPMs for these packages.
 ## NOTE: The SRPMs can be generated using "make all-srpms".
 ## NOTE: You can also build an individual koji project using "make koji-<PROJECT>"
-koji-compat: koji-python koji-llvm koji-clang koji-lld
+koji-no-compat: koji-python koji-llvm koji-clang koji-lld
 
 .PHONY: koji-%
 koji-%:
