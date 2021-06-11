@@ -236,7 +236,7 @@ EOF
         local spec_file=${specs_dir}/$proj.spec
 
         # Show which packages will be build with this spec file
-        info "Source packages (SRPMS) to be built:"
+        info "RPMs to be built with the spec file ${spec_file}:"
         rpmspec -q ${with_compat} ${spec_file}
         
         info "Download files from the specfile into ${sources_dir}"

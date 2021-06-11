@@ -20,25 +20,6 @@ CONTAINER_INTERACTIVE_SWITCH ?= -i
 CONTAINER_RUN_OPTS =  -t --rm $(CONTAINER_INTERACTIVE_SWITCH) $(CONTAINER_PERMS) $(CONTAINER_DNF_CACHE) -v $(shell pwd)/cfg:/home/johndoe/cfg:ro
 CONTAINER_DEPENDENCIES = container-image ./dnf-cache
 
-define build-project-full
-	$(eval project:=$(1))
-	$(eval mounts:=$(2))
-	$(eval enabled_repos:=$(3))
-	mkdir -pv out/${project}
-	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
-		-v $(shell pwd)/out/${project}:/home/johndoe/rpmbuild:Z ${mounts} \
-		builder \
-			--reset-project \
-			--generate-spec-file \
-			--build-srpm \
-			--install-build-dependencies \
-			--build-rpm \
-			--generate-dnf-repo \
-			--yyyymmdd ${yyyymmdd} \
-			--project ${project} ${enabled_repos} \
-	|& tee out/build-full-${project}.log
-endef
-
 define build-project-srpm
 	$(eval project:=$(1))
 	$(eval mounts:=$(2))
@@ -52,6 +33,22 @@ define build-project-srpm
 			--yyyymmdd ${yyyymmdd} \
 			--project ${project} \
 	|& tee out/build-srpm-${project}.log
+endef
+
+define build-project-rpm
+	$(eval project:=$(1))
+	$(eval mounts:=$(2))
+	$(eval enabled_repos:=$(3))
+	mkdir -pv out/${project}
+	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
+		-v $(shell pwd)/out/${project}:/home/johndoe/rpmbuild:Z ${mounts} \
+		builder \
+			--install-build-dependencies \
+			--build-rpm \
+			--generate-dnf-repo \
+			--yyyymmdd ${yyyymmdd} \
+			--project ${project} ${enabled_repos} \
+	|& tee out/build-rpm-${project}.log
 endef
 
 define mount-opts
@@ -84,7 +81,7 @@ repos_lld := $(foreach p,python-lit llvm clang,$(call enable-dnf-repo,$(p)))
 
 .PHONY: all
 ## Build all of LLVM's sub-projects in the correct order.
-all: python-lit compat-llvm compat-clang llvm clang lld
+all: all-srpms python-lit compat-llvm compat-clang llvm clang lld
 
 .PHONY: all-srpms
 ## Build all SRPMS for all of LLVM's sub-projects.
@@ -126,33 +123,33 @@ container-image: ./dnf-cache
 
 .PHONY: python-lit
 ## Build LLVM's python-lit sub-project.
-python-lit: $(CONTAINER_DEPENDENCIES)
-	$(call build-project-full,python-lit)
+python-lit: srpm-python-lit $(CONTAINER_DEPENDENCIES)
+	$(call build-project-rpm,python-lit)
 
 .PHONY: compat-llvm
 ## Build the compatibility packages for LLVM's llvm sub-project.
-compat-llvm: $(CONTAINER_DEPENDENCIES)
-	$(call build-project-full,compat-llvm,$(mounts_compat_llvm),$(repos_compat_llvm))
+compat-llvm: srpm-compat-llvm $(CONTAINER_DEPENDENCIES)
+	$(call build-project-rpm,compat-llvm,$(mounts_compat_llvm),$(repos_compat_llvm))
 
 .PHONY: compat-clang
 ## Build the compatibility packages for LLVM's clang sub-project.
-compat-clang: $(CONTAINER_DEPENDENCIES)
-	$(call build-project-full,compat-clang,$(mounts_compat_clang),$(repos_compat_clang))
+compat-clang: srpm-compat-clang $(CONTAINER_DEPENDENCIES)
+	$(call build-project-rpm,compat-clang,$(mounts_compat_clang),$(repos_compat_clang))
 
 .PHONY: llvm
 ## Build LLVM's llvm sub-project.
-llvm: $(CONTAINER_DEPENDENCIES)
-	$(call build-project-full,llvm,$(mounts_llvm),$(repos_llvm))
+llvm: srpm-llvm $(CONTAINER_DEPENDENCIES)
+	$(call build-project-rpm,llvm,$(mounts_llvm),$(repos_llvm))
 
 .PHONY: clang
 ## Build LLVM's clang sub-project.
-clang: $(CONTAINER_DEPENDENCIES)
-	$(call build-project-full,clang,$(mounts_clang),$(repos_clang))
+clang: srpm-clang $(CONTAINER_DEPENDENCIES)
+	$(call build-project-rpm,clang,$(mounts_clang),$(repos_clang))
 
 .PHONY: lld
 ## Build LLVM's lld sub-project.
-lld: $(CONTAINER_DEPENDENCIES)
-	$(call build-project-full,lld,${mounts_lld},$(repos_lld))
+lld: srpm-lld $(CONTAINER_DEPENDENCIES)
+	$(call build-project-rpm,lld,${mounts_lld},$(repos_lld))
 
 
 
