@@ -6,7 +6,7 @@ yyyymmdd ?= $(shell date +%Y%m%d)
 # If your user requires sudo to run either docker or podman, try this:
 #
 #     make CONTAINER_TOOL="sudo podman" <WHATERVER_TARGET>
-CONTAINER_TOOL ?= docker
+CONTAINER_TOOL ?= podman
 # By default we cache DNF packages because it allows us for avoiding re-download
 # problems. To disable DNF caching, do this:
 #
@@ -181,12 +181,12 @@ koji-compat: koji-compat-llvm koji-compat-clang
 ## SRPMs for these packages.
 ## NOTE: The SRPMs can be generated using "make all-srpms".
 ## NOTE: You can also build an individual koji project using "make koji-<PROJECT>"
-koji-no-compat: koji-python koji-llvm koji-clang koji-lld
+koji-no-compat: koji-python-lit koji-llvm koji-clang koji-lld
 
 .PHONY: koji-%
 koji-%:
 	$(eval project:=$(subst koji-,,$@))
-	koji --config=koji.conf -p koji-clang build --wait f35-llvm-snapshot out/$(project)/SRPMS/*.src.rpm
+	koji --config=koji.conf -p koji-clang build --wait --wait-repo f35-llvm-snapshot out/$(project)/SRPMS/*.src.rpm
 
 # Provide "make help"
 include ./help.mk
