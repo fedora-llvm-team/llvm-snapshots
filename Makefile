@@ -19,6 +19,7 @@ CONTAINER_PERMS ?= -u $(shell id -u $(USER)):$(shell id -g $(USER))
 CONTAINER_INTERACTIVE_SWITCH ?= -i
 CONTAINER_RUN_OPTS =  -t --rm $(CONTAINER_INTERACTIVE_SWITCH) $(CONTAINER_PERMS) $(CONTAINER_DNF_CACHE)
 CONTAINER_DEPENDENCIES = container-image ./dnf-cache
+CONTAINER_IMAGE = kkleine-llvm-snapshot-builder
 
 define build-project-srpm
 	$(eval project:=$(1))
@@ -26,7 +27,7 @@ define build-project-srpm
 	mkdir -pv out/${project}
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
 		-v $(shell pwd)/out/${project}:/home/johndoe/rpmbuild:Z \
-		builder \
+		$(CONTAINER_IMAGE) \
 			--reset-project \
 			--generate-spec-file \
 			--build-srpm \
@@ -42,7 +43,7 @@ define build-project-rpm
 	mkdir -pv out/${project}
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
 		-v $(shell pwd)/out/${project}:/home/johndoe/rpmbuild:Z ${mounts} \
-		builder \
+		$(CONTAINER_IMAGE) \
 			--install-build-dependencies \
 			--build-rpm \
 			--generate-dnf-repo \
@@ -118,7 +119,7 @@ clean-cache:
 .PHONY: container-image
 ## Builds the container image that will be used for build SRPMs and RPMs.
 container-image: ./dnf-cache
-	$(CONTAINER_TOOL) build --quiet --tag builder .
+	$(CONTAINER_TOOL) build --quiet --tag $(CONTAINER_IMAGE) .
 
 .PHONY: python-lit
 ## Build LLVM's python-lit sub-project.
@@ -163,7 +164,7 @@ shell-%:
 	$(eval project_var:=$(subst -,_,$(project)))
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
 		-v $(shell pwd)/out/$(project):/home/johndoe/rpmbuild:Z $(mounts_$(project_var)) \
-		builder \
+		$(CONTAINER_IMAGE) \
 			--shell \
 			--yyyymmdd ${yyyymmdd} \
 			--project $(project) $(repos_$(project_var)) \
