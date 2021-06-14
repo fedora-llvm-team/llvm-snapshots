@@ -186,7 +186,8 @@ koji-no-compat: koji-python-lit koji-llvm koji-clang koji-lld
 .PHONY: koji-%
 koji-%:
 	$(eval project:=$(subst koji-,,$@))
-	koji --config=koji.conf -p koji-clang build --wait --wait-repo f35-llvm-snapshot out/$(project)/SRPMS/*.src.rpm
+	koji --config=koji.conf -p koji-clang build --wait f35-llvm-snapshot out/$(project)/SRPMS/*.src.rpm
+	koji --config=koji.conf -p koji-clang build --wait-repo f35-llvm-snapshot out/$(project)/SRPMS/*.src.rpm
 
 # Provide "make help"
 include ./help.mk
