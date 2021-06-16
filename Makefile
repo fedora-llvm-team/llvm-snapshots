@@ -20,6 +20,7 @@ CONTAINER_INTERACTIVE_SWITCH ?= -i
 CONTAINER_RUN_OPTS =  -t --rm $(CONTAINER_INTERACTIVE_SWITCH) $(CONTAINER_PERMS) $(CONTAINER_DNF_CACHE)
 CONTAINER_DEPENDENCIES = container-image ./dnf-cache
 CONTAINER_IMAGE = kkleine-llvm-snapshot-builder
+KOJI_TAG = f34-llvm-snapshot
 
 define build-project-srpm
 	$(eval project:=$(1))
@@ -187,8 +188,8 @@ koji-no-compat: koji-llvm koji-python-lit koji-clang koji-lld
 .PHONY: koji-%
 koji-%:
 	$(eval project:=$(subst koji-,,$@))
-	koji --config=koji.conf -p koji-clang build --wait f35-llvm-snapshot out/$(project)/SRPMS/*.src.rpm
-	koji --config=koji.conf -p koji-clang wait-repo --build=$(basename out/$(project)/SRPMS/*.src.rpm) --timeout=30 f35-llvm-snapshot
+	koji --config=koji.conf -p koji-clang build --wait $(KOJI_TAG) out/$(project)/SRPMS/*.src.rpm
+	koji --config=koji.conf -p koji-clang wait-repo --build=$(basename out/$(project)/SRPMS/*.src.rpm) --timeout=30 $(KOJI_TAG)
 
 # Provide "make help"
 include ./help.mk
