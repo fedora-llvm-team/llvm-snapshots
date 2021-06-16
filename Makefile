@@ -189,7 +189,7 @@ koji-no-compat: koji-llvm koji-python-lit koji-clang koji-lld
 koji-%:
 	$(eval project:=$(subst koji-,,$@))
 	koji --config=koji.conf -p koji-clang build --wait $(KOJI_TAG) out/$(project)/SRPMS/*.src.rpm
-	koji --config=koji.conf -p koji-clang wait-repo --build=$(basename out/$(project)/SRPMS/*.src.rpm) --timeout=30 $(KOJI_TAG)
+	koji --config=koji.conf -p koji-clang wait-repo --build=$(basename out/$(project)/SRPMS/*.src.rpm) --timeout=30 $(KOJI_TAG)-build
 
 # Provide "make help"
 include ./help.mk

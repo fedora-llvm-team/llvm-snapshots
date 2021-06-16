@@ -1,4 +1,4 @@
-FROM fedora:rawhide
+FROM fedora:34
 
 RUN dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False\
     dnf-plugins-core \
