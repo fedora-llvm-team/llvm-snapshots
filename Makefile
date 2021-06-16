@@ -83,7 +83,7 @@ repos_lld := $(foreach p,python-lit llvm clang,$(call repo-opts,$(p)))
 ## Build all SRPMS for all of LLVM's sub-projects.
 ## NOTE: With "make srpm-<PROJECT> you can build an SRPM for an individual LLVM
 ## sub-project.
-all-srpms: srpm-python-lit srpm-compat-llvm srpm-compat-clang srpm-llvm srpm-clang srpm-lld
+all-srpms: srpm-compat-llvm srpm-compat-clang srpm-llvm srpm-python-lit srpm-clang srpm-lld
 
 .PHONY: srpm-%
 srpm-%: $(CONTAINER_DEPENDENCIES)
@@ -92,7 +92,7 @@ srpm-%: $(CONTAINER_DEPENDENCIES)
 
 .PHONY: all-rpms
 ## Build all of LLVM's sub-projects in the correct order.
-all-rpms: python-lit compat-llvm compat-clang llvm clang lld
+all-rpms: compat-llvm compat-clang llvm python-lit clang lld
 
 .PHONY: clean
 ## Remove the ./out artifacts directory.
@@ -182,13 +182,13 @@ koji-compat: koji-compat-llvm koji-compat-clang
 ## SRPMs for these packages.
 ## NOTE: The SRPMs can be generated using "make all-srpms".
 ## NOTE: You can also build an individual koji project using "make koji-<PROJECT>"
-koji-no-compat: koji-python-lit koji-llvm koji-clang koji-lld
+koji-no-compat: koji-llvm koji-python-lit koji-clang koji-lld
 
 .PHONY: koji-%
 koji-%:
 	$(eval project:=$(subst koji-,,$@))
 	koji --config=koji.conf -p koji-clang build --wait f35-llvm-snapshot out/$(project)/SRPMS/*.src.rpm
-	koji --config=koji.conf -p koji-clang build --wait-repo f35-llvm-snapshot out/$(project)/SRPMS/*.src.rpm
+	koji --config=koji.conf -p koji-clang wait-repo --build=$(basename out/$(project)/SRPMS/*.src.rpm) --timeout=30 f35-llvm-snapshot
 
 # Provide "make help"
 include ./help.mk
