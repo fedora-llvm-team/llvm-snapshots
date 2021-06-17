@@ -3,6 +3,13 @@ SHELL := /bin/bash
 
 yyyymmdd ?= $(shell date +%Y%m%d)
 
+# When you run make VERBOSE=1, executed commands will be printed before executed
+# in the build process.
+VERBOSE_FLAG = 
+ifeq ($(VERBOSE),1)
+       VERBOSE_FLAG = --verbose
+endif
+
 # If your user requires sudo to run either docker or podman, try this:
 #
 #     make CONTAINER_TOOL="sudo podman" <WHATERVER_TARGET>
@@ -28,7 +35,7 @@ define build-project-srpm
 	mkdir -pv out/${project}
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
 		-v $(shell pwd)/out/${project}:/home/johndoe/rpmbuild:Z \
-		$(CONTAINER_IMAGE) \
+		$(CONTAINER_IMAGE) $(VERBOSE_FLAG) \
 			--reset-project \
 			--generate-spec-file \
 			--build-srpm \
@@ -44,7 +51,7 @@ define build-project-rpm
 	mkdir -pv out/${project}
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
 		-v $(shell pwd)/out/${project}:/home/johndoe/rpmbuild:Z ${mounts} \
-		$(CONTAINER_IMAGE) \
+		$(CONTAINER_IMAGE) $(VERBOSE_FLAG) \
 			--install-build-dependencies \
 			--build-rpm \
 			--generate-dnf-repo \
@@ -63,15 +70,15 @@ endef
 
 mounts_compat_llvm :=
 mounts_compat_clang := $(call mount-opts,compat-llvm)
-mounts_python_lit :=
-mounts_llvm := $(call mount-opts,python-lit)
+mounts_llvm := 
+mounts_python_lit := $(call mount-opts,llvm)
 mounts_clang := $(foreach p,python-lit llvm,$(call mount-opts,$(p)))
 mounts_lld := $(foreach p,python-lit llvm clang,$(call mount-opts,$(p)))
 
 repos_compat_llvm :=
 repos_compat_clang := $(call repo-opts,compat-llvm) 
-repos_python_lit :=
-repos_llvm := $(call repo-opts,python-lit)
+repos_llvm := 
+repos_python_lit := $(call repo-opts,llvm)
 repos_clang := $(foreach p,python-lit llvm,$(call repo-opts,$(p)))
 repos_lld := $(foreach p,python-lit llvm clang,$(call repo-opts,$(p)))
 
@@ -165,7 +172,8 @@ shell-%:
 	$(eval project_var:=$(subst -,_,$(project)))
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
 		-v $(shell pwd)/out/$(project):/home/johndoe/rpmbuild:Z $(mounts_$(project_var)) \
-		$(CONTAINER_IMAGE) \
+		$(CONTAINER_IMAGE) $(VERBOSE_FLAG) \
+			--install-build-dependencies \
 			--shell \
 			--yyyymmdd ${yyyymmdd} \
 			--project $(project) $(repos_$(project_var)) \
@@ -189,7 +197,7 @@ koji-no-compat: koji-llvm koji-python-lit koji-clang koji-lld
 koji-%:
 	$(eval project:=$(subst koji-,,$@))
 	koji --config=koji.conf -p koji-clang build --wait $(KOJI_TAG) out/$(project)/SRPMS/*.src.rpm
-	koji --config=koji.conf -p koji-clang wait-repo --build=$(basename out/$(project)/SRPMS/*.src.rpm) --timeout=30 $(KOJI_TAG)-build
+	koji --config=koji.conf -p koji-clang wait-repo --build=$(shell basename out/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//') --timeout=30 $(KOJI_TAG)-build
 
 # Provide "make help"
 include ./help.mk
