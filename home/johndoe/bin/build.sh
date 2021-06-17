@@ -243,12 +243,12 @@ EOF
         rpmdev-spectool --force -g -a -C ${sources_dir} ${spec_file}
         
         info "Build SRPM"
-        rpmbuild ${with_compat} -bs ${spec_file}
+        rpmbuild --noclean ${with_compat} -bs ${spec_file}
     fi
 
     if [ "${opt_build_rpm}" != "" ]; then
         info "Build RPM"
-        rpmbuild ${with_compat} -rb SRPMS/*.src.rpm
+        rpmbuild --noclean ${with_compat} -rb SRPMS/*.src.rpm
     fi
 
     if [ "${opt_generate_dnf_repo}" != "" ]; then
