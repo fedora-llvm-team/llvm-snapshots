@@ -184,20 +184,35 @@ shell-%: $(CONTAINER_DEPENDENCIES)
 ## Initiate a koji build of compat-llvm and compat-clang using the
 ## SRPMs for these packages.
 ## NOTE: The SRPMs can be generated using "make all-srpms".
-koji-compat: koji-compat-llvm koji-compat-clang
+koji-compat: koji-compat-llvm \
+			 koji-wait-repo-compat-llvm \
+			 koji-compat-clang \
+			 koji-wait-repo-compat-clang
 
 .PHONY: koji-no-compat
 ## Initiate a koji build of python-lit, llvm, clang and lld using the
 ## SRPMs for these packages.
 ## NOTE: The SRPMs can be generated using "make all-srpms".
 ## NOTE: You can also build an individual koji project using "make koji-<PROJECT>"
-koji-no-compat: koji-llvm koji-python-lit koji-clang koji-lld
+koji-no-compat: koji-llvm \
+				koji-wait-repo-llvm \
+				koji-python-lit \
+				koji-wait-repo-python-lit \
+				koji-clang \
+				koji-wait-repo-clang \
+				koji-lld \
+				koji-wait-repo-lld
 
 .PHONY: koji-%
 koji-%:
 	$(eval project:=$(subst koji-,,$@))
 	koji --config=koji.conf -p koji-clang build --wait $(KOJI_TAG) out/$(project)/SRPMS/*.src.rpm
+	
+.PHONY: koji-wait-repo-%
+koji-wait-repo-%:
+	$(eval project:=$(subst koji-wait-repo-,,$@))
 	koji --config=koji.conf -p koji-clang wait-repo --build=$(shell basename out/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//') --timeout=30 $(KOJI_TAG)-build
+
 
 # Provide "make help"
 include ./help.mk
