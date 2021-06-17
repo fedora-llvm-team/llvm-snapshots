@@ -1,11 +1,11 @@
 Available targets
 <dl>
 <dt><code>all-srpms</code></dt><dd>Build all SRPMS for all of LLVM's sub-projects.</dd>
-<dt><code>srpm-%</code></dt><dd>With "make srpm-<PROJECT> you can build an SRPM for an individual LLVM<br/>
+<dt><code>srpm-%</code></dt><dd>With "make srpm-PROJECT you can build an SRPM for an individual LLVM<br/>
  sub-project.</dd>
 <dt><code>all-rpms</code></dt><dd>Build all of LLVM's sub-projects in the correct order.</dd>
 <dt><code>clean</code></dt><dd>Remove the artifacts for all projects.</dd>
-<dt><code>clean-%</code></dt><dd>"make clean-<PROJECT>" to remove the artifacts for an<br/>
+<dt><code>clean-%</code></dt><dd>"make clean-PROJECT" to remove the artifacts for an<br/>
  individual project only.</dd>
 <dt><code>clean-cache</code></dt><dd>Remove the ./dnf-cache DNF cache directory.<br/>
  NOTE: This might require to be run as root for permission problems.</dd>
@@ -26,7 +26,7 @@ Available targets
 <dt><code>koji-no-compat</code></dt><dd>Initiate a koji build of python-lit, llvm, clang and lld using the<br/>
  SRPMs for these packages.<br/>
  NOTE: The SRPMs can be generated using "make all-srpms".</dd>
-<dt><code>koji-wait-repo-%</code></dt><dd>Waits for 30 minuts on the RPM of the given project to appear in the repo for<br/>
+<dt><code>koji-wait-repo-%</code></dt><dd>Waits for 30 minutes on the RPM of the given project to appear in the repo for<br/>
  the build tag.</dd>
 <dt><code>koji-%</code></dt><dd>Takes the SRPM for the given project and builds it on koji</dd>
 <dt><code>help</code></dt><dd>Display this help text.</dd>

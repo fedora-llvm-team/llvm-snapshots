@@ -92,7 +92,7 @@ repos_lld := $(foreach p,python-lit llvm clang,$(call repo-opts,$(p)))
 all-srpms: srpm-compat-llvm srpm-compat-clang srpm-llvm srpm-python-lit srpm-clang srpm-lld
 
 .PHONY: srpm-%
-## With "make srpm-<PROJECT> you can build an SRPM for an individual LLVM
+## With "make srpm-PROJECT you can build an SRPM for an individual LLVM
 ## sub-project.
 srpm-%: $(CONTAINER_DEPENDENCIES)
 	$(eval project:=$(subst srpm-,,$@))
@@ -108,7 +108,7 @@ clean:
 	rm -rf out
 
 .PHONY: clean-%
-## "make clean-<PROJECT>" to remove the artifacts for an
+## "make clean-PROJECT" to remove the artifacts for an
 ## individual project only.
 clean-%:
 	$(eval project:=$(subst clean-,,$@))
@@ -203,7 +203,7 @@ koji-no-compat: koji-llvm \
 				koji-wait-repo-lld
 
 .PHONY: koji-wait-repo-%
-## Waits for 30 minuts on the RPM of the given project to appear in the repo for
+## Waits for 30 minutes on the RPM of the given project to appear in the repo for
 ## the build tag.
 koji-wait-repo-%:
 	$(eval project:=$(subst koji-wait-repo-,,$@))
