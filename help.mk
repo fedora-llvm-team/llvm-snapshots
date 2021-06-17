@@ -13,7 +13,7 @@
 help:/
 	$(info Available targets)
 	$(info -----------------)
-	@awk '/^[a-zA-Z\-0-9]+:/ { \
+	@awk '/^[a-zA-Z\-0-9%]+:/ { \
 		helpMessage = match(lastLine, /^## (.*)/); \
 		helpCommand = substr($$1, 0, index($$1, ":")-1); \
 		if (helpMessage) { \
@@ -40,7 +40,7 @@ help:/
 help-html:/
 	$(info Available targets)
 	@echo "<dl>"
-	@awk '/^[a-zA-Z\-0-9]+:/ { \
+	@awk '/^[a-zA-Z\-0-9%]+:/ { \
 		helpMessage = match(lastLine, /^## (.*)/); \
 		helpCommand = substr($$1, 0, index($$1, ":")-1); \
 		if (helpMessage) { \

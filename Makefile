@@ -89,11 +89,11 @@ repos_lld := $(foreach p,python-lit llvm clang,$(call repo-opts,$(p)))
 
 .PHONY: all-srpms
 ## Build all SRPMS for all of LLVM's sub-projects.
-## NOTE: With "make srpm-<PROJECT> you can build an SRPM for an individual LLVM
-## sub-project.
 all-srpms: srpm-compat-llvm srpm-compat-clang srpm-llvm srpm-python-lit srpm-clang srpm-lld
 
 .PHONY: srpm-%
+## With "make srpm-<PROJECT> you can build an SRPM for an individual LLVM
+## sub-project.
 srpm-%: $(CONTAINER_DEPENDENCIES)
 	$(eval project:=$(subst srpm-,,$@))
 	$(call build-project-srpm,$(project))
@@ -103,14 +103,13 @@ srpm-%: $(CONTAINER_DEPENDENCIES)
 all-rpms: compat-llvm compat-clang llvm python-lit clang lld
 
 .PHONY: clean
-## Remove the ./out artifacts directory.
-## NOTE: You can also call "make clean-<PROJECT>" to remove the artifacts for an
-## individual project only.
+## Remove the artifacts for all projects.
 clean:
 	rm -rf out
 
 .PHONY: clean-%
-# Remove an individual project's directory in 
+## "make clean-<PROJECT>" to remove the artifacts for an
+## individual project only.
 clean-%:
 	$(eval project:=$(subst clean-,,$@))
 	rm -rf out/$(project)
@@ -164,9 +163,10 @@ lld: srpm-lld $(CONTAINER_DEPENDENCIES)
 
 
 .PHONY: shell-%
-# This mounts a project and with all dependent repos mounted (expecting they
-# exist) and then enter a bash-shell for experiments or rerunning tests and
-# whatnot 
+## This mounts a project and with all dependent repos mounted (expecting they
+## exist) and then enter a bash-shell for experiments or rerunning tests and
+## whatnot. To get the container in a good shape, we also install build
+## dependencies as defined in the project's spec file.
 shell-%: $(CONTAINER_DEPENDENCIES)
 	$(eval project:=$(subst shell-,,$@))
 	$(eval project_var:=$(subst -,_,$(project)))
@@ -193,7 +193,6 @@ koji-compat: koji-compat-llvm \
 ## Initiate a koji build of python-lit, llvm, clang and lld using the
 ## SRPMs for these packages.
 ## NOTE: The SRPMs can be generated using "make all-srpms".
-## NOTE: You can also build an individual koji project using "make koji-<PROJECT>"
 koji-no-compat: koji-llvm \
 				koji-wait-repo-llvm \
 				koji-python-lit \
@@ -204,15 +203,17 @@ koji-no-compat: koji-llvm \
 				koji-wait-repo-lld
 
 .PHONY: koji-wait-repo-%
+## Waits for 30 minuts on the RPM of the given project to appear in the repo for
+## the build tag.
 koji-wait-repo-%:
 	$(eval project:=$(subst koji-wait-repo-,,$@))
 	koji --config=koji.conf -p koji-clang wait-repo --build=$(shell basename out/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//') --timeout=30 $(KOJI_TAG)-build
 
 .PHONY: koji-%
+## Takes the SRPM for the given project and builds it on koji
 koji-%:
 	$(eval project:=$(subst koji-,,$@))
 	koji --config=koji.conf -p koji-clang build --wait $(KOJI_TAG) out/$(project)/SRPMS/*.src.rpm
-	
 
 # Provide "make help"
 include ./help.mk
