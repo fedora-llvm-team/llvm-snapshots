@@ -167,7 +167,7 @@ lld: srpm-lld $(CONTAINER_DEPENDENCIES)
 # This mounts a project and with all dependent repos mounted (expecting they
 # exist) and then enter a bash-shell for experiments or rerunning tests and
 # whatnot 
-shell-%:
+shell-%: $(CONTAINER_DEPENDENCIES)
 	$(eval project:=$(subst shell-,,$@))
 	$(eval project_var:=$(subst -,_,$(project)))
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
