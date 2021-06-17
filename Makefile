@@ -203,16 +203,16 @@ koji-no-compat: koji-llvm \
 				koji-lld \
 				koji-wait-repo-lld
 
-.PHONY: koji-%
-koji-%:
-	$(eval project:=$(subst koji-,,$@))
-	koji --config=koji.conf -p koji-clang build --wait $(KOJI_TAG) out/$(project)/SRPMS/*.src.rpm
-	
 .PHONY: koji-wait-repo-%
 koji-wait-repo-%:
 	$(eval project:=$(subst koji-wait-repo-,,$@))
 	koji --config=koji.conf -p koji-clang wait-repo --build=$(shell basename out/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//') --timeout=30 $(KOJI_TAG)-build
 
+.PHONY: koji-%
+koji-%:
+	$(eval project:=$(subst koji-,,$@))
+	koji --config=koji.conf -p koji-clang build --wait $(KOJI_TAG) out/$(project)/SRPMS/*.src.rpm
+	
 
 # Provide "make help"
 include ./help.mk
