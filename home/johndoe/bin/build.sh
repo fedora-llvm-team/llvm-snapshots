@@ -196,7 +196,7 @@ EOF
     fi
 
     if [[ "${opt_generate_spec_file}" != "" ]]; then
-        info "Generate spec file"
+        info "Generate spec file in ${specs_dir}/$proj.spec"
         if [ "${opt_build_compat_packages}" != "" ]; then
             new_compat_spec_file "${sources_dir}/$proj.spec" ${specs_dir}/$proj.spec
         else
