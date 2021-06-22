@@ -25,6 +25,6 @@ RUN DEBUG=1 rpmdev-setuptree
 
 WORKDIR /home/johndoe/rpmbuild
 
-COPY home/johndoe/bin /home/johndoe/bin 
+COPY --chown=johndoe:johndoe home/johndoe/bin /home/johndoe/bin
 
 ENTRYPOINT [ "/home/johndoe/bin/build.sh" ]
