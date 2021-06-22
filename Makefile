@@ -126,7 +126,8 @@ clean-cache:
 .PHONY: container-image
 ## Builds the container image that will be used for build SRPMs and RPMs.
 container-image: ./dnf-cache
-	$(CONTAINER_TOOL) build --quiet --tag $(CONTAINER_IMAGE) .
+	$(CONTAINER_TOOL) pull $(shell head -n1 Dockerfile | sed 's/FROM\s\+//')
+	$(CONTAINER_TOOL) build --tag $(CONTAINER_IMAGE) .
 
 .PHONY: python-lit
 ## Build LLVM's python-lit sub-project.
@@ -173,6 +174,7 @@ shell-%: $(CONTAINER_DEPENDENCIES)
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
 		-v $(shell pwd)/out/$(project):/home/johndoe/rpmbuild:Z $(mounts_$(project_var)) \
 		$(CONTAINER_IMAGE) $(VERBOSE_FLAG) \
+		    --generate-spec-file \
 			--install-build-dependencies \
 			--shell \
 			--yyyymmdd ${yyyymmdd} \

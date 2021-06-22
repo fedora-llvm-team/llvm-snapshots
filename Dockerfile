@@ -16,7 +16,7 @@ RUN useradd --create-home johndoe
 # be able to execute commands using sudo.
 RUN usermod -aG wheel johndoe
 # Allows people in group wheel to run all commands (without a password)
-RUN echo "%wheel	ALL=(ALL)	NOPASSWD: ALL" >> /etc/sudoers
+RUN echo "johndoe ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 USER johndoe
 ENV PATH="/home/johndoe/bin:${PATH}" HOME=/home/johndoe
