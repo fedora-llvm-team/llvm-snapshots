@@ -3,7 +3,7 @@ SHELL := /bin/bash
 
 yyyymmdd ?= $(shell date +%Y%m%d)
 
-out = $(shell pwd)/out/$(yyyymmdd)/
+out = $(shell pwd)/out/$(yyyymmdd)
 
 # When you r, executed commands will be printed before executed
 # in the build process.
