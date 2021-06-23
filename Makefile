@@ -59,6 +59,7 @@ define build-project-rpm
 			--yyyymmdd ${yyyymmdd} \
 			--project ${project} ${enabled_repos} \
 	|& tee $(out)/build-rpm-${project}.log
+	rm -rf $(out)/${project}/BUILD $(out)/${project}/BUILDROOT
 endef
 
 define mount-opts
