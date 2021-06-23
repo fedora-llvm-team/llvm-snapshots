@@ -3,7 +3,9 @@ SHELL := /bin/bash
 
 yyyymmdd ?= $(shell date +%Y%m%d)
 
-# When you run make VERBOSE=1, executed commands will be printed before executed
+out = $(shell pwd)/out/$(yyyymmdd)/
+
+# When you r, executed commands will be printed before executed
 # in the build process.
 VERBOSE_FLAG = 
 ifeq ($(VERBOSE),1)
@@ -21,8 +23,7 @@ CONTAINER_TOOL ?= podman
 CONTAINER_DNF_CACHE ?= -v $(shell pwd)/dnf-cache:/var/cache/dnf:Z
 # This exists so that generated files inside the container can be edited from
 # the outside as the user running the container.
-CONTAINER_PERMS ?= -u $(shell id -u $(USER)):$(shell id -g $(USER))
-# Whether to run a container interactively or not.
+CONTAINER_PERMS ?= -u $(shell id -u $(USER)):$(shell id -g $(Uun a container interactively or not.
 CONTAINER_INTERACTIVE_SWITCH ?= -i
 CONTAINER_RUN_OPTS =  -t --rm $(CONTAINER_INTERACTIVE_SWITCH) $(CONTAINER_PERMS) $(CONTAINER_DNF_CACHE)
 CONTAINER_DEPENDENCIES = container-image ./dnf-cache
@@ -32,36 +33,36 @@ KOJI_TAG = f34-llvm-snapshot
 define build-project-srpm
 	$(eval project:=$(1))
 	$(eval mounts:=$(2))
-	mkdir -pv out/${project}
+	mkdir -pv $(out)/${project}
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
-		-v $(shell pwd)/out/${project}:/home/johndoe/rpmbuild:Z \
+		-v $(out)/${project}:/home/johndoe/rpmbuild:Z \
 		$(CONTAINER_IMAGE) $(VERBOSE_FLAG) \
 			--reset-project \
 			--generate-spec-file \
 			--build-srpm \
 			--yyyymmdd ${yyyymmdd} \
 			--project ${project} \
-	|& tee out/build-srpm-${project}.log
+	|& tee $(out)/build-srpm-${project}.log
 endef
 
 define build-project-rpm
 	$(eval project:=$(1))
 	$(eval mounts:=$(2))
 	$(eval enabled_repos:=$(3))
-	mkdir -pv out/${project}
+	mkdir -pv $(out)/${project}
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
-		-v $(shell pwd)/out/${project}:/home/johndoe/rpmbuild:Z ${mounts} \
+		-v $(out)/${project}:/home/johndoe/rpmbuild:Z ${mounts} \
 		$(CONTAINER_IMAGE) $(VERBOSE_FLAG) \
 			--install-build-dependencies \
 			--build-rpm \
 			--generate-dnf-repo \
 			--yyyymmdd ${yyyymmdd} \
 			--project ${project} ${enabled_repos} \
-	|& tee out/build-rpm-${project}.log
+	|& tee $(out)/build-rpm-${project}.log
 endef
 
 define mount-opts
--v $(shell pwd)/out/$(1)/RPMS:/repo-$(1):Z
+-v $(out)/$(1)/RPMS:/repo-$(1):Z
 endef
 
 define repo-opts
@@ -112,7 +113,7 @@ clean:
 ## individual project only.
 clean-%:
 	$(eval project:=$(subst clean-,,$@))
-	rm -rf out/$(project)
+	rm -rf $(out)/$(project)
 
 .PHONY: clean-cache
 ## Remove the ./dnf-cache DNF cache directory.
@@ -131,17 +132,17 @@ container-image: ./dnf-cache
 
 .PHONY: python-lit
 ## Build LLVM's python-lit sub-project.
-python-lit: srpm-python-lit $(CONTAINER_DEPENDENCIES)
+python-lit: $(CONTAINER_DEPENDENCIES)
 	$(call build-project-rpm,python-lit)
 
 .PHONY: compat-llvm
 ## Build the compatibility packages for LLVM's llvm sub-project.
-compat-llvm: srpm-compat-llvm $(CONTAINER_DEPENDENCIES)
+compat-llvm: $(CONTAINER_DEPENDENCIES)
 	$(call build-project-rpm,compat-llvm,$(mounts_compat_llvm),$(repos_compat_llvm))
 
 .PHONY: compat-clang
 ## Build the compatibility packages for LLVM's clang sub-project.
-compat-clang: srpm-compat-clang $(CONTAINER_DEPENDENCIES)
+compat-clang: $(CONTAINER_DEPENDENCIES)
 	$(call build-project-rpm,compat-clang,$(mounts_compat_clang),$(repos_compat_clang))
 
 .PHONY: llvm
@@ -172,14 +173,14 @@ shell-%: $(CONTAINER_DEPENDENCIES)
 	$(eval project:=$(subst shell-,,$@))
 	$(eval project_var:=$(subst -,_,$(project)))
 	$(CONTAINER_TOOL) run $(CONTAINER_RUN_OPTS) \
-		-v $(shell pwd)/out/$(project):/home/johndoe/rpmbuild:Z $(mounts_$(project_var)) \
+		-v $(out)/$(project):/home/johndoe/rpmbuild:Z $(mounts_$(project_var)) \
 		$(CONTAINER_IMAGE) $(VERBOSE_FLAG) \
 		    --generate-spec-file \
 			--install-build-dependencies \
 			--shell \
 			--yyyymmdd ${yyyymmdd} \
 			--project $(project) $(repos_$(project_var)) \
-	|& tee out/shell-$(project).log
+	|& tee $(out)/shell-$(project).log
 
 
 .PHONY: koji-compat
@@ -209,13 +210,13 @@ koji-no-compat: koji-llvm \
 ## the build tag.
 koji-wait-repo-%:
 	$(eval project:=$(subst koji-wait-repo-,,$@))
-	koji --config=koji.conf -p koji-clang wait-repo --build=$(shell basename out/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//') --timeout=30 $(KOJI_TAG)-build
+	koji --config=koji.conf -p koji-clang wait-repo --build=$(shell basename $(out)/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//') --timeout=30 $(KOJI_TAG)-build
 
 .PHONY: koji-%
 ## Takes the SRPM for the given project and builds it on koji
 koji-%:
 	$(eval project:=$(subst koji-,,$@))
-	koji --config=koji.conf -p koji-clang build --wait $(KOJI_TAG) out/$(project)/SRPMS/*.src.rpm
+	koji --config=koji.conf -p koji-clang build --wait $(KOJI_TAG) $(out)/$(project)/SRPMS/*.src.rpm
 
 # Provide "make help"
 include ./help.mk
