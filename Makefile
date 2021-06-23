@@ -23,7 +23,7 @@ CONTAINER_TOOL ?= podman
 CONTAINER_DNF_CACHE ?= -v $(shell pwd)/dnf-cache:/var/cache/dnf:Z
 # This exists so that generated files inside the container can be edited from
 # the outside as the user running the container.
-CONTAINER_PERMS ?= -u $(shell id -u $(USER)):$(shell id -g $(Uun a container interactively or not.
+CONTAINER_PERMS ?= -u $(shell id -u $(USER)):$(shell id -g $(USER))
 CONTAINER_INTERACTIVE_SWITCH ?= -i
 CONTAINER_RUN_OPTS =  -t --rm $(CONTAINER_INTERACTIVE_SWITCH) $(CONTAINER_PERMS) $(CONTAINER_DNF_CACHE)
 CONTAINER_DEPENDENCIES = container-image ./dnf-cache
