@@ -28,7 +28,7 @@ CONTAINER_INTERACTIVE_SWITCH ?= -i
 CONTAINER_RUN_OPTS =  -t --rm $(CONTAINER_INTERACTIVE_SWITCH) $(CONTAINER_PERMS) $(CONTAINER_DNF_CACHE)
 CONTAINER_DEPENDENCIES = container-image ./dnf-cache
 CONTAINER_IMAGE = kkleine-llvm-snapshot-builder
-KOJI_TAG = f34-llvm-snapshot
+KOJI_TAG ?= f34-llvm-snapshot
 
 define build-project-srpm
 	$(eval project:=$(1))
