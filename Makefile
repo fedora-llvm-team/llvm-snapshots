@@ -70,6 +70,13 @@ define repo-opts
 --enable-dnf-repo /repo-$(1)
 endef
 
+define get-nvr
+	$(eval project:=$(2))
+        $(eval nvr:= $(shell basename $(out)/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//'))
+	$(1) := $$(nvr)
+endef
+
+
 mounts_compat_llvm :=
 mounts_compat_clang := $(call mount-opts,compat-llvm)
 mounts_llvm := 
@@ -204,7 +211,9 @@ koji-no-compat: koji-llvm \
 				koji-clang \
 				koji-wait-repo-clang \
 				koji-lld \
-				koji-wait-repo-lld
+				koji-wait-repo-lld \
+				koji-tag-no-compat \
+				koji-create-repo
 
 .PHONY: koji-wait-repo-%
 ## Waits for 30 minutes on the RPM of the given project to appear in the repo for
@@ -218,6 +227,17 @@ koji-wait-repo-%:
 koji-%:
 	$(eval project:=$(subst koji-,,$@))
 	koji --config=koji.conf -p koji-clang build --wait $(KOJI_TAG) $(out)/$(project)/SRPMS/*.src.rpm
+
+.PHONY: koji-tag-no-compat
+koji-tag-no-compat:
+	$(eval $(call get-nvr,llvm_nvr,llvm))
+	$(eval $(call get-nvr,clang_nvr,clang))
+	$(eval $(call get-nvr,lld_nvr,lld))
+	koji --config=koji.conf -p koji-clang tag-build $(KOJI_TAG) $(llvm_nvr) $(clang_nvr) $(lld_nvr)
+
+.PHONY: koji-create-repo
+koji-create-repo:
+	koji --config=koji.conf -p koji-clang dist-repo --allow-missing-signatures $(KOJI_TAG)
 
 # Provide "make help"
 include ./help.mk
