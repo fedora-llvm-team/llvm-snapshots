@@ -198,7 +198,9 @@ shell-%: $(CONTAINER_DEPENDENCIES)
 koji-compat: koji-compat-llvm \
 			 koji-wait-repo-compat-llvm \
 			 koji-compat-clang \
-			 koji-wait-repo-compat-clang
+			 koji-wait-repo-compat-clang \
+			 koji-tag-compat \
+			 koji-create-repo
 
 .PHONY: koji-no-compat
 ## Initiate a koji build of python-lit, llvm, clang and lld using the
@@ -234,6 +236,12 @@ koji-tag-no-compat:
 	$(eval $(call get-nvr,clang_nvr,clang))
 	$(eval $(call get-nvr,lld_nvr,lld))
 	koji --config=koji.conf -p koji-clang tag-build $(KOJI_TAG) $(llvm_nvr) $(clang_nvr) $(lld_nvr)
+
+.PHONY: koji-tag-compat
+koji-tag-compat:
+	$(eval $(call get-nvr,llvm_nvr,llvm12))
+	$(eval $(call get-nvr,clang_nvr,clang12))
+	koji --config=koji.conf -p koji-clang tag-build $(KOJI_TAG) $(llvm_nvr) $(clang_nvr)
 
 .PHONY: koji-create-repo
 koji-create-repo:
