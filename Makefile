@@ -28,7 +28,8 @@ CONTAINER_INTERACTIVE_SWITCH ?= -i
 CONTAINER_RUN_OPTS =  -t --rm $(CONTAINER_INTERACTIVE_SWITCH) $(CONTAINER_PERMS) $(CONTAINER_DNF_CACHE)
 CONTAINER_DEPENDENCIES = container-image ./dnf-cache
 CONTAINER_IMAGE = kkleine-llvm-snapshot-builder
-KOJI_TAG ?= f34-llvm-snapshot
+FEDORA_VERSION ?= 34
+KOJI_TAG ?= f$(FEDORA_VERSION)-llvm-snapshot
 
 define build-project-srpm
 	$(eval project:=$(1))
@@ -72,7 +73,7 @@ endef
 
 define get-nvr
 	$(eval project:=$(2))
-        $(eval nvr:= $(shell basename $(out)/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//'))
+        $(eval nvr:= $(shell basename $(out)/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//' |  sed 's/fc[0-9]\+/fc$(FEDORA_VERSION)/'))
 	$(1) := $$(nvr)
 endef
 
@@ -222,7 +223,7 @@ koji-no-compat: koji-llvm \
 ## the build tag.
 koji-wait-repo-%:
 	$(eval project:=$(subst koji-wait-repo-,,$@))
-	koji --config=koji.conf -p koji-clang wait-repo --build=$(shell basename $(out)/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//') --timeout=30 $(KOJI_TAG)-build
+	koji --config=koji.conf -p koji-clang wait-repo --build=$(shell basename $(out)/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//' | sed 's/fc[0-9]\+/fc$(FEDORA_VERSION)/') --timeout=30 $(KOJI_TAG)-build
 
 .PHONY: koji-%
 ## Takes the SRPM for the given project and builds it on koji
