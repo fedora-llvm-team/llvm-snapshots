@@ -26,4 +26,4 @@ HOME=/workdir /workdir/llvm-daily-fedora-rpms/home/johndoe/bin/build.sh \
     --generate-spec-file \
     --build-srpm \
     --yyyymmdd ${yyyymmdd} \
-    --project ${project} \
+    --project ${project}
