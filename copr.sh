@@ -19,11 +19,11 @@ git clone https://github.com/kwk/llvm-daily-fedora-rpms.git /workdir/llvm-daily-
 cd /workdir/llvm-daily-fedora-rpms
 
 # mkdir -pv /workdir/rpmbuild
-HOME=/workdir DEBUG=1 rpmdev-setuptree
+# HOME=/workdir DEBUG=1 rpmdev-setuptree
 
 make VERBOSE=1 clean
 
-HOME=/workdir /workdir/llvm-daily-fedora-rpms/home/johndoe/bin/build.sh \
+HOME=/workdir BUILD_IN_ONE_DIR=yes /workdir/llvm-daily-fedora-rpms/home/johndoe/bin/build.sh \
     --verbose \
     --reset-project \
     --generate-spec-file \

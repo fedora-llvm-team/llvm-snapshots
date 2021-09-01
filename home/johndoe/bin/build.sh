@@ -17,6 +17,16 @@ rpms_dir=${home_dir}/rpmbuild/RPMS
 srpms_dir=${home_dir}/rpmbuild/SRPMS
 spec_file=${specs_dir}/$proj.spec
 
+build_in_one_dir=${BUILD_IN_ONE_DIR:-"no"}
+if [ "${build_in_one_dir}" == "yes" ]; then
+    cfg_dir=${home_dir}/buildroot
+    specs_dir=${home_dir}/buildroot
+    sources_dir=${home_dir}/buildroot
+    rpms_dir=${home_dir}/buildroot
+    srpms_dir=${home_dir}/buildroot
+    spec_file=${specs_dir}/$proj.spec
+fi
+
 #############################################################################
 # These vars can be adjusted with the options passing to this script:
 #############################################################################
@@ -120,8 +130,10 @@ llvm_version_minor=""
 llvm_version_patch=""
 
 build_snapshot() {
-    info 'Set up build tree'
-    HOME=${home_dir} DEBUG=1 rpmdev-setuptree
+    if [ "${build_in_one_dir}" == "no" ]; then
+        info 'Set up build tree'
+        HOME=${home_dir} DEBUG=1 rpmdev-setuptree
+    fi
 
     [[ "${opt_verbose}" != "" ]] && set -x
 
@@ -171,7 +183,9 @@ EOF
         info "Reset project $proj"
         # Updates the LLVM projects with the latest version of the tracked branch.
         rm -rf $sources_dir
-        rpmdev-setuptree #put DEBUG=1 before to make more verbose
+        if [ "${build_in_one_dir}" == "no" ]; then
+            HOME=${home_dir} DEBUG=1 rpmdev-setuptree
+        fi
         git clone --quiet --origin kkleine --branch snapshot-build https://src.fedoraproject.org/forks/kkleine/rpms/$proj.git ${sources_dir}
         # TODO(kwk): Once upstream does work, change back to: https://src.fedoraproject.org/rpms/$proj.git
         git -C ${sources_dir} remote add upstream https://src.fedoraproject.org/forks/kkleine/rpms/$proj.git
@@ -198,10 +212,11 @@ EOF
 
     if [[ "${opt_generate_spec_file}" != "" ]]; then
         info "Generate spec file in ${specs_dir}/$proj.spec"
+        mv -v ${sources_dir}/$proj.spec ${sources_dir}/$proj.spec.old
         if [ "${opt_build_compat_packages}" != "" ]; then
-            new_compat_spec_file "${sources_dir}/$proj.spec" ${specs_dir}/$proj.spec
+            new_compat_spec_file "${sources_dir}/$proj.spec.old" ${specs_dir}/$proj.spec
         else
-            new_snapshot_spec_file "${sources_dir}/$proj.spec" ${specs_dir}/$proj.spec
+            new_snapshot_spec_file "${sources_dir}/$proj.spec.old" ${specs_dir}/$proj.spec
         fi
     fi
     
