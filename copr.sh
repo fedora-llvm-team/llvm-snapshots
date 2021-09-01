@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Call this script with the project as the last argument, e.g.
+# curl -s https://raw.githubusercontent.com/kwk/llvm-daily-fedora-rpms/main/copr.sh | bash -s python-lit
+
 set -x
 set -eu
 
@@ -24,6 +27,5 @@ HOME=/workdir /workdir/llvm-daily-fedora-rpms/home/johndoe/bin/build.sh \
     --verbose \
     --reset-project \
     --generate-spec-file \
-    --build-srpm \
     --yyyymmdd ${yyyymmdd} \
     --project ${project}
