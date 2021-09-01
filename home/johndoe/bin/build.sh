@@ -8,12 +8,21 @@ set -eu
 set -o pipefail
 
 # Setup some directories for later use
+# Those are different when running in container or in mock
+IN_CONTAINER=$(env | grep -E "^container=")
+if [ -z ${IN_CONTAINER} ]; then
+    # running in mock (e.g. copr with /workdir) or locally (inject using HOME)
+    home_dir = ${HOME:-/workdir}
+else
+    # running in container
+    home_dir=~
+fi
 proj=
-cfg_dir=~/cfg
-specs_dir=~/rpmbuild/SPECS
-sources_dir=~/rpmbuild/SOURCES
-rpms_dir=~/rpmbuild/RPMS
-srpms_dir=~/rpmbuild/SRPMS
+cfg_dir=${home_dir}/cfg
+specs_dir=${home_dir}/rpmbuild/SPECS
+sources_dir=${home_dir}/rpmbuild/SOURCES
+rpms_dir=${home_dir}/rpmbuild/RPMS
+srpms_dir=${home_dir}/rpmbuild/SRPMS
 spec_file=${specs_dir}/$proj.spec
 
 #############################################################################
@@ -119,8 +128,8 @@ llvm_version_minor=""
 llvm_version_patch=""
 
 build_snapshot() {
-    DEBUG=1 info 'Set up build tree'
-    rpmdev-setuptree
+    info 'Set up build tree'
+    HOME=${home_dir} DEBUG=1 rpmdev-setuptree
 
     [[ "${opt_verbose}" != "" ]] && set -x
 
@@ -292,7 +301,7 @@ while [ $# -gt 0 ]; do
             # name begins with "compat-". The project's name is automatically
             # cleaned from the "compat-" prefix.
             if [[ $proj = compat-* ]]; then
-                proj=$(echo $proj | sed 's/^compat-//')
+                proj="$(echo $proj | sed 's/^compat-//')"
                 opt_build_compat_packages="1"
             fi  
             ;;
