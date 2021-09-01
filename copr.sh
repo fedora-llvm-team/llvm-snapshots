@@ -16,7 +16,7 @@ git clone https://github.com/kwk/llvm-daily-fedora-rpms.git /workdir/llvm-daily-
 cd /workdir/llvm-daily-fedora-rpms
 
 # mkdir -pv /workdir/rpmbuild
-HOME=/workdir/ DEBUG=1 rpmdev-setuptree
+HOME=/workdir DEBUG=1 rpmdev-setuptree
 
 make VERBOSE=1 clean
 

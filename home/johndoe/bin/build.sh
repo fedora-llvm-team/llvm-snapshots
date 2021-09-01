@@ -8,15 +8,7 @@ set -eu
 set -o pipefail
 
 # Setup some directories for later use
-# Those are different when running in container or in mock
-IN_CONTAINER=$(env | grep -E "^container=")
-if [ -z ${IN_CONTAINER} ]; then
-    # running in mock (e.g. copr with /workdir) or locally (inject using HOME)
-    home_dir = ${HOME:-/workdir}
-else
-    # running in container
-    home_dir=~
-fi
+home_dir=${HOME:-~}
 proj=
 cfg_dir=${home_dir}/cfg
 specs_dir=${home_dir}/rpmbuild/SPECS
