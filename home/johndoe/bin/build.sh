@@ -17,16 +17,6 @@ rpms_dir=${home_dir}/rpmbuild/RPMS
 srpms_dir=${home_dir}/rpmbuild/SRPMS
 spec_file=${specs_dir}/$proj.spec
 
-build_in_one_dir=${BUILD_IN_ONE_DIR:-"no"}
-if [ "${build_in_one_dir}" == "yes" ]; then
-    cfg_dir=${home_dir}/buildroot
-    specs_dir=${home_dir}/buildroot
-    sources_dir=${home_dir}/buildroot
-    rpms_dir=${home_dir}/buildroot
-    srpms_dir=${home_dir}/buildroot
-    spec_file=${specs_dir}/$proj.spec
-fi
-
 #############################################################################
 # These vars can be adjusted with the options passing to this script:
 #############################################################################
@@ -130,7 +120,7 @@ llvm_version_minor=""
 llvm_version_patch=""
 
 build_snapshot() {
-    if [ "${build_in_one_dir}" == "no" ]; then
+    if [ "${opt_build_in_one_dir}" == "" ]; then
         info 'Set up build tree'
         HOME=${home_dir} DEBUG=1 rpmdev-setuptree
     fi
@@ -183,7 +173,7 @@ EOF
         info "Reset project $proj"
         # Updates the LLVM projects with the latest version of the tracked branch.
         rm -rf $sources_dir
-        if [ "${build_in_one_dir}" == "no" ]; then
+        if [ "${opt_build_in_one_dir}" == "" ]; then
             HOME=${home_dir} DEBUG=1 rpmdev-setuptree
         fi
         git clone --quiet --origin kkleine --branch snapshot-build https://src.fedoraproject.org/forks/kkleine/rpms/$proj.git ${sources_dir}
@@ -294,6 +284,7 @@ opt_enabled_dnf_repos=""
 opt_build_compat_packages=""
 opt_koji_build_rpm=""
 opt_koji_wait_for_build_option="--nowait"
+opt_build_in_one_dir=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -311,6 +302,16 @@ while [ $# -gt 0 ]; do
                 proj="$(echo $proj | sed 's/^compat-//')"
                 opt_build_compat_packages="1"
             fi  
+            ;;
+        --build-in-one-dir )
+            opt_build_in_one_dir="$1"
+            if [ "${opt_build_in_one_dir}" != "" ]; then
+                cfg_dir=${opt_build_in_one_dir}
+                specs_dir=${opt_build_in_one_dir}
+                sources_dir=${opt_build_in_one_dir}
+                rpms_dir=${opt_build_in_one_dir}
+                srpms_dir=${opt_build_in_one_dir}
+            fi
             ;;
         --install-build-dependencies )
             opt_install_build_dependencies="1"
