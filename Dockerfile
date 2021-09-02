@@ -24,7 +24,7 @@ RUN echo '%_topdir /home/johndoe/rpmbuild' > /home/johndoe/.rpmmacros
 RUN DEBUG=1 rpmdev-setuptree
 
 WORKDIR /home/johndoe/rpmbuild
-COPY --chown=johndoe:johndoe home/johndoe/bin /home/johndoe/bin
+COPY --chown=johndoe:johndoe build.sh /home/johndoe/bin/build.sh
 RUN chown -Rfv johndoe:johndoe /home/johndoe
 
 

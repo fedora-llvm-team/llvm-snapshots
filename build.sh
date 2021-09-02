@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# To call this script directly from copr, do this:
+#
+# curl -s https://raw.githubusercontent.com/kwk/llvm-daily-fedora-rpms/main/build.sh | HOME=/workdir bash -s -- \
+#     --verbose \
+#     --reset-project \
+#     --generate-spec-file \
+#     --build-in-one-dir /workdir/buildroot \
+#     --project compat-clang \
+#     --yyyymmdd "$(date +%Y%m%d)"
+
 set -eu
 
 # Ensure Bash pipelines (e.g. cmd | othercmd) return a non-zero status if any of
