@@ -314,6 +314,7 @@ while [ $# -gt 0 ]; do
             fi  
             ;;
         --build-in-one-dir )
+            shift
             opt_build_in_one_dir="$1"
             if [ "${opt_build_in_one_dir}" != "" ]; then
                 cfg_dir=${opt_build_in_one_dir}
