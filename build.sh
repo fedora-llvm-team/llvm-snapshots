@@ -2,7 +2,7 @@
 
 # To call this script directly from copr, do this:
 #
-# curl -s https://raw.githubusercontent.com/kwk/llvm-daily-fedora-rpms/main/build.sh | HOME=/workdir bash -s -- \
+# curl -s https://raw.githubusercontent.com/kwk/llvm-daily-fedora-rpms/main/build.sh | bash -s -- \
 #     --verbose \
 #     --reset-project \
 #     --generate-spec-file \
