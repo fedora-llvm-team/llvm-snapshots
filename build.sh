@@ -2,13 +2,23 @@
 
 # To call this script directly from copr, do this:
 #
-# curl -s https://raw.githubusercontent.com/kwk/llvm-daily-fedora-rpms/main/build.sh | bash -s -- \
+# curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/kwk/llvm-daily-fedora-rpms/main/build.sh?$(uuidgen) | bash -s -- \
 #     --verbose \
 #     --reset-project \
 #     --generate-spec-file \
 #     --build-in-one-dir /workdir/buildroot \
 #     --project compat-clang \
 #     --yyyymmdd "$(date +%Y%m%d)"
+#
+# And then select "buildroot" as the "Result directory" in the Web-UI.
+#
+# You might wonder about the "--compressed" and caching options or even about
+# the UUID being attached to the URL at the very end. These are all ways to
+# ensure we get the freshest of all versions of the file on github. I noticed
+# that curl sometimes queries an older version of the content than currently is
+# on github. I got the inspiration for this from here:
+# https://stackoverflow.com/questions/31653271/how-to-call-curl-without-using-server-side-cache?noredirect=1&lq=1
+ 
 
 set -eu
 
