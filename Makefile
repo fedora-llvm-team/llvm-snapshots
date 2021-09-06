@@ -28,7 +28,8 @@ CONTAINER_INTERACTIVE_SWITCH ?= -i
 CONTAINER_RUN_OPTS =  -t --rm $(CONTAINER_INTERACTIVE_SWITCH) $(CONTAINER_PERMS) $(CONTAINER_DNF_CACHE)
 CONTAINER_DEPENDENCIES = container-image ./dnf-cache
 CONTAINER_IMAGE = kkleine-llvm-snapshot-builder
-KOJI_TAG = f34-llvm-snapshot
+FEDORA_VERSION ?= 34
+KOJI_TAG ?= f$(FEDORA_VERSION)-llvm-snapshot
 
 define build-project-srpm
 	$(eval project:=$(1))
@@ -69,6 +70,13 @@ endef
 define repo-opts
 --enable-dnf-repo /repo-$(1)
 endef
+
+define get-nvr
+	$(eval project:=$(2))
+        $(eval nvr:= $(shell basename $(out)/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//' |  sed 's/fc[0-9]\+/fc$(FEDORA_VERSION)/'))
+	$(1) := $$(nvr)
+endef
+
 
 mounts_compat_llvm :=
 mounts_compat_clang := $(call mount-opts,compat-llvm)
@@ -191,7 +199,9 @@ shell-%: $(CONTAINER_DEPENDENCIES)
 koji-compat: koji-compat-llvm \
 			 koji-wait-repo-compat-llvm \
 			 koji-compat-clang \
-			 koji-wait-repo-compat-clang
+			 koji-wait-repo-compat-clang \
+			 koji-tag-compat \
+			 koji-create-repo
 
 .PHONY: koji-no-compat
 ## Initiate a koji build of python-lit, llvm, clang and lld using the
@@ -204,20 +214,39 @@ koji-no-compat: koji-llvm \
 				koji-clang \
 				koji-wait-repo-clang \
 				koji-lld \
-				koji-wait-repo-lld
+				koji-wait-repo-lld \
+				koji-tag-no-compat \
+				koji-create-repo
 
 .PHONY: koji-wait-repo-%
 ## Waits for 30 minutes on the RPM of the given project to appear in the repo for
 ## the build tag.
 koji-wait-repo-%:
 	$(eval project:=$(subst koji-wait-repo-,,$@))
-	koji --config=koji.conf -p koji-clang wait-repo --build=$(shell basename $(out)/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//') --timeout=30 $(KOJI_TAG)-build
+	koji --config=koji.conf -p koji-clang wait-repo --build=$(shell basename $(out)/$(project)/SRPMS/*.src.rpm | sed  -s 's/\.src\.rpm$$//' | sed 's/fc[0-9]\+/fc$(FEDORA_VERSION)/') --timeout=30 $(KOJI_TAG)-build
 
 .PHONY: koji-%
 ## Takes the SRPM for the given project and builds it on koji
 koji-%:
 	$(eval project:=$(subst koji-,,$@))
 	koji --config=koji.conf -p koji-clang build --wait $(KOJI_TAG) $(out)/$(project)/SRPMS/*.src.rpm
+
+.PHONY: koji-tag-no-compat
+koji-tag-no-compat:
+	$(eval $(call get-nvr,llvm_nvr,llvm))
+	$(eval $(call get-nvr,clang_nvr,clang))
+	$(eval $(call get-nvr,lld_nvr,lld))
+	koji --config=koji.conf -p koji-clang tag-build $(KOJI_TAG) $(llvm_nvr) $(clang_nvr) $(lld_nvr)
+
+.PHONY: koji-tag-compat
+koji-tag-compat:
+	$(eval $(call get-nvr,llvm_nvr,llvm12))
+	$(eval $(call get-nvr,clang_nvr,clang12))
+	koji --config=koji.conf -p koji-clang tag-build $(KOJI_TAG) $(llvm_nvr) $(clang_nvr)
+
+.PHONY: koji-create-repo
+koji-create-repo:
+	koji --config=koji.conf -p koji-clang dist-repo --allow-missing-signatures $(KOJI_TAG)
 
 # Provide "make help"
 include ./help.mk
