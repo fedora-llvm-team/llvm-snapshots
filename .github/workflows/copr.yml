@@ -20,5 +20,10 @@ jobs:
         pip install copr
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Batch build on copr
+      env:
+        COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+        COPR_URL: ${{ secrets.COPR_URL }}
+        COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+        COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
       run: |
         python build-on-copr.py
