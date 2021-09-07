@@ -5,6 +5,7 @@ from copr.v3.proxies import build, package, project
 import os
 from pprint import pprint
 
+
 class CoprBuilder(object):
     """
     This class simplifies the creation of the copr project and packages as well
@@ -125,6 +126,7 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
             )
             print(" (build-id={}, state={})".format(previous_build.id,
                   previous_build.state))
+
 
 def main():
     builder = CoprBuilder(ownername="kkleine", projectname="llvm-snapshots")
