@@ -4,6 +4,7 @@ from copr.v3 import Client
 from copr.v3.proxies import build, package, project
 import os
 from pprint import pprint
+import datetime
 
 
 class CoprBuilder(object):
@@ -12,7 +13,7 @@ class CoprBuilder(object):
     as builds.
     """
 
-    def __init__(self, ownername: str, projectname: str):
+    def __init__(self, ownername: str, projectname: str, yyyymmdd: str):
         """
         Creates a CoprBuilder object for the given owner/group and project name.
 
@@ -33,6 +34,7 @@ class CoprBuilder(object):
             self.client = Client.create_from_config_file()
         self.ownername = ownername
         self.projectname = projectname
+        self.yyyymmdd = yyyymmdd
 
         # This is the custom script that copr will execute in order to build a
         # package (see {} placeholder).
@@ -43,7 +45,7 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
     --generate-spec-file \\
     --build-in-one-dir /workdir/buildroot \\
     --project {} \\
-    --yyyymmdd "$(date +%Y%m%d)"
+    --yyyymmdd "{}"
         """
 
     def make_project(self, description: str, instructions: str):
@@ -88,7 +90,7 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
                 "source_type": "custom",
                 # For source_dict see https://python-copr.readthedocs.io/en/latest/client_v3/package_source_types.html#custom
                 "source_dict": {
-                    "script": self.script_template.format(packagename),
+                    "script": self.script_template.format(packagename, self.yyyymmdd),
                     "builddeps": "git make dnf-plugins-core fedora-packager tree curl sed",
                     "resultdir": "buildroot"
                 }
@@ -129,7 +131,8 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
 
 
 def main():
-    builder = CoprBuilder(ownername="kkleine", projectname="llvm-snapshots")
+    builder = CoprBuilder(ownername="kkleine", projectname="llvm-snapshots",
+                          yyyymmdd=datetime.date.today().strftime("%Y%m%d"))
 
     description = """This project provides Fedora packages for daily snapshot builds of [LLVM](https://www.llvm.org) projects such as [clang](https://clang.llvm.org/), [lld](https://lld.llvm.org/) and many more.
 
