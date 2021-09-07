@@ -1,4 +1,15 @@
-Available targets
+## Copr build states
+
+python-lit: [![Copr build status](https://copr.fedorainfracloud.org/coprs/kkleine/llvm-snapshots/package/python-lit/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/kkleine/llvm-snapshots/package/python-lit/)
+
+llvm: [![Copr build status](https://copr.fedorainfracloud.org/coprs/kkleine/llvm-snapshots/package/llvm/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/kkleine/llvm-snapshots/package/llvm/)
+
+
+clang: [![Copr build status](https://copr.fedorainfracloud.org/coprs/kkleine/llvm-snapshots/package/clang/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/kkleine/llvm-snapshots/package/clang/)
+
+lld: [![Copr build status](https://copr.fedorainfracloud.org/coprs/kkleine/llvm-snapshots/package/lld/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/kkleine/llvm-snapshots/package/lld/)
+
+## Available Make targets
 <dl>
 <dt><code>all-srpms</code></dt><dd>Build all SRPMS for all of LLVM's sub-projects.</dd>
 <dt><code>srpm-%</code></dt><dd>With "make srpm-PROJECT you can build an SRPM for an individual LLVM<br/>
