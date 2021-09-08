@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
-from copr.v3 import Client
+from warnings import catch_warnings
+from copr.v3 import Client, CoprRequestException
 from copr.v3.proxies import build, package, project
 import os
+import sys
 from pprint import pprint
 import datetime
+import argparse
 
 
 class CoprBuilder(object):
@@ -13,7 +16,7 @@ class CoprBuilder(object):
     as builds.
     """
 
-    def __init__(self, ownername: str, projectname: str, yyyymmdd: str):
+    def __init__(self, ownername: str, projectname: str):
         """
         Creates a CoprBuilder object for the given owner/group and project name.
 
@@ -34,7 +37,6 @@ class CoprBuilder(object):
             self.client = Client.create_from_config_file()
         self.ownername = ownername
         self.projectname = projectname
-        self.yyyymmdd = yyyymmdd
 
         # This is the custom script that copr will execute in order to build a
         # package (see {} placeholder).
@@ -48,9 +50,9 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
     --yyyymmdd "{}"
         """
 
-    def make_project(self, description: str, instructions: str):
+    def ensure_project(self, description: str, instructions: str):
         """
-        Create the copr project or ensures that it already exists.
+        Creates the copr project or ensures that it already exists.
         """
         existingprojects = self.client.project_proxy.get_list(self.ownername)
         existingprojectnames = [p.name for p in existingprojects]
@@ -65,7 +67,7 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
             self.client.project_proxy.add(
                 ownername=self.ownername,
                 projectname=self.projectname,
-                chroots=["fedora-rawhide-x86_64"],
+                chroots=['fedora-rawhide-x86_64'],
                 description=description,
                 instructions=instructions.format(
                     self.ownername, self.projectname),
@@ -90,7 +92,7 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
                 "source_type": "custom",
                 # For source_dict see https://python-copr.readthedocs.io/en/latest/client_v3/package_source_types.html#custom
                 "source_dict": {
-                    "script": self.script_template.format(packagename, self.yyyymmdd),
+                    "script": self.script_template.format(packagename, "$(date +%Y%m%d)"),
                     "builddeps": "git make dnf-plugins-core fedora-packager tree curl sed",
                     "resultdir": "buildroot"
                 }
@@ -98,7 +100,6 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
             if packagename in existingpackagenames:
                 print("Resetting and editing package {} in {}/{}".format(packagename,
                       self.ownername, self.projectname))
-                # pprint(self.client.build_proxy.get_list(ownername=self.ownername, projectname=self.projectname, packagename=packagename, status="running"))
                 self.client.package_proxy.reset(
                     ownername=self.ownername, projectname=self.projectname, packagename=packagename)
                 self.client.package_proxy.edit(**packageattrs)
@@ -107,11 +108,13 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
                       self.ownername, self.projectname))
                 self.client.package_proxy.add(**packageattrs)
 
-    def build_packages_chained(self, packagenames: list[str]):
+    def build_packages_chained(self, yyyymmdd: str, packagenames: list[str], chroots: list[str]):
         previous_build = None
         for packagename in packagenames:
+            # See https://python-copr.readthedocs.io/en/latest/client_v3/build_options.html
             buildopts = {
                 "timeout": 30*3600,
+                "chroots": chroots
             }
             if previous_build != None:
                 print("Creating chained-build for package {} in {}/{} after build-id {}".format(
@@ -120,46 +123,77 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
             else:
                 print("Creating build for package {} in {}/{}".format(packagename,
                       self.ownername, self.projectname), end='')
-            previous_build = self.client.package_proxy.build(
-                ownername=self.ownername,
-                projectname=self.projectname,
-                packagename=packagename,
-                buildopts=buildopts,
-            )
+
+            # NOTE: We don't use the package proxy to trigger a build because we
+            # have to adjust a value in the script, namely the date, and we want
+            # to be able to trigger builds for different dates without messing
+            # with the custom script that is stored in the package itself. The
+            # latter is more for being able to trigger builds from the Copr UI.
+            try:
+                previous_build = self.client.build_proxy.create_from_custom(
+                    ownername=self.ownername,
+                    projectname=self.projectname,
+                    script=self.script_template.format(packagename, yyyymmdd),
+                    script_chroot=chroots,
+                    script_resultdir='buildroot',
+                    script_builddeps = "git make dnf-plugins-core fedora-packager tree curl sed",
+                    buildopts=buildopts,
+                )
+            except CoprRequestException as ex:
+                print("\nERROR: {}".format(ex))
+                sys.exit(-1)
             print(" (build-id={}, state={})".format(previous_build.id,
                   previous_build.state))
 
 
 def main():
-    builder = CoprBuilder(ownername="kkleine", projectname="llvm-snapshots",
-                          yyyymmdd=datetime.date.today().strftime("%Y%m%d"))
+    defaultpackagenames=["python-lit", "compat-llvm", "compat-clang", "llvm", "clang", "lld"]
+    parser = argparse.ArgumentParser(description='Start LLVM snapshot builds on Fedora Copr.')
+    parser.add_argument('--chroots',
+                        dest='chroots',
+                        metavar='CHROOT',
+                        nargs='+',
+                        default="fedora-rawhide-x86_64",
+                        type=str,
+                        help="list of chroots to build in (defaults to: fedora-rawhide-x86_64)")
+    parser.add_argument('--packagenames',
+                        dest='packagenames',
+                        metavar='PACKAGENAME',
+                        nargs='+',
+                        default=defaultpackagenames,
+                        type=str,
+                        help="list of LLVM packagenames to build in order. Defaults to: {}".format(" ".join(defaultpackagenames)))
+    parser.add_argument('--yyyymmdd',
+                        dest='yyyymmdd',
+                        default=datetime.date.today().strftime("%Y%m%d"),
+                        type=str,
+                        help="year month day combination to build for; defaults to today (e.g. 20210908)")
+    parser.add_argument('--ownername',
+                        dest='ownername',
+                        default='kkleine',
+                        type=str,
+                        help="owner (or group) name of the copr project to be created or checked for existence (defaults to: kkleine)")
+    parser.add_argument('--projectname',
+                        dest='projectname',
+                        default='llvm-snapshots',
+                        type=str,
+                        help="project name of the copr project (defaults to: llvm-snapshots)")
+    parser.add_argument('--timeout',
+                        dest='timeout',
+                        default=30*3600,
+                        type=int,
+                        help="build timeout in seconds for each package (defaults to: 30*3600=108000)")
+    args = parser.parse_args()
+    pprint(args)
 
-    description = """This project provides Fedora packages for daily snapshot builds of [LLVM](https://www.llvm.org) projects such as [clang](https://clang.llvm.org/), [lld](https://lld.llvm.org/) and many more.
-
-The packages should at least be available for the `x86_64` Fedora rawhide version.
-
-To get involved in this, please head over to: [https://github.com/kwk/llvm-daily-fedora-rpms](https://github.com/kwk/llvm-daily-fedora-rpms).
-"""
-    instructions = """
-Please, use this at your own risk!
-
-For instructions on how to use this repository, consult the [official docs](https://docs.pagure.org/copr.copr/how_to_enable_repo.html#how-to-enable-repo).
-
-In theory, this should be enough on a recent Fedora version:
-
-```
-$ dnf copr enable {}/{}
-```
-
-Then install `clang` or some of the other packages. Please note, that we keep the packages available here for a week or so.
-"""
-
-    builder.make_project(description=description, instructions=instructions)
-    packagenames = ["python-lit", "compat-llvm",
-                    "compat-clang", "llvm", "clang", "lld"]
-    builder.make_packages(packagenames=packagenames)
-    builder.build_packages_chained(packagenames=packagenames)
-
+    builder = CoprBuilder(ownername=args.ownername, projectname=args.projectname)
+    # For location see see https://stackoverflow.com/a/4060259
+    location = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+    description = open(os.path.join(location, "project-description.md"), "r").read()
+    instructions = open(os.path.join(location, "project-instructions.md"), "r").read()
+    builder.ensure_project(description=description, instructions=instructions)
+    builder.make_packages(packagenames=args.packagenames)
+    builder.build_packages_chained(yyyymmdd=args.yyyymmdd, packagenames=args.packagenames, chroots=args.chroots)
 
 if __name__ == "__main__":
     main()

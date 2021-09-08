@@ -1,7 +1,32 @@
-name: Build on Copr
+name: Build LLVM packages on Fedora Copr
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      chroots:
+        description: 'chroots to build in separated by spaces'
+        required: false
+        default: 'fedora-rawhide-x86_64'
+      yyyymmdd:
+        description: 'build snapshots for this year month day combination'
+        required: false
+        default: '20210908'
+      packagenames:
+        description: 'package names to build separated by spaces'
+        required: false
+        default: 'python-lit compat-llvm compat-clang llvm clang lld'
+      ownername:
+        description: 'owner (or group) name of the copr project to be created or checked for existence'
+        required: false
+        default: 'kkleine'
+      projectname:
+        description: 'project name of the copr project'
+        required: false,
+        default: 'llvm-snapshots'
+      timeout:
+        description: 'timeout in seconds for each package to build'
+        required: false,
+        default: 30*3600
 
 jobs:
   build_packages:
@@ -10,15 +35,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+    - uses: actions/setup-python@v2
       with:
         python-version: 3.9
-    - name: Install dependencies
-      run: |
+    - run: |
         python -m pip install --upgrade pip
-        pip install copr
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install copr==1.112
     - name: Batch build on copr
       env:
         COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
@@ -26,4 +48,10 @@ jobs:
         COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
         COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
       run: |
-        python build-on-copr.py
+        python fedora-copr/build.py \
+          --chroots "${{ github.event.inputs.chroots }}" \
+          --yyyymmdd "${{ github.event.inputs.yyyymmdd }}" \
+          --packagenames "${{ github.event.inputs.packagenames }}" \
+          --ownername "${{ github.event.inputs.ownername }}" \
+          --projectname "${{ github.event.inputs.projectname }}" \
+          --timeout "${{ github.event.inputs.timeout }}"
