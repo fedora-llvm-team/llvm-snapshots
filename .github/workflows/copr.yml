@@ -26,7 +26,7 @@ on:
       timeout:
         description: 'timeout in seconds for each package to build'
         required: false
-        default: 108000
+        default: '108000'
 
 jobs:
   build_packages:
