@@ -1,4 +1,4 @@
-name: Build LLVM packages on Fedora Copr
+name: "Fedora Copr"
 
 on:
   workflow_dispatch:
