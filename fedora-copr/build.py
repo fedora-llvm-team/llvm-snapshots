@@ -5,7 +5,6 @@ from copr.v3 import Client, CoprRequestException
 from copr.v3.proxies import build, package, project
 import os
 import sys
-from pprint import pprint
 import datetime
 import argparse
 
@@ -184,7 +183,6 @@ def main():
                         type=int,
                         help="build timeout in seconds for each package (defaults to: 30*3600=108000)")
     args = parser.parse_args()
-    pprint(args)
 
     builder = CoprBuilder(ownername=args.ownername, projectname=args.projectname)
     # For location see see https://stackoverflow.com/a/4060259
