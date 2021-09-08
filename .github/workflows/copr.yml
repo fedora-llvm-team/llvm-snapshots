@@ -49,9 +49,9 @@ jobs:
         COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
       run: |
         python fedora-copr/build.py \
-          --chroots "${{ github.event.inputs.chroots }}" \
+          --chroots ${{ github.event.inputs.chroots }} \
           --yyyymmdd "${{ github.event.inputs.yyyymmdd }}" \
-          --packagenames "${{ github.event.inputs.packagenames }}" \
+          --packagenames ${{ github.event.inputs.packagenames }} \
           --ownername "${{ github.event.inputs.ownername }}" \
           --projectname "${{ github.event.inputs.projectname }}" \
           --timeout "${{ github.event.inputs.timeout }}"
