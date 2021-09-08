@@ -21,11 +21,11 @@ on:
         default: 'kkleine'
       projectname:
         description: 'project name of the copr project'
-        required: false,
+        required: false
         default: 'llvm-snapshots'
       timeout:
         description: 'timeout in seconds for each package to build'
-        required: false,
+        required: false
         default: 108000
 
 jobs:
