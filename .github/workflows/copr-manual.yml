@@ -1,4 +1,4 @@
-name: "Fedora Copr"
+name: "copr-manual"
 
 on:
   workflow_dispatch:
