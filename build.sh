@@ -73,6 +73,44 @@ Usage: ${script} [Options TBD]
 EOF
 }
 
+# Takes an original spec file and prefixes dwz macros to it. Then it
+# writes the generated spec file to a new location.
+#
+# This is to fix errors similar to this one:
+# dwz: ./usr/lib64/llvm12/lib/libLLVM-12.so-12.0.0-7.fc35.aarch64.debug: Too many DIEs, not optimizing
+#
+# @param orig_file Path to the original spec file.
+# @param out_file Path to the spec file that's generated
+dwz_macros() {
+    cat <<EOF
+
+################################################################################
+# BEGIN MACROS FOR REDUCING DEBUG INFO SIZE USING DZW
+################################################################################
+
+# Macros for reducing debug info size using dwz(1) utility.
+# See also https://src.fedoraproject.org/rpms/redhat-rpm-config/blob/rawhide/f/macros.dwz#_24
+
+# Number of debugging information entries (DIEs) above which dwz will stop
+# considering file for multifile optimizations and enter a low memory mode, in
+# which it will optimize in about half the memory needed otherwise.
+
+# On ARM, build boxes often have only 512MB of RAM and are very slow. Usually
+# the limits are lowered in macros.dwz but then we see crashes.
+%_dwz_low_mem_die_limit_armv5tel  10000000
+%_dwz_low_mem_die_limit_armv7hl	  10000000
+	
+# Number of DIEs above which dwz will stop processing a file altogether.
+%_dwz_max_die_limit_armv5tel   110000000
+%_dwz_max_die_limit_armv7hl    110000000
+
+################################################################################
+# END MACROS FOR REDUCING DEBUG INFO SIZE USING DZW
+################################################################################
+
+EOF
+}
+
 # Takes an original spec file and prefixes snapshot information to it. Then it
 # writes the generated spec file to a new location.
 #
@@ -82,7 +120,9 @@ new_snapshot_spec_file() {
     local orig_file=$1
     local out_file=$2
 
-    cat <<EOF > ${out_file}
+    dwz_macros > ${out_file}
+
+    cat <<EOF >> ${out_file}
 ################################################################################
 # BEGIN SNAPSHOT PREFIX
 ################################################################################
@@ -115,7 +155,9 @@ new_compat_spec_file() {
     local orig_file=$1
     local out_file=$2
 
-    cat <<EOF > ${out_file}
+    dwz_macros > ${out_file}
+
+    cat <<EOF >> ${out_file}
 ################################################################################
 # BEGIN COMPAT PREFIX
 ################################################################################
