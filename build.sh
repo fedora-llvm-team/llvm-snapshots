@@ -87,10 +87,7 @@ new_snapshot_spec_file() {
 # BEGIN SNAPSHOT PREFIX
 ################################################################################
 
-%global _with_snapshot_build 1
-# Optionally enable snapshot build with \`--with=snapshot_build\` or \`--define
-# "_with_snapshot_build 1"\`.
-%bcond_with snapshot_build
+%bcond_without snapshot_build
 
 %if %{with snapshot_build}
 %global llvm_snapshot_yyyymmdd           ${yyyymmdd}
