@@ -73,7 +73,7 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
                 enable_net=True,
                 appstream=False)
 
-    def make_packages(self, packagenames: list[str]):
+    def make_packages(self, yyyymmdd: str, packagenames: list[str]):
         """
         Creates or edits existing packages in the copr project. 
         """
@@ -91,7 +91,7 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
                 "source_type": "custom",
                 # For source_dict see https://python-copr.readthedocs.io/en/latest/client_v3/package_source_types.html#custom
                 "source_dict": {
-                    "script": self.script_template.format(packagename, "$(date +%Y%m%d)"),
+                    "script": self.script_template.format(packagename, yyyymmdd),
                     "builddeps": "git make dnf-plugins-core fedora-packager tree curl sed",
                     "resultdir": "buildroot"
                 }
@@ -107,7 +107,7 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
                       self.ownername, self.projectname))
                 self.client.package_proxy.add(**packageattrs)
 
-    def build_packages_chained(self, yyyymmdd: str, packagenames: list[str], chroots: list[str]):
+    def build_packages_chained(self, packagenames: list[str], chroots: list[str]):
         previous_build = None
         for packagename in packagenames:
             # See https://python-copr.readthedocs.io/en/latest/client_v3/build_options.html
@@ -123,19 +123,11 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
                 print("Creating build for package {} in {}/{}".format(packagename,
                       self.ownername, self.projectname), end='')
 
-            # NOTE: We don't use the package proxy to trigger a build because we
-            # have to adjust a value in the script, namely the date, and we want
-            # to be able to trigger builds for different dates without messing
-            # with the custom script that is stored in the package itself. The
-            # latter is more for being able to trigger builds from the Copr UI.
             try:
-                previous_build = self.client.build_proxy.create_from_custom(
+                self.client.package_proxy.build(
                     ownername=self.ownername,
                     projectname=self.projectname,
-                    script=self.script_template.format(packagename, yyyymmdd),
-                    script_chroot=chroots,
-                    script_resultdir='buildroot',
-                    script_builddeps = "git make dnf-plugins-core fedora-packager tree curl sed",
+                    packagename=packagename,
                     buildopts=buildopts,
                 )
             except CoprRequestException as ex:
@@ -190,8 +182,8 @@ def main():
     description = open(os.path.join(location, "project-description.md"), "r").read()
     instructions = open(os.path.join(location, "project-instructions.md"), "r").read()
     builder.ensure_project(description=description, instructions=instructions)
-    builder.make_packages(packagenames=args.packagenames)
-    builder.build_packages_chained(yyyymmdd=args.yyyymmdd, packagenames=args.packagenames, chroots=args.chroots)
+    builder.make_packages(yyyymmdd=args.yyyymmdd, packagenames=args.packagenames)
+    builder.build_packages_chained(packagenames=args.packagenames, chroots=args.chroots)
 
 if __name__ == "__main__":
     main()
