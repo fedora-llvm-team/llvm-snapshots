@@ -87,6 +87,9 @@ new_snapshot_spec_file() {
 # BEGIN SNAPSHOT PREFIX
 ################################################################################
 
+# FIXME: Disable running checks for the time being 
+%global _without_check 1
+
 %bcond_without snapshot_build
 
 %if %{with snapshot_build}
