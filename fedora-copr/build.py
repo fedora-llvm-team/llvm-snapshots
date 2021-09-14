@@ -112,7 +112,7 @@ class CoprBuilder(object):
                       self.ownername, self.projectname), end='')
 
             try:
-                self.client.package_proxy.build(
+                previous_build = self.client.package_proxy.build(
                     ownername=self.ownername,
                     projectname=self.projectname,
                     packagename=packagename,
