@@ -37,18 +37,6 @@ class CoprBuilder(object):
         self.ownername = ownername
         self.projectname = projectname
 
-        # This is the custom script that copr will execute in order to build a
-        # package (see {} placeholder).
-        self.script_template = """#!/bin/bash -xe
-curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/kwk/llvm-daily-fedora-rpms/main/build.sh?$(uuidgen) | bash -s -- \\
-    --verbose \\
-    --reset-project \\
-    --generate-spec-file \\
-    --build-in-one-dir /workdir/buildroot \\
-    --project {} \\
-    --yyyymmdd "{}"
-        """
-
     def ensure_project(self, description: str, instructions: str):
         """
         Creates the copr project or ensures that it already exists.
@@ -73,7 +61,7 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
                 enable_net=True,
                 appstream=False)
 
-    def make_packages(self, yyyymmdd: str, packagenames: list[str]):
+    def make_packages(self, yyyymmdd: str, custom_script: str, packagenames: list[str]):
         """
         Creates or edits existing packages in the copr project. 
         """
@@ -91,7 +79,7 @@ curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.
                 "source_type": "custom",
                 # For source_dict see https://python-copr.readthedocs.io/en/latest/client_v3/package_source_types.html#custom
                 "source_dict": {
-                    "script": self.script_template.format(packagename, yyyymmdd),
+                    "script": custom_script.format(packagename, yyyymmdd),
                     "builddeps": "git make dnf-plugins-core fedora-packager tree curl sed",
                     "resultdir": "buildroot"
                 }
@@ -181,8 +169,9 @@ def main():
     location = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
     description = open(os.path.join(location, "project-description.md"), "r").read()
     instructions = open(os.path.join(location, "project-instructions.md"), "r").read()
+    custom_script = open(os.path.join(location, "custom-script.sh.tpl"), "r").read()
     builder.ensure_project(description=description, instructions=instructions)
-    builder.make_packages(yyyymmdd=args.yyyymmdd, packagenames=args.packagenames)
+    builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=args.packagenames)
     builder.build_packages_chained(packagenames=args.packagenames, chroots=args.chroots)
 
 if __name__ == "__main__":
