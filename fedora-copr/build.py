@@ -51,6 +51,8 @@ class CoprBuilder(object):
             # build for those chroots.
         else:
             print("Creating project {}/{}".format(self.ownername, self.projectname))
+            # TODO(kwk): Outsource compat packages into their own copr project
+            # and make it an additional_repos=
             self.client.project_proxy.add(
                 ownername=self.ownername,
                 projectname=self.projectname,
