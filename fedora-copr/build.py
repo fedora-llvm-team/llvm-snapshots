@@ -8,14 +8,13 @@ import sys
 import datetime
 import argparse
 
-
 class CoprBuilder(object):
     """
     This class simplifies the creation of the copr project and packages as well
     as builds.
     """
 
-    def __init__(self, ownername: str, projectname: str):
+    def __init__(self, yyyymmdd:str, ownername: str, projectname: str):
         """
         Creates a CoprBuilder object for the given owner/group and project name.
 
@@ -36,8 +35,9 @@ class CoprBuilder(object):
             self.client = Client.create_from_config_file()
         self.ownername = ownername
         self.projectname = projectname
+        self.yyyymmdd = yyyymmdd
 
-    def ensure_project(self, description: str, instructions: str):
+    def ensure_project(self, description: str, instructions: str, delete_after_days: int):
         """
         Creates the copr project or ensures that it already exists.
         """
@@ -59,9 +59,10 @@ class CoprBuilder(object):
                 instructions=instructions.format(
                     self.ownername, self.projectname),
                 enable_net=True,
-                appstream=False)
+                appstream=False,
+                delete_after_days=delete_after_days)
 
-    def make_packages(self, yyyymmdd: str, custom_script: str, packagenames: list[str]):
+    def make_packages(self, custom_script: str, packagenames: list[str]):
         """
         Creates or edits existing packages in the copr project. 
         """
@@ -79,7 +80,7 @@ class CoprBuilder(object):
                 "source_type": "custom",
                 # For source_dict see https://python-copr.readthedocs.io/en/latest/client_v3/package_source_types.html#custom
                 "source_dict": {
-                    "script": custom_script.format(packagename, yyyymmdd),
+                    "script": custom_script.format(packagename, self.yyyymmdd),
                     "builddeps": "git make dnf-plugins-core fedora-packager tree curl sed",
                     "resultdir": "buildroot"
                 }
@@ -96,6 +97,10 @@ class CoprBuilder(object):
                 self.client.package_proxy.add(**packageattrs)
 
     def build_packages_chained(self, packagenames: list[str], chroots: list[str]):
+        """
+        TODO(kwk): Find a way to do more clever batching.
+        """
+
         previous_build = None
         for packagename in packagenames:
             # See https://python-copr.readthedocs.io/en/latest/client_v3/build_options.html
@@ -162,16 +167,24 @@ def main():
                         default=30*3600,
                         type=int,
                         help="build timeout in seconds for each package (defaults to: 30*3600=108000)")
+    parser.add_argument('--project-delete-after-days',
+                        dest='project_delete_after_days',
+                        default=7,
+                        type=int,
+                        help="delete the project after the specfied period of days")
     args = parser.parse_args()
 
-    builder = CoprBuilder(ownername=args.ownername, projectname=args.projectname)
+    builder = CoprBuilder(yyyymmdd=args.yyyymmdd, ownername=args.ownername, projectname=args.projectname+"-"+args.yyyymmdd)
+    
     # For location see see https://stackoverflow.com/a/4060259
     location = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-    description = open(os.path.join(location, "project-description.md"), "r").read()
+    
+    description = open(os.path.join(location, "project-description.md"), "r").read().format(args.yyyymmdd, args.project_delete_after_days)
     instructions = open(os.path.join(location, "project-instructions.md"), "r").read()
     custom_script = open(os.path.join(location, "custom-script.sh.tpl"), "r").read()
-    builder.ensure_project(description=description, instructions=instructions)
-    builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=args.packagenames)
+
+    builder.ensure_project(description=description, instructions=instructions, delete_after_days=args.project_delete_after_days)
+    builder.make_packages(custom_script=custom_script, packagenames=args.packagenames)
     builder.build_packages_chained(packagenames=args.packagenames, chroots=args.chroots)
 
 if __name__ == "__main__":
