@@ -1,5 +1,11 @@
-**You're not supposed to enable this repository.**
+Please, use this at your own risk!
 
-Instead, please head over to https://copr.fedorainfracloud.org/coprs/kkleine/llvm-snapshots.
+For instructions on how to use this repository, consult the [official docs](https://docs.pagure.org/copr.copr/how_to_enable_repo.html#how-to-enable-repo).
 
-That is the project that always contains the latest builds for each architecture and operating system.
+In theory, this should be enough on a recent Fedora version:
+
+```
+$ dnf copr enable {}/{}
+```
+
+Then install `clang` or some of the other packages. Please note, that we keep the packages available here for a week or so.

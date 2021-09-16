@@ -27,10 +27,6 @@ on:
         description: 'timeout in seconds for each package to build'
         required: false
         default: '108000'
-      delete_after_days:
-        description: 'delete project after N days'
-        required: false
-        default: 7
 
 jobs:
   build_packages:
@@ -58,5 +54,4 @@ jobs:
           --packagenames ${{ github.event.inputs.packagenames }} \
           --ownername "${{ github.event.inputs.ownername }}" \
           --projectname "${{ github.event.inputs.projectname }}" \
-          --timeout "${{ github.event.inputs.timeout }}" \
-          --project-delete-after-days "${{ github.event.inputs.delete_after_days }}" 
+          --timeout "${{ github.event.inputs.timeout }}"
