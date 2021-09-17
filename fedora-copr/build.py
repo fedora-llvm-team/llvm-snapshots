@@ -124,7 +124,7 @@ class CoprBuilder(object):
     def __build_package(self, package_name: str, chroots: list[str], build_after_id: int=None):
         build = None
         try:
-            print("Creating build for package {} in {}/{}".format(packagename,
+            print("Creating build for package {} in {}/{}".format(package_name,
                     self.__ownername, self.__projectname), end='')
             build = self.__client.package_proxy.build(
                 ownername=self.__ownername,
