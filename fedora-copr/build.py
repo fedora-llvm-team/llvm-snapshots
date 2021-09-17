@@ -210,7 +210,7 @@ def main() -> None:
     builder.make_or_edit_project(description=description, instructions=instructions, chroots=args.chroots)
     builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=args.packagenames)
     
-    if args.packagenames == "":
+    if args.packagenames == "all":
         builder.build_all(chroots=args.chroots)
     else:
         builder.build_packages_chained(packagenames=args.packagenames, chroots=args.chroots)

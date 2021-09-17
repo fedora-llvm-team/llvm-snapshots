@@ -6,12 +6,13 @@ on:
       chroots:
         description: 'chroots to build in separated by spaces (empty=all)'
         required: false
+        default: fedora-rawhide-x86_64 fedora-rawhide-aarch64 fedora-rawhide-s390x fedora-34-x86_64 fedora-34-aarch64 fedora-34-s390x fedora-35-x86_64 fedora-35-aarch64 fedora-35-s390x
       yyyymmdd:
         description: 'build snapshots for this year month day combination'
         required: false
         default: '20210908'
       packagenames:
-        description: 'package names to build separated by spaces (empty=all)'
+        description: 'package names to build separated by spaces (or all to build all)'
         required: false
       ownername:
         description: 'owner (or group) name of the copr project to be created or checked for existence'
