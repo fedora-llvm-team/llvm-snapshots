@@ -38,7 +38,7 @@ class CoprBuilder(object):
         self.__ownername = ownername
         self.__projectname = projectname
 
-    def make_or_edit_project(self, description: str, instructions: str) -> None:
+    def make_or_edit_project(self, description: str, instructions: str, chroots: list[str]) -> None:
         """
         Creates the copr project or ensures that it already exists and edits it.
 
@@ -59,7 +59,7 @@ class CoprBuilder(object):
             self.__client.project_proxy.add(
                 ownername=self.__ownername,
                 projectname=self.__projectname,
-                chroots=['fedora-rawhide-x86_64'],
+                chroots=chroots,
                 description=description,
                 instructions=instructions.format(
                     self.__ownername, self.__projectname),
@@ -166,9 +166,9 @@ def main() -> None:
                         dest='chroots',
                         metavar='CHROOT',
                         nargs='+',
-                        default="fedora-rawhide-x86_64",
+                        default="fedora-rawhide-x86_64 fedora-rawhide-aarch64 fedora-rawhide-s390x fedora-34-x86_64 fedora-34-aarch64 fedora-34-s390x fedora-35-x86_64 fedora-35-aarch64 fedora-35-s390x",
                         type=str,
-                        help="list of chroots to build in (defaults to: fedora-rawhide-x86_64)")
+                        help="list of chroots to build in")
     parser.add_argument('--packagenames',
                         dest='packagenames',
                         metavar='PACKAGENAME',
@@ -207,7 +207,7 @@ def main() -> None:
     instructions = open(os.path.join(location, "project-instructions.md"), "r").read()
     custom_script = open(os.path.join(location, "custom-script.sh.tpl"), "r").read()
 
-    builder.make_or_edit_project(description=description, instructions=instructions)
+    builder.make_or_edit_project(description=description, instructions=instructions, chroots=args.chroots)
     builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=args.packagenames)
     
     if args.packagenames == "":
