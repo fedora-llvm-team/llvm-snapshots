@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       chroots:
-        description: 'chroots to build in separated by spaces'
+        description: 'chroots to build in separated by spaces (empty=all)'
         required: false
         default: 'fedora-rawhide-x86_64'
       yyyymmdd:
@@ -12,7 +12,7 @@ on:
         required: false
         default: '20210908'
       packagenames:
-        description: 'package names to build separated by spaces'
+        description: 'package names to build separated by spaces (empty=all)'
         required: false
         default: 'python-lit compat-llvm compat-clang llvm clang lld'
       ownername:
