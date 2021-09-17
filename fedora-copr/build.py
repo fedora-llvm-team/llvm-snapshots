@@ -38,13 +38,17 @@ class CoprBuilder(object):
         self.__ownername = ownername
         self.__projectname = projectname
 
-    def make_or_edit_project(self, description: str, instructions: str, chroots: list[str]) -> None:
+    def make_or_edit_project(self, description: str, instructions: str, chroots: list[str], delete_project: bool=False) -> None:
         """
         Creates the copr project or ensures that it already exists and edits it.
 
         :param str description: a descriptive text of the project to create or edit
         :param str instrucitons: a text for the instructions of how to enable this project
         """
+        if delete_project == True:
+            # TODO: implement me
+            sys.exit(-1)
+                
         existingprojects = self.__client.project_proxy.get_list(self.__ownername)
         existingprojectnames = [p.name for p in existingprojects]
         if self.__projectname in existingprojectnames:
@@ -143,16 +147,25 @@ class CoprBuilder(object):
         print(" (build-id={}, state={})".format(build.id, build.state))
         return build
 
-    def build_all(self, chroots: list[str]) -> None:
+    def build_all(self, chroots: list[str], with_compat:bool=False) -> None:
         """
         Builds everyting for the given chroots and creates optimal batches.
         """
         # libunwind_build = self.__build_package("libunwind", chroots)
         # libomp_build = self.__build_package("libomp", chroots)
+
         python_lit_build = self.__build_package("python-lit", chroots)
-        llvm_build = self.__build_package("llvm")
         lld_build = self.__build_package("lld", chroots, build_after_id=python_lit_build.id)
-        clang_build = self.__build_package("clang", chroots, build_after_id=python_lit_build.id)
+        
+        llvm_compat_build = None
+        clang_compat_build = None
+        if with_compat == True:
+            llvm_compat_build = self.__build_package("compat-llvm", chroots, build_after_id=python_lit_build.id)
+            clang_compat_build = self.__build_package("compat-clang", chroots, build_after_id=llvm_compat_build.id)
+
+        llvm_build = self.__build_package("llvm", chroots, build_after_id=llvm_compat_build.id if with_compat else None)
+        clang_build = self.__build_package("clang", chroots, build_after_id=clang_compat_build.id if with_compat else llvm_build.id)
+        
         compiler_rt_build = self.__build_package("compiler-rt", chroots, build_after_id=llvm_build.id)
         # mlir_build = self.__build_package("mlir", chroots, build_after_id=llvm_build.id)
         # polly_build = self.__build_package("polly", chroots, build_after_id=clang_build.id)
@@ -160,7 +173,6 @@ class CoprBuilder(object):
         # TODO: libcxx, libcxxabi
 
 def main() -> None:
-    defaultpackagenames=["python-lit", "compat-llvm", "compat-clang", "llvm", "clang", "lld"]
     parser = argparse.ArgumentParser(description='Start LLVM snapshot builds on Fedora Copr.')
     parser.add_argument('--chroots',
                         dest='chroots',
@@ -173,14 +185,14 @@ def main() -> None:
                         dest='packagenames',
                         metavar='PACKAGENAME',
                         nargs='+',
-                        default="",
+                        default="all",
                         type=str,
-                        help="list of LLVM packagenames to build in order. Defaults to: {}".format(" ".join(defaultpackagenames)))
+                        help="list of LLVM packagenames to build in order; defaults to: all")
     parser.add_argument('--yyyymmdd',
                         dest='yyyymmdd',
                         default=datetime.date.today().strftime("%Y%m%d"),
                         type=str,
-                        help="year month day combination to build for; defaults to today (e.g. 20210908)")
+                        help="year month day combination to build for; defaults to today (e.g. {})".format(datetime.date.today().strftime("%Y%m%d")))
     parser.add_argument('--ownername',
                         dest='ownername',
                         default='kkleine',
@@ -196,6 +208,11 @@ def main() -> None:
                         default=30*3600,
                         type=int,
                         help="build timeout in seconds for each package (defaults to: 30*3600=108000)")
+    parser.add_argument('--delete-project',
+                        dest='deleteproject',
+                        default=False,
+                        type=bool,
+                        help="whether to delete the project and it's builds before building)")
     args = parser.parse_args()
 
     builder = CoprBuilder(ownername=args.ownername, projectname=args.projectname)
@@ -207,12 +224,13 @@ def main() -> None:
     instructions = open(os.path.join(location, "project-instructions.md"), "r").read()
     custom_script = open(os.path.join(location, "custom-script.sh.tpl"), "r").read()
 
-    builder.make_or_edit_project(description=description, instructions=instructions, chroots=args.chroots)
-    builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=args.packagenames)
+    builder.make_or_edit_project(description=description, instructions=instructions, chroots=args.chroots, delete_project=args.delete_project)
     
     if args.packagenames == "all":
-        builder.build_all(chroots=args.chroots)
+        builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=["python-lit", "llvm", "lld", "clang", "compiler-rt", "compat-llvm", "compat-clang"])
+        builder.build_all(chroots=args.chroots, with_compat=True)
     else:
+        builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=args.packagenames)
         builder.build_packages_chained(packagenames=args.packagenames, chroots=args.chroots)
 
 if __name__ == "__main__":
