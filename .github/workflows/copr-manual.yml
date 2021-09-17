@@ -6,7 +6,6 @@ on:
       chroots:
         description: 'chroots to build in separated by spaces (empty=all)'
         required: false
-        default: 'fedora-rawhide-x86_64'
       yyyymmdd:
         description: 'build snapshots for this year month day combination'
         required: false
@@ -14,7 +13,6 @@ on:
       packagenames:
         description: 'package names to build separated by spaces (empty=all)'
         required: false
-        default: 'python-lit compat-llvm compat-clang llvm clang lld'
       ownername:
         description: 'owner (or group) name of the copr project to be created or checked for existence'
         required: false
