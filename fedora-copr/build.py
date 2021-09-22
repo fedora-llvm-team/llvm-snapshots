@@ -152,6 +152,7 @@ class CoprBuilder(object):
     def build_all(self, chroots: list[str], with_compat:bool=False) -> None:
         """
         Builds everyting for the given chroots and creates optimal Copr batches.
+        See https://docs.pagure.org/copr.copr/user_documentation.html#build-batches.
         
         NOTE: We kick-off builds for each chroot individually so that an x86_64 build
         doesn't have to wait for a potentially slower s390x build.
