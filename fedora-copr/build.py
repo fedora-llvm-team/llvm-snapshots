@@ -113,17 +113,19 @@ class CoprBuilder(object):
     def build_packages_chained(self, packagenames: list[str], chroots: list[str]) -> None:
         """
         Builds the list of packages for the given chroots in the order they are given.
+        
+        NOTE: We kick-off builds for each chroot individually so that an x86_64 build
+        doesn't have to wait for a potentially slower s390x build.
 
         :param list[str] packagenames: the packages to be built
         :param list[str] chroots: the chroots for which the packages will be built
         """
-        previous_build_id = None
-        for packagename in packagenames:
-            print("Creating build for package {} in {}/{}".format(packagename,
-                    self.__ownername, self.__projectname), end='')
-            build= self.__build_package(packagename, chroots, build_after_id=previous_build_id)
-            previous_build_id = build.id
-            print(" (build-id={}, state={})".format(previous_build_id, build.state))
+        for chroot in chroots:
+            previous_build_id = None
+            for packagename in packagenames:
+                build= self.__build_package(packagename, [chroot], build_after_id=previous_build_id)
+                previous_build_id = build.id
+                print(" (build-id={}, state={})".format(previous_build_id, build.state))
 
     def __build_package(self, package_name: str, chroots: list[str], build_after_id: int=None):
         build = None
@@ -149,28 +151,22 @@ class CoprBuilder(object):
 
     def build_all(self, chroots: list[str], with_compat:bool=False) -> None:
         """
-        Builds everyting for the given chroots and creates optimal batches.
+        Builds everyting for the given chroots and creates optimal Copr batches.
+        
+        NOTE: We kick-off builds for each chroot individually so that an x86_64 build
+        doesn't have to wait for a potentially slower s390x build.
         """
-        # libunwind_build = self.__build_package("libunwind", chroots)
-        # libomp_build = self.__build_package("libomp", chroots)
-
-        python_lit_build = self.__build_package("python-lit", chroots)
-        lld_build = self.__build_package("lld", chroots, build_after_id=python_lit_build.id)
-        
-        llvm_compat_build = None
-        clang_compat_build = None
-        if with_compat == True:
-            llvm_compat_build = self.__build_package("compat-llvm", chroots, build_after_id=python_lit_build.id)
-            clang_compat_build = self.__build_package("compat-clang", chroots, build_after_id=llvm_compat_build.id)
-
-        llvm_build = self.__build_package("llvm", chroots, build_after_id=llvm_compat_build.id if with_compat else None)
-        clang_build = self.__build_package("clang", chroots, build_after_id=clang_compat_build.id if with_compat else llvm_build.id)
-        
-        compiler_rt_build = self.__build_package("compiler-rt", chroots, build_after_id=llvm_build.id)
-        # mlir_build = self.__build_package("mlir", chroots, build_after_id=llvm_build.id)
-        # polly_build = self.__build_package("polly", chroots, build_after_id=clang_build.id)
-        # flang_build = self.__build_package("flang", chroots, build_after_id=mlir_build.id)
-        # TODO: libcxx, libcxxabi
+        for chroot in chroots:
+            python_lit_build = self.__build_package("python-lit", [chroot])
+            llvm_compat_build = None
+            clang_compat_build = None
+            if with_compat == True:
+                llvm_compat_build = self.__build_package("compat-llvm", [chroot], build_after_id=python_lit_build.id)
+                clang_compat_build = self.__build_package("compat-clang", [chroot], build_after_id=llvm_compat_build.id)
+            llvm_build = self.__build_package("llvm", [chroot], build_after_id=llvm_compat_build.id if with_compat else python_lit_build.id)
+            lld_build = self.__build_package("lld", [chroot], build_after_id=llvm_build.id)
+            clang_build = self.__build_package("clang", [chroot], build_after_id=clang_compat_build.id if with_compat else llvm_build.id)
+            compiler_rt_build = self.__build_package("compiler-rt", [chroot], build_after_id=llvm_build.id)
 
 def main() -> None:
     parser = argparse.ArgumentParser(description='Start LLVM snapshot builds on Fedora Copr.')
@@ -178,7 +174,20 @@ def main() -> None:
                         dest='chroots',
                         metavar='CHROOT',
                         nargs='+',
-                        default="fedora-rawhide-x86_64 fedora-rawhide-aarch64 fedora-rawhide-s390x fedora-34-x86_64 fedora-34-aarch64 fedora-34-s390x fedora-35-x86_64 fedora-35-aarch64 fedora-35-s390x",
+                        default=[
+                            "fedora-rawhide-x86_64",
+                            "fedora-rawhide-aarch64", 
+                            "fedora-rawhide-s390x",
+                            "fedora-rawhide-ppc64le", 
+                            "fedora-34-x86_64", 
+                            "fedora-34-aarch64",
+                            "fedora-34-s390x",
+                            "fedora-34-ppc64le", 
+                            "fedora-35-x86_64", 
+                            "fedora-35-aarch64", 
+                            "fedora-35-s390x",
+                            "fedora-35-ppc64le"
+                        ],
                         type=str,
                         help="list of chroots to build in")
     parser.add_argument('--packagenames',
@@ -209,7 +218,7 @@ def main() -> None:
                         type=int,
                         help="build timeout in seconds for each package (defaults to: 30*3600=108000)")
     parser.add_argument('--delete-project',
-                        dest='deleteproject',
+                        dest='delete_project',
                         default=False,
                         type=bool,
                         help="whether to delete the project and it's builds before building)")
@@ -225,12 +234,15 @@ def main() -> None:
     custom_script = open(os.path.join(location, "custom-script.sh.tpl"), "r").read()
 
     builder.make_or_edit_project(description=description, instructions=instructions, chroots=args.chroots, delete_project=args.delete_project)
-    
-    if args.packagenames == "all":
-        builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=["python-lit", "llvm", "lld", "clang", "compiler-rt", "compat-llvm", "compat-clang"])
+
+    packagenames = ["python-lit", "llvm", "lld", "clang", "compiler-rt", "compat-llvm", "compat-clang"]
+    if args.packagenames != "all" and args.packagenames != "":
+        packagenames = args.packagenames
+    builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=packagenames)
+
+    if args.packagenames != "all" and args.packagenames != "":
         builder.build_all(chroots=args.chroots, with_compat=True)
     else:
-        builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=args.packagenames)
         builder.build_packages_chained(packagenames=args.packagenames, chroots=args.chroots)
 
 if __name__ == "__main__":
