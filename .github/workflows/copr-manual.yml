@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       chroots:
-        description: 'chroots to build in separated by spaces (empty=all)'
+        description: 'chroots to build in separated by spaces (or "all" to select a default)'
         required: false
-        default: fedora-rawhide-x86_64 fedora-rawhide-aarch64 fedora-rawhide-s390x fedora-34-x86_64 fedora-34-aarch64 fedora-34-s390x fedora-35-x86_64 fedora-35-aarch64 fedora-35-s390x
+        default: all
       yyyymmdd:
         description: 'build snapshots for this year month day combination'
         required: false
@@ -14,6 +14,7 @@ on:
       packagenames:
         description: 'package names to build separated by spaces (or all to build all)'
         required: false
+        default: 'python-lit compat-llvm compat-clang llvm compiler-rt lld clang'
       ownername:
         description: 'owner (or group) name of the copr project to be created or checked for existence'
         required: false
@@ -26,6 +27,14 @@ on:
         description: 'timeout in seconds for each package to build'
         required: false
         default: '108000'
+      wait_on_build_id:
+        description: "build id to wait for (0 = don't wait)"
+        required: false
+        default: '0'
+      wipe_project:
+        description: "delete the project before creating it (this also cancels running builds)"
+        required: false
+        default: false
 
 jobs:
   build_packages:
@@ -40,6 +49,19 @@ jobs:
     - run: |
         python -m pip install --upgrade pip
         pip install copr==1.112
+    - name: wipe project
+      if: github.event.inputs.wipe-project
+      env:
+        COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+        COPR_URL: ${{ secrets.COPR_URL }}
+        COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+        COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+      run: |
+        python fedora-copr/build.py \
+          --ownername "${{ github.event.inputs.ownername }}" \
+          --projectname "${{ github.event.inputs.projectname }}" \
+          --delete-project True
+
     - name: Batch build on copr
       env:
         COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
@@ -53,4 +75,5 @@ jobs:
           --packagenames ${{ github.event.inputs.packagenames }} \
           --ownername "${{ github.event.inputs.ownername }}" \
           --projectname "${{ github.event.inputs.projectname }}" \
-          --timeout "${{ github.event.inputs.timeout }}"
+          --timeout "${{ github.event.inputs.timeout }}" \
+          --wait_on_build_id "${{ github.event.inputs.wait_on_build_id }}"

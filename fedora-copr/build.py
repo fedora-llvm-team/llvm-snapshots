@@ -3,7 +3,7 @@
 import datetime
 import argparse
 import os
-from copr.v3 import Client, CoprRequestException
+from copr.v3 import Client, CoprRequestException, CoprNoResultException
 import os
 import sys
 
@@ -37,18 +37,29 @@ class CoprBuilder(object):
             self.__client = Client.create_from_config_file()
         self.__ownername = ownername
         self.__projectname = projectname
+        self.__default_chroots = [
+            "fedora-rawhide-x86_64",
+            "fedora-rawhide-aarch64", 
+            "fedora-rawhide-s390x",
+            "fedora-rawhide-ppc64le", 
+            "fedora-34-x86_64", 
+            "fedora-34-aarch64",
+            "fedora-34-s390x",
+            "fedora-34-ppc64le", 
+            "fedora-35-x86_64", 
+            "fedora-35-aarch64", 
+            "fedora-35-s390x",
+            "fedora-35-ppc64le"
+        ]
+        self.__chroots = None
 
-    def make_or_edit_project(self, description: str, instructions: str, chroots: list[str], delete_project: bool=False) -> None:
+    def make_or_edit_project(self, description: str, instructions: str, chroots: list[str]) -> None:
         """
         Creates the copr project or ensures that it already exists and edits it.
 
         :param str description: a descriptive text of the project to create or edit
-        :param str instrucitons: a text for the instructions of how to enable this project
-        """
-        if delete_project == True:
-            # TODO: implement me
-            sys.exit(-1)
-                
+        :param str instructions: a text for the instructions of how to enable this project
+        """               
         existingprojects = self.__client.project_proxy.get_list(self.__ownername)
         existingprojectnames = [p.name for p in existingprojects]
         if self.__projectname in existingprojectnames:
@@ -65,8 +76,7 @@ class CoprBuilder(object):
                 projectname=self.__projectname,
                 chroots=chroots,
                 description=description,
-                instructions=instructions.format(
-                    self.__ownername, self.__projectname),
+                instructions=instructions,
                 enable_net=True,
                 devel_mode=True,
                 appstream=False)
@@ -110,7 +120,7 @@ class CoprBuilder(object):
                       self.__ownername, self.__projectname))
                 self.__client.package_proxy.add(**packageattrs)
 
-    def build_packages_chained(self, packagenames: list[str], chroots: list[str]) -> None:
+    def build_packages_chained(self, packagenames: list[str], chroots: list[str], wait_on_build_id:int=None) -> None:
         """
         Builds the list of packages for the given chroots in the order they are given.
         
@@ -121,7 +131,7 @@ class CoprBuilder(object):
         :param list[str] chroots: the chroots for which the packages will be built
         """
         for chroot in chroots:
-            previous_build_id = None
+            previous_build_id = wait_on_build_id
             for packagename in packagenames:
                 build= self.__build_package(packagename, [chroot], build_after_id=previous_build_id)
                 previous_build_id = build.id
@@ -130,8 +140,8 @@ class CoprBuilder(object):
     def __build_package(self, package_name: str, chroots: list[str], build_after_id: int=None):
         build = None
         try:
-            print("Creating build for package {} in {}/{}".format(package_name,
-                    self.__ownername, self.__projectname), end='')
+            print("Creating build for package {} in {}/{} for chroots {}".format(package_name,
+                    self.__ownername, self.__projectname, chroots), end='')
             build = self.__client.package_proxy.build(
                 ownername=self.__ownername,
                 projectname=self.__projectname,
@@ -149,18 +159,22 @@ class CoprBuilder(object):
         print(" (build-id={}, state={})".format(build.id, build.state))
         return build
 
-    def build_all(self, chroots: list[str], with_compat:bool=False) -> None:
+    def build_all(self, chroots: list[str], with_compat:bool=False, wait_on_build_id:int=None) -> None:
         """
         Builds everyting for the given chroots and creates optimal Copr batches.
         See https://docs.pagure.org/copr.copr/user_documentation.html#build-batches.
         
         NOTE: We kick-off builds for each chroot individually so that an x86_64 build
         doesn't have to wait for a potentially slower s390x build.
+
+        :param list[str] chroots: the chroots for which the packages will be built
+        :param bool with_compat: whether to build compatibility packages or not
+        :param int wait_on_build_id: the build to wait for before starting the new builds.
         """
         for chroot in chroots:
             python_lit_build = self.__build_package("python-lit", [chroot])
-            llvm_compat_build = None
-            clang_compat_build = None
+            llvm_compat_build = wait_on_build_id
+            clang_compat_build = wait_on_build_id
             if with_compat == True:
                 llvm_compat_build = self.__build_package("compat-llvm", [chroot], build_after_id=python_lit_build.id)
                 clang_compat_build = self.__build_package("compat-clang", [chroot], build_after_id=llvm_compat_build.id)
@@ -169,26 +183,61 @@ class CoprBuilder(object):
             clang_build = self.__build_package("clang", [chroot], build_after_id=clang_compat_build.id if with_compat else llvm_build.id)
             compiler_rt_build = self.__build_package("compiler-rt", [chroot], build_after_id=llvm_build.id)
 
+    def get_chroots(self, refresh_cache:bool=False) -> list[str]:
+        """
+        Returns the list of chroots associated with a given project uses default ones.
+        Subsequent calls will return a cached version of the list.
+        """
+        if refresh_cache == False and self.__chroots != None:
+            return self.__chroots
+    
+        chroots = self.__default_chroots
+        try:
+            chroots = self.__client.project_proxy.get(self.__ownername, self.__projectname).chroot_repos.keys()
+        except CoprNoResultException as ex:
+            # using default chroots
+            pass
+        finally:
+            self.__chroots = chroots
+        return self.__chroots
+
+    def cancel_builds(self) -> bool:
+        """
+        Cancels builds with these states: "pending", "waiting", "running", "importing".
+        """
+        print("Canceling builds  builds with these states: pending, waiting, running, importing")
+        try:
+            builds = self.__client.build_proxy.get_list(self.__ownername, self.__projectname)
+        except CoprNoResultException as ex:
+            print("ERROR: {}".format(ex))
+            return False
+        for build in builds:
+            if build.state in {"pending", "waiting", "running", "importing"}:
+                print("Cancelling build with ID  {}".format(build.id))
+                self.__client.build_proxy.cancel(build.id)
+        return True
+
+    def delete_project(self) -> bool:
+        """
+        Attempts to delete the project if it exists and cancels builds before.
+        """
+        print("Deleting project {}/{}".format(self.__ownername, self.__projectname))
+        if self.cancel_builds() == False:
+            return False
+        try:
+            self.__client.project_proxy.delete(self.__ownername, self.__projectname)
+        except CoprNoResultException as ex:
+            print("ERROR: {}".format(ex))
+            return False
+        return True
+
 def main() -> None:
     parser = argparse.ArgumentParser(description='Start LLVM snapshot builds on Fedora Copr.')
     parser.add_argument('--chroots',
                         dest='chroots',
                         metavar='CHROOT',
                         nargs='+',
-                        default=[
-                            "fedora-rawhide-x86_64",
-                            "fedora-rawhide-aarch64", 
-                            "fedora-rawhide-s390x",
-                            "fedora-rawhide-ppc64le", 
-                            "fedora-34-x86_64", 
-                            "fedora-34-aarch64",
-                            "fedora-34-s390x",
-                            "fedora-34-ppc64le", 
-                            "fedora-35-x86_64", 
-                            "fedora-35-aarch64", 
-                            "fedora-35-s390x",
-                            "fedora-35-ppc64le"
-                        ],
+                        default="all",
                         type=str,
                         help="list of chroots to build in")
     parser.add_argument('--packagenames',
@@ -218,15 +267,33 @@ def main() -> None:
                         default=30*3600,
                         type=int,
                         help="build timeout in seconds for each package (defaults to: 30*3600=108000)")
+    parser.add_argument('--wait-on-build-id',
+                        dest='wait_on_build_id',
+                        default=None,
+                        type=int,
+                        help="wait on the given build ID before starting the build")
+    parser.add_argument('--cancel-builds',
+                        dest='cancel_builds',
+                        default=False,
+                        choices=[False,True],
+                        type=bool,
+                        help='cancel builds with these states before creating new ones and then exits: "pending", "waiting", "running", "importing"')
+    parser.add_argument('--print-config',
+                        dest='print_config',
+                        default=False,
+                        choices=[False,True],
+                        type=bool,
+                        help="print the parsed config and exit")
     parser.add_argument('--delete-project',
                         dest='delete_project',
                         default=False,
+                        choices=[False,True],
                         type=bool,
-                        help="whether to delete the project and it's builds before building)")
+                        help="cancel all *running* builds and delete the project, then exit")
     args = parser.parse_args()
 
     builder = CoprBuilder(ownername=args.ownername, projectname=args.projectname)
-    
+
     # For location see see https://stackoverflow.com/a/4060259
     location = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
     
@@ -234,17 +301,73 @@ def main() -> None:
     instructions = open(os.path.join(location, "project-instructions.md"), "r").read()
     custom_script = open(os.path.join(location, "custom-script.sh.tpl"), "r").read()
 
-    builder.make_or_edit_project(description=description, instructions=instructions, chroots=args.chroots, delete_project=args.delete_project)
+    wait_on_build_id = args.wait_on_build_id
+    if wait_on_build_id == None or wait_on_build_id <= 0:
+        wait_on_build_id = None
 
-    packagenames = ["python-lit", "llvm", "lld", "clang", "compiler-rt", "compat-llvm", "compat-clang"]
-    if args.packagenames != "all" and args.packagenames != "":
+    allpackagenames = ["python-lit", "compat-llvm", "compat-clang", "llvm", "compiler-rt", "lld", "clang"]
+    if args.packagenames == "all" or args.packagenames == "":
+        packagenames = allpackagenames
+    else:
         packagenames = args.packagenames
+
+    chroots = args.chroots
+    if args.chroots == "all" or args.chroots == "" or args.chroots == ["all"]:
+        chroots = builder.get_chroots()
+
+    if args.print_config == True:
+        print("""
+Summary
+=======
+
+Owner/Group name:   {} 
+Project name:       {}
+Package names:      {}
+Chroots:            {}
+Wait on build ID:   {} 
+Timeout:            {}
+Year month day:     {}
+
+Description:
+------------
+{}
+
+Instructions:
+-------------
+{}
+
+Custom_script:
+--------------
+{}
+""".format(
+        args.ownername, 
+        args.projectname, 
+        packagenames, 
+        chroots,
+        wait_on_build_id,
+        args.timeout,
+        args.yyyymmdd,
+        description, 
+        instructions, 
+        custom_script))
+        sys.exit(0)
+
+    if args.cancel_builds:
+        res = builder.cancel_builds()
+        sys.exit(0 if res == True else -1)
+
+    if args.delete_project:
+        res = builder.delete_project()
+        sys.exit(0 if res == True else -1)
+
+    builder.make_or_edit_project(chroots=chroots, description=description, instructions=instructions)
+
     builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=packagenames)
 
-    if args.packagenames != "all" and args.packagenames != "":
-        builder.build_all(chroots=args.chroots, with_compat=True)
+    if args.packagenames == "all" or args.packagenames == "":
+        builder.build_all(chroots=chroots, with_compat=True, wait_on_build_id=wait_on_build_id)
     else:
-        builder.build_packages_chained(packagenames=args.packagenames, chroots=args.chroots)
+        builder.build_packages_chained(chroots=chroots, packagenames=packagenames, wait_on_build_id=wait_on_build_id)
 
 if __name__ == "__main__":
     main()

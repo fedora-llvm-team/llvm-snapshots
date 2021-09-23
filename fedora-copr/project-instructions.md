@@ -5,7 +5,7 @@ For instructions on how to use this repository, consult the [official docs](http
 In theory, this should be enough on a recent Fedora version:
 
 ```
-$ dnf copr enable {}/{}
+$ dnf copr enable kkleine/llvm-snapshots
 ```
 
 Then install `clang` or some of the other packages. Please note, that we keep the packages available here for a week or so.

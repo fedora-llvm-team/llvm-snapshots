@@ -393,6 +393,8 @@ function show_build_tree() {
     echo "$@"
     echo "--------------------------------------------"
     echo ""
+    # TODO(kwk): This is only useful when building in containers where we have
+    # files stored in this location.
     tree -guph --du ~/rpmbuild
     echo ""
 }
