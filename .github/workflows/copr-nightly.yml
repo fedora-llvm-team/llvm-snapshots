@@ -1,0 +1,38 @@
+name: "copr-nightly"
+
+on:
+  schedule:
+    # Every day at 00:45
+    # We build our snapshots at 00:00 and they take no more than 15 minutes. (see https://github.com/kwk/llvm-project/actions/workflows/re-build-source-snapshot.yml)
+    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events
+    - cron:  '45 0 * * *'
+  
+  # Comment out to disable manual runs
+  workflow_dispatch: {}
+
+jobs:
+  build_packages:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - run: |
+        python -m pip install --upgrade pip
+        pip install copr==1.112
+    - name: Batch build on copr
+      env:
+        COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+        COPR_URL: ${{ secrets.COPR_URL }}
+        COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+        COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+      run: |
+        python fedora-copr/build.py \
+          --chroots fedora-34-aarch64 fedpra-35-aarch64 fedora-rawhide-aarch64 fedoa-34-x86_64 fedoa-35-x86_64 fedoa-rawhide-x86_64 \
+          --yyyymmdd "$(date +%Y%m%d)" \
+          --ownername "@fedora-llvm-team" \
+          --projectname "llvm-snapshots" \
+          --timeout "108000"
