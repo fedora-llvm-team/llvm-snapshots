@@ -76,4 +76,4 @@ jobs:
           --ownername "${{ github.event.inputs.ownername }}" \
           --projectname "${{ github.event.inputs.projectname }}" \
           --timeout "${{ github.event.inputs.timeout }}" \
-          --wait_on_build_id "${{ github.event.inputs.wait_on_build_id }}"
+          --wait-on-build-id "${{ github.event.inputs.wait_on_build_id }}"
