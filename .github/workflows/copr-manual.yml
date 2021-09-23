@@ -50,7 +50,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install copr==1.112
     - name: wipe project
-      if: ${{ github.event.inputs.wipe-project == 'True' }} 
+      if: ${{ github.event.inputs.wipe_project == 'True' }} 
       env:
         COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
         COPR_URL: ${{ secrets.COPR_URL }}
