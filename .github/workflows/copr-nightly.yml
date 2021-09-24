@@ -5,10 +5,15 @@ on:
     # Every day at 00:45
     # We build our snapshots at 00:00 and they take no more than 15 minutes. (see https://github.com/kwk/llvm-project/actions/workflows/re-build-source-snapshot.yml)
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events
-    - cron:  '45 0 * * *'
+    # - cron:  '45 0 * * *'
   
   # Comment out to disable manual runs
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      yyyymmdd:
+        description: 'build snapshots for this year month day combination'
+        required: false
+        default: ''
 
 jobs:
   build_packages:
@@ -29,10 +34,11 @@ jobs:
         COPR_URL: ${{ secrets.COPR_URL }}
         COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
         COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         python fedora-copr/build.py \
           --chroots fedora-34-aarch64 fedora-35-aarch64 fedora-rawhide-aarch64 fedora-34-x86_64 fedora-35-x86_64 fedora-rawhide-x86_64 \
           --yyyymmdd "$(date +%Y%m%d)" \
           --ownername "@fedora-llvm-team" \
           --projectname "llvm-snapshots" \
-          --timeout "108000"
+          --timeout "108000" 

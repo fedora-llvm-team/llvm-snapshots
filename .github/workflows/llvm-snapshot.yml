@@ -1,0 +1,144 @@
+name: llvm-snapshot
+
+# PURPOSE:
+#
+#   We want to provide LLVM snapshot packagers and distributors with *daily*
+#   source tarballs that are easy to consume. Typically, packagers have to clone
+#   the whole LLVM monorepo themselves and run the "git archive" command to
+#   generate source tarballs for each LLVM component. Those tarballs are the
+#   input to the packaging system (e.g. DEB, RPM, etc.). With this workflow we
+#   can provide the daily source tarballs to the community similar to the source
+#   tarballs of regular releases. Everything a packager needs to know is the
+#   current date (YYYYMMDD) and go ahead and download the LLVM component of
+#   choice, i.e.:
+#
+#   https://github.com/{owner}/llvm-project/releases/download/source-snapshot/clang-tools-extra-20210417.src.tar.xz
+#
+#   Notice the absence of the LLVM version. To get it, a packager can download
+#
+#   https://github.com/{owner}/llvm-project/releases/download/source-snapshot/llvm-release-20210417.src.tar.xz
+#
+#   To get the git revision standalone:
+#
+#   https://github.com/{owner}/llvm-project/releases/download/source-snapshot/llvm-git-revision-20210417.src.tar.xz
+#
+#   The subtle benefit of this naming convention is that you don't need to know
+#   the LLVM version before downloading the source tarball. I mean, how could
+#   you know the LLVM version of a daily snapshot upfront? In fact, the source
+#   tarball for "clang-tools-extra" contains no version information whatsoever
+#   and yet it requires a special LLVM version which is why we provide the
+#   "llvm-release-<YYYYMMDD>.txt" files.
+#
+# WHAT:
+#
+#   At 00:00 in the morning, this workflow creates source tarballs for the
+#   latest stable commit of all LLVM components of the current "main" branch and
+#   uploads them as assets to a pre-release called "source-snapshot". (A
+#   pre-release won't show up on the github repositories front-page.) The assets
+#   that are seven days or older will be deleted on each run. If the workflow
+#   runs twice a day, the old assets of the day will also be deleted. If the
+#   "source-snapshot" release doesn't exist, it will be created automatically.
+
+on:
+  # Uncomment to be able to trigger the workflow manually
+  # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
+  workflow_dispatch: {}
+
+  # schedule:
+  #   # Everyday at 00:00am
+  #   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+  #   - cron:  '0 0 * * *'
+
+jobs:
+
+  # In order to re-build source snapshots and upload them, we must first delete
+  # the old ones from today; otherwise there would be a conflict. As a measure
+  # of not storing old snapshots for too long we'll delete older ones here as
+  # well.
+  build:
+    name: prepare source snapshots and build Fedora packages
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: "install PyGithub and copr (only needed when building for Fedora)"
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - run: |
+          python -m pip install --upgrade pip
+          pip install PyGithub copr==1.112
+      
+      - name: checkout this project
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ github.repository }}
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+          path: llvm-daily-fedora-rpms
+
+      - name: checkout kwk/llvm-project repo
+        uses: actions/checkout@v2
+        with:
+          repository: kwk/llvm-project
+          ref: snapshot
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+          submodules: true
+          path: llvm-project
+
+      - name: setup upstream remote for llvm/llvm-project
+        run: git -C llvm-project remote add upstream https://github.com/llvm/llvm-project.git
+
+      - name: determine last stable commit of upstream llvm/llvm-project
+        id: stable-commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sha=`llvm-daily-fedora-rpms/.github/workflows/get-good-commit.py --token ${{ secrets.GITHUB_TOKEN }} --start-ref main --ensure-checks clang-x86_64-debian-fast llvm-clang-x86_64-expensive-checks-debian`
+          echo -n "::set-output name=sha::$sha"
+          
+      - name: minimal fetch from upstream remote
+        run: git -C llvm-project fetch --depth=1 --no-tags upstream ${{ steps.stable-commit.outputs.sha }} 
+
+      - name: delete assets older than a week and from today
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          llvm-daily-fedora-rpms/.github/workflows/delete-assets.py \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --project kwk/llvm-project \
+            --release-name source-snapshot \
+            --delete-older 7 \
+            --delete-today True
+
+      - name: create source-snapshot tarballs
+        run: |
+          llvm-project/llvm/utils/release/export.sh \
+            --git-ref ${{ steps.stable-commit.outputs.sha }} \
+            --template '${PROJECT}-${YYYYMMDD}.src.tar.xz'
+      
+      - name: upload source-snapshots and version files to kwk/llvm-project pre-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          llvm-daily-fedora-rpms/.github/workflows/upload-source-snapshots.py \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --project kwk/llvm-project \
+            --release-name source-snapshot \
+            --yyyymmdd "$(date +%Y%m%d)"
+      
+      - name: build Fedora packages on copr with a 30h timeout
+        env:
+          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+          COPR_URL: ${{ secrets.COPR_URL }}
+          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python llvm-daily-fedora-rpms/.github/workflows/fedora-copr/build.py \
+            --chroots fedora-34-aarch64 fedora-35-aarch64 fedora-rawhide-aarch64 fedora-34-x86_64 fedora-35-x86_64 fedora-rawhide-x86_64 \
+            --yyyymmdd "$(date +%Y%m%d)" \
+            --ownername "@fedora-llvm-team" \
+            --projectname "llvm-snapshots" \
+            --timeout "108000"
