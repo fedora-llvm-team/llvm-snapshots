@@ -87,6 +87,7 @@ jobs:
           fetch-depth: 1
           path: llvm-daily-fedora-rpms
 
+      # FIXME(kwk): We only have to checkout my fork because this Patch is not yet merged: https://reviews.llvm.org/D101446
       - name: checkout kwk/llvm-project repo
         uses: actions/checkout@v2
         with:
@@ -105,7 +106,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          sha=`llvm-daily-fedora-rpms/.github/workflows/get-good-commit.py --token ${{ secrets.GITHUB_TOKEN }} --start-ref main --ensure-checks clang-x86_64-debian-fast llvm-clang-x86_64-expensive-checks-debian`
+          sha=`llvm-daily-fedora-rpms/.github/workflows/get-good-commit.py --token ${{ secrets.GITHUB_TOKEN }} --project "llvm/llvm-project" --start-ref main --ensure-checks clang-x86_64-debian-fast llvm-clang-x86_64-expensive-checks-debian`
           echo -n "::set-output name=sha::$sha"
           
       - name: minimal fetch from upstream remote

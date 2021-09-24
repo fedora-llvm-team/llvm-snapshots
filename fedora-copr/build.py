@@ -261,7 +261,7 @@ def main() -> None:
                         dest='ownername',
                         default='kkleine',
                         type=str,
-                        help="owner (or group) name of the copr project to be created or checked for existence (defaults to: kkleine)")
+                        help="owner (or group) name of the copr project to be created or checked for existence (defaults to: @fedora-llvm-team)")
     parser.add_argument('--projectname',
                         dest='projectname',
                         default='llvm-snapshots',

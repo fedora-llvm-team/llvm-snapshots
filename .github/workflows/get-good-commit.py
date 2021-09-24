@@ -43,7 +43,7 @@ if __name__ == "__main__":
                         dest='project',
                         type=str,
                         default="llvm/llvm-project",
-                        help="github project to use (default: kwk/llvm-project)")
+                        help="github project to use (default: llvm/llvm-project)")
     parser.add_argument('--start-ref',
                         dest='start_ref',
                         type=str,

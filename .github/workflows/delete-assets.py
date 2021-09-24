@@ -32,13 +32,13 @@ if __name__ == "__main__":
     parser.add_argument('--project',
                         dest='project',
                         type=str,
-                        default="kwk/llvm-project",
-                        help="github project to use (default: kwk/llvm-project")
+                        default="kwk/llvm-daily-fedora-rpms",
+                        help="github project to use (default: kwk/llvm-daily-fedora-rpms")
     parser.add_argument('--release-name',
                         dest='release_name',
                         type=str,
                         default="source-snapshot",
-                        help="name of the release to store the source snapshots (default: kwk/llvm-project")    
+                        help="name of the release to store the source snapshots (default: source-snapshot)")    
     parser.add_argument('--delete-older',
                         dest='delete_older',
                         type=int,
