@@ -12,15 +12,15 @@ name: llvm-snapshot
 #   current date (YYYYMMDD) and go ahead and download the LLVM component of
 #   choice, i.e.:
 #
-#   https://github.com/{owner}/llvm-project/releases/download/source-snapshot/clang-tools-extra-20210417.src.tar.xz
+#   https://github.com/{owner}/llvm-daily-fedora-rpms/releases/download/source-snapshot/clang-tools-extra-20210417.src.tar.xz
 #
 #   Notice the absence of the LLVM version. To get it, a packager can download
 #
-#   https://github.com/{owner}/llvm-project/releases/download/source-snapshot/llvm-release-20210417.src.tar.xz
+#   https://github.com/{owner}/llvm-daily-fedora-rpms/releases/download/source-snapshot/llvm-release-20210417.src.tar.xz
 #
 #   To get the git revision standalone:
 #
-#   https://github.com/{owner}/llvm-project/releases/download/source-snapshot/llvm-git-revision-20210417.src.tar.xz
+#   https://github.com/{owner}/llvm-daily-fedora-rpms/releases/download/source-snapshot/llvm-git-revision-20210417.src.tar.xz
 #
 #   The subtle benefit of this naming convention is that you don't need to know
 #   the LLVM version before downloading the source tarball. I mean, how could
@@ -42,7 +42,16 @@ name: llvm-snapshot
 on:
   # Uncomment to be able to trigger the workflow manually
   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      skip_tarball_generation:
+        description: "Skip source tarball generation (default: False)"
+        required: false
+        default: 'False'
+      skip_copr_build:
+        description: "Skip Fedora Copr build (default: False)"
+        required: false
+        default: 'False'
 
   # schedule:
   #   # Everyday at 00:00am
@@ -55,12 +64,13 @@ jobs:
   # the old ones from today; otherwise there would be a conflict. As a measure
   # of not storing old snapshots for too long we'll delete older ones here as
   # well.
-  build:
-    name: prepare source snapshots and build Fedora packages
+  source-tarballs:
+    name: create source snapshots
+    if: ${{ github.event.inputs.skip_tarball_generation == 'False' }}
     runs-on: ubuntu-latest
     steps:
 
-      - name: "install PyGithub and copr (only needed when building for Fedora)"
+      - name: "install PyGithub"
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
@@ -127,8 +137,24 @@ jobs:
             --project ${{ github.repository }} \
             --release-name source-snapshot \
             --yyyymmdd "$(date +%Y%m%d)"
-      
-      - name: build Fedora packages on copr with a 30h timeout
+    
+  copr-build:
+    name: Fedora Copr
+    if: ${{ always() && github.event.inputs.skip_copr_build == 'False' }}
+    needs: source-tarballs
+    runs-on: ubuntu-latest  
+    steps:
+      - name: install python copr library
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - run: |
+          python -m pip install --upgrade pip
+          pip install copr==1.112
+
+      - uses: actions/checkout@v2
+        
+      - name: copr build
         env:
           COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
           COPR_URL: ${{ secrets.COPR_URL }}
@@ -136,7 +162,7 @@ jobs:
           COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python llvm-daily-fedora-rpms/fedora-copr/build.py \
+          python fedora-copr/build.py \
             --chroots fedora-34-aarch64 fedora-35-aarch64 fedora-rawhide-aarch64 fedora-34-x86_64 fedora-35-x86_64 fedora-rawhide-x86_64 \
             --yyyymmdd "$(date +%Y%m%d)" \
             --ownername "@fedora-llvm-team" \
