@@ -63,11 +63,16 @@ class CoprBuilder(object):
         existingprojects = self.__client.project_proxy.get_list(self.__ownername)
         existingprojectnames = [p.name for p in existingprojects]
         if self.__projectname in existingprojectnames:
-            print("Found project {}/{}".format(self.__ownername, self.__projectname))
-            # We don't edit the project because we wouldn't know what chroots to build
-            # in. Once the project is created then you can add chroots to it other than
-            # rawhide and upon the next daily snapshot build, we will automatically
-            # build for those chroots.
+            print("Found project {}/{}. Updating...".format(self.__ownername, self.__projectname))
+            # NOTE: leave chroots untouched
+            self.__client.project_proxy.edit(
+                ownername=self.__ownername,
+                projectname=self.__projectname,
+                description=description,
+                instructions=instructions,
+                enable_net=True,
+                devel_mode=True,
+                appstream=False)
         else:
             print("Creating project {}/{}".format(self.__ownername, self.__projectname))
             # NOTE: devel_mode=True means that one has to manually create the repo.
