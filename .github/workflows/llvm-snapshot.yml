@@ -104,6 +104,9 @@ jobs:
           sha=`llvm-daily-fedora-rpms/.github/workflows/get-good-commit.py --token ${{ secrets.GITHUB_TOKEN }} --project "llvm/llvm-project" --start-ref main --ensure-checks clang-x86_64-debian-fast llvm-clang-x86_64-expensive-checks-debian`
           echo -n "::set-output name=sha::$sha"
       
+      - name: fetch stable revision to archive
+        run: git -C llvm-project fetch --depth=1 --no-tags origin ${{ steps.stable-commit.outputs.sha }}
+
       - name: delete assets older than a week and from today
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
