@@ -107,7 +107,7 @@ jobs:
         run: |
           llvm-daily-fedora-rpms/.github/workflows/delete-assets.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
-            --project kwk/llvm-project \
+            --project ${{ github.repository }} \
             --release-name source-snapshot \
             --delete-older 7 \
             --delete-today True
@@ -118,13 +118,13 @@ jobs:
             --git-ref ${{ steps.stable-commit.outputs.sha }} \
             --template '${PROJECT}-${YYYYMMDD}.src.tar.xz'
       
-      - name: upload source-snapshots and version files to kwk/llvm-project pre-release
+      - name: upload source-snapshots and version files to ${{ github.repository }} pre-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           llvm-daily-fedora-rpms/.github/workflows/upload-source-snapshots.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
-            --project kwk/llvm-project \
+            --project ${{ github.repository }} \
             --release-name source-snapshot \
             --yyyymmdd "$(date +%Y%m%d)"
       
