@@ -36,6 +36,7 @@ sources_dir=${home_dir}/rpmbuild/SOURCES
 rpms_dir=${home_dir}/rpmbuild/RPMS
 srpms_dir=${home_dir}/rpmbuild/SRPMS
 spec_file=${specs_dir}/$proj.spec
+snapshot_url_prefix=https://github.com/kwk/llvm-daily-fedora-rpms/releases/download/source-snapshot/
 
 #############################################################################
 # These vars can be adjusted with the options passing to this script:
@@ -101,7 +102,7 @@ new_snapshot_spec_file() {
 %global llvm_snapshot_git_revision       ${llvm_git_revision}
 %global llvm_snapshot_git_revision_short ${llvm_git_revision_short}
 
-%global llvm_snapshot_source_prefix      https://github.com/kwk/llvm-daily-fedora-rpms/releases/download/source-snapshot/
+%global llvm_snapshot_source_prefix      ${snapshot_url_prefix}
 %endif
 
 ################################################################################
@@ -150,7 +151,7 @@ build_snapshot() {
     [[ "${opt_verbose}" != "" ]] && set -x
 
     info "Get LLVM version"
-    local url="https://github.com/kwk/llvm-project/releases/download/source-snapshot/llvm-release-${yyyymmdd}.txt"
+    local url="${snapshot_url_prefix}llvm-release-${yyyymmdd}.txt"
     llvm_version=$(curl -sfL "$url")
     local ret=$?
     if [[ $ret -ne 0 ]]; then
@@ -158,7 +159,7 @@ build_snapshot() {
         exit 1
     fi
     
-    url="https://github.com/kwk/llvm-project/releases/download/source-snapshot/llvm-git-revision-${yyyymmdd}.txt"
+    url="${snapshot_url_prefix}llvm-git-revision-${yyyymmdd}.txt"
     llvm_git_revision=$(curl -sfL "$url")
     llvm_git_revision_short=${llvm_git_revision:0:14}
     ret=$?
