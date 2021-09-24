@@ -38,7 +38,7 @@ jobs:
       run: |
         python fedora-copr/build.py \
           --chroots fedora-34-aarch64 fedora-35-aarch64 fedora-rawhide-aarch64 fedora-34-x86_64 fedora-35-x86_64 fedora-rawhide-x86_64 \
-          --yyyymmdd "$(date +%Y%m%d)" \
+          --yyyymmdd "`[[ "${{ github.event.inputs.yyyymmdd }}" != "" ]] && echo "${{ github.event.inputs.yyyymmdd }}" || echo $(date +%Y%m%d)`" \
           --ownername "@fedora-llvm-team" \
           --projectname "llvm-snapshots" \
           --timeout "108000" 
