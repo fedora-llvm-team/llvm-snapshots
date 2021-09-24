@@ -136,7 +136,7 @@ jobs:
           COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python llvm-daily-fedora-rpms/.github/workflows/fedora-copr/build.py \
+          python llvm-daily-fedora-rpms/fedora-copr/build.py \
             --chroots fedora-34-aarch64 fedora-35-aarch64 fedora-rawhide-aarch64 fedora-34-x86_64 fedora-35-x86_64 fedora-rawhide-x86_64 \
             --yyyymmdd "$(date +%Y%m%d)" \
             --ownername "@fedora-llvm-team" \
