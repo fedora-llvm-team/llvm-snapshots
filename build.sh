@@ -100,6 +100,8 @@ new_snapshot_spec_file() {
 %global llvm_snapshot_version_patch      ${llvm_version_patch}
 %global llvm_snapshot_git_revision       ${llvm_git_revision}
 %global llvm_snapshot_git_revision_short ${llvm_git_revision_short}
+
+%global llvm_snapshot_source_prefix      https://github.com/kwk/llvm-daily-fedora-rpms/releases/download/source-snapshot/
 %endif
 
 ################################################################################
