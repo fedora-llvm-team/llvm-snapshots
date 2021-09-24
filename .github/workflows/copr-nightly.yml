@@ -31,7 +31,7 @@ jobs:
         COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
       run: |
         python fedora-copr/build.py \
-          --chroots fedora-34-aarch64 fedpra-35-aarch64 fedora-rawhide-aarch64 fedoa-34-x86_64 fedoa-35-x86_64 fedoa-rawhide-x86_64 \
+          --chroots fedora-34-aarch64 fedora-35-aarch64 fedora-rawhide-aarch64 fedora-34-x86_64 fedora-35-x86_64 fedora-rawhide-x86_64 \
           --yyyymmdd "$(date +%Y%m%d)" \
           --ownername "@fedora-llvm-team" \
           --projectname "llvm-snapshots" \
