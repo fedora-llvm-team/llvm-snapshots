@@ -94,7 +94,6 @@ jobs:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: true
-          fetch-depth: 1
           path: llvm-project
 
       - name: determine last stable commit of llvm/llvm-project
