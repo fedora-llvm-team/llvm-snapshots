@@ -259,7 +259,7 @@ def main() -> None:
                         help="year month day combination to build for; defaults to today (e.g. {})".format(datetime.date.today().strftime("%Y%m%d")))
     parser.add_argument('--ownername',
                         dest='ownername',
-                        default='kkleine',
+                        default='@fedora-llvm-team',
                         type=str,
                         help="owner (or group) name of the copr project to be created or checked for existence (defaults to: @fedora-llvm-team)")
     parser.add_argument('--projectname',
