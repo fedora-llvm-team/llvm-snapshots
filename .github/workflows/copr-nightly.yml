@@ -1,7 +1,7 @@
 name: "copr-nightly"
 
 on:
-  schedule:
+  # schedule:
     # Every day at 00:45
     # We build our snapshots at 00:00 and they take no more than 15 minutes. (see https://github.com/kwk/llvm-project/actions/workflows/re-build-source-snapshot.yml)
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events
