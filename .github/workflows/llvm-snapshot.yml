@@ -53,10 +53,10 @@ on:
         required: false
         default: 'False'
 
-  # schedule:
-  #   # Everyday at 00:00am
-  #   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-  #   - cron:  '0 0 * * *'
+  schedule:
+    # Everyday at 00:00am
+    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+    - cron:  '0 0 * * *'
 
 jobs:
 
@@ -163,4 +163,5 @@ jobs:
             --yyyymmdd "$(date +%Y%m%d)" \
             --ownername "@fedora-llvm-team" \
             --projectname "llvm-snapshots" \
-            --timeout "108000"
+            --timeout "108000" \
+            --with-compat False

@@ -185,7 +185,7 @@ class CoprBuilder(object):
                 clang_compat_build = self.__build_package("compat-clang", [chroot], build_after_id=llvm_compat_build.id)
             llvm_build = self.__build_package("llvm", [chroot], build_after_id=llvm_compat_build.id if with_compat else python_lit_build.id)
             lld_build = self.__build_package("lld", [chroot], build_after_id=llvm_build.id)
-            clang_build = self.__build_package("clang", [chroot], build_after_id=clang_compat_build.id if with_compat else llvm_build.id)
+            clang_build = self.__build_package("clang", [chroot], build_after_id=llvm_build.id)
             compiler_rt_build = self.__build_package("compiler-rt", [chroot], build_after_id=llvm_build.id)
 
     def get_chroots(self, refresh_cache:bool=False) -> list[str]:
@@ -288,13 +288,19 @@ def main() -> None:
                         default=False,
                         choices=[False,True],
                         type=bool,
-                        help="print the parsed config and exit")
+                        help="print the parsed config and exit (default: False)")
+    parser.add_argument('--with-compat',
+                        dest='with_compat',
+                        default=True,
+                        choices=[False,True],
+                        type=bool,
+                        help="whether to build the compat packages or not (default: True)")
     parser.add_argument('--delete-project',
                         dest='delete_project',
                         default=False,
                         choices=[False,True],
                         type=bool,
-                        help="cancel all *running* builds and delete the project, then exit")
+                        help="cancel all *running* builds and delete the project, then exit (default: False)")
     args = parser.parse_args()
 
     builder = CoprBuilder(ownername=args.ownername, projectname=args.projectname)
@@ -370,7 +376,7 @@ Custom_script:
     builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=packagenames)
 
     if args.packagenames == "all" or args.packagenames == "":
-        builder.build_all(chroots=chroots, with_compat=True, wait_on_build_id=wait_on_build_id)
+        builder.build_all(chroots=chroots, with_compat=args.with_compat, wait_on_build_id=wait_on_build_id)
     else:
         builder.build_packages_chained(chroots=chroots, packagenames=packagenames, wait_on_build_id=wait_on_build_id)
 
