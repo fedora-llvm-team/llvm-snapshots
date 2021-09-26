@@ -1,0 +1,27 @@
+name: date-test
+
+on:
+  workflow_dispatch:
+    inputs:
+      foo:
+        description: "foo"
+        required: false
+        default: 'False'
+
+  # schedule:
+  #   # Everyday at 00:00am
+  #   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+  #   - cron:  '0 0 * * *'
+
+jobs:
+
+  run:
+    name: output date
+    #if: ${{ github.event.inputs.foo == 'False' }}
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: output date
+        run: |
+          date
+          
