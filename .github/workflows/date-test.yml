@@ -8,16 +8,16 @@ on:
         required: false
         default: 'False'
 
-  # schedule:
-  #   # Everyday at 00:00am
-  #   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-  #   - cron:  '0 0 * * *'
+  schedule:
+    # Everyday at 00:00am
+    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+    - cron:  '0 19 * * *'
 
 jobs:
 
   run:
     name: output date
-    #if: ${{ github.event.inputs.foo == 'False' }}
+    if: ${{ github.event.inputs.foo == 'False' || github.event.inputs.foo == '' }}
     runs-on: ubuntu-latest
     steps:
 
