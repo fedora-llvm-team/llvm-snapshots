@@ -66,7 +66,7 @@ jobs:
   # well.
   source-tarballs:
     name: create source snapshots
-    if: ${{ github.event.inputs.skip_tarball_generation == 'False' }}
+    if: ${{ github.event.inputs.skip_tarball_generation != 'True' }}
     runs-on: ubuntu-latest
     steps:
 
@@ -136,7 +136,7 @@ jobs:
     
   copr-build:
     name: Fedora Copr
-    if: ${{ always() && github.event.inputs.skip_copr_build == 'False' }}
+    if: ${{ always() && (github.event.inputs.skip_copr_build != 'True' }}
     needs: source-tarballs
     runs-on: ubuntu-latest  
     steps:
