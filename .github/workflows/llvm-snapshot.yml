@@ -56,7 +56,7 @@ on:
   schedule:
     # Everyday at 00:00am
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    - cron:  '30 19 * * *'
+    - cron:  '45 19 * * *'
 
 jobs:
 
@@ -136,7 +136,7 @@ jobs:
     
   copr-build:
     name: Fedora Copr
-    if: ${{ always() && (github.event.inputs.skip_copr_build != 'True' }}
+    if: ${{ always() && github.event.inputs.skip_copr_build != 'True' }}
     needs: source-tarballs
     runs-on: ubuntu-latest  
     steps:
