@@ -11,7 +11,7 @@ on:
   schedule:
     # Everyday at 00:00am
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    - cron:  '0 19 * * *'
+    - cron:  '15 19 * * *'
 
 jobs:
 
