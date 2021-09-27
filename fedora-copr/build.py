@@ -194,6 +194,7 @@ class CoprBuilder(object):
                 clang_compat_build = self.__build_package("compat-clang", [chroot], build_after_id=llvm_compat_build.id)
             llvm_build = self.__build_package("llvm", [chroot], build_after_id=llvm_compat_build.id if with_compat else python_lit_build.id)
             lld_build = self.__build_package("lld", [chroot], build_after_id=llvm_build.id)
+            mlir_build = self.__build_package("mlir", [chroot], build_after_id=llvm_build.id)
             clang_build = self.__build_package("clang", [chroot], build_after_id=llvm_build.id)
             compiler_rt_build = self.__build_package("compiler-rt", [chroot], build_after_id=llvm_build.id)
 
@@ -330,7 +331,7 @@ def main() -> None:
     if wait_on_build_id == None or wait_on_build_id <= 0:
         wait_on_build_id = None
 
-    allpackagenames = ["python-lit", "compat-llvm", "compat-clang", "llvm", "compiler-rt", "lld", "clang"]
+    allpackagenames = ["python-lit", "compat-llvm", "compat-clang", "llvm", "compiler-rt", "lld", "clang", "mlir"]
     if args.packagenames == "all" or args.packagenames == "":
         packagenames = allpackagenames
     else:
