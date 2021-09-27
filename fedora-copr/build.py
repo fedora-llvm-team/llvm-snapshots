@@ -64,13 +64,21 @@ class CoprBuilder(object):
         existingprojectnames = [p.name for p in existingprojects]
         if self.__projectname in existingprojectnames:
             print("Found project {}/{}. Updating...".format(self.__ownername, self.__projectname))
-            # NOTE: leave chroots untouched
+            
+            # First get existing chroots and only add new ones 
+            new_chroots = set(self.__client.project_proxy.get(ownername=self.__ownername, projectname=self.__projectname).chroot_repos.keys())
+            diff_chroots = set(chroots).difference(new_chroots)
+            if diff_chroots != set():
+                print("Adding these chroots to the project: {}".format(diff_chroots))
+            new_chroots.update(chroots)
+
             self.__client.project_proxy.edit(
                 ownername=self.__ownername,
                 projectname=self.__projectname,
                 description=description,
                 instructions=instructions,
                 enable_net=True,
+                chroots=list(new_chroots),
                 devel_mode=True,
                 appstream=False)
         else:
