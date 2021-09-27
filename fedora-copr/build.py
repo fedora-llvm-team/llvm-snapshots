@@ -86,7 +86,7 @@ class CoprBuilder(object):
                 devel_mode=True,
                 appstream=False)
 
-    def make_packages(self, yyyymmdd: str, custom_script: str, packagenames: list[str]) -> None:
+    def make_packages(self, yyyymmdd: str, custom_script: str, packagenames: list[str], max_num_builds: int):
         """
         Creates or edits existing packages in the copr project.
 
@@ -111,7 +111,8 @@ class CoprBuilder(object):
                 "source_dict": {
                     "script": custom_script.format(packagename, yyyymmdd),
                     "builddeps": "git make dnf-plugins-core fedora-packager tree curl sed",
-                    "resultdir": "buildroot"
+                    "resultdir": "buildroot",
+                    "max_builds": max_num_builds,
                 }
             }
             if packagename in existingpackagenames:
@@ -301,6 +302,11 @@ def main() -> None:
                         choices=[False,True],
                         type=bool,
                         help="cancel all *running* builds and delete the project, then exit (default: False)")
+    parser.add_argument('--max-num-builds',
+                        dest='max_num_builds',
+                        default=7,
+                        type=int,
+                        help="keep only the specified number of the newest-by-id builds (default: 7))")
     args = parser.parse_args()
 
     builder = CoprBuilder(ownername=args.ownername, projectname=args.projectname)
@@ -373,7 +379,7 @@ Custom_script:
 
     builder.make_or_edit_project(chroots=chroots, description=description, instructions=instructions)
 
-    builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=packagenames)
+    builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=packagenames, max_num_builds=args.max_num_builds)
 
     if args.packagenames == "all" or args.packagenames == "":
         builder.build_all(chroots=chroots, with_compat=args.with_compat, wait_on_build_id=wait_on_build_id)
