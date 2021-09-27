@@ -246,78 +246,7 @@ class CoprBuilder(object):
             return False
         return True
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description='Start LLVM snapshot builds on Fedora Copr.')
-    parser.add_argument('--chroots',
-                        dest='chroots',
-                        metavar='CHROOT',
-                        nargs='+',
-                        default="all",
-                        type=str,
-                        help="list of chroots to build in")
-    parser.add_argument('--packagenames',
-                        dest='packagenames',
-                        metavar='PACKAGENAME',
-                        nargs='+',
-                        default="all",
-                        type=str,
-                        help="list of LLVM packagenames to build in order; defaults to: all")
-    parser.add_argument('--yyyymmdd',
-                        dest='yyyymmdd',
-                        default=datetime.date.today().strftime("%Y%m%d"),
-                        type=str,
-                        help="year month day combination to build for; defaults to today (e.g. {})".format(datetime.date.today().strftime("%Y%m%d")))
-    parser.add_argument('--ownername',
-                        dest='ownername',
-                        default='@fedora-llvm-team',
-                        type=str,
-                        help="owner (or group) name of the copr project to be created or checked for existence (defaults to: @fedora-llvm-team)")
-    parser.add_argument('--projectname',
-                        dest='projectname',
-                        default='llvm-snapshots',
-                        type=str,
-                        help="project name of the copr project (defaults to: llvm-snapshots)")
-    parser.add_argument('--timeout',
-                        dest='timeout',
-                        default=30*3600,
-                        type=int,
-                        help="build timeout in seconds for each package (defaults to: 30*3600=108000)")
-    parser.add_argument('--wait-on-build-id',
-                        dest='wait_on_build_id',
-                        default=None,
-                        type=int,
-                        help="wait on the given build ID before starting the build")
-    parser.add_argument('--cancel-builds',
-                        dest='cancel_builds',
-                        default=False,
-                        choices=[False,True],
-                        type=bool,
-                        help='cancel builds with these states before creating new ones and then exits: "pending", "waiting", "running", "importing"')
-    parser.add_argument('--print-config',
-                        dest='print_config',
-                        default=False,
-                        choices=[False,True],
-                        type=bool,
-                        help="print the parsed config and exit (default: False)")
-    parser.add_argument('--with-compat',
-                        dest='with_compat',
-                        default=True,
-                        choices=[False,True],
-                        type=bool,
-                        help="whether to build the compat packages or not (default: True)")
-    parser.add_argument('--delete-project',
-                        dest='delete_project',
-                        default=False,
-                        choices=[False,True],
-                        type=bool,
-                        help="cancel all *running* builds and delete the project, then exit (default: False)")
-    parser.add_argument('--max-num-builds',
-                        dest='max_num_builds',
-                        default=7,
-                        type=int,
-                        help="keep only the specified number of the newest-by-id builds (default: 7))")
-    args = parser.parse_args()
-
+def main(args) -> None:
     builder = CoprBuilder(ownername=args.ownername, projectname=args.projectname)
 
     # For location see see https://stackoverflow.com/a/4060259
@@ -396,4 +325,74 @@ Custom_script:
         builder.build_packages_chained(chroots=chroots, packagenames=packagenames, wait_on_build_id=wait_on_build_id)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='Start LLVM snapshot builds on Fedora Copr.')
+    parser.add_argument('--chroots',
+                        dest='chroots',
+                        metavar='CHROOT',
+                        nargs='+',
+                        default="all",
+                        type=str,
+                        help="list of chroots to build in")
+    parser.add_argument('--packagenames',
+                        dest='packagenames',
+                        metavar='PACKAGENAME',
+                        nargs='+',
+                        default="all",
+                        type=str,
+                        help="list of LLVM packagenames to build in order; defaults to: all")
+    parser.add_argument('--yyyymmdd',
+                        dest='yyyymmdd',
+                        default=datetime.date.today().strftime("%Y%m%d"),
+                        type=str,
+                        help="year month day combination to build for; defaults to today (e.g. {})".format(datetime.date.today().strftime("%Y%m%d")))
+    parser.add_argument('--ownername',
+                        dest='ownername',
+                        default='@fedora-llvm-team',
+                        type=str,
+                        help="owner (or group) name of the copr project to be created or checked for existence (defaults to: @fedora-llvm-team)")
+    parser.add_argument('--projectname',
+                        dest='projectname',
+                        default='llvm-snapshots',
+                        type=str,
+                        help="project name of the copr project (defaults to: llvm-snapshots)")
+    parser.add_argument('--timeout',
+                        dest='timeout',
+                        default=30*3600,
+                        type=int,
+                        help="build timeout in seconds for each package (defaults to: 30*3600=108000)")
+    parser.add_argument('--wait-on-build-id',
+                        dest='wait_on_build_id',
+                        default=None,
+                        type=int,
+                        help="wait on the given build ID before starting the build")
+    parser.add_argument('--cancel-builds',
+                        dest='cancel_builds',
+                        default=False,
+                        choices=[False,True],
+                        type=bool,
+                        help='cancel builds with these states before creating new ones and then exits: "pending", "waiting", "running", "importing"')
+    parser.add_argument('--print-config',
+                        dest='print_config',
+                        default=False,
+                        choices=[False,True],
+                        type=bool,
+                        help="print the parsed config and exit (default: False)")
+    parser.add_argument('--with-compat',
+                        dest='with_compat',
+                        default=True,
+                        choices=[False,True],
+                        type=bool,
+                        help="whether to build the compat packages or not (default: True)")
+    parser.add_argument('--delete-project',
+                        dest='delete_project',
+                        default=False,
+                        choices=[False,True],
+                        type=bool,
+                        help="cancel all *running* builds and delete the project, then exit (default: False)")
+    parser.add_argument('--max-num-builds',
+                        dest='max_num_builds',
+                        default=7,
+                        type=int,
+                        help="keep only the specified number of the newest-by-id builds (default: 7))")
+
+    main(parser.parse_args())

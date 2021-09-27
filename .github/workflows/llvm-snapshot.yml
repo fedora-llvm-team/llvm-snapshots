@@ -165,4 +165,4 @@ jobs:
             --projectname "llvm-snapshots" \
             --timeout "108000" \
             --with-compat False \
-            --max-builds 7
+            --max-num-builds 7
