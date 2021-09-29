@@ -315,7 +315,7 @@ def main(args) -> None:
         packagenames = args.packagenames
 
     chroots = args.chroots
-    if args.chroots == "all" or args.chroots == ["all"] or args.chroots == "" or args.chroots == ["all"]:
+    if args.chroots == ["all"] or args.chroots == "all" or args.chroots == "":
         chroots = builder.get_chroots()
 
     if args.print_config == True:
