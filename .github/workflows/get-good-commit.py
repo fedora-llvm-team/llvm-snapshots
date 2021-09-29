@@ -4,22 +4,35 @@ import sys
 from github import Github
 import argparse
 
-def main(args) -> None:
-    g = Github(login_or_token=args.token)
-    repo = g.get_repo(args.project)
-    sha=args.start_ref
+def get_good_commit(token: str, project:str, start_ref:str, max_tries:int, ensure_checks:list[str]) -> str:
+    """
+    Takes a github project and walks up the list of first parents beginning at
+    `start_ref` until a "good" git commit is found. For a git commit to be good,
+    the combined status of the git commit must be "success" and all the checks
+    in `ensure_checks` must have run for the commit.
+    
+    See also: https://docs.github.com/en/rest/reference/repos#get-the-combined-status-for-a-specific-reference
 
-    for i in range(0, args.max_tries):
+    :param str token: to be used for github token authentication
+    :param str project: the github project to work with
+    :param str start_ref: the git ref to check first (can be a SHA, a branch name, or a tag name)
+    :param int max_tries: the number of parents that the algorithm tries before giving up and returning an empty string 
+    :param list[str] ensure_checks: the list of checks that must exist for a commit to be classified as "good"
+    """
+    g = Github(login_or_token=token)
+    repo = g.get_repo(project)
+    sha=start_ref
+
+    for i in range(0, max_tries):
         commit = repo.get_commit(sha=sha)
         combined_status = commit.get_combined_status().state
         if combined_status != "success":
-            # move on with parent if combined status is not successful
+            # move on with first parent if combined status is not successful
             sha=commit.parents[0].sha
             continue
         
-        ok = False
         statuses = commit.get_statuses()
-        checks = args.ensure_checks
+        checks = ensure_checks
         for status in statuses:
             if status.context in checks:
                 checks.remove(status.context)
@@ -28,11 +41,10 @@ def main(args) -> None:
             sha=commit.parents[0].sha
             continue
         
-        print(commit.sha)
-        sys.exit(0)
-    sys.exit(-1)
+        return sha
+    return ""
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='Find the latest commit that passed tests')
     parser.add_argument('--token',
                         dest='token',
@@ -61,4 +73,16 @@ if __name__ == "__main__":
                         default=["clang-x86_64-debian-fast", "llvm-clang-x86_64-expensive-checks-debian"],
                         type=str,
                         help="list check names that must have run (default: clang-x86_64-debian-fast, llvm-clang-x86_64-expensive-checks-debian)")
-    main(parser.parse_args())
+    args = parser.parse_args()
+    
+    sha = get_good_commit(token=args.token,
+                          project=args.project, 
+                          start_ref=args.start_ref, 
+                          ensure_checks=args.ensure_checks, 
+                          max_tries=args.max_tries)
+    if sha == "":
+        sys.exit(-1)
+    print(sha)
+
+if __name__ == "__main__":
+    main()
