@@ -3,26 +3,40 @@
 from github import Github, UnknownObjectException
 import argparse
 import datetime
+import sys
 
-def main(args) -> None:
-    g = Github(login_or_token=args.token)
-    repo = g.get_repo(args.project)
+def delete_assets(token:str, project:str, release_name:str, delete_older:int, delete_today:bool) -> bool:
+    """
+    Deletes release assets of a github project that are older than a given
+    number of days. Optionally assets from today are also deleted.
+
+    :param str token: to be used for github token authentication
+    :param str project: the github project to work with
+    :param str release_name: the github release within the project to operate on
+    :param int delete_older: delete assets that are older than this amount of days
+    :param bool delete_today: if True, deletes assets from today
+    """
+    g = Github(login_or_token=token)
+    repo = g.get_repo(project)
     
-    print("deleting assets older than a week and from today in release '{}'".format(args.release_name))
+    print("deleting assets older than a week and from today in release '{}'".format(release_name))
     try:
-        release = repo.get_release(args.release_name)
+        release = repo.get_release(release_name)
     except UnknownObjectException as ex:
-        print("release '{}' not found and so there's nothing to delete".format(args.release_name))
+        print("release '{}' not found and so there's nothing to delete".format(release_name))
     else:
         for asset in release.get_assets():
-            if asset.created_at < (datetime.datetime.now() - datetime.timedelta(days=args.delete_older)):
+            if asset.created_at < (datetime.datetime.now() - datetime.timedelta(days=delete_older)):
                 print("deleting asset '{}' created at {}".format(asset.name, asset.created_at))
-                asset.delete_asset()
-            if args.delete_today == True and asset.created_at.strftime("%Y%m%d") == datetime.datetime.now().strftime("%Y%m%d"):
+                if asset.delete_asset() != True
+                    return False
+            if delete_today == True and asset.created_at.strftime("%Y%m%d") == datetime.datetime.now().strftime("%Y%m%d"):
                 print("deleting asset '{}' created at {}".format(asset.name, asset.created_at))
-                asset.delete_asset()
+                if asset.delete_asset() != True:
+                    return False
+    return True
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='Delete assets from today and older than a week (by default).')
     parser.add_argument('--token',
                         dest='token',
@@ -49,5 +63,11 @@ if __name__ == "__main__":
                         type=bool,
                         choices=[False,True],
                         default=True,
-                        help="delete assets of today before recreating them (default: True)") 
-    main(parser.parse_args())
+                        help="delete assets of today before recreating them (default: True)")
+    parser.parse_args()
+    if delete_assets() != True:
+        sys.exit(-1)
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()
