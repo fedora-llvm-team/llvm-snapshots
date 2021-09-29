@@ -53,10 +53,10 @@ on:
         required: false
         default: 'False'
 
-  schedule:
-    # Everyday at 00:00am
-    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    - cron:  '45 19 * * *'
+  # schedule:
+  #   # Everyday at 00:00am
+  #   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+  #   - cron:  '45 19 * * *'
 
 jobs:
 
