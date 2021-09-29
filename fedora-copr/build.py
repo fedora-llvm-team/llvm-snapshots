@@ -7,6 +7,8 @@ from copr.v3 import Client, CoprRequestException, CoprNoResultException
 import os
 import sys
 
+from copr.v3.proxies import package
+
 class CoprBuilder(object):
     """
     This class simplifies the creation of the copr project and packages as well
@@ -147,12 +149,29 @@ class CoprBuilder(object):
         for chroot in chroots:
             previous_build_id = wait_on_build_id
             for packagename in packagenames:
-                build= self.__build_package(packagename, [chroot], build_after_id=previous_build_id)
-                previous_build_id = build.id
-                print(" (build-id={}, state={})".format(previous_build_id, build.state))
+                build = self.__build_package(packagename, [chroot], build_after_id=previous_build_id)
+                if build != dict():
+                    previous_build_id = build.id
+                    print(" (build-id={}, state={})".format(previous_build_id, build.state))
+                else:
+                    print("skipped build of package {} in chroot {}".format(packagename, chroot))
 
     def __build_package(self, package_name: str, chroots: list[str], build_after_id: int=None):
         build = None
+
+        # Don't build compat packages in chroots where they don't belong.
+        # TODO(kwk): Oh boy, this sucks.
+        new_chroots = set(chroots)
+        for chroot in chroots:
+            if (package_name == "compat-llvm-fedora-34" or package_name == "compat-clang-fedora-34" ) and not chroot.startswith("fedora-34-"):
+                new_chroots.remove(chroot)
+            if (package_name == "compat-llvm-fedora-35" or package_name == "compat-clang-fedora-35" ) and not chroot.startswith("fedora-35-"):
+                new_chroots.remove(chroot)
+            if (package_name == "compat-llvm-fedora-rawhide" or package_name == "compat-clang-fedora-rawhide" ) and not chroot.startswith("fedora-rawhide-"):
+                new_chroots.remove(chroot)
+        if new_chroots == set():
+            return dict()
+
         try:
             print("Creating build for package {} in {}/{} for chroots {}".format(package_name,
                     self.__ownername, self.__projectname, chroots), end='')
@@ -163,7 +182,7 @@ class CoprBuilder(object):
                 # See https://python-copr.readthedocs.io/en/latest/client_v3/build_options.html
                 buildopts={
                     "timeout": 30*3600,
-                    "chroots": chroots,
+                    "chroots": list(new_chroots),
                     "after_build_id": build_after_id
                 },
             )
@@ -190,8 +209,24 @@ class CoprBuilder(object):
             llvm_compat_build = wait_on_build_id
             clang_compat_build = wait_on_build_id
             if with_compat == True:
-                llvm_compat_build = self.__build_package("compat-llvm", [chroot], build_after_id=python_lit_build.id)
-                clang_compat_build = self.__build_package("compat-clang", [chroot], build_after_id=llvm_compat_build.id)
+                llvm_compat_build = dict()
+                clang_compat_build = dict()
+
+                llvm_compat_build = self.__build_package("compat-llvm-fedora-34", [chroot], build_after_id=python_lit_build.id)
+                if llvm_compat_build != dict():
+                    clang_compat_build = self.__build_package("compat-clang-fedora-34", [chroot], build_after_id=llvm_compat_build.id)
+
+                if llvm_compat_build == dict():
+                    llvm_compat_build = self.__build_package("compat-llvm-fedora-35", [chroot], build_after_id=python_lit_build.id)
+                    if llvm_compat_build != dict():
+                        clang_compat_build = self.__build_package("compat-clang-fedora-35", [chroot], build_after_id=llvm_compat_build.id)
+
+                if llvm_compat_build == dict():
+                    llvm_compat_build = self.__build_package("compat-llvm-fedora-rawhide", [chroot], build_after_id=python_lit_build.id)
+                    if llvm_compat_build != dict():
+                        clang_compat_build = self.__build_package("compat-clang-fedora-rawhide", [chroot], build_after_id=llvm_compat_build.id)
+
+
             llvm_build = self.__build_package("llvm", [chroot], build_after_id=llvm_compat_build.id if with_compat else python_lit_build.id)
             lld_build = self.__build_package("lld", [chroot], build_after_id=llvm_build.id)
             mlir_build = self.__build_package("mlir", [chroot], build_after_id=llvm_build.id)
@@ -260,14 +295,27 @@ def main(args) -> None:
     if wait_on_build_id == None or wait_on_build_id <= 0:
         wait_on_build_id = None
 
-    allpackagenames = ["python-lit", "compat-llvm", "compat-clang", "llvm", "compiler-rt", "lld", "clang", "mlir"]
-    if args.packagenames == "all" or args.packagenames == "":
+    allpackagenames = [
+        "python-lit",
+        "compat-llvm-fedora-rawhide",
+        "compat-llvm-fedora-35",
+        "compat-llvm-fedora-34",
+        "compat-clang-fedora-rawhide",
+        "compat-clang-fedora-35",
+        "compat-clang-fedora-34",
+        "llvm",
+        "compiler-rt",
+        "lld",
+        "clang",
+        "mlir"
+    ]
+    if args.packagenames == ["all"] or args.packagenames == "all" or args.packagenames == "":
         packagenames = allpackagenames
     else:
         packagenames = args.packagenames
 
     chroots = args.chroots
-    if args.chroots == "all" or args.chroots == "" or args.chroots == ["all"]:
+    if args.chroots == "all" or args.chroots == ["all"] or args.chroots == "" or args.chroots == ["all"]:
         chroots = builder.get_chroots()
 
     if args.print_config == True:

@@ -205,10 +205,24 @@ EOF
         git -C ${sources_dir} fetch --quiet upstream
     fi
 
-    # Checkout rawhide branch from upstream if building compat package
+    # Checkout OS-dependent branch from upstream if building compat package
     if [ "${opt_build_compat_packages}" != "" ]; then
-        info "Reset to upstream/rawhide for compatibility build"
-        git -C $sources_dir reset --hard upstream/rawhide
+        local branch=""
+        case "$orig_package_name" in
+            "compat-llvm-fedora-34" | "compat-clang-fedora34")
+                branch="upstream/f34"
+                ;;
+            "compat-llvm-fedora-35" | "compat-clang-fedora-35")
+                branch="upstream/f35"
+                ;;
+            "compat-llvm-fedora-rawhide" | "compat-clang-fedora-rawhide")
+                branch="upstream/rawhide"
+                ;;
+        esac
+
+        info "Reset to ${branch} for compatibility build"
+        git -C $sources_dir reset --hard ${branch}
+        unset branch
     else
         info "Reset to kkleine/snapshot-build for snapshot build"
         git -C $sources_dir reset --hard kkleine/snapshot-build
@@ -308,6 +322,7 @@ opt_build_compat_packages=""
 opt_koji_build_rpm=""
 opt_koji_wait_for_build_option="--nowait"
 opt_build_in_one_dir=""
+orig_package_name=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -318,13 +333,20 @@ while [ $# -gt 0 ]; do
         --project )
             shift
             proj="$1"
+            orig_package_name = "$proj"
             # NOTE: Implicitly enabling a compatibility build when the project's
-            # name begins with "compat-". The project's name is automatically
-            # cleaned from the "compat-" prefix.
-            if [[ $proj = compat-* ]]; then
-                proj="$(echo $proj | sed 's/^compat-//')"
-                opt_build_compat_packages="1"
-            fi  
+            # name begins with "compat-". The project's name is manually
+            # cleaned from the "compat-" prefix and the "-fedora-XX" suffix.
+            case "$proj" in
+                "compat-llvm-fedora-34" | "compat-llvm-fedora-35" | "compat-llvm-fedora-rawhide")
+                    proj="llvm"
+                    opt_build_compat_packages="1"
+                    ;;
+                "compat-clang-fedora-34" | "compat-clang-fedora-35" | "compat-clang-fedora-rawhide")
+                    proj="clang"
+                    opt_build_compat_packages="1"
+                    ;;
+            esac
             ;;
         --build-in-one-dir )
             shift
