@@ -333,7 +333,7 @@ while [ $# -gt 0 ]; do
         --project )
             shift
             proj="$1"
-            orig_package_name = "$proj"
+            orig_package_name="$proj"
             # NOTE: Implicitly enabling a compatibility build when the project's
             # name begins with "compat-". The project's name is manually
             # cleaned from the "compat-" prefix and the "-fedora-XX" suffix.
