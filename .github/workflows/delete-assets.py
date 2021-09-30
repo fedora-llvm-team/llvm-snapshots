@@ -28,7 +28,7 @@ def delete_assets(token:str, project:str, release_name:str, delete_older:int, de
         for asset in release.get_assets():
             if asset.created_at < (datetime.datetime.now() - datetime.timedelta(days=delete_older)):
                 print("deleting asset '{}' created at {}".format(asset.name, asset.created_at))
-                if asset.delete_asset() != True
+                if asset.delete_asset() != True:
                     return False
             if delete_today == True and asset.created_at.strftime("%Y%m%d") == datetime.datetime.now().strftime("%Y%m%d"):
                 print("deleting asset '{}' created at {}".format(asset.name, asset.created_at))

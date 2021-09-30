@@ -164,5 +164,5 @@ jobs:
             --ownername "@fedora-llvm-team" \
             --projectname "llvm-snapshots" \
             --timeout "108000" \
-            --with-compat False \
+            --without-compat \
             --max-num-builds 7

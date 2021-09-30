@@ -415,32 +415,25 @@ if __name__ == "__main__":
                         help="wait on the given build ID before starting the build")
     parser.add_argument('--cancel-builds',
                         dest='cancel_builds',
-                        default=False,
-                        choices=[False,True],
-                        type=bool,
+                        action="store_true",
                         help='cancel builds with these states before creating new ones and then exits: "pending", "waiting", "running", "importing"')
     parser.add_argument('--print-config',
                         dest='print_config',
-                        default=False,
-                        choices=[False,True],
-                        type=bool,
+                        action="store_true",
                         help="print the parsed config and exit (default: False)")
-    parser.add_argument('--with-compat',
+    parser.add_argument('--without-compat',
                         dest='with_compat',
-                        default=True,
-                        choices=[False,True],
-                        type=bool,
-                        help="whether to build the compat packages or not (default: True)")
+                        action="store_false",
+                        help="whether to build the compat packages or not (default: build WITH compat packages)")
     parser.add_argument('--delete-project',
                         dest='delete_project',
-                        default=False,
-                        choices=[False,True],
-                        type=bool,
+                        action="store_false",
                         help="cancel all *running* builds and delete the project, then exit (default: False)")
     parser.add_argument('--max-num-builds',
                         dest='max_num_builds',
                         default=7,
                         type=int,
-                        help="keep only the specified number of the newest-by-id builds (default: 7))")
+                        help="keep only the specified number of the newest-by-id builds, but remember to multiply by number of chroots (default: 9x7=63))")
 
-    main(parser.parse_args())
+    args = parser.parse_args()
+    main(args)
