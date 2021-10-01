@@ -427,7 +427,7 @@ if __name__ == "__main__":
                         help="whether to build the compat packages or not (default: build WITH compat packages)")
     parser.add_argument('--delete-project',
                         dest='delete_project',
-                        action="store_false",
+                        action="store_true",
                         help="cancel all *running* builds and delete the project, then exit (default: False)")
     parser.add_argument('--max-num-builds',
                         dest='max_num_builds',
