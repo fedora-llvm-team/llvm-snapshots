@@ -1,4 +1,4 @@
-name: llvm-snapshot
+name: generate-snapshot-tarballs
 
 # PURPOSE:
 #
@@ -42,16 +42,7 @@ name: llvm-snapshot
 on:
   # Uncomment to be able to trigger the workflow manually
   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
-  workflow_dispatch:
-    inputs:
-      skip_tarball_generation:
-        description: "Skip source tarball generation (default: False)"
-        required: false
-        default: 'False'
-      skip_copr_build:
-        description: "Skip Fedora Copr build (default: False)"
-        required: false
-        default: 'False'
+  workflow_dispatch: {}
 
   # schedule:
   #   # Everyday at 00:00am
@@ -65,8 +56,7 @@ jobs:
   # of not storing old snapshots for too long we'll delete older ones here as
   # well.
   source-tarballs:
-    name: create source snapshots
-    if: ${{ github.event.inputs.skip_tarball_generation != 'True' }}
+    name: generate snapshot tarballs
     runs-on: ubuntu-latest
     steps:
 
@@ -78,7 +68,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install PyGithub copr==1.112
       
-      - name: checkout this project
+      - name: "checkout this project"
         uses: actions/checkout@v2
         with:
           repository: ${{ github.repository }}
@@ -87,7 +77,7 @@ jobs:
           fetch-depth: 1
           path: llvm-daily-fedora-rpms
 
-      - name: checkout llvm/llvm-project
+      - name: "checkout llvm/llvm-project"
         uses: actions/checkout@v2
         with:
           repository: llvm/llvm-project
@@ -96,73 +86,42 @@ jobs:
           submodules: true
           path: llvm-project
 
-      - name: determine last stable commit of llvm/llvm-project
+      - name: "determine last stable commit of llvm/llvm-project"
         id: stable-commit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          sha=`llvm-daily-fedora-rpms/.github/workflows/get-good-commit.py --token ${{ secrets.GITHUB_TOKEN }} --project "llvm/llvm-project" --start-ref main --ensure-checks clang-x86_64-debian-fast llvm-clang-x86_64-expensive-checks-debian`
+          sha=`llvm-daily-fedora-rpms/github/get-good-commit.py --token ${{ secrets.GITHUB_TOKEN }} --project "llvm/llvm-project" --start-ref main --ensure-checks clang-x86_64-debian-fast llvm-clang-x86_64-expensive-checks-debian`
           echo -n "::set-output name=sha::$sha"
       
-      - name: fetch stable revision to archive
+      - name: "fetch stable revision to archive"
         run: git -C llvm-project fetch --depth=1 --no-tags origin ${{ steps.stable-commit.outputs.sha }}
 
-      - name: delete assets older than a week and from today
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          llvm-daily-fedora-rpms/.github/workflows/delete-assets.py \
-            --token ${{ secrets.GITHUB_TOKEN }} \
-            --project ${{ github.repository }} \
-            --release-name source-snapshot \
-            --delete-older 7 \
-            --delete-today True
-
-      - name: create source-snapshot tarballs
+      - name: "create source-snapshot tarballs"
         run: |
           llvm-project/llvm/utils/release/export.sh \
             --git-ref ${{ steps.stable-commit.outputs.sha }} \
             --template '${PROJECT}-${YYYYMMDD}.src.tar.xz'
-      
-      - name: upload source-snapshots and version files to ${{ github.repository }} pre-release
+    
+      - name: "delete assets older than a week and from today"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          llvm-daily-fedora-rpms/.github/workflows/upload-source-snapshots.py \
+          llvm-daily-fedora-rpms/github/delete-assets.py \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --project ${{ github.repository }} \
+            --release-name source-snapshot \
+            --delete-older 7 \
+            --delete-today
+
+      - name: >-
+          upload source-snapshots and version files to the 'source-snapshot'
+          pre-release of ${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          llvm-daily-fedora-rpms/github/upload-source-snapshots.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --project ${{ github.repository }} \
             --release-name source-snapshot \
             --yyyymmdd "$(date +%Y%m%d)"
-    
-  copr-build:
-    name: Fedora Copr
-    if: ${{ always() && github.event.inputs.skip_copr_build != 'True' }}
-    needs: source-tarballs
-    runs-on: ubuntu-latest  
-    steps:
-      - name: install python copr library
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-      - run: |
-          python -m pip install --upgrade pip
-          pip install copr==1.112
-
-      - uses: actions/checkout@v2
-        
-      - name: copr build
-        env:
-          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
-          COPR_URL: ${{ secrets.COPR_URL }}
-          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
-          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python fedora-copr/build.py \
-            --chroots fedora-34-aarch64 fedora-35-aarch64 fedora-rawhide-aarch64 fedora-34-x86_64 fedora-35-x86_64 fedora-rawhide-x86_64 \
-            --yyyymmdd "$(date +%Y%m%d)" \
-            --ownername "@fedora-llvm-team" \
-            --projectname "llvm-snapshots" \
-            --timeout "108000" \
-            --without-compat \
-            --max-num-builds 7

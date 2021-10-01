@@ -60,10 +60,8 @@ def main():
                         help="assets older than the given amount of days will be deleted (default: 7)")
     parser.add_argument('--delete-today',
                         dest='delete_today',
-                        type=bool,
-                        choices=[False,True],
-                        default=True,
-                        help="delete assets of today before recreating them (default: True)")
+                        action="store_true",
+                        help="delete assets of today before recreating them (default: no)")
     parser.parse_args()
     if delete_assets() != True:
         sys.exit(-1)
