@@ -7,6 +7,7 @@ on:
   # generated and uploaded.
   workflow_run:
     workflows: ["generate-snapshot-tarballs"]
+    branches: [main]
     types: [completed]
 
 jobs:
