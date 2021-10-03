@@ -5,6 +5,7 @@ on:
 
   # This workflow runs automatically once the source snapshot tarballs have been
   # generated and uploaded.
+  # See https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#workflow_run
   workflow_run:
     workflows: ["generate-snapshot-tarballs"]
     branches: [main]
