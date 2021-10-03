@@ -62,8 +62,8 @@ def main():
                         dest='delete_today',
                         action="store_true",
                         help="delete assets of today before recreating them (default: no)")
-    parser.parse_args()
-    if delete_assets() != True:
+    args = parser.parse_args()
+    if delete_assets(token=args.token, project=args.project, release_name=args.release_name, delete_older=args.delete_older, delete_today=args.delete_today) != True:
         sys.exit(-1)
     sys.exit(0)
 
