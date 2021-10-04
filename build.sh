@@ -208,8 +208,8 @@ EOF
     # Checkout OS-dependent branch from upstream if building compat package
     if [ "${opt_build_compat_packages}" != "" ]; then
         local branch=""
-        case "$orig_package_name" in
-            "compat-llvm-fedora-34" | "compat-clang-fedora34")
+        case $orig_package_name in
+            "compat-llvm-fedora-34" | "compat-clang-fedora-34")
                 branch="upstream/f34"
                 ;;
             "compat-llvm-fedora-35" | "compat-clang-fedora-35")
