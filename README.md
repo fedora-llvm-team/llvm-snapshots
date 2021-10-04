@@ -5,7 +5,7 @@ This project is home for the generation of daily
  * [LLVM source snapshots](https://github.com/kwk/llvm-daily-fedora-rpms/releases/tag/source-snapshot)
  * [Fedora LLVM snapshot RPMs](https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots/monitor/)
 
-Builds of source tarballs and Fedora Copr packages are being kicked-off on a nightly basis by the [llvm-snapshot](https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/llvm-snapshot.yml) action in Github.
+Builds of source tarballs and Fedora Copr packages are being kicked-off on a nightly basis by the [generate-snapshot-tarballs](https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/generate-snapshot-tarballs.yml) action in Github.
 
 ## Status
 
