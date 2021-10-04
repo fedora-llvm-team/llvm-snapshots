@@ -1,7 +1,13 @@
 name: fedora-copr-build
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      opts:
+        description: 'pass optional switches (e.g. --with-compat)'
+        required: false
+        default: ''
+
 
   # This workflow runs automatically once the source snapshot tarballs have been
   # generated and uploaded.
@@ -15,7 +21,7 @@ jobs:
     
   fedora-copr-build:
     name: Fedora Copr Build
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.inputs.opts != '' }}
     runs-on: ubuntu-latest  
     steps:
       - name: install python copr library
@@ -45,4 +51,4 @@ jobs:
             --projectname "llvm-snapshots" \
             --timeout "108000" \
             --without-compat \
-            --max-num-builds 7
+            --max-num-builds 7 ${{ github.event.inputs.opts }}

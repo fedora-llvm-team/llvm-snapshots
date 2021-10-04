@@ -424,7 +424,11 @@ if __name__ == "__main__":
     parser.add_argument('--without-compat',
                         dest='with_compat',
                         action="store_false",
-                        help="whether to build the compat packages or not (default: build WITH compat packages)")
+                        help="don't build the compat packages (default: no)")
+    parser.add_argument('--with-compat',
+                        dest='with_compat',
+                        action="store_true",
+                        help="build the compat packages (default: yes)")
     parser.add_argument('--delete-project',
                         dest='delete_project',
                         action="store_true",
