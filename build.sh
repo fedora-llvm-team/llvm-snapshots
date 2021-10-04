@@ -218,6 +218,10 @@ EOF
             "compat-llvm-fedora-rawhide" | "compat-clang-fedora-rawhide")
                 branch="upstream/rawhide"
                 ;;
+            *)
+                echo "ERROR: package name '$orig_package_name' is an unknown compatibility package"
+                exit -1;
+                ;;
         esac
 
         info "Reset to ${branch} for compatibility build"
