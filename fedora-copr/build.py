@@ -435,7 +435,7 @@ if __name__ == "__main__":
                         help="cancel all *running* builds and delete the project, then exit (default: False)")
     parser.add_argument('--max-num-builds',
                         dest='max_num_builds',
-                        default=7,
+                        default=70,
                         type=int,
                         help="keep only the specified number of the newest-by-id builds, but remember to multiply by number of chroots (default: 9x7=63))")
 

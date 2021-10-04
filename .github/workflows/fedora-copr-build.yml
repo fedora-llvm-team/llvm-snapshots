@@ -51,4 +51,4 @@ jobs:
             --projectname "llvm-snapshots" \
             --timeout "108000" \
             --without-compat \
-            --max-num-builds 7 ${{ github.event.inputs.opts }}
+            --max-num-builds 70 ${{ github.event.inputs.opts }}
