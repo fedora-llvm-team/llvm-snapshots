@@ -37,6 +37,7 @@ class CoprBuilder(object):
             assert self.__client.config == config
         else:
             self.__client = Client.create_from_config_file()
+
         self.__ownername = ownername
         self.__projectname = projectname
         self.__default_chroots = [
@@ -280,6 +281,11 @@ class CoprBuilder(object):
             print("ERROR: {}".format(ex))
             return False
         return True
+    
+    def regenerate_repos(self):
+        res = self.__client.project_proxy.regenerate_repos(ownername=self.__ownername, projectname=self.__projectname)
+        from pprint import pprint
+        pprint(res)
 
 def main(args) -> None:
     builder = CoprBuilder(ownername=args.ownername, projectname=args.projectname)
@@ -290,6 +296,10 @@ def main(args) -> None:
     description = open(os.path.join(location, "project-description.md"), "r").read()
     instructions = open(os.path.join(location, "project-instructions.md"), "r").read()
     custom_script = open(os.path.join(location, "custom-script.sh.tpl"), "r").read()
+
+    if args.regenerate_repos:
+        builder.regenerate_repos()
+        sys.exit(0)
 
     wait_on_build_id = args.wait_on_build_id
     if wait_on_build_id == None or wait_on_build_id <= 0:
@@ -438,6 +448,10 @@ if __name__ == "__main__":
                         default=70,
                         type=int,
                         help="keep only the specified number of the newest-by-id builds, but remember to multiply by number of chroots (default: 9x7=63))")
+    parser.add_argument('--regenerate-repos',
+                        dest='regenerate_repos',
+                        action="store_true",
+                        help="regenerates the project's repositories, then exit")
 
     args = parser.parse_args()
     main(args)
