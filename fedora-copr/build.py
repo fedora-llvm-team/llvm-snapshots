@@ -7,8 +7,6 @@ from copr.v3 import Client, CoprRequestException, CoprNoResultException
 import os
 import sys
 
-from copr.v3.proxies import package
-
 class CoprBuilder(object):
     """
     This class simplifies the creation of the copr project and packages as well
@@ -44,15 +42,18 @@ class CoprBuilder(object):
             "fedora-rawhide-x86_64",
             "fedora-rawhide-aarch64", 
             "fedora-rawhide-s390x",
-            "fedora-rawhide-ppc64le", 
+            "fedora-rawhide-ppc64le",
+            "fedora-rawhide-i386", 
             "fedora-34-x86_64", 
             "fedora-34-aarch64",
             "fedora-34-s390x",
             "fedora-34-ppc64le", 
+            "fedora-34-i386", 
             "fedora-35-x86_64", 
             "fedora-35-aarch64", 
             "fedora-35-s390x",
-            "fedora-35-ppc64le"
+            "fedora-35-ppc64le",
+            "fedora-35-i386"
         ]
         self.__chroots = None
 
@@ -81,6 +82,7 @@ class CoprBuilder(object):
                 description=description,
                 instructions=instructions,
                 enable_net=True,
+                multilib=True,
                 chroots=list(new_chroots),
                 devel_mode=True,
                 appstream=False)
@@ -94,6 +96,7 @@ class CoprBuilder(object):
                 description=description,
                 instructions=instructions,
                 enable_net=True,
+                multilib=True,
                 devel_mode=True,
                 appstream=False)
 
@@ -148,6 +151,7 @@ class CoprBuilder(object):
         :param list[str] chroots: the chroots for which the packages will be built
         """
         for chroot in chroots:
+            print("CHROOT: {}".format(chroot))
             previous_build_id = wait_on_build_id
             for packagename in packagenames:
                 build = self.__build_package(packagename, [chroot], build_after_id=previous_build_id)
@@ -206,6 +210,7 @@ class CoprBuilder(object):
         :param int wait_on_build_id: the build to wait for before starting the new builds.
         """
         for chroot in chroots:
+            print("CHROOT: {}".format(chroot))
             python_lit_build = self.__build_package("python-lit", [chroot])
             llvm_compat_build = wait_on_build_id
             clang_compat_build = wait_on_build_id
