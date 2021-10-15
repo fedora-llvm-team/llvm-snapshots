@@ -178,8 +178,8 @@ class CoprBuilder(object):
             return dict()
 
         try:
-            print("Creating build for package {} in {}/{} for chroots {}".format(package_name,
-                    self.__ownername, self.__projectname, chroots), end='')
+            print("Creating build for package {} in {}/{} for chroots {} (build after: {})".format(package_name,
+                    self.__ownername, self.__projectname, chroots, build_after_id), end='')
             build = self.__client.package_proxy.build(
                 ownername=self.__ownername,
                 projectname=self.__projectname,
