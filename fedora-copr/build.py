@@ -288,9 +288,7 @@ class CoprBuilder(object):
         return True
     
     def regenerate_repos(self):
-        res = self.__client.project_proxy.regenerate_repos(ownername=self.__ownername, projectname=self.__projectname)
-        from pprint import pprint
-        pprint(res)
+        self.__client.project_proxy.regenerate_repos(ownername=self.__ownername, projectname=self.__projectname)
 
 def main(args) -> None:
     builder = CoprBuilder(ownername=args.ownername, projectname=args.projectname)

@@ -45,6 +45,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python fedora-copr/build.py \
+            --regenerate-repos \
+            --ownername "@fedora-llvm-team" \
+            --projectname "llvm-snapshots"
+          python fedora-copr/build.py \
             --chroots \
                 fedora-34-aarch64 \
                 fedora-34-ppc64le \
