@@ -44,10 +44,10 @@ on:
   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
   workflow_dispatch: {}
 
-  #schedule:
+  schedule:
     # Everyday at 00:00am
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    #- cron:  '0 0 * * *'
+    - cron:  '0 0 * * *'
 
 jobs:
 
