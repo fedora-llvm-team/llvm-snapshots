@@ -237,6 +237,7 @@ class CoprBuilder(object):
             lld_build = self.__build_package("lld", [chroot], build_after_id=llvm_build.id)
             mlir_build = self.__build_package("mlir", [chroot], build_after_id=llvm_build.id)
             clang_build = self.__build_package("clang", [chroot], build_after_id=llvm_build.id)
+            libomp_build = self.__build_package("libomp", [chroot], build_after_id=clang_build.id)
             compiler_rt_build = self.__build_package("compiler-rt", [chroot], build_after_id=llvm_build.id)
 
     def get_chroots(self, refresh_cache:bool=False) -> list[str]:
@@ -320,7 +321,8 @@ def main(args) -> None:
         "compiler-rt",
         "lld",
         "clang",
-        "mlir"
+        "mlir",
+        "libomp"
     ]
     if args.packagenames == ["all"] or args.packagenames == "all" or args.packagenames == "":
         packagenames = allpackagenames
