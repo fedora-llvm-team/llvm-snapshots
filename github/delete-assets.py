@@ -47,7 +47,7 @@ def main():
                         dest='project',
                         type=str,
                         default="kwk/llvm-daily-fedora-rpms",
-                        help="github project to use (default: kwk/llvm-daily-fedora-rpms")
+                        help="github project to use (default: kwk/llvm-daily-fedora-rpms)")
     parser.add_argument('--release-name',
                         dest='release_name',
                         type=str,
