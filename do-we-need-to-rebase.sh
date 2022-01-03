@@ -54,4 +54,7 @@ for project in $projects; do
     done
 done
 
+if [[ "$exit_code" == "0" ]]; then
+    echo "no need to rebase"
+fi
 exit $exit_code
