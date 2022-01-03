@@ -1,0 +1,29 @@
+name: do-we-need-to-rebase
+
+on:
+  # Uncomment to be able to trigger the workflow manually
+  # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
+  workflow_dispatch: {}
+
+  schedule:
+    # Everyday at 00:00am
+    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+    - cron:  '0 0 * * *'
+
+jobs:
+
+  do-we-need-to-rebase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "checkout this project"
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ github.repository }}
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+          path: llvm-daily-fedora-rpms
+
+      - name: "do we need to rebase?"
+        run: |
+          llvm-daily-fedora-rpms/do-we-need-to-rebase.sh
