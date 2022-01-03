@@ -103,6 +103,8 @@ new_snapshot_spec_file() {
 %global llvm_snapshot_git_revision_short ${llvm_git_revision_short}
 
 %global llvm_snapshot_source_prefix      ${snapshot_url_prefix}
+
+%global llvm_snapshot_build_link         https://copr.fedorainfracloud.org/coprs/build/%{buildtag}/
 %endif
 
 ################################################################################
