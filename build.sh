@@ -102,6 +102,8 @@ new_snapshot_spec_file() {
 %global llvm_snapshot_git_revision       ${llvm_git_revision}
 %global llvm_snapshot_git_revision_short ${llvm_git_revision_short}
 
+%global llvm_snapshot_version_suffix     pre%{llvm_snapshot_yyyymmdd}.g%{llvm_snapshot_git_revision_short}
+
 %global llvm_snapshot_source_prefix      ${snapshot_url_prefix}
 
 # Check if we're building with copr
