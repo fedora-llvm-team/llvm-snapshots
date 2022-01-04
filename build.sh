@@ -112,17 +112,18 @@ new_snapshot_spec_file() {
 %global copr_build_id %{lua: print(string.sub(rpm.expand("%buildtag"), 6))}
 
 %global llvm_snapshot_build_link https://copr.fedorainfracloud.org/coprs/build/%{copr_build_id}/
-
+%else
 %endif
 
 # This prints a multiline string for the changelog entry
 %{lua: function _llvm_snapshot_changelog_entry()
     print("* ")
     print(os.date("%a %b %d %Y"))
-    print(" LLVM snapshot build\n")
-    print("- Snapshot build of version ")
+    print(" LLVM snapshot - ")
     print(rpm.expand("%version"))
-    if not rpm.expand("%llvm_snapshot_build_link") == "%llvm_snapshot_build_link" then
+    print("\n")
+    print("- This is an automated snapshot build ")
+    if rpm.expand("%llvm_snapshot_build_link") ~= "%llvm_snapshot_build_link" then
         print(" (")
         print(rpm.expand("%llvm_snapshot_build_link"))
         print(")")
