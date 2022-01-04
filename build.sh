@@ -123,7 +123,7 @@ new_snapshot_spec_file() {
     print("- Snapshot build of version ")
     print(rpm.expand("%version"))
     print("\n\n")
-    if rpm.isdefined("%llvm_snapshot_build_link") then
+    if rpm.isdefined("llvm_snapshot_build_link") then
         print(" (")
         print(rpm.expand("%llvm_snapshot_build_link"))
         print(")")
