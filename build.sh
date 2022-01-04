@@ -104,7 +104,17 @@ new_snapshot_spec_file() {
 
 %global llvm_snapshot_source_prefix      ${snapshot_url_prefix}
 
-%global llvm_snapshot_build_link         https://copr.fedorainfracloud.org/coprs/build/%{buildtag}/
+# Check if we're building with copr
+%if 0%{?copr_projectname}
+# Remove the .copr prefix that is added here infront the build ID
+# see https://pagure.io/copr/copr/blob/main/f/rpmbuild/mock.cfg.j2#_22-25
+%global copr_build_id %{lua: print(string.sub(rpm.expand("%buildtag"), 6))}
+%global llvm_snapshot_build_link (https://copr.fedorainfracloud.org/coprs/build/%{copr_build_id}/)
+%endif
+
+%global llvm_snapshot_changelog_entry * %{lua: print(os.date("%a %b %d %Y"))} LLVM snapshot build\
+- Snapshot build of %{version} %{?llvm_snapshot_build_link}
+
 %endif
 
 ################################################################################
