@@ -113,8 +113,7 @@ new_snapshot_spec_file() {
 # see https://pagure.io/copr/copr/blob/main/f/rpmbuild/mock.cfg.j2#_22-25
 %global copr_build_id %{lua: print(string.sub(rpm.expand("%buildtag"), 6))}
 
-%global llvm_snapshot_build_link https://copr.fedorainfracloud.org/coprs/build/%{copr_build_id}/
-%else
+%global copr_build_link https://copr.fedorainfracloud.org/coprs/build/%{copr_build_id}/
 %endif
 
 # This prints a multiline string for the changelog entry
@@ -125,9 +124,9 @@ new_snapshot_spec_file() {
     print(rpm.expand("%version"))
     print("\n")
     print("- This is an automated snapshot build ")
-    if rpm.expand("%llvm_snapshot_build_link") ~= "%llvm_snapshot_build_link" then
+    if rpm.expand("%copr_build_link") ~= "%copr_build_link" then
         print(" (")
-        print(rpm.expand("%llvm_snapshot_build_link"))
+        print(rpm.expand("%copr_build_link"))
         print(")")
     end
     print("\n\n")
