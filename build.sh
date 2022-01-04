@@ -106,14 +106,31 @@ new_snapshot_spec_file() {
 
 # Check if we're building with copr
 %if 0%{?copr_projectname:1}
+
 # Remove the .copr prefix that is added here infront the build ID
 # see https://pagure.io/copr/copr/blob/main/f/rpmbuild/mock.cfg.j2#_22-25
 %global copr_build_id %{lua: print(string.sub(rpm.expand("%buildtag"), 6))}
-%global llvm_snapshot_build_link (https://copr.fedorainfracloud.org/coprs/build/%{copr_build_id}/)
+
+%global llvm_snapshot_build_link https://copr.fedorainfracloud.org/coprs/build/%{copr_build_id}/
+
 %endif
 
-%global llvm_snapshot_changelog_entry * %{lua: print(os.date("%a %b %d %Y"))} LLVM snapshot build\
-\n- Snapshot build of %{version} %{?llvm_snapshot_build_link}\n
+# This prints a multiline string for the changelog entry
+%{lua: function _llvm_snapshot_changelog_entry()
+    print("* ")
+    print(os.date("%a %b %d %Y"))
+    print(" LLVM snapshot build\n")
+    print("- Snapshot build of version ")
+    print(rpm.expand("%version"))
+    print("\n\n")
+    if rpm.isdefined("%llvm_snapshot_build_link") then
+        print(" (")
+        print(rpm.expand("%llvm_snapshot_build_link"))
+        print(")")
+    end
+end}
+
+%global llvm_snapshot_changelog_entry %{lua: _llvm_snapshot_changelog_entry()}
 
 %endif
 
