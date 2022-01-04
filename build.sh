@@ -122,12 +122,12 @@ new_snapshot_spec_file() {
     print(" LLVM snapshot build\n")
     print("- Snapshot build of version ")
     print(rpm.expand("%version"))
-    print("\n\n")
-    if rpm.isdefined("llvm_snapshot_build_link") then
+    if not rpm.expand("%llvm_snapshot_build_link") == "%llvm_snapshot_build_link" then
         print(" (")
         print(rpm.expand("%llvm_snapshot_build_link"))
         print(")")
     end
+    print("\n\n")
 end}
 
 %global llvm_snapshot_changelog_entry %{lua: _llvm_snapshot_changelog_entry()}
