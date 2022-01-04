@@ -105,7 +105,7 @@ new_snapshot_spec_file() {
 %global llvm_snapshot_source_prefix      ${snapshot_url_prefix}
 
 # Check if we're building with copr
-%if 0%{?copr_projectname}
+%if 0%{?copr_projectname:1}
 # Remove the .copr prefix that is added here infront the build ID
 # see https://pagure.io/copr/copr/blob/main/f/rpmbuild/mock.cfg.j2#_22-25
 %global copr_build_id %{lua: print(string.sub(rpm.expand("%buildtag"), 6))}
