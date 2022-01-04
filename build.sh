@@ -113,7 +113,7 @@ new_snapshot_spec_file() {
 %endif
 
 %global llvm_snapshot_changelog_entry * %{lua: print(os.date("%a %b %d %Y"))} LLVM snapshot build\
-- Snapshot build of %{version} %{?llvm_snapshot_build_link}
+\n- Snapshot build of %{version} %{?llvm_snapshot_build_link}\n
 
 %endif
 
