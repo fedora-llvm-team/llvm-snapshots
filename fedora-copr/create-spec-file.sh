@@ -2,13 +2,14 @@
 
 # To call this script directly from copr, do this:
 #
-# curl --compressed -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/kwk/llvm-daily-fedora-rpms/main/build.sh?$(uuidgen) | bash -s -- \
-#     --verbose \
-#     --reset-project \
-#     --generate-spec-file \
-#     --build-in-one-dir /workdir/buildroot \
-#     --project compat-clang \
-#     --yyyymmdd "$(date +%Y%m%d)"
+# curl \
+#   --compressed \
+#   -s \
+#   -H 'Cache-Control: no-cache' \
+#   https://raw.githubusercontent.com/kwk/llvm-daily-fedora-rpms/main/fedora-copr/create-spec-file.sh?$(uuidgen) \
+#   | bash -s -- \
+#       --project {} \
+#       --yyyymmdd "{}"
 #
 # And then select "buildroot" as the "Result directory" in the Web-UI.
 #
@@ -19,6 +20,7 @@
 # on github. I got the inspiration for this from here:
 # https://stackoverflow.com/questions/31653271/how-to-call-curl-without-using-server-side-cache?noredirect=1&lq=1
  
+set -x
 
 set -eu
 
@@ -27,24 +29,13 @@ set -eu
 # in the pipeline.
 set -o pipefail
 
-# Setup some directories for later use
 proj=
+yyyymmdd="$(date +%Y%m%d)"
 cfg_dir=/workdir/buildroot
 specs_dir=/workdir/buildroot
 sources_dir=/workdir/buildroot
-rpms_dir=/workdir/buildroot
-srpms_dir=/workdir/buildroot
-
 spec_file=${specs_dir}/$proj.spec
 snapshot_url_prefix=https://github.com/kwk/llvm-daily-fedora-rpms/releases/download/source-snapshot/
-
-#############################################################################
-# These vars can be adjusted with the options passing to this script:
-#############################################################################
-
-# The current date (e.g. 20210427) is used to determine from which tarball a
-# snapshot of LLVM is being built.
-yyyymmdd="$(date +%Y%m%d)"
 
 #############################################################################
 #############################################################################
@@ -59,7 +50,7 @@ local script=$(basename $0)
 cat <<EOF
 Build LLVM snapshots...
 
-Usage: ${script} [Options TBD]
+Usage: ${script} --project <project> [--yyyymmdd <YYYYMMDD>]
 EOF
 }
 
@@ -108,16 +99,12 @@ new_snapshot_spec_file() {
 
 # This prints a multiline string for the changelog entry
 %{lua: function _llvm_snapshot_changelog_entry()
-    print("* ")
-    print(os.date("%a %b %d %Y"))
-    print(" LLVM snapshot - ")
-    print(rpm.expand("%version"))
-    print("\n")
-    print("- This is an automated snapshot build ")
+    assert(os.setlocale('C'))
+    print(string.format("* %s LLVM snapshot - %s\n", os.date("%a %b %d %Y"), rpm.expand("%version")))
+    print("- This is an automated snapshot build")
+    -- TODO(kkleine): Switch to rpm.isdefined() once it is available on copr builders
     if rpm.expand("%copr_build_link") ~= "%copr_build_link" then
-        print(" (")
-        print(rpm.expand("%copr_build_link"))
-        print(")")
+        print(string.format(" (%s)", rpm.expand("%copr_build_link")))
     end
     print("\n\n")
 end}
@@ -156,6 +143,7 @@ EOF
 }
 
 
+# These will be set by create_spec_file
 llvm_version=""
 llvm_git_revision=""
 llvm_git_revision_short=""
@@ -163,9 +151,7 @@ llvm_version_major=""
 llvm_version_minor=""
 llvm_version_patch=""
 
-build_snapshot() {
-    set -x
-
+create_spec_file() {
     info "Get LLVM version"
     local url="${snapshot_url_prefix}llvm-release-${yyyymmdd}.txt"
     llvm_version=$(curl -sfL "$url")
@@ -186,27 +172,7 @@ build_snapshot() {
     llvm_version_major=$(echo $llvm_version | grep -ioP '^[0-9]+')
     llvm_version_minor=$(echo $llvm_version | grep -ioP '\.\K[0-9]+' | head -n1)
     llvm_version_patch=$(echo $llvm_version | grep -ioP '\.\K[0-9]+$')
-    
-    info "Show LLVM version"
-    cat <<EOF
-Date:                          ${yyyymmdd}
-LLVM Version:                  ${llvm_version}
-LLVM Major Version:            ${llvm_version_major}
-LLVM Minor Version:            ${llvm_version_minor}
-LLVM Patch Version:            ${llvm_version_patch}
-LLVM Git Revision:             ${llvm_git_revision}
-LLVM Git Revision (shortened): ${llvm_git_revision_short}
-
-EOF
-
-
-    if [[ "${proj}" == "" ]]; then
-        echo "Please specify which project to build (see --project <proj>)!"
-        usage
-        exit 1
-    fi
-    
-   
+     
     info "Reset project $proj"
     # Updates the LLVM projects with the latest version of the tracked branch.
     rm -rf $sources_dir
@@ -217,31 +183,21 @@ EOF
     git -C ${sources_dir} fetch --quiet upstream
     
     # Checkout OS-dependent branch from upstream if building compat package
-    if [ "${opt_build_compat_packages}" != "" ]; then
-        local branch=""
-        case $orig_package_name in
-            "compat-llvm-fedora-34" | "compat-clang-fedora-34")
-                branch="upstream/f34"
-                ;;
-            "compat-llvm-fedora-35" | "compat-clang-fedora-35")
-                branch="upstream/f35"
-                ;;
-            "compat-llvm-fedora-rawhide" | "compat-clang-fedora-rawhide")
-                branch="upstream/rawhide"
-                ;;
-            *)
-                echo "ERROR: package name '$orig_package_name' is an unknown compatibility package"
-                exit -1;
-                ;;
-        esac
-
-        info "Reset to ${branch} for compatibility build"
-        git -C $sources_dir reset --hard ${branch}
-        unset branch
-    else
-        info "Reset to kkleine/snapshot-build for snapshot build"
-        git -C $sources_dir reset --hard kkleine/snapshot-build
-    fi
+    local branch="kkleine/snapshot-build"
+    case $orig_package_name in
+        "compat-llvm-fedora-34" | "compat-clang-fedora-34")
+            branch="upstream/f34"
+            ;;
+        "compat-llvm-fedora-35" | "compat-clang-fedora-35")
+            branch="upstream/f35"
+            ;;
+        "compat-llvm-fedora-rawhide" | "compat-clang-fedora-rawhide")
+            branch="upstream/rawhide"
+            ;;
+    esac
+    info "Reset to ${branch}"
+    git -C $sources_dir reset --hard ${branch}
+    unset branch
 
     info "Generate spec file in ${specs_dir}/$proj.spec"
     mv -v ${sources_dir}/$proj.spec ${sources_dir}/$proj.spec.old
@@ -250,16 +206,6 @@ EOF
     else
         new_snapshot_spec_file "${sources_dir}/$proj.spec.old" ${specs_dir}/$proj.spec
     fi
-           
-    local with_compat=""
-    if [ "${opt_build_compat_packages}" != "" ]; then
-        with_compat="--with=compat_build"
-    fi
-
-    local srpm="${srpms_dir}/${proj}-${llvm_version}~pre${yyyymmdd}.g*.src.rpm"
-    if [[ "${with_compat}" != "" ]]; then
-        srpm=$(find ${srpms_dir} -regex ".*${proj}[0-9]+-.*")
-    fi   
 }
 
 opt_build_compat_packages=""
@@ -302,6 +248,12 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-build_snapshot
+if [[ "${proj}" == "" ]]; then
+    echo "Please specify which project to build (see --project <proj>)!"
+    usage
+    exit 1
+fi
+
+create_spec_file
 
 exit 0
