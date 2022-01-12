@@ -177,22 +177,22 @@ create_spec_file() {
     # Updates the LLVM projects with the latest version of the tracked branch.
     rm -rf $sources_dir
 
-    git clone --quiet --origin kkleine --branch snapshot-build https://src.fedoraproject.org/forks/kkleine/rpms/$proj.git ${sources_dir}
-    # TODO(kwk): Once upstream does work, change back to: https://src.fedoraproject.org/rpms/$proj.git
-    git -C ${sources_dir} remote add upstream https://src.fedoraproject.org/forks/kkleine/rpms/$proj.git
-    git -C ${sources_dir} fetch --quiet upstream
+    git clone --quiet --origin upstream --branch upstream-snapshot https://src.fedoraproject.org/rpms/$proj.git ${sources_dir}
+    # TODO(kkleine): Once upstream RPM repos can build compat packages properly, we can ditch this fork remote
+    git -C ${sources_dir} remote add fork https://src.fedoraproject.org/forks/kkleine/rpms/$proj.git
+    git -C ${sources_dir} fetch --quiet fork
     
     # Checkout OS-dependent branch from upstream if building compat package
-    local branch="kkleine/snapshot-build"
+    local branch="upstream/upstream-snapshot"
     case $orig_package_name in
         "compat-llvm-fedora-34" | "compat-clang-fedora-34")
-            branch="upstream/f34"
+            branch="fork/f34"
             ;;
         "compat-llvm-fedora-35" | "compat-clang-fedora-35")
-            branch="upstream/f35"
+            branch="fork/f35"
             ;;
         "compat-llvm-fedora-rawhide" | "compat-clang-fedora-rawhide")
-            branch="upstream/rawhide"
+            branch="fork/rawhide"
             ;;
     esac
     info "Reset to ${branch}"
