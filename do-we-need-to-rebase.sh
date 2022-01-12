@@ -31,24 +31,24 @@ for project in $projects; do
         exit 1
     fi
 
-    branches="snapshot-build"
+    branches="upstream/upstream-snapshot"
     if [[ $project =~ llvm|clang ]]; then
         # only for the compat builds we need the f34 and f35 branches
-        branches="$branches f34 f35"
+        branches="$branches fork/f34 fork/f35"
     fi
 
     for branch in $branches; do
         # translate fork branch to upstream branch
         upstream_branch=$branch
-        if [[ $branch == "snapshot-build" ]]; then
-            upstream_branch="rawhide"
+        if [[ $branch == "upstream/upstream-snapshot" ]]; then
+            upstream_branch="upstream/rawhide"
         fi
 
-        upstream_commit=$(git -C $project_dir rev-parse --verify upstream/$upstream_branch^{commit})
+        upstream_commit=$(git -C $project_dir rev-parse --verify $upstream_branch^{commit})
 
         # check if the upstream commit is already in the respective fork's branch
-        if ! git -C $project_dir branch --contains $upstream_commit --no-color --all | grep -E "(^|\s)remotes/fork/$branch$" > /dev/null 2>&1; then
-            echo "$project's fork/$branch branch needs rebasing onto upstream/$upstream_branch"
+        if ! git -C $project_dir branch --contains $upstream_commit --no-color --all | grep -E "(^|\s)remotes/$branch$" > /dev/null 2>&1; then
+            echo "$project's $branch branch needs rebasing onto upstream/$upstream_branch"
             exit_code=-1
         fi
     done
