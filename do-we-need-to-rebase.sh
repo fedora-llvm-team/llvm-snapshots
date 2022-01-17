@@ -48,7 +48,7 @@ for project in $projects; do
 
         # check if the upstream commit is already in the respective fork's branch
         if ! git -C $project_dir branch --contains $upstream_commit --no-color --all | grep -E "(^|\s)remotes/$branch$" > /dev/null 2>&1; then
-            echo "$project's $branch branch needs rebasing onto upstream/$upstream_branch"
+            echo "$project's $branch branch needs rebasing onto $upstream_branch"
             exit_code=-1
         fi
     done
