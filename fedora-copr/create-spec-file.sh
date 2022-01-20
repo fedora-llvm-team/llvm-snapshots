@@ -165,7 +165,7 @@ create_spec_file() {
     # Checkout OS-dependent branch from upstream if building compat package
     local branch="upstream/upstream-snapshot"
     case $orig_package_name in
-        "compat-llvm-fedora-34" | "compat-clang-fedora-34")
+        "compat-llvm-fedora-34" | "compat-clang-fedora-34" | "compat-llvm-epel-8" )
             branch="fork/f34"
             ;;
         "compat-llvm-fedora-35" | "compat-clang-fedora-35")
@@ -205,7 +205,7 @@ while [ $# -gt 0 ]; do
             # name begins with "compat-". The project's name is manually
             # cleaned from the "compat-" prefix and the "-fedora-XX" suffix.
             case "$proj" in
-                "compat-llvm-fedora-34" | "compat-llvm-fedora-35" | "compat-llvm-fedora-rawhide")
+                "compat-llvm-fedora-34" | "compat-llvm-fedora-35" | "compat-llvm-fedora-rawhide" | "compat-llvm-epel-8" )
                     proj="llvm"
                     opt_build_compat_packages="1"
                     ;;

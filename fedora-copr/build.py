@@ -53,7 +53,11 @@ class CoprBuilder(object):
             "fedora-35-aarch64", 
             "fedora-35-s390x",
             "fedora-35-ppc64le",
-            "fedora-35-i386"
+            "fedora-35-i386",
+            "centos-stream-8-x86_64",
+            "centos-stream-9-x86_64",
+            "epel-8-x86_64",
+            "epel-9-x86_64",
         ]
         self.__chroots = None
 
@@ -170,11 +174,26 @@ class CoprBuilder(object):
         # TODO(kwk): Oh boy, this sucks.
         new_chroots = set(chroots)
         for chroot in chroots:
+            if package_name.startswith("compat-llvm"):
+                p = package_name.removeprefix("compat-llvm")
+            elif package_name.startswith("compat-clang"):
+                p = package_name.removeprefix("compat-clang")
+            
+            
+
             if (package_name == "compat-llvm-fedora-34" or package_name == "compat-clang-fedora-34" ) and not chroot.startswith("fedora-34-"):
                 new_chroots.remove(chroot)
             if (package_name == "compat-llvm-fedora-35" or package_name == "compat-clang-fedora-35" ) and not chroot.startswith("fedora-35-"):
                 new_chroots.remove(chroot)
             if (package_name == "compat-llvm-fedora-rawhide" or package_name == "compat-clang-fedora-rawhide" ) and not chroot.startswith("fedora-rawhide-"):
+                new_chroots.remove(chroot)
+            if (package_name == "compat-llvm-centos-stream-8" or package_name == "compat-clang-centos-stream-8" ) and not chroot.startswith("centos-stream-8"):
+                new_chroots.remove(chroot)
+            if (package_name == "compat-llvm-centos-stream-9" or package_name == "compat-clang-centos-stream-9" ) and not chroot.startswith("centos-stream-9"):
+                new_chroots.remove(chroot)
+            if (package_name == "compat-llvm-epel-8" or package_name == "compat-clang-epel-8" ) and not chroot.startswith("epel-8"):
+                new_chroots.remove(chroot)
+            if (package_name == "compat-llvm-epel-9" or package_name == "compat-clang-epel-9" ) and not chroot.startswith("epel-9"):
                 new_chroots.remove(chroot)
         if new_chroots == set():
             return dict()
@@ -233,6 +252,26 @@ class CoprBuilder(object):
                     llvm_compat_build = self.__build_package("compat-llvm-fedora-rawhide", [chroot], build_after_id=python_lit_build.id)
                     if llvm_compat_build != dict():
                         clang_compat_build = self.__build_package("compat-clang-fedora-rawhide", [chroot], build_after_id=llvm_compat_build.id)
+                
+                if llvm_compat_build == dict():
+                    llvm_compat_build = self.__build_package("compat-llvm-centos-stream-8", [chroot], build_after_id=python_lit_build.id)
+                    if llvm_compat_build != dict():
+                        clang_compat_build = self.__build_package("compat-clang-centos-stream-8", [chroot], build_after_id=llvm_compat_build.id)
+                
+                if llvm_compat_build == dict():
+                    llvm_compat_build = self.__build_package("compat-llvm-centos-stream-9", [chroot], build_after_id=python_lit_build.id)
+                    if llvm_compat_build != dict():
+                        clang_compat_build = self.__build_package("compat-clang-centos-stream-9", [chroot], build_after_id=llvm_compat_build.id)
+                
+                if llvm_compat_build == dict():
+                    llvm_compat_build = self.__build_package("compat-llvm-epel-8", [chroot], build_after_id=python_lit_build.id)
+                    if llvm_compat_build != dict():
+                        clang_compat_build = self.__build_package("compat-clang-epel-8", [chroot], build_after_id=llvm_compat_build.id)
+
+                if llvm_compat_build == dict():
+                    llvm_compat_build = self.__build_package("compat-llvm-epel-9", [chroot], build_after_id=python_lit_build.id)
+                    if llvm_compat_build != dict():
+                        clang_compat_build = self.__build_package("compat-clang-epel-9", [chroot], build_after_id=llvm_compat_build.id)
 
 
             llvm_build = self.__build_package("llvm", [chroot], build_after_id=llvm_compat_build.id if with_compat else python_lit_build.id)
@@ -316,9 +355,17 @@ def main(args) -> None:
         "compat-llvm-fedora-rawhide",
         "compat-llvm-fedora-35",
         "compat-llvm-fedora-34",
+        "compat-llvm-centos-stream-8",
+        "compat-llvm-centos-stream-9",
+        "compat-llvm-epel-8",
+        "compat-llvm-epel-9",
         "compat-clang-fedora-rawhide",
         "compat-clang-fedora-35",
         "compat-clang-fedora-34",
+        "compat-clang-centos-stream-8",
+        "compat-clang-centos-stream-9",
+        "compat-clang-epel-8",
+        "compat-clang-epel-9",
         "llvm",
         "compiler-rt",
         "lld",
