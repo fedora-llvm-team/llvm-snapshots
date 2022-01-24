@@ -176,6 +176,11 @@ class CoprBuilder(object):
                 new_chroots.remove(chroot)
             if (package_name == "compat-llvm-fedora-rawhide" or package_name == "compat-clang-fedora-rawhide" ) and not chroot.startswith("fedora-rawhide-"):
                 new_chroots.remove(chroot)
+            # architecture s390x is exluced in spec when building lld or libomp
+            # ("error: Architecture is excluded: s390x")
+            if ((package_name == "lld" or package_name == "libomp") and chroot.endswith("s390x")):
+                new_chroots.remove(chroot)
+
         if new_chroots == set():
             return dict()
 
