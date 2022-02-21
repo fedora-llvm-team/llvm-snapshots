@@ -265,9 +265,12 @@ class CoprBuilder(object):
             self.__chroots = chroots
         return self.__chroots
 
-    def cancel_builds(self) -> bool:
+    def cancel_builds(self, chroots: list[str]=None, delete_builds: bool=True) -> bool:
         """
         Cancels builds with these states: "pending", "waiting", "running", "importing".
+        
+        :param list[str] chroots: list of chroots for which to cancel builds.
+        :param bool delete_builds: delete the builds just cancelled (default True).
         """
         print("Canceling builds  builds with these states: pending, waiting, running, importing")
         try:
@@ -275,10 +278,16 @@ class CoprBuilder(object):
         except CoprNoResultException as ex:
             print("ERROR: {}".format(ex))
             return False
+        delete_build_ids = []
         for build in builds:
             if build.state in {"pending", "waiting", "running", "importing"}:
-                print("Cancelling build with ID  {}".format(build.id))
-                self.__client.build_proxy.cancel(build.id)
+                if chroots == None or not set(chroots).isdisjoint(set(build.chroots)):
+                    print("Cancelling build with ID {} (package: {}, chroots: {})".format(build.id, build.source_package['name'], build.chroots))
+                    delete_build_ids.append(build.id)
+                    res = self.__client.build_proxy.cancel(build.id)
+        if delete_builds and delete_build_ids != []:
+             print("Deleting builds: {}".format(delete_build_ids))
+             self.__client.build_proxy.delete_list(delete_build_ids)
         return True
 
     def delete_project(self) -> bool:
@@ -380,7 +389,7 @@ Custom_script:
         sys.exit(0)
 
     if args.cancel_builds:
-        res = builder.cancel_builds()
+        res = builder.cancel_builds(chroots=chroots)
         sys.exit(0 if res == True else -1)
 
     if args.delete_project:
