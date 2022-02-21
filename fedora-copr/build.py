@@ -44,16 +44,16 @@ class CoprBuilder(object):
             "fedora-rawhide-s390x",
             "fedora-rawhide-ppc64le",
             "fedora-rawhide-i386", 
-            "fedora-34-x86_64", 
-            "fedora-34-aarch64",
-            "fedora-34-s390x",
-            "fedora-34-ppc64le", 
-            "fedora-34-i386", 
             "fedora-35-x86_64", 
             "fedora-35-aarch64", 
             "fedora-35-s390x",
             "fedora-35-ppc64le",
-            "fedora-35-i386"
+            "fedora-35-i386",
+            "fedora-36-x86_64",
+            "fedora-36-aarch64",
+            "fedora-36-s390x",
+            "fedora-36-ppc64le",
+            "fedora-36-i386"
         ]
         self.__chroots = None
 
@@ -170,9 +170,9 @@ class CoprBuilder(object):
         # TODO(kwk): Oh boy, this sucks.
         new_chroots = set(chroots)
         for chroot in chroots:
-            if (package_name == "compat-llvm-fedora-34" or package_name == "compat-clang-fedora-34" ) and not chroot.startswith("fedora-34-"):
-                new_chroots.remove(chroot)
             if (package_name == "compat-llvm-fedora-35" or package_name == "compat-clang-fedora-35" ) and not chroot.startswith("fedora-35-"):
+                new_chroots.remove(chroot)
+            if (package_name == "compat-llvm-fedora-36" or package_name == "compat-clang-fedora-36" ) and not chroot.startswith("fedora-36-"):
                 new_chroots.remove(chroot)
             if (package_name == "compat-llvm-fedora-rawhide" or package_name == "compat-clang-fedora-rawhide" ) and not chroot.startswith("fedora-rawhide-"):
                 new_chroots.remove(chroot)
@@ -225,14 +225,14 @@ class CoprBuilder(object):
                 llvm_compat_build = dict()
                 clang_compat_build = dict()
 
-                llvm_compat_build = self.__build_package("compat-llvm-fedora-34", [chroot], build_after_id=python_lit_build.id)
+                llvm_compat_build = self.__build_package("compat-llvm-fedora-35", [chroot], build_after_id=python_lit_build.id)
                 if llvm_compat_build != dict():
-                    clang_compat_build = self.__build_package("compat-clang-fedora-34", [chroot], build_after_id=llvm_compat_build.id)
+                    clang_compat_build = self.__build_package("compat-clang-fedora-35", [chroot], build_after_id=llvm_compat_build.id)
 
                 if llvm_compat_build == dict():
-                    llvm_compat_build = self.__build_package("compat-llvm-fedora-35", [chroot], build_after_id=python_lit_build.id)
+                    llvm_compat_build = self.__build_package("compat-llvm-fedora-36", [chroot], build_after_id=python_lit_build.id)
                     if llvm_compat_build != dict():
-                        clang_compat_build = self.__build_package("compat-clang-fedora-35", [chroot], build_after_id=llvm_compat_build.id)
+                        clang_compat_build = self.__build_package("compat-clang-fedora-36", [chroot], build_after_id=llvm_compat_build.id)
 
                 if llvm_compat_build == dict():
                     llvm_compat_build = self.__build_package("compat-llvm-fedora-rawhide", [chroot], build_after_id=python_lit_build.id)
@@ -320,10 +320,10 @@ def main(args) -> None:
         "python-lit",
         "compat-llvm-fedora-rawhide",
         "compat-llvm-fedora-35",
-        "compat-llvm-fedora-34",
+        "compat-llvm-fedora-36",
         "compat-clang-fedora-rawhide",
         "compat-clang-fedora-35",
-        "compat-clang-fedora-34",
+        "compat-clang-fedora-36",
         "llvm",
         "compiler-rt",
         "lld",

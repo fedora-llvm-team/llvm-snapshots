@@ -54,16 +54,16 @@ jobs:
             --projectname "llvm-snapshots"
           python fedora-copr/build.py \
             --chroots \
-                fedora-34-aarch64 \
-                fedora-34-ppc64le \
-                fedora-34-x86_64 \
-                fedora-34-i386 \
-                fedora-34-s390x \
                 fedora-35-aarch64 \
                 fedora-35-ppc64le \
                 fedora-35-x86_64 \
                 fedora-35-i386 \
                 fedora-35-s390x \
+                fedora-36-aarch64 \
+                fedora-36-ppc64le \
+                fedora-36-x86_64 \
+                fedora-36-i386 \
+                fedora-36-s390x \
                 fedora-rawhide-aarch64 \
                 fedora-rawhide-ppc64le \
                 fedora-rawhide-x86_64 \
