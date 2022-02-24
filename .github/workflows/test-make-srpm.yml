@@ -1,0 +1,15 @@
+name: test-make-srpm
+
+on:
+  # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
+  workflow_dispatch: {}
+
+jobs:
+
+  make-srpm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./github/actions/make-llvm-srpm
+        with:
+          project-name: compiler-rt

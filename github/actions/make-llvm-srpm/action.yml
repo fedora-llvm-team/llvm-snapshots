@@ -1,0 +1,16 @@
+# action.yml
+name: 'Make LLVM SRPM'
+description: 'Create a source RPM for a given project'
+inputs:
+  project-name:  # id of input
+    description: 'name of the project to create'
+    required: true
+    default: 'World'
+outputs:
+  time: # id of output
+    description: 'The time we greeted you'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.project-name }}
