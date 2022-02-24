@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: ./github/actions/make-llvm-srpm
+      - run: |
+          cp ./fedora-copr/create-sepc-file.sh ./github/actions/make-llvm-srpm
+      - uses: ./.github/actions/make-llvm-srpm
         with:
           project-name: compiler-rt
