@@ -11,10 +11,6 @@ set -o pipefail
 
 proj=
 yyyymmdd="$(date +%Y%m%d)"
-cfg_dir=/workdir/buildroot
-specs_dir=/workdir/buildroot
-sources_dir=/workdir/buildroot
-spec_file=${specs_dir}/$proj.spec
 snapshot_url_prefix=https://github.com/kwk/llvm-daily-fedora-rpms/releases/download/source-snapshot/
 
 #############################################################################
@@ -190,6 +186,7 @@ create_spec_file() {
 
 opt_build_compat_packages=""
 orig_package_name=""
+opt_workdir=/workdir
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -215,6 +212,10 @@ while [ $# -gt 0 ]; do
                     ;;
             esac
             ;;
+        --workdir )
+            shift
+            opt_workdir=$1
+            ;;
         -h | -help | --help )
             usage
             exit 0
@@ -227,6 +228,11 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+cfg_dir=${opt_workdir}/buildroot
+specs_dir=${opt_workdir}/buildroot
+sources_dir=${opt_workdir}/buildroot
+spec_file=${specs_dir}/$proj.spec
 
 if [[ "${proj}" == "" ]]; then
     echo "Please specify which project to build (see --project <proj>)!"
