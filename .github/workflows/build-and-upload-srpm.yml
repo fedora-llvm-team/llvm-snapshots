@@ -1,4 +1,4 @@
-name: test-make-srpm
+name: build-and-upload-srpm
 
 on:
   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
@@ -6,12 +6,13 @@ on:
 
 jobs:
 
-  make-srpm:
+  build-and-upload-srpm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: |
-          cp ./fedora-copr/create-sepc-file.sh ./.github/actions/make-llvm-srpm
-      - uses: ./.github/actions/make-llvm-srpm
+      - uses: ./.github/actions/build-and-upload-srpm
         with:
           project-name: compiler-rt
+      - run: |
+         pwd
+         ls -lha
