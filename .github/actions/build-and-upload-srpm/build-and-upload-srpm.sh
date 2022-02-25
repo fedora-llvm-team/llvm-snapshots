@@ -16,9 +16,12 @@ snapshot_url_prefix=https://github.com/kwk/llvm-daily-fedora-rpms/releases/downl
 #############################################################################
 #############################################################################
 
-info() {
-    echo "$(date --rfc-email) INFO $1" 1>&2
-    ${@:2}
+# see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#grouping-log-lines
+group() {
+    echo "::group::$1" 1>&2
+}
+endgroup() {
+    echo "::endgroup::"
 }
 
 usage() {
@@ -128,7 +131,7 @@ llvm_version_minor=""
 llvm_version_patch=""
 
 create_spec_file() {
-    info "Get LLVM version"
+    group "Get LLVM version"
     local url="${snapshot_url_prefix}llvm-release-${yyyymmdd}.txt"
     llvm_version=$(curl -sfL "$url")
     local ret=$?
@@ -149,7 +152,8 @@ create_spec_file() {
     llvm_version_minor=$(echo $llvm_version | grep -ioP '\.\K[0-9]+' | head -n1)
     llvm_version_patch=$(echo $llvm_version | grep -ioP '\.\K[0-9]+$')
      
-    info "Reset project $proj"
+    endgroup
+    group "Reset project $proj"
     # Updates the LLVM projects with the latest version of the tracked branch.
     rm -rf $sources_dir
 
@@ -171,17 +175,20 @@ create_spec_file() {
             branch="fork/rawhide"
             ;;
     esac
-    info "Reset to ${branch}"
+    endgroup
+    group "Reset to ${branch}"
     git -C $sources_dir reset --hard ${branch}
     unset branch
 
-    info "Generate spec file in ${specs_dir}/$proj.spec"
+    endgroup
+    group "Generate spec file in ${specs_dir}/$proj.spec"
     mv -v ${sources_dir}/$proj.spec ${sources_dir}/$proj.spec.old
     if [ "${opt_build_compat_packages}" != "" ]; then
         new_compat_spec_file "${sources_dir}/$proj.spec.old" ${specs_dir}/$proj.spec
     else
         new_snapshot_spec_file "${sources_dir}/$proj.spec.old" ${specs_dir}/$proj.spec
     fi
+    endgroup
 }
 
 opt_build_compat_packages=""
@@ -248,6 +255,8 @@ spec_file=${specs_dir}/$proj.spec
 create_spec_file
 
 if [[ "$opt_build_srpm" == "1" ]]; then
+    endgroup
+    group "Downloading patches and source from listed in ${specs_dir}/$proj.spec"
     # Download files from the specfile into the current directory
     rpmdev-spectool \
         --debug \
@@ -255,7 +264,10 @@ if [[ "$opt_build_srpm" == "1" ]]; then
         --directory ${opt_workdir}/SOURCES \
         ${specs_dir}/$proj.spec
     echo "%_topdir ${opt_workdir}" >> ~/.rpmmacros
-    rpmbuild -vv -bs ${specs_dir}/$proj.spec  
+    endgroup
+    group "Building SRPM from ${specs_dir}/$proj.spec"
+    rpmbuild -vv -bs ${specs_dir}/$proj.spec
+    endgroup
 fi
 
 exit 0
