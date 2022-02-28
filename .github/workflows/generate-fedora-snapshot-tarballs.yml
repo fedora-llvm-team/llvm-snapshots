@@ -101,6 +101,8 @@ jobs:
         id: rebased-commit
         run: |
           pushd llvm-project
+          git config --global user.email "fedora-snapshot-bot@example.com"
+          git config --global user.name "Fedora snapshot bot"
           git remote add downstream https://pagure.io/llvm-project.git
           git fetch downstream
           git checkout -b downstream --track downstream/streamline
