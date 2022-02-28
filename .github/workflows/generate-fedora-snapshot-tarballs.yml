@@ -100,7 +100,7 @@ jobs:
       - name: "rebase downstream onto latest stable commit"
         id: rebased-commit
         run: |
-          pushd llvm-project
+          cd llvm-project
           git config --global user.email "fedora-snapshot-bot@example.com"
           git config --global user.name "Fedora snapshot bot"
           git remote add downstream https://pagure.io/llvm-project.git
@@ -109,7 +109,6 @@ jobs:
           git rebase ${{ steps.stable-commit.outputs.sha }}
           sha=`git rev-parse HEAD`
           echo -n "::set-output name=sha::$sha"
-          popd
 
       - name: "create source-snapshot tarballs"
         run: |
