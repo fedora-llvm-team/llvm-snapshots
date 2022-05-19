@@ -38,6 +38,11 @@ EOF
 new_snapshot_spec_file() {
     local orig_file=$1
     local out_file=$2
+    local bcond_pgo_instrumented_build=""
+
+    if [[ "$opt_with_pgo_instrumented_build" != "" ]]; then
+        bcond_pgo_instrumented_build="%bcond_without pgo_instrumented_build"
+    fi
 
     cat <<EOF > ${out_file}
 ################################################################################
@@ -46,6 +51,8 @@ new_snapshot_spec_file() {
 
 # FIXME: Disable running checks for the time being 
 %global _without_check 1
+
+${bcond_pgo_instrumented_build}
 
 %bcond_without snapshot_build
 
@@ -187,6 +194,7 @@ create_spec_file() {
 opt_build_compat_packages=""
 orig_package_name=""
 opt_workdir=/workdir
+opt_with_pgo_instrumented_build=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -215,6 +223,9 @@ while [ $# -gt 0 ]; do
         --workdir )
             shift
             opt_workdir=$1
+            ;;
+        --pgo-instrumented-build )
+            opt_with_pgo_instrumented_build="1"
             ;;
         -h | -help | --help )
             usage

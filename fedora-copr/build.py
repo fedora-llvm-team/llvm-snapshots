@@ -100,13 +100,14 @@ class CoprBuilder(object):
                 devel_mode=True,
                 appstream=False)
 
-    def make_packages(self, yyyymmdd: str, custom_script: str, packagenames: list[str], max_num_builds: int, commitish: str):
+    def make_packages(self, yyyymmdd: str, custom_script: str, pgo_instrumented_build: bool, packagenames: list[str], max_num_builds: int, commitish: str):
         """
         Creates or edits existing packages in the copr project.
 
         :param str yyyymmdd: the date in backwards order for which to create the package
             this refers to the date for which the source snapshot will be taken.
         :param str custom_script: the script to execute when the package is built
+        :param bool pgo_instrumented_build: whether to build the packages with PGO instrumentation
         :param list[str] packagenames: these packages will be created
         :param int max_num_builds maximum number of builds to keep (I know, fuzzy)
         :param str commitish version (branch, sha1, tag) of the create-file-spec.sh to use in copr 
@@ -117,6 +118,10 @@ class CoprBuilder(object):
             ownername=self.__ownername, projectname=self.__projectname)
         existingpackagenames = [p.name for p in packages]
 
+        pgo_instrumented=""
+        if pgo_instrumented_build:
+            pgo_instrumented="--pgo-instrumented-build"
+
         for packagename in packagenames:
             packageattrs = {
                 "ownername": self.__ownername,
@@ -125,7 +130,7 @@ class CoprBuilder(object):
                 "source_type": "custom",
                 # For source_dict see https://python-copr.readthedocs.io/en/latest/client_v3/package_source_types.html#custom
                 "source_dict": {
-                    "script": custom_script.format(project=packagename, yyyymmdd=yyyymmdd, commitish=commitish),
+                    "script": custom_script.format(project=packagename, yyyymmdd=yyyymmdd, commitish=commitish, pgo_instrumented_build=pgo_instrumented),
                     "builddeps": "git make dnf-plugins-core fedora-packager tree curl sed",
                     "resultdir": "buildroot",
                     "max_builds": max_num_builds,
@@ -398,7 +403,7 @@ Custom_script:
 
     builder.make_or_edit_project(chroots=chroots, description=description, instructions=instructions)
 
-    builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, packagenames=packagenames, max_num_builds=args.max_num_builds, commitish=args.commitish)
+    builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, pgo_instrumented_build=args.pgo_instrumented_build, packagenames=packagenames, max_num_builds=args.max_num_builds, commitish=args.commitish)
 
     if args.packagenames == "all" or args.packagenames == "":
         builder.build_all(chroots=chroots, with_compat=args.with_compat, wait_on_build_id=wait_on_build_id)
@@ -475,6 +480,10 @@ if __name__ == "__main__":
                         dest='regenerate_repos',
                         action="store_true",
                         help="regenerates the project's repositories, then exit")
+    parser.add_argument('--pgo-instrumented-build',
+                        dest='pgo_instrumented_build',
+                        action="store_true",
+                        help="Builds the packages with PGO instrumentation enabled")
     parser.add_argument('--commitish',
                         dest='commitish',
                         default='main',

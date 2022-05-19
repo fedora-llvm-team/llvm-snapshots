@@ -4,10 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       opts:
-        description: 'pass optional switches (e.g. --with-compat)'
+        description: 'pass optional switches (e.g. --with-compat or --ownername kkleine --projectname llvm-pgo --pgo-instrumented-build)'
         required: false
         default: ''
-
 
   # # This workflow runs automatically once the source snapshot tarballs have been
   # # generated and uploaded.
