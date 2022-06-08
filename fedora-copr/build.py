@@ -99,6 +99,8 @@ class CoprBuilder(object):
                 multilib=True,
                 devel_mode=True,
                 appstream=False)
+        
+        self.__client.project_chroot_proxy.get_build_config().
 
     def make_packages(self, yyyymmdd: str, custom_script: str, pgo_instrumented_build: bool, packagenames: list[str], max_num_builds: int, commitish: str):
         """
@@ -136,6 +138,16 @@ class CoprBuilder(object):
                     "max_builds": max_num_builds,
                 }
             }
+            if packagename == "python-lit":
+                # See https://python-copr.readthedocs.io/en/latest/client_v3/package_source_types.html#scm
+                packageattrs["source_type"] = "scm"
+                packageattrs["source_dict"] = {
+                    "clone_url": "https://src.fedoraproject.org/rpms/python-lit.git",
+                    "committish": "upstream-snapshot",
+                    "spec": "python-lit.spec",
+                    "scm_type": "git",
+                    "source_build_method": "rpkg",
+                }
             if packagename in existingpackagenames:
                 print("Resetting and editing package {} in {}/{}".format(packagename,
                       self.__ownername, self.__projectname))
@@ -192,6 +204,18 @@ class CoprBuilder(object):
         try:
             print("Creating build for package {} in {}/{} for chroots {} (build after: {})".format(package_name,
                     self.__ownername, self.__projectname, chroots, build_after_id), end='')
+            
+            if package_name == "python-lit":
+                print("Adjusting chroots to have --with=snapshot_build and llvm-snapshot-builder package installed")
+                for chroot in chroots:
+                    self.__client.project_chroot_proxy.edit(
+                        ownername=self.__ownername,
+                        projectname=self.__projectname,
+                        chrootname=chroot,
+                        with_opts="snapshot_build",
+                        additional_repos=["https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-snapshot-builder/fedora-$releasever-$basearch"],
+                        additional_packages="llvm-snapshot-builder",
+                    )
             build = self.__client.package_proxy.build(
                 ownername=self.__ownername,
                 projectname=self.__projectname,
