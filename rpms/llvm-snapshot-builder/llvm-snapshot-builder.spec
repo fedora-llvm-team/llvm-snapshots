@@ -24,5 +24,11 @@ install -p -m0644 -D %{SOURCE0} %{buildroot}%{_rpmmacrodir}/macros.%{name}
 %{_rpmmacrodir}/macros.%{name}
 
 %changelog
+* Wed Jun 08 2022 Konrad Kleine <kkleine@redhat.com> 1.0.1-3
+- Show config during build
+
+* Wed Jun 08 2022 Konrad Kleine <kkleine@redhat.com> 1.0.1-2
+- Added old globals for convenience and added llvm_sb_debug, llvm_sb_version_tag
+
 * Wed Jun 08 2022 Konrad Kleine <kkleine@redhat.com> 1.0.0-1
 - initial version
