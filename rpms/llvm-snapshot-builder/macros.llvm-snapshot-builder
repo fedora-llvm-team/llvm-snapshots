@@ -108,7 +108,7 @@
     -- Returns the Git commit sha1 for the date given by llvm_sb_yyyymmdd()
     function llvm_sb_git_revision()
         local filename = "llvm-git-revision-" .. llvm_sb_yyyymmdd() .. ".txt"
-        return curl_file_cached(filename)
+        return llvm_sb_curl_file_cached(filename)
     end
 
      -- Returns the short Git commit sha1 for the date given by _yyyymmdd()
