@@ -15,10 +15,14 @@
 #
 # Author: Konrad Kleine <kkleine@redhat.com>
 
+%llvm_sb_debug 0
+
 %llvm_sb %{lua:
     -- Prints a message that doesn't interfere with RPM the same as print(msg) would.
     function llvm_sb_echo(msg)
-        rpm.expand("%{echo:" .. msg .. "}")
+        if rpm.expand("%{llvm_sb_debug}") == "1" then
+            rpm.expand("%{echo:" .. msg .. "}")
+        end
     end
 
     llvm_sb_echo('Enabling LLVM Snapshot builder functions: llvm_sb_xy()')
@@ -28,12 +32,7 @@
         return 'https://github.com/kwk/llvm-daily-fedora-rpms/releases/download/source-snapshot'
     end
 
-    -- Returns the URL to the snapshot releases.
-    function llvm_sb_url_base()
-        return 'https://github.com/kwk/llvm-daily-fedora-rpms/releases/download/source-snapshot'
-    end
-
-     -- Returns the base URL concatenated with the given filename
+    -- Returns the base URL concatenated with the given filename
     function llvm_sb_build_url(filename)
         return llvm_sb_url_base() .. '/' .. filename
         -- see https://www.lua.org/pil/3.4.html
@@ -71,7 +70,7 @@
         end
         llvm_sb_echo("Reading content of file: " .. filename)
         local f = rpm.open(filename)
-        return f:read()
+        return string.gsub(f:read(), '(.-)%s*$', '%1')
     end
 
      -- Returns the Major.Minor.Patch version for the date given by llvm_sb_yyyymmdd()
@@ -79,8 +78,8 @@
         local filename = "llvm-release-" .. llvm_sb_yyyymmdd() .. ".txt"
         return llvm_sb_curl_file_cached(filename)
     end
-
-     -- Returns the major and minor version as three separate arguments
+    
+    -- Returns the major and minor version as three separate arguments
     function llvm_sb_version_split()
         local version = llvm_sb_version()
         local major, minor, patch = string.match(version, "(%d+)%.(%d+)%.(%d+)")
@@ -130,15 +129,20 @@
 
     -- Suffix to add to %Version tag so that the snapshot is clearly marked
     function llvm_sb_version_suffix()
-        return "~pre" .. llvm_sb_yyyymmdd() .. ".g" .. llvm_sb_git_revision_short()
+        return "pre" .. llvm_sb_yyyymmdd() .. ".g" .. llvm_sb_git_revision_short()
+    end
+    
+    -- Returns the version that can be used in the Version: tag for the date given by llvm_sb_yyyymmdd()
+    function llvm_sb_version_tag()
+	return llvm_sb_version() .. '~' .. llvm_sb_version_suffix()
     end
 
     -- Creates a string that 
     function llvm_sb_changelog_entry()
         -- Make sure weekdays are printed in English for Changelog entries.
         assert(os.setlocale('C'))
-        local entry = "* "..os.date("%a %b %d %Y").." LLVM snapshot - "..rpm.expand("%version").."\n"..
-                      "- This is an automated snapshot build ".."%s".."\n\n"
+        local entry = "* "..os.date("%a %b %d %Y").." LLVM snapshot - "..llvm_sb_version_tag().."\\n"..
+                      "- This is an automated snapshot build ".."%s".."\\n\\n"
         local copr_link = llvm_sb_copr_build_link()
         if copr_link ~= "" then
             return string.format(entry, copr_link)
@@ -146,5 +150,34 @@
         return string.format(entry, "")
     end
 
+    rpm.define('llvm_snapshot_version '..llvm_sb_version())
+    rpm.define('llvm_snapshot_version_tag '..llvm_sb_version_tag())
+    rpm.define('llvm_snapshot_version_major '..llvm_sb_version_major())
+    rpm.define('llvm_snapshot_version_minor '..llvm_sb_version_minor())
+    rpm.define('llvm_snapshot_version_patch '..llvm_sb_version_patch())
+    rpm.define('llvm_snapshot_yyyymmdd '..llvm_sb_yyyymmdd())
+    rpm.define('llvm_snapshot_git_revision '..llvm_sb_git_revision())
+    rpm.define('llvm_snapshot_git_revision_short '..llvm_sb_git_revision_short())
+    rpm.define('llvm_snapshot_source_prefix '..llvm_sb_url_base()..'/')
+    rpm.define('llvm_snapshot_version_suffix '..llvm_sb_version_suffix())
+    rpm.define('llvm_snapshot_changelog_entry '..llvm_sb_changelog_entry())
+    rpm.define('_with_snapshot_build 1')
+
+    rpm.expand('%{echo:}') 
+    rpm.expand('%{echo:LLVM-Snapshot-Builder}') 
+    rpm.expand('%{echo:----------------------------------}') 
+    rpm.expand('%{echo:llvm_snapshot_version:            '..rpm.expand('%{llvm_snapshot_version}')..'}')
+    rpm.expand('%{echo:llvm_snapshot_version_tag:        '..rpm.expand('%{llvm_snapshot_version_tag}')..'}')
+    rpm.expand('%{echo:llvm_snapshot_version_major:      '..rpm.expand('%{llvm_snapshot_version_major}')..'}')
+    rpm.expand('%{echo:llvm_snapshot_version_minor:      '..rpm.expand('%{llvm_snapshot_version_minor}')..'}')
+    rpm.expand('%{echo:llvm_snapshot_version_patch:      '..rpm.expand('%{llvm_snapshot_version_patch}')..'}')
+    rpm.expand('%{echo:llvm_snapshot_yyyymmdd:           '..rpm.expand('%{llvm_snapshot_yyyymmdd}')..'}')
+    rpm.expand('%{echo:llvm_snapshot_git_revision:       '..rpm.expand('%{llvm_snapshot_git_revision}')..'}')
+    rpm.expand('%{echo:llvm_snapshot_git_revision_short: '..rpm.expand('%{llvm_snapshot_git_revision_short}')..'}')
+    rpm.expand('%{echo:llvm_snapshot_source_prefix:      '..rpm.expand('%{llvm_snapshot_source_prefix}')..'}')
+    rpm.expand('%{echo:llvm_snapshot_version_suffix:     '..rpm.expand('%{llvm_snapshot_version_suffix}')..'}')
+    rpm.expand('%{echo:llvm_snapshot_changelog_entry:    '..rpm.expand('%{llvm_snapshot_changelog_entry}')..'}') 
+    rpm.expand('%{echo:}') 
+	
     llvm_sb_echo('Done enabling LLVM Snapshot builder functions: llvm_sb_xy()')
  }
