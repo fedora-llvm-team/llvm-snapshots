@@ -1,3 +1,4 @@
+.PHONY: rpm
 rpm:
 	rm -rf ~/rpmbuild \
 	&& rpmdev-setuptree \
