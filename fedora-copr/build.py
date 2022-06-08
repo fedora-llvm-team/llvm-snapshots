@@ -99,8 +99,6 @@ class CoprBuilder(object):
                 multilib=True,
                 devel_mode=True,
                 appstream=False)
-        
-        self.__client.project_chroot_proxy.get_build_config().
 
     def make_packages(self, yyyymmdd: str, custom_script: str, pgo_instrumented_build: bool, packagenames: list[str], max_num_builds: int, commitish: str):
         """
@@ -214,7 +212,7 @@ class CoprBuilder(object):
                         chrootname=chroot,
                         with_opts="snapshot_build",
                         additional_repos=["https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-snapshot-builder/fedora-$releasever-$basearch"],
-                        additional_packages="llvm-snapshot-builder",
+                        additional_packages="llvm-snapshot-builder"
                     )
             build = self.__client.package_proxy.build(
                 ownername=self.__ownername,
