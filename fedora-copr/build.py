@@ -136,15 +136,15 @@ class CoprBuilder(object):
                     "max_builds": max_num_builds,
                 }
             }
-            if packagename == "python-lit":
+            if packagename in ("python-lit", "llvm", "libomp", "compiler-rt", "mlir", "clang", "lld"):
                 # See https://python-copr.readthedocs.io/en/latest/client_v3/package_source_types.html#scm
                 packageattrs["source_type"] = "scm"
                 packageattrs["source_dict"] = {
-                    "clone_url": "https://src.fedoraproject.org/rpms/python-lit.git",
+                    "clone_url": "https://src.fedoraproject.org/rpms/"+packagename+".git",
                     "committish": "upstream-snapshot",
-                    "spec": "python-lit.spec",
+                    "spec": packagename + ".spec",
                     "scm_type": "git",
-                    "source_build_method": "rpkg",
+                    "source_build_method": "make_srpm",
                 }
             if packagename in existingpackagenames:
                 print("Resetting and editing package {} in {}/{}".format(packagename,
@@ -203,7 +203,7 @@ class CoprBuilder(object):
             print("Creating build for package {} in {}/{} for chroots {} (build after: {})".format(package_name,
                     self.__ownername, self.__projectname, chroots, build_after_id), end='')
             
-            if package_name == "python-lit":
+            if package_name in ("python-lit", "llvm", "libomp", "compiler-rt", "mlir", "clang", "lld"):
                 print("Adjusting chroots to have --with=snapshot_build and llvm-snapshot-builder package installed")
                 for chroot in chroots:
                     self.__client.project_chroot_proxy.edit(
