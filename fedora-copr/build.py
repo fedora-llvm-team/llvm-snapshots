@@ -211,7 +211,7 @@ class CoprBuilder(object):
                         projectname=self.__projectname,
                         chrootname=chroot,
                         with_opts="snapshot_build",
-                        additional_repos=["https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-snapshot-builder/fedora-$releasever-$basearch"],
+                        additional_repos=["https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-snapshot-builder/" + chroot],
                         additional_packages="llvm-snapshot-builder"
                     )
             build = self.__client.package_proxy.build(
