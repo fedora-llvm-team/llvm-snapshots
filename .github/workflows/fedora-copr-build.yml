@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       opts:
-        description: 'pass optional switches (e.g. --with-compat or --ownername kkleine --projectname llvm-pgo --pgo-instrumented-build)'
+        description: 'pass optional switches (e.g. --ownername <SomeCoprUser>)'
         required: false
         default: ''
 
@@ -72,6 +72,4 @@ jobs:
             --ownername "@fedora-llvm-team" \
             --projectname "llvm-snapshots" \
             --timeout "108000" \
-            --without-compat \
-            --max-num-builds 70 \
-            --commitish ${GITHUB_SHA} ${{ github.event.inputs.opts }}
+            --max-num-builds 70  ${{ github.event.inputs.opts }}

@@ -7,7 +7,7 @@ from copr.v3 import Client, CoprRequestException, CoprNoResultException
 import os
 import sys
 
-class CoprBuilder(object):
+class CoprAccess(object):
     """
     This class simplifies the creation of the copr project and packages as well
     as builds.
@@ -15,7 +15,7 @@ class CoprBuilder(object):
 
     def __init__(self, ownername: str, projectname: str):
         """
-        Creates a CoprBuilder object for the given owner/group and project name.
+        Creates a CoprAccess object for the given owner/group and project name.
 
         If the environment contains COPR_URL, COPR_LOGIN, COPR_TOKEN, and
         COPR_USERNAME, we'll try to create a Copr client from those environment
@@ -38,23 +38,6 @@ class CoprBuilder(object):
 
         self.__ownername = ownername
         self.__projectname = projectname
-        self.__default_chroots = [
-            "fedora-rawhide-x86_64",
-            "fedora-rawhide-aarch64", 
-            "fedora-rawhide-s390x",
-            "fedora-rawhide-ppc64le",
-            "fedora-rawhide-i386", 
-            "fedora-35-x86_64", 
-            "fedora-35-aarch64", 
-            "fedora-35-s390x",
-            "fedora-35-ppc64le",
-            "fedora-35-i386",
-            "fedora-36-x86_64",
-            "fedora-36-aarch64",
-            "fedora-36-s390x",
-            "fedora-36-ppc64le",
-            "fedora-36-i386"
-        ]
         self.__chroots = None
 
     def make_or_edit_project(self, description: str, instructions: str, chroots: list[str]) -> None:
@@ -100,17 +83,14 @@ class CoprBuilder(object):
                 devel_mode=True,
                 appstream=False)
 
-    def make_packages(self, yyyymmdd: str, custom_script: str, pgo_instrumented_build: bool, packagenames: list[str], max_num_builds: int, commitish: str):
+    def make_packages(self, yyyymmdd: str, packagenames: list[str], max_num_builds: int):
         """
         Creates or edits existing packages in the copr project.
 
         :param str yyyymmdd: the date in backwards order for which to create the package
             this refers to the date for which the source snapshot will be taken.
-        :param str custom_script: the script to execute when the package is built
-        :param bool pgo_instrumented_build: whether to build the packages with PGO instrumentation
         :param list[str] packagenames: these packages will be created
-        :param int max_num_builds maximum number of builds to keep (I know, fuzzy)
-        :param str commitish version (branch, sha1, tag) of the create-file-spec.sh to use in copr 
+        :param int max_num_builds maximum number of builds to keep (I know, fuzzy) 
         """
 
         # Ensure all packages are either created or edited if they already exist
@@ -118,34 +98,21 @@ class CoprBuilder(object):
             ownername=self.__ownername, projectname=self.__projectname)
         existingpackagenames = [p.name for p in packages]
 
-        pgo_instrumented=""
-        if pgo_instrumented_build:
-            pgo_instrumented="--pgo-instrumented-build"
-
         for packagename in packagenames:
             packageattrs = {
                 "ownername": self.__ownername,
                 "projectname": self.__projectname,
                 "packagename": packagename,
-                "source_type": "custom",
-                # For source_dict see https://python-copr.readthedocs.io/en/latest/client_v3/package_source_types.html#custom
-                "source_dict": {
-                    "script": custom_script.format(project=packagename, yyyymmdd=yyyymmdd, commitish=commitish, pgo_instrumented_build=pgo_instrumented),
-                    "builddeps": "git make dnf-plugins-core fedora-packager tree curl sed",
-                    "resultdir": "buildroot",
-                    "max_builds": max_num_builds,
-                }
-            }
-            if packagename in ("python-lit", "llvm", "libomp", "compiler-rt", "mlir", "clang", "lld"):
                 # See https://python-copr.readthedocs.io/en/latest/client_v3/package_source_types.html#scm
-                packageattrs["source_type"] = "scm"
-                packageattrs["source_dict"] = {
+                "source_type": "scm",
+                "source_dict": {
                     "clone_url": "https://src.fedoraproject.org/rpms/"+packagename+".git",
                     "committish": "upstream-snapshot",
                     "spec": packagename + ".spec",
                     "scm_type": "git",
                     "source_build_method": "make_srpm",
                 }
+            }
             if packagename in existingpackagenames:
                 print("Resetting and editing package {} in {}/{}".format(packagename,
                       self.__ownername, self.__projectname))
@@ -180,40 +147,23 @@ class CoprBuilder(object):
 
     def __build_package(self, package_name: str, chroots: list[str], build_after_id: int=None):
         build = None
-
-        # Don't build compat packages in chroots where they don't belong.
-        # TODO(kwk): Oh boy, this sucks.
-        new_chroots = set(chroots)
-        for chroot in chroots:
-            if (package_name == "compat-llvm-fedora-35" or package_name == "compat-clang-fedora-35" ) and not chroot.startswith("fedora-35-"):
-                new_chroots.remove(chroot)
-            if (package_name == "compat-llvm-fedora-36" or package_name == "compat-clang-fedora-36" ) and not chroot.startswith("fedora-36-"):
-                new_chroots.remove(chroot)
-            if (package_name == "compat-llvm-fedora-rawhide" or package_name == "compat-clang-fedora-rawhide" ) and not chroot.startswith("fedora-rawhide-"):
-                new_chroots.remove(chroot)
-            # architecture s390x is exluced in spec when building lld or libomp
-            # ("error: Architecture is excluded: s390x")
-            if ((package_name == "lld" or package_name == "libomp") and chroot.endswith("s390x")):
-                new_chroots.remove(chroot)
-
-        if new_chroots == set():
-            return dict()
-
         try:
             print("Creating build for package {} in {}/{} for chroots {} (build after: {})".format(package_name,
                     self.__ownername, self.__projectname, chroots, build_after_id), end='')
             
-            if package_name in ("python-lit", "llvm", "libomp", "compiler-rt", "mlir", "clang", "lld"):
-                print("Adjusting chroots to have --with=snapshot_build and llvm-snapshot-builder package installed")
-                for chroot in chroots:
-                    self.__client.project_chroot_proxy.edit(
-                        ownername=self.__ownername,
-                        projectname=self.__projectname,
-                        chrootname=chroot,
-                        with_opts="snapshot_build",
-                        additional_repos=["https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-snapshot-builder/" + chroot],
-                        additional_packages="llvm-snapshot-builder"
-                    )
+            print("Adjusting chroots to have --with=snapshot_build and llvm-snapshot-builder package installed")
+            for chroot in chroots:
+                self.__client.project_chroot_proxy.edit(
+                    ownername=self.__ownername,
+                    projectname=self.__projectname,
+                    chrootname=chroot,
+                    with_opts="snapshot_build",
+                    additional_repos=[
+                        "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-snapshot-builder/"+ chroot,
+                        "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/"+ chroot,
+                    ],
+                    additional_packages="llvm-snapshot-builder"
+                )
             build = self.__client.package_proxy.build(
                 ownername=self.__ownername,
                 projectname=self.__projectname,
@@ -221,7 +171,7 @@ class CoprBuilder(object):
                 # See https://python-copr.readthedocs.io/en/latest/client_v3/build_options.html
                 buildopts={
                     "timeout": 30*3600,
-                    "chroots": list(new_chroots),
+                    "chroots": list(set(chroots)),
                     "after_build_id": build_after_id
                 },
             )
@@ -231,7 +181,7 @@ class CoprBuilder(object):
         print(" (build-id={}, state={})".format(build.id, build.state))
         return build
 
-    def build_all(self, chroots: list[str], with_compat:bool=False, wait_on_build_id:int=None) -> None:
+    def build_all(self, chroots: list[str], wait_on_build_id:int=None) -> None:
         """
         Builds everyting for the given chroots and creates optimal Copr batches.
         See https://docs.pagure.org/copr.copr/user_documentation.html#build-batches.
@@ -240,34 +190,12 @@ class CoprBuilder(object):
         doesn't have to wait for a potentially slower s390x build.
 
         :param list[str] chroots: the chroots for which the packages will be built
-        :param bool with_compat: whether to build compatibility packages or not
         :param int wait_on_build_id: the build to wait for before starting the new builds.
         """
         for chroot in chroots:
             print("CHROOT: {}".format(chroot))
             python_lit_build = self.__build_package("python-lit", [chroot])
-            llvm_compat_build = wait_on_build_id
-            clang_compat_build = wait_on_build_id
-            if with_compat == True:
-                llvm_compat_build = dict()
-                clang_compat_build = dict()
-
-                llvm_compat_build = self.__build_package("compat-llvm-fedora-35", [chroot], build_after_id=python_lit_build.id)
-                if llvm_compat_build != dict():
-                    clang_compat_build = self.__build_package("compat-clang-fedora-35", [chroot], build_after_id=llvm_compat_build.id)
-
-                if llvm_compat_build == dict():
-                    llvm_compat_build = self.__build_package("compat-llvm-fedora-36", [chroot], build_after_id=python_lit_build.id)
-                    if llvm_compat_build != dict():
-                        clang_compat_build = self.__build_package("compat-clang-fedora-36", [chroot], build_after_id=llvm_compat_build.id)
-
-                if llvm_compat_build == dict():
-                    llvm_compat_build = self.__build_package("compat-llvm-fedora-rawhide", [chroot], build_after_id=python_lit_build.id)
-                    if llvm_compat_build != dict():
-                        clang_compat_build = self.__build_package("compat-clang-fedora-rawhide", [chroot], build_after_id=llvm_compat_build.id)
-
-
-            llvm_build = self.__build_package("llvm", [chroot], build_after_id=llvm_compat_build.id if with_compat else python_lit_build.id)
+            llvm_build = self.__build_package("llvm", [chroot], build_after_id=python_lit_build.id)
             lld_build = self.__build_package("lld", [chroot], build_after_id=llvm_build.id)
             mlir_build = self.__build_package("mlir", [chroot], build_after_id=llvm_build.id)
             clang_build = self.__build_package("clang", [chroot], build_after_id=llvm_build.id)
@@ -282,7 +210,7 @@ class CoprBuilder(object):
         if refresh_cache == False and self.__chroots != None:
             return self.__chroots
     
-        chroots = self.__default_chroots
+        chroots = []
         try:
             chroots = self.__client.project_proxy.get(self.__ownername, self.__projectname).chroot_repos.keys()
         except CoprNoResultException as ex:
@@ -335,14 +263,13 @@ class CoprBuilder(object):
         self.__client.project_proxy.regenerate_repos(ownername=self.__ownername, projectname=self.__projectname)
 
 def main(args) -> None:
-    builder = CoprBuilder(ownername=args.ownername, projectname=args.projectname)
+    builder = CoprAccess(ownername=args.ownername, projectname=args.projectname)
 
     # For location see see https://stackoverflow.com/a/4060259
     location = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
     
     description = open(os.path.join(location, "project-description.md"), "r").read()
     instructions = open(os.path.join(location, "project-instructions.md"), "r").read()
-    custom_script = open(os.path.join(location, "custom-script.sh.tpl"), "r").read()
 
     if args.regenerate_repos:
         builder.regenerate_repos()
@@ -354,12 +281,6 @@ def main(args) -> None:
 
     allpackagenames = [
         "python-lit",
-        "compat-llvm-fedora-rawhide",
-        "compat-llvm-fedora-35",
-        "compat-llvm-fedora-36",
-        "compat-clang-fedora-rawhide",
-        "compat-clang-fedora-35",
-        "compat-clang-fedora-36",
         "llvm",
         "compiler-rt",
         "lld",
@@ -373,47 +294,9 @@ def main(args) -> None:
         packagenames = args.packagenames
 
     chroots = args.chroots
-    if args.chroots == ["all"] or args.chroots == "all" or args.chroots == "":
-        chroots = builder.get_chroots()
-
-    if args.print_config == True:
-        print("""
-Summary
-=======
-
-Owner/Group name:   {} 
-Project name:       {}
-Package names:      {}
-Chroots:            {}
-Wait on build ID:   {} 
-Timeout:            {}
-Year month day:     {}
-Commitish:          {}
-
-Description:
-------------
-{}
-
-Instructions:
--------------
-{}
-
-Custom_script:
---------------
-{}
-""".format(
-        args.ownername, 
-        args.projectname, 
-        packagenames, 
-        chroots,
-        wait_on_build_id,
-        args.timeout,
-        args.yyyymmdd,
-        args.commitish,
-        description, 
-        instructions, 
-        custom_script))
-        sys.exit(0)
+    if args.chroots == "":
+        print("Please provide --chroots")
+        sys.exit(-1)
 
     if args.cancel_builds:
         res = builder.cancel_builds(chroots=chroots)
@@ -425,10 +308,10 @@ Custom_script:
 
     builder.make_or_edit_project(chroots=chroots, description=description, instructions=instructions)
 
-    builder.make_packages(yyyymmdd=args.yyyymmdd, custom_script=custom_script, pgo_instrumented_build=args.pgo_instrumented_build, packagenames=packagenames, max_num_builds=args.max_num_builds, commitish=args.commitish)
+    builder.make_packages(yyyymmdd=args.yyyymmdd, packagenames=packagenames, max_num_builds=args.max_num_builds)
 
     if args.packagenames == "all" or args.packagenames == "":
-        builder.build_all(chroots=chroots, with_compat=args.with_compat, wait_on_build_id=wait_on_build_id)
+        builder.build_all(chroots=chroots, wait_on_build_id=wait_on_build_id)
     else:
         builder.build_packages_chained(chroots=chroots, packagenames=packagenames, wait_on_build_id=wait_on_build_id)
 
@@ -438,7 +321,7 @@ if __name__ == "__main__":
                         dest='chroots',
                         metavar='CHROOT',
                         nargs='+',
-                        default="all",
+                        default="",
                         type=str,
                         help="list of chroots to build in")
     parser.add_argument('--packagenames',
@@ -477,18 +360,6 @@ if __name__ == "__main__":
                         dest='cancel_builds',
                         action="store_true",
                         help='cancel builds with these states before creating new ones and then exits: "pending", "waiting", "running", "importing"')
-    parser.add_argument('--print-config',
-                        dest='print_config',
-                        action="store_true",
-                        help="print the parsed config and exit (default: False)")
-    parser.add_argument('--without-compat',
-                        dest='with_compat',
-                        action="store_false",
-                        help="don't build the compat packages (default: no)")
-    parser.add_argument('--with-compat',
-                        dest='with_compat',
-                        action="store_true",
-                        help="build the compat packages (default: yes)")
     parser.add_argument('--delete-project',
                         dest='delete_project',
                         action="store_true",
@@ -502,15 +373,7 @@ if __name__ == "__main__":
                         dest='regenerate_repos',
                         action="store_true",
                         help="regenerates the project's repositories, then exit")
-    parser.add_argument('--pgo-instrumented-build',
-                        dest='pgo_instrumented_build',
-                        action="store_true",
-                        help="Builds the packages with PGO instrumentation enabled")
-    parser.add_argument('--commitish',
-                        dest='commitish',
-                        default='main',
-                        type=str,
-                        help="branch, tag, sha1 of the commit of the create-spec-file.sh to download from copr (default: main)")
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 
     args = parser.parse_args()
     main(args)
