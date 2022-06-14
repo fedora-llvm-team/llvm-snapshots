@@ -10,7 +10,7 @@ cffi==1.15.0
     # via pynacl
 charset-normalizer==2.0.12
     # via requests
-copr==1.115
+copr==1.116
     # via -r requirements.txt.in
 deprecated==1.2.13
     # via pygithub
