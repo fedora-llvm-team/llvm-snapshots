@@ -6,6 +6,7 @@ In theory, this should be enough on a recent Fedora version:
 
 ```
 $ dnf install 'dnf-command(copr)'
+$ dnf copr enable @fedora-llvm-team/llvm-compat-packages
 $ dnf copr enable @fedora-llvm-team/llvm-snapshots
 ```
 
