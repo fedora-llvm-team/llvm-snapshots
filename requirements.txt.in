@@ -3,5 +3,5 @@
 # pip install pip-tools
 # pip-compile -o requirements.txt  requirements.txt.in
 
-copr==1.116
+copr==1.122
 PyGithub==1.55
