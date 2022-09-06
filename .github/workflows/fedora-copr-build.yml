@@ -31,14 +31,18 @@ jobs:
         with:
           python-version: 3.9
 
-      - uses: actions/checkout@v2
+      - name: "checkout this repo"
+        uses: actions/checkout@v2
 
-      - run: |
+      - name: "install python requirements"
+        run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-        
-      - name: copr build
-        env:
+
+      - name: "prepare variables"
+        # We specify the secrets here and give them an alias for other steps to
+        # repeat the options.
+        env: &secrets
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
           COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
@@ -46,11 +50,38 @@ jobs:
           COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
           COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: vars
         run: |
-          python fedora-copr/build.py \
-            --regenerate-repos \
-            --ownername "@fedora-llvm-team" \
-            --projectname "llvm-snapshots"
+          ownername_today=kkleine
+          ownername_yesterday=kkleine
+          ownername_target=kkleine
+          
+          projectname_today=llvm-snapshots-incubator-`date +%Y%m%d`
+          projectname_yesterday=llvm-snapshots-incubator-`date -d '-1 day' +%Y%m%d`
+          projectname_target=llvm-snapshots
+
+          echo -n "::set-output name=ownername_today::$ownername_today"
+          echo -n "::set-output name=ownername_yesterday::$ownername_yesterday"
+          echo -n "::set-output name=ownername_target::$ownername_target"
+
+          echo -n "::set-output name=projectname_today::$projectname_today"
+          echo -n "::set-output name=projectname_yesterday::$projectname_yesterday"
+          echo -n "::set-output name=projectname_target::$projectname_target"
+
+          echo -n "::set-output name=op_today::$ownername_today/$projectname_today"
+          echo -n "::set-output name=op_yesterday::$ownername_yesterday/$projectname_yesterday"
+          echo -n "::set-output name=op_target::$ownername_target/$projectname_target"
+
+          # check if yesterday's project exists
+          yesterdays_project_exists=`python fedora-copr/build.py \
+            --project-exists \
+            --ownername "$onwername_yesterday" \
+            --projectname $projectname_yesterday`
+          echo -n "::set-output name=yesterdays_project_exists::$yesterdays_project_exists"
+
+      - name: "copr kick-off new builds in ${{ steps.vars.outputs.op_today }}"
+        env: *secrets
+        run: |
           python fedora-copr/build.py \
             --chroots \
                 fedora-35-aarch64 \
@@ -69,7 +100,28 @@ jobs:
                 fedora-rawhide-i386 \
                 fedora-rawhide-s390x \
             --yyyymmdd "$(date +%Y%m%d)" \
-            --ownername "@fedora-llvm-team" \
-            --projectname "llvm-snapshots" \
+            --ownername "${{ steps.vars.outputs.ownername_today }}" \
+            --projectname "${{ steps.vars.outputs.projectname_today }}" \
             --timeout "108000" \
+            --delete-after-days 7 \
             --max-num-builds 70  ${{ github.event.inputs.opts }}
+
+      - name: copr fork project from ${{ steps.vars.outputs.op_yesterday }} to ${{ steps.vars.outputs.op_target }}
+        if: ${{ steps.vars.outputs.yesterdays_project_exists == 'yes' }}
+        env: *secrets
+        run: |
+          python fedora-copr/build.py \
+            --fork-from "${{ steps.vars.outputs.op_yesterday }}" \
+            --ownername "${{ steps.vars.outputs.onwername_target }}" \
+            --projectname "${{ steps.vars.outputs.projectname_target }}"
+
+      - name: copr regenerate ${{ steps.vars.outputs.op_target }}
+        # If yesterday's project didn't exist, we haven't forked and so we don't
+        # need to regenerate the repos.
+        if: ${{ steps.vars.outputs.yesterdays_project_exists == 'yes' }}
+        env: *secrets
+        run: |
+          python fedora-copr/build.py \
+            --regenerate-repos \
+            --ownername "${{ steps.vars.outputs.onwername_target }}" \
+            --projectname "${{ steps.vars.outputs.projectname_target }}"
