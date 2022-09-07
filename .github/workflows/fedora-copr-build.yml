@@ -1,25 +1,25 @@
-name: fedora-copr-build
+name: build-fedora-packages
 
 on:
   workflow_dispatch: {}
-    # inputs:
-    #   opts:
-    #     description: 'pass optional switches (e.g. --ownername <SomeCoprUser>)'
-    #     required: false
-    #     default: ''
+  #   # inputs:
+  #   #   opts:
+  #   #     description: 'pass optional switches (e.g. --ownername <SomeCoprUser>)'
+  #   #     required: false
+  #   #     default: ''
 
-  # # This workflow runs automatically once the source snapshot tarballs have been
-  # # generated and uploaded.
-  # # See https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#workflow_run
-  # workflow_run:
-  #   workflows: ["generate-snapshot-tarballs"]
-  #   branches: [main]
-  #   types: [completed]
+  # # # This workflow runs automatically once the source snapshot tarballs have been
+  # # # generated and uploaded.
+  # # # See https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#workflow_run
+  # # workflow_run:
+  # #   workflows: ["generate-snapshot-tarballs"]
+  # #   branches: [main]
+  # #   types: [completed]
 
-  schedule:
-    # Everyday at 00:30am
-    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    - cron:  '30 0 * * *'
+  # schedule:
+  #   # Everyday at 00:30am
+  #   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+  #   - cron:  '30 0 * * *'
 
 jobs:
     
