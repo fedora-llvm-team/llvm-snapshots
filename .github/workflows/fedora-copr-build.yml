@@ -1,12 +1,12 @@
 name: fedora-copr-build
 
 on:
-  workflow_dispatch:
-    inputs:
-      opts:
-        description: 'pass optional switches (e.g. --ownername <SomeCoprUser>)'
-        required: false
-        default: ''
+  workflow_dispatch: {}
+    # inputs:
+    #   opts:
+    #     description: 'pass optional switches (e.g. --ownername <SomeCoprUser>)'
+    #     required: false
+    #     default: ''
 
   # # This workflow runs automatically once the source snapshot tarballs have been
   # # generated and uploaded.
