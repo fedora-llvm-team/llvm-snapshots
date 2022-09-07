@@ -1,7 +1,8 @@
 name: build-fedora-packages
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+  
   #   # inputs:
   #   #   opts:
   #   #     description: 'pass optional switches (e.g. --ownername <SomeCoprUser>)'
