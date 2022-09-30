@@ -353,9 +353,9 @@ def main(args) -> None:
     if args.project_exists:
         if builder.project_exits(builder.ownername, builder.projectname):
             print("yes")
-            return 0
-        print("no")
-        return -1
+        else:
+            print("no")
+        return 0
 
     wait_on_build_id = args.wait_on_build_id
     if wait_on_build_id == None or wait_on_build_id <= 0:
