@@ -59,7 +59,7 @@ jobs:
           # check if yesterday's project exists
           yesterdays_project_exists=`python fedora-copr/build.py \
             --project-exists \
-            --ownername "$onwername_yesterday" \
+            --ownername "$ownername_yesterday" \
             --projectname $projectname_yesterday`
           echo -n "::set-output name=yesterdays_project_exists::$yesterdays_project_exists"
 
@@ -110,7 +110,7 @@ jobs:
         run: |
           python fedora-copr/build.py \
             --fork-from "${{ steps.vars.outputs.op_yesterday }}" \
-            --ownername "${{ steps.vars.outputs.onwername_target }}" \
+            --ownername "${{ steps.vars.outputs.ownername_target }}" \
             --projectname "${{ steps.vars.outputs.projectname_target }}"
 
       - name: copr regenerate ${{ steps.vars.outputs.op_target }}
@@ -128,5 +128,5 @@ jobs:
         run: |
           python fedora-copr/build.py \
             --regenerate-repos \
-            --ownername "${{ steps.vars.outputs.onwername_target }}" \
+            --ownername "${{ steps.vars.outputs.ownername_target }}" \
             --projectname "${{ steps.vars.outputs.projectname_target }}"
