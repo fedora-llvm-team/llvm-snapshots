@@ -60,12 +60,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.9
       
       - name: "checkout this project"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: ${{ github.repository }}
           ref: main
@@ -78,7 +78,7 @@ jobs:
           pip install -r llvm-daily-fedora-rpms/requirements.txt
 
       - name: "checkout llvm/llvm-project"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: llvm/llvm-project
           ref: main

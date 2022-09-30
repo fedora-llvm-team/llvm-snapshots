@@ -1,39 +1,22 @@
-name: build-fedora-packages
+name: fedora-copr-build
 
 on:
-  workflow_dispatch:
-  
-  #   # inputs:
-  #   #   opts:
-  #   #     description: 'pass optional switches (e.g. --ownername <SomeCoprUser>)'
-  #   #     required: false
-  #   #     default: ''
-
-  # # # This workflow runs automatically once the source snapshot tarballs have been
-  # # # generated and uploaded.
-  # # # See https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#workflow_run
-  # # workflow_run:
-  # #   workflows: ["generate-snapshot-tarballs"]
-  # #   branches: [main]
-  # #   types: [completed]
-
-  # schedule:
-  #   # Everyday at 00:30am
-  #   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-  #   - cron:  '30 0 * * *'
+  # Uncomment to be able to trigger the workflow manually
+  # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
+  workflow_dispatch: {}
 
 jobs:
-    
+
   fedora-copr-build:
     name: Fedora Copr Build
-    runs-on: ubuntu-latest  
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
       - name: "checkout this repo"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: "install python requirements"
         run: |
@@ -43,7 +26,7 @@ jobs:
       - name: "prepare variables"
         # We specify the secrets here and give them an alias for other steps to
         # repeat the options.
-        env: &secrets
+        env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
           COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
@@ -81,7 +64,14 @@ jobs:
           echo -n "::set-output name=yesterdays_project_exists::$yesterdays_project_exists"
 
       - name: "copr kick-off new builds in ${{ steps.vars.outputs.op_today }}"
-        env: *secrets
+        env:
+          # You need to have those secrets in your repo.
+          # See also: https://copr.fedorainfracloud.org/api/.
+          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+          COPR_URL: ${{ secrets.COPR_URL }}
+          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python fedora-copr/build.py \
             --chroots \
@@ -109,7 +99,14 @@ jobs:
 
       - name: copr fork project from ${{ steps.vars.outputs.op_yesterday }} to ${{ steps.vars.outputs.op_target }}
         if: ${{ steps.vars.outputs.yesterdays_project_exists == 'yes' }}
-        env: *secrets
+        env:
+          # You need to have those secrets in your repo.
+          # See also: https://copr.fedorainfracloud.org/api/.
+          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+          COPR_URL: ${{ secrets.COPR_URL }}
+          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python fedora-copr/build.py \
             --fork-from "${{ steps.vars.outputs.op_yesterday }}" \
@@ -120,7 +117,14 @@ jobs:
         # If yesterday's project didn't exist, we haven't forked and so we don't
         # need to regenerate the repos.
         if: ${{ steps.vars.outputs.yesterdays_project_exists == 'yes' }}
-        env: *secrets
+        env:
+          # You need to have those secrets in your repo.
+          # See also: https://copr.fedorainfracloud.org/api/.
+          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+          COPR_URL: ${{ secrets.COPR_URL }}
+          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python fedora-copr/build.py \
             --regenerate-repos \
