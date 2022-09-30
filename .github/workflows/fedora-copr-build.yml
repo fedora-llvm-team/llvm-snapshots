@@ -44,24 +44,24 @@ jobs:
           projectname_yesterday=llvm-snapshots-incubator-`date -d '-1 day' +%Y%m%d`
           projectname_target=llvm-snapshots
 
-          echo -n "::set-output name=ownername_today::$ownername_today"
-          echo -n "::set-output name=ownername_yesterday::$ownername_yesterday"
-          echo -n "::set-output name=ownername_target::$ownername_target"
+          echo "::set-output name=ownername_today::$ownername_today"
+          echo "::set-output name=ownername_yesterday::$ownername_yesterday"
+          echo "::set-output name=ownername_target::$ownername_target"
 
-          echo -n "::set-output name=projectname_today::$projectname_today"
-          echo -n "::set-output name=projectname_yesterday::$projectname_yesterday"
-          echo -n "::set-output name=projectname_target::$projectname_target"
+          echo "::set-output name=projectname_today::$projectname_today"
+          echo "::set-output name=projectname_yesterday::$projectname_yesterday"
+          echo "::set-output name=projectname_target::$projectname_target"
 
-          echo -n "::set-output name=op_today::$ownername_today/$projectname_today"
-          echo -n "::set-output name=op_yesterday::$ownername_yesterday/$projectname_yesterday"
-          echo -n "::set-output name=op_target::$ownername_target/$projectname_target"
+          echo "::set-output name=op_today::$ownername_today/$projectname_today"
+          echo "::set-output name=op_yesterday::$ownername_yesterday/$projectname_yesterday"
+          echo "::set-output name=op_target::$ownername_target/$projectname_target"
 
           # check if yesterday's project exists
           yesterdays_project_exists=`python fedora-copr/build.py \
             --project-exists \
             --ownername "$ownername_yesterday" \
             --projectname $projectname_yesterday`
-          echo -n "::set-output name=yesterdays_project_exists::$yesterdays_project_exists"
+          echo "::set-output name=yesterdays_project_exists::$yesterdays_project_exists"
 
       - name: "copr kick-off new builds in ${{ steps.vars.outputs.op_today }}"
         env:
