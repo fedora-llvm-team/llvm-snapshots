@@ -90,8 +90,8 @@ class CoprAccess(object):
         :param str instructions: a text for the instructions of how to enable this project
         """               
         existingprojects = self.__client.project_proxy.get_list(self.ownername)
-        ownername = [p.name for p in existingprojects]
-        if self.projectname in existingprojects:
+        existingproject_names = [p.name for p in existingprojects]
+        if self.projectname in existingproject_names:
             print("Found project {}. Updating...".format(self.ownerProject))
             
             # First get existing chroots and only add new ones 
@@ -102,8 +102,8 @@ class CoprAccess(object):
             new_chroots.update(chroots)
 
             self.__client.project_proxy.edit(
-                projectname=self.ownername,
-                ownername=self.projectname,
+                projectname=self.projectname,
+                ownername=self.ownername,
                 description=description,
                 instructions=instructions,
                 enable_net=True,
@@ -187,15 +187,14 @@ class CoprAccess(object):
                 build = self.__build_package(packagename, [chroot], build_after_id=previous_build_id)
                 if build != dict():
                     previous_build_id = build.id
-                    print(" (build-id={}, state={})".format(previous_build_id, build.state))
+                    print(f" (build-id={previous_build_id}, state={build.state})")
                 else:
                     print("skipped build of package {} in chroot {}".format(packagename, chroot))
 
     def __build_package(self, package_name: str, chroots: list[str], build_after_id: int=None):
         build = None
         try:
-            print("Creating build for package {} in {} for chroots {} (build after: {})".format(package_name,
-                    self.ownerProject, chroots, build_after_id), end='')
+            print(f"Creating build for package {package_name} in {self.ownerProject} for chroots {chroots} (build after: {build_after_id})")
             
             print("Adjusting chroots to have --with=snapshot_build and llvm-snapshot-builder package installed")
             for chroot in chroots:
