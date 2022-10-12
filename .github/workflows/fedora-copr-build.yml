@@ -40,15 +40,15 @@ jobs:
           project_yesterday="kkleine/llvm-snapshots-incubator-`date -d '-1 day' +%Y%m%d`"
           project_target="kkleine/llvm-snapshots"
 
-          echo "::set-output name=project_today::$project_today"
-          echo "::set-output name=project_yesterday::$project_yesterday"
-          echo "::set-output name=project_target::$project_target"
+          echo "project_today=$project_today" >> $GITHUB_ENV
+          echo "project_yesterday=$project_yesterday" >> $GITHUB_ENV
+          echo "project_target=$project_target" >> $GITHUB_ENV
 
           # check if yesterday's project exists
           yesterdays_project_exists=`python -m llvm_snapshot_builder.cli project-exists --proj "$project_yesterday"`
-          echo "::set-output name=yesterdays_project_exists::$yesterdays_project_exists"
+          echo "yesterdays_project_exists=$yesterdays_project_exists" >> $GITHUB_ENV
 
-      - name: "create today's project ${{ steps.vars.outputs.project_today }}"
+      - name: "create today's project ${{ env.project_today }}"
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
@@ -60,12 +60,12 @@ jobs:
         run: |
           python -m llvm_snapshot_builder.cli --verbose \
             create-or-edit-project \
-              --proj "${{ steps.vars.outputs.project_today }}" \
+              --proj "${{ env.project_today }}" \
               --description-file "project-description.md" \
               --instructions-file "project-instructions.md" \
               --delete-after-days 7
 
-      - name: "create packages in today's project ${{ steps.vars.outputs.project_today }}"
+      - name: "create packages in today's project ${{ env.project_today }}"
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
@@ -77,10 +77,10 @@ jobs:
         run: |
           python -m llvm_snapshot_builder.cli --verbose \
             create-or-edit-packages \
-              --proj "${{ steps.vars.outputs.project_today }}" \
+              --proj "${{ env.project_today }}" \
               --packagenames python-lit llvm compiler-rt lld clang mlir libomp
 
-      - name: "copr kick-off new builds in ${{ steps.vars.outputs.project_today }}"
+      - name: "copr kick-off new builds in ${{ env.project_today }}"
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
@@ -92,13 +92,13 @@ jobs:
         run: |
           python -m llvm_snapshot_builder.cli --verbose \
             create-or-edit-project \
-              --proj "${{ steps.vars.outputs.project_today }}" \
+              --proj "${{ env.project_today }}" \
               --description-file "project-description.md" \
               --instructions-file "project-instructions.md" \
               --delete-after-days 7
           python -m llvm_snapshot_builder.cli --verbose \
             build \
-            --proj "${{ steps.vars.outputs.project_today }}" \
+            --proj "${{ env.project_today }}" \
             --chroots \
                 fedora-35-aarch64 \
                 fedora-35-ppc64le \
@@ -117,8 +117,8 @@ jobs:
                 fedora-rawhide-s390x \
             --timeout "108000" 
 
-      - name: copr fork project from ${{ steps.vars.outputs.project_yesterday }} to ${{ steps.vars.outputs.project_target }}
-        if: ${{ steps.vars.outputs.yesterdays_project_exists == 'yes' }}
+      - name: copr fork project from ${{ env.project_yesterday }} to ${{ env.project_target }}
+        if: ${{ env.yesterdays_project_exists == 'yes' }}
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
@@ -130,14 +130,14 @@ jobs:
         run: |
           python -m llvm_snapshot_builder.cli --verbose
           fork \
-            --source "${{ steps.vars.outputs.project_yesterday }}" \
-            --target "${{ steps.vars.outputs.project_target }}"
+            --source "${{ env.project_yesterday }}" \
+            --target "${{ env.project_target }}"
 
 
-      - name: copr regenerate ${{ steps.vars.outputs.project_target }}
+      - name: copr regenerate ${{ env.project_target }}
         # If yesterday's project didn't exist, we haven't forked and so we don't
         # need to regenerate the repos.
-        if: ${{ steps.vars.outputs.yesterdays_project_exists == 'yes' }}
+        if: ${{ env.yesterdays_project_exists == 'yes' }}
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
@@ -148,5 +148,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python -m llvm_snapshot_builder.cli --verbose \
-            regenerate-repos --proj "${{ steps.vars.outputs.project_target }}"
+            regenerate-repos --proj "${{ env.project_target }}"
             
