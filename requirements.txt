@@ -11,7 +11,7 @@ cffi==1.15.0
 charset-normalizer==2.0.12
     # via requests
 copr==1.123
-    # via -r requirements.txt.in
+    # via llvm-snapshot-builder
 deprecated==1.2.13
     # via pygithub
 filelock==3.8.0
@@ -20,6 +20,8 @@ future==0.18.2
     # via copr
 idna==3.3
     # via requests
+llvm-snapshot-builder==0.1.0
+    # via -r requirements.txt.in
 marshmallow==3.14.1
     # via copr
 munch==2.5.0
@@ -47,3 +49,6 @@ urllib3==1.26.8
     # via requests
 wrapt==1.13.3
     # via deprecated
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools

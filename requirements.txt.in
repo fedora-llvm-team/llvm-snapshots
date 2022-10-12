@@ -3,5 +3,5 @@
 # pip install pip-tools
 # pip-compile -o requirements.txt  requirements.txt.in
 
-copr==1.123
+llvm_snapshot_builder==0.1.0
 PyGithub==1.55
