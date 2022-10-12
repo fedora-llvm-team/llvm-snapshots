@@ -1,4 +1,4 @@
-name: fedora-copr-build
+name: fedora_copr-build
 
 on:
   # Uncomment to be able to trigger the workflow manually
@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  fedora-copr-build:
+  fedora_copr-build:
     name: Fedora Copr Build
     runs-on: ubuntu-latest
     steps:
@@ -36,34 +36,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: vars
         run: |
-          ownername_today=kkleine
-          ownername_yesterday=kkleine
-          ownername_target=kkleine
-          
-          projectname_today=llvm-snapshots-incubator-`date +%Y%m%d`
-          projectname_yesterday=llvm-snapshots-incubator-`date -d '-1 day' +%Y%m%d`
-          projectname_target=llvm-snapshots
+          project_today="kkleine/llvm-snapshots-incubator-`date +%Y%m%d`"
+          project_yesterday="kkleine/llvm-snapshots-incubator-`date -d '-1 day' +%Y%m%d`"
+          project_target="kkleine/llvm-snapshots"
 
-          echo "::set-output name=ownername_today::$ownername_today"
-          echo "::set-output name=ownername_yesterday::$ownername_yesterday"
-          echo "::set-output name=ownername_target::$ownername_target"
-
-          echo "::set-output name=projectname_today::$projectname_today"
-          echo "::set-output name=projectname_yesterday::$projectname_yesterday"
-          echo "::set-output name=projectname_target::$projectname_target"
-
-          echo "::set-output name=op_today::$ownername_today/$projectname_today"
-          echo "::set-output name=op_yesterday::$ownername_yesterday/$projectname_yesterday"
-          echo "::set-output name=op_target::$ownername_target/$projectname_target"
+          echo "::set-output name=project_today::$project_today"
+          echo "::set-output name=project_yesterday::$project_yesterday"
+          echo "::set-output name=project_target::$project_target"
 
           # check if yesterday's project exists
-          yesterdays_project_exists=`python fedora-copr/build.py \
-            --project-exists \
-            --ownername "$ownername_yesterday" \
-            --projectname $projectname_yesterday`
+          yesterdays_project_exists=`python -m llvm_snapshot_builder.cli project-exists --proj "$project_yesterday"`
           echo "::set-output name=yesterdays_project_exists::$yesterdays_project_exists"
 
-      - name: "copr kick-off new builds in ${{ steps.vars.outputs.op_today }}"
+      - name: "create today's project ${{ steps.vars.outputs.project_today }}"
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
@@ -73,7 +58,47 @@ jobs:
           COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python fedora-copr/build.py \
+          python -m llvm_snapshot_builder.cli --verbose \
+            create-or-edit-project \
+              --proj "${{ steps.vars.outputs.project_today }}" \
+              --description-file "project-description.md" \
+              --instructions-file "project-instructions.md" \
+              --delete-after-days 7
+
+      - name: "create packages in today's project ${{ steps.vars.outputs.project_today }}"
+        env:
+          # You need to have those secrets in your repo.
+          # See also: https://copr.fedorainfracloud.org/api/.
+          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+          COPR_URL: ${{ secrets.COPR_URL }}
+          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m llvm_snapshot_builder.cli --verbose \
+            create-or-edit-packages \
+              --proj "${{ steps.vars.outputs.project_today }}" \
+              --packagenames python-lit llvm compiler-rt lld clang mlir libomp
+
+      - name: "copr kick-off new builds in ${{ steps.vars.outputs.project_today }}"
+        env:
+          # You need to have those secrets in your repo.
+          # See also: https://copr.fedorainfracloud.org/api/.
+          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+          COPR_URL: ${{ secrets.COPR_URL }}
+          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m llvm_snapshot_builder.cli --verbose \
+            create-or-edit-project \
+              --proj "${{ steps.vars.outputs.project_today }}" \
+              --description-file "project-description.md" \
+              --instructions-file "project-instructions.md" \
+              --delete-after-days 7
+          python -m llvm_snapshot_builder.cli --verbose \
+            build \
+            --proj "${{ steps.vars.outputs.project_today }}" \
             --chroots \
                 fedora-35-aarch64 \
                 fedora-35-ppc64le \
@@ -90,14 +115,9 @@ jobs:
                 fedora-rawhide-x86_64 \
                 fedora-rawhide-i386 \
                 fedora-rawhide-s390x \
-            --yyyymmdd "$(date +%Y%m%d)" \
-            --ownername "${{ steps.vars.outputs.ownername_today }}" \
-            --projectname "${{ steps.vars.outputs.projectname_today }}" \
-            --timeout "108000" \
-            --delete-after-days 7 \
-            --max-num-builds 70  ${{ github.event.inputs.opts }}
+            --timeout "108000" 
 
-      - name: copr fork project from ${{ steps.vars.outputs.op_yesterday }} to ${{ steps.vars.outputs.op_target }}
+      - name: copr fork project from ${{ steps.vars.outputs.project_yesterday }} to ${{ steps.vars.outputs.project_target }}
         if: ${{ steps.vars.outputs.yesterdays_project_exists == 'yes' }}
         env:
           # You need to have those secrets in your repo.
@@ -108,12 +128,13 @@ jobs:
           COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python fedora-copr/build.py \
-            --fork-from "${{ steps.vars.outputs.op_yesterday }}" \
-            --ownername "${{ steps.vars.outputs.ownername_target }}" \
-            --projectname "${{ steps.vars.outputs.projectname_target }}"
+          python -m llvm_snapshot_builder.cli --verbose
+          fork \
+            --source "${{ steps.vars.outputs.project_yesterday }}" \
+            --target "${{ steps.vars.outputs.project_target }}"
 
-      - name: copr regenerate ${{ steps.vars.outputs.op_target }}
+
+      - name: copr regenerate ${{ steps.vars.outputs.project_target }}
         # If yesterday's project didn't exist, we haven't forked and so we don't
         # need to regenerate the repos.
         if: ${{ steps.vars.outputs.yesterdays_project_exists == 'yes' }}
@@ -126,7 +147,6 @@ jobs:
           COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python fedora-copr/build.py \
-            --regenerate-repos \
-            --ownername "${{ steps.vars.outputs.ownername_target }}" \
-            --projectname "${{ steps.vars.outputs.projectname_target }}"
+          python -m llvm_snapshot_builder.cli --verbose \
+            regenerate-repos --proj "${{ steps.vars.outputs.project_target }}"
+            
