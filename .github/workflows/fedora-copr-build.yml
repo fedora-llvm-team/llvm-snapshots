@@ -45,7 +45,7 @@ jobs:
           echo "project_target=$project_target" >> $GITHUB_ENV
 
           # check if yesterday's project exists
-          yesterdays_project_exists=`python -m llvm_snapshot_builder.cli project-exists --proj "$project_yesterday"`
+          yesterdays_project_exists=`python -m llvm_snapshot_builder.cli project-exists --proj "$project_yesterday" || echo "no"`
           echo "yesterdays_project_exists=$yesterdays_project_exists" >> $GITHUB_ENV
 
       - name: "create today's project ${{ env.project_today }}"
