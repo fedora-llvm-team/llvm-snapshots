@@ -139,7 +139,7 @@ jobs:
           COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python -m llvm_snapshot_builder.cli --verbose
+          python -m llvm_snapshot_builder.cli --verbose \
           fork \
             --source "${{ env.project_yesterday }}" \
             --target "${{ env.project_target }}"
