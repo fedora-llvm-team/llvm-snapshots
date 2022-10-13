@@ -59,11 +59,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python -m llvm_snapshot_builder.cli --verbose \
-            create-or-edit-project \
+            create-project \
               --proj "${{ env.project_today }}" \
               --description-file "project-description.md" \
               --instructions-file "project-instructions.md" \
-              --delete-after-days 7
+              --delete-after-days 7 \
+              --update
 
       - name: "create packages in today's project ${{ env.project_today }}"
         env:
@@ -76,8 +77,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python -m llvm_snapshot_builder.cli --verbose \
-            create-or-edit-packages \
-              --proj "${{ env.project_today }}"
+            create-packages \
+              --proj "${{ env.project_today }}" \
+              --update
 
       - name: "copr kick-off new builds in ${{ env.project_today }}"
         env:
@@ -89,12 +91,6 @@ jobs:
           COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python -m llvm_snapshot_builder.cli --verbose \
-            create-or-edit-project \
-              --proj "${{ env.project_today }}" \
-              --description-file "project-description.md" \
-              --instructions-file "project-instructions.md" \
-              --delete-after-days 7
           python -m llvm_snapshot_builder.cli --verbose \
             build-all-packages \
             --proj "${{ env.project_today }}" \
