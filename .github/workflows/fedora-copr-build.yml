@@ -64,6 +64,22 @@ jobs:
               --description-file "project-description.md" \
               --instructions-file "project-instructions.md" \
               --delete-after-days 7 \
+              --chroots \
+                fedora-35-aarch64 \
+                fedora-35-ppc64le \
+                fedora-35-x86_64 \
+                fedora-35-i386 \
+                fedora-35-s390x \
+                fedora-36-aarch64 \
+                fedora-36-ppc64le \
+                fedora-36-x86_64 \
+                fedora-36-i386 \
+                fedora-36-s390x \
+                fedora-rawhide-aarch64 \
+                fedora-rawhide-ppc64le \
+                fedora-rawhide-x86_64 \
+                fedora-rawhide-i386 \
+                fedora-rawhide-s390x \
               --update
 
       - name: "create packages in today's project ${{ env.project_today }}"
