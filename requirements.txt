@@ -20,7 +20,7 @@ future==0.18.2
     # via copr
 idna==3.3
     # via requests
-llvm-snapshot-builder==1.1.1
+llvm-snapshot-builder==1.1.2
     # via -r requirements.txt.in
 marshmallow==3.14.1
     # via copr
