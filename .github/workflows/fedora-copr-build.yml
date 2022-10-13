@@ -140,7 +140,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python -m llvm_snapshot_builder.cli --verbose \
-          fork \
+          fork-project \
             --source "${{ env.project_yesterday }}" \
             --target "${{ env.project_target }}"
 
