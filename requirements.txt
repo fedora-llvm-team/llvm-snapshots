@@ -28,7 +28,7 @@ munch==2.5.0
     # via copr
 pycparser==2.21
     # via cffi
-pygithub==1.55
+pygithub==1.56
     # via -r requirements.txt.in
 pyjwt==2.4.0
     # via pygithub
