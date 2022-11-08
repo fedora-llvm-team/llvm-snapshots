@@ -31,7 +31,8 @@ copr_project ?= kkleine/llvm-snapshots-incubator-$(yyyymmdd)
 include ./help.mk
 
 # Builds the mock config if it doesn't exist
-$(mockconfig):
+$(mockconfig): $(mockconfig_template)
+	echo "Creating mock config"
 	$(shell mkdir -pv $(buildroot))
 	$(shell chroot=$(chroot) envsubst $${chroot} < $(mockconfig_template) > $(mockconfig))
 
@@ -69,8 +70,8 @@ build-and-install-%: $(mockconfig)
 		--define "_disable_source_fetch 0" \
 		--define "yyyymmdd $(yyyymmdd)" \
 		--rebuild \
-		--no-clean \
-		--no-clean-after \
+		--no-cleanup \
+		--no-cleanup-after \
 		--spec $(package).spec \
 		--sources $(buildroot)/$(package) \
 		--resultdir $(buildroot)/$(package) \
@@ -134,3 +135,5 @@ copr-build-%:
 		--chroots $(chroot) \
 		--packagenames $(package) \
 		--timeout "108000" 
+
+
