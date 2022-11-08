@@ -27,17 +27,25 @@ mockconfig = $(buildroot)/mock-config.cfg
 # In case we build on copr, this will be the project to use.
 copr_project ?= kkleine/llvm-snapshots-incubator-$(yyyymmdd)
 
-$(shell mkdir -pv $(buildroot))
-$(shell chroot=$(chroot) envsubst $${chroot} < $(mockconfig_template) > $(mockconfig))
-
 # Include the file that provides the "help" and "help-html" targets.
 include ./help.mk
+
+# Builds the mock config if it doesn't exist
+$(mockconfig):
+	$(shell mkdir -pv $(buildroot))
+	$(shell chroot=$(chroot) envsubst $${chroot} < $(mockconfig_template) > $(mockconfig))
 
 ## Clones the upstream-snapshot branch of the given package package (%) into the
 ## buildroot.
 clone-%:
 	$(eval package:=$(subst clone-,,$@))
-	fedpkg clone -b upstream-snapshot $(package) $(buildroot)/$(package)
+	@if [ ! -d "$(buildroot)/$(package)" ]; then \
+		fedpkg clone --anonymous -b upstream-snapshot $(package) $(buildroot)/$(package); \
+	else \
+		echo ""; \
+		echo "NOT CLONING BECAUSE DIRECTORY ALREADY EXISTS: $(buildroot)/$(package)"; \
+		echo ""; \
+	fi
 
 ## Clones and builds the package (%) and then installs it in the chroot.
 build-%:
@@ -47,20 +55,22 @@ build-%:
 
 .PHONY: init-mock
 ## Initializes the mock chroot.
-init-mock:
+init-mock: $(mockconfig)
 	mock -r $(mockconfig) \
 		--init \
 		--with snapshot_build \
 
 ## For the package (%) an SRPM and an RPM is built and then it is installed in
 ## the chroot.
-build-and-install-%:
+build-and-install-%: $(mockconfig)
 	$(eval package:=$(subst build-and-install-,,$@))
 	cd $(buildroot)/$(package) \
 	&& mock -r $(mockconfig) \
 		--define "_disable_source_fetch 0" \
 		--define "yyyymmdd $(yyyymmdd)" \
 		--rebuild \
+		--no-clean \
+		--no-clean-after \
 		--spec $(package).spec \
 		--sources $(buildroot)/$(package) \
 		--resultdir $(buildroot)/$(package) \
@@ -68,17 +78,17 @@ build-and-install-%:
 
 .PHONY: shell
 ## Opens up a shell to inspect the mock chroot.
-shell:
+shell: $(mockconfig)
 	mock -r $(mockconfig) --shell
 
 .PHONY: install-vim
 ## Allows you to use vim inside of mock.
-install-vim:
+install-vim: $(mockconfig)
 	mock -r $(mockconfig) --install vim
 
 .PHONY: clean-mock
 ## Cleans the mock chroot
-clean-mock:
+clean-mock: $(mockconfig)
 	mock -r $(mockconfig) clean
 
 .PHONY: clean-buildroot
