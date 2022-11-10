@@ -1,6 +1,10 @@
 # It's necessary to set this because some environments don't link sh -> bash.
 SHELL := /bin/bash
 
+# The username used for fedpkg authentication (when working on beefy PSI
+# machines, the username sometimes doesn't match right FAS user.)
+fas_user ?= kkleine
+
 # Current working directory
 pwd = $(shell pwd)
 
@@ -41,7 +45,7 @@ $(mockconfig): $(mockconfig_template)
 clone-%:
 	$(eval package:=$(subst clone-,,$@))
 	@if [ ! -d "$(buildroot)/$(package)" ]; then \
-		fedpkg clone --anonymous -b upstream-snapshot $(package) $(buildroot)/$(package); \
+		fedpkg --user $(fas_user) clone --branch upstream-snapshot $(package) $(buildroot)/$(package); \
 	else \
 		echo ""; \
 		echo "NOT CLONING BECAUSE DIRECTORY ALREADY EXISTS: $(buildroot)/$(package)"; \
@@ -70,7 +74,7 @@ build-and-install-%: $(mockconfig)
 		--define "_disable_source_fetch 0" \
 		--define "yyyymmdd $(yyyymmdd)" \
 		--rebuild \
-		--no-cleanup \
+		--no-clean \
 		--no-cleanup-after \
 		--spec $(package).spec \
 		--sources $(buildroot)/$(package) \
@@ -80,7 +84,7 @@ build-and-install-%: $(mockconfig)
 .PHONY: shell
 ## Opens up a shell to inspect the mock chroot.
 shell: $(mockconfig)
-	mock -r $(mockconfig) --shell
+	mock -r $(mockconfig) --shell --no-clean
 
 .PHONY: install-vim
 ## Allows you to use vim inside of mock.
