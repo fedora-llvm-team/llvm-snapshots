@@ -36,9 +36,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: vars
         run: |
-          project_today="kkleine/llvm-snapshots-incubator-`date +%Y%m%d`"
-          project_yesterday="kkleine/llvm-snapshots-incubator-`date -d '-1 day' +%Y%m%d`"
-          project_target="kkleine/llvm-snapshots"
+          project_today="@fedora-llvm-team/llvm-snapshots-incubator-`date +%Y%m%d`"
+          project_yesterday="@fedora-llvm-team/llvm-snapshots-incubator-`date -d '-1 day' +%Y%m%d`"
+          project_target="@fedora-llvm-team/llvm-snapshots"
 
           echo "project_today=$project_today" >> $GITHUB_ENV
           echo "project_yesterday=$project_yesterday" >> $GITHUB_ENV
@@ -65,16 +65,16 @@ jobs:
               --instructions-file "project-instructions.md" \
               --delete-after-days 7 \
               --chroots \
-                fedora-35-aarch64 \
-                fedora-35-ppc64le \
-                fedora-35-x86_64 \
-                fedora-35-i386 \
-                fedora-35-s390x \
                 fedora-36-aarch64 \
                 fedora-36-ppc64le \
                 fedora-36-x86_64 \
                 fedora-36-i386 \
                 fedora-36-s390x \
+                fedora-37-aarch64 \
+                fedora-37-ppc64le \
+                fedora-37-x86_64 \
+                fedora-37-i386 \
+                fedora-37-s390x \
                 fedora-rawhide-aarch64 \
                 fedora-rawhide-ppc64le \
                 fedora-rawhide-x86_64 \
@@ -95,6 +95,7 @@ jobs:
           python -m llvm_snapshot_builder.cli --verbose \
             create-packages \
               --proj "${{ env.project_today }}" \
+              --packagenames python-lit \
               --update
 
       - name: "copr kick-off new builds in ${{ env.project_today }}"
@@ -108,19 +109,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python -m llvm_snapshot_builder.cli --verbose \
-            build-all-packages \
+            build-packages \
             --proj "${{ env.project_today }}" \
+            --packagenames python-lit \
             --chroots \
-                fedora-35-aarch64 \
-                fedora-35-ppc64le \
-                fedora-35-x86_64 \
-                fedora-35-i386 \
-                fedora-35-s390x \
                 fedora-36-aarch64 \
                 fedora-36-ppc64le \
                 fedora-36-x86_64 \
                 fedora-36-i386 \
                 fedora-36-s390x \
+                fedora-37-aarch64 \
+                fedora-37-ppc64le \
+                fedora-37-x86_64 \
+                fedora-37-i386 \
+                fedora-37-s390x \
                 fedora-rawhide-aarch64 \
                 fedora-rawhide-ppc64le \
                 fedora-rawhide-x86_64 \
