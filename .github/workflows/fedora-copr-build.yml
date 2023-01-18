@@ -5,6 +5,11 @@ on:
   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
   workflow_dispatch: {}
 
+  schedule:
+    # Everyday at 00:45am
+    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+    - cron: '45 0 * * *'
+
 jobs:
 
   fedora_copr-build:
