@@ -61,6 +61,10 @@ jobs:
           yesterdays_project_exists=`python -m llvm_snapshot_builder.cli project-exists --proj "$project_yesterday" && echo "yes" || echo "no"`
           echo "yesterdays_project_exists=$yesterdays_project_exists" >> $GITHUB_ENV
 
+          # check if target project exists
+          target_project_exists=`python -m llvm_snapshot_builder.cli project-exists --proj "$project_target" && echo "yes" || echo "no"`
+          echo "target_project_exists=$target_project_exists" >> $GITHUB_ENV
+
       - name: "create today's project ${{ env.project_today }}"
         env:
           # You need to have those secrets in your repo.
@@ -142,6 +146,21 @@ jobs:
                 fedora-rawhide-i386 \
                 fedora-rawhide-s390x \
             --timeout "108000" 
+
+      - name: delete project at ${{ env.project_target }} before forking to it
+        if: ${{ env.yesterdays_project_exists == 'yes' && env.target_project_exists == 'yes' }}
+        env:
+          # You need to have those secrets in your repo.
+          # See also: https://copr.fedorainfracloud.org/api/.
+          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+          COPR_URL: ${{ secrets.COPR_URL }}
+          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m llvm_snapshot_builder.cli --verbose \
+          delete-project \
+            --proj "${{ env.project_target }}"
 
       - name: copr fork project from ${{ env.project_yesterday }} to ${{ env.project_target }}
         if: ${{ env.yesterdays_project_exists == 'yes' }}
