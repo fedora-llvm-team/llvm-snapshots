@@ -85,22 +85,29 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: true
           path: llvm-project
+          # remove with hack below
+          fetch-depth: 1
 
-      - name: "determine last stable commit of llvm/llvm-project"
+      # - name: "determine last stable commit of llvm/llvm-project"
+      #   id: stable-commit
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     sha=`llvm-daily-fedora-rpms/github/get-good-commit.py --token ${{ secrets.GITHUB_TOKEN }} --project "llvm/llvm-project" --start-ref main --ensure-checks clang-x86_64-debian-fast llvm-clang-x86_64-expensive-checks-debian --max-tries 400`
+      #     echo "sha=$sha" >> $GITHUB_ENV
+      
+      - name: "hack(just use main): determine last stable commit of llvm/llvm-project"
         id: stable-commit
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          sha=`llvm-daily-fedora-rpms/github/get-good-commit.py --token ${{ secrets.GITHUB_TOKEN }} --project "llvm/llvm-project" --start-ref main --ensure-checks clang-x86_64-debian-fast llvm-clang-x86_64-expensive-checks-debian --max-tries 400`
-          echo -n "::set-output name=sha::$sha"
+          echo "sha=main" >> $GITHUB_ENV
       
       - name: "fetch stable revision to archive"
-        run: git -C llvm-project fetch --depth=1 --no-tags origin ${{ steps.stable-commit.outputs.sha }}
+        run: git -C llvm-project fetch --depth=1 --no-tags origin ${{ env.sha }}
 
       - name: "create source-snapshot tarballs"
         run: |
           llvm-project/llvm/utils/release/export.sh \
-            --git-ref ${{ steps.stable-commit.outputs.sha }} \
+            --git-ref ${{ env.sha }} \
             --template '${PROJECT}-${YYYYMMDD}.src.tar.xz'
     
       - name: "delete assets older than a week and from today"
