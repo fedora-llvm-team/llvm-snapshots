@@ -1,8 +1,8 @@
 #!/bin/env python3
 
+import argparse
 import sys
 from github import Github
-import argparse
 
 def get_good_commit(token: str, project:str, start_ref:str, max_tries:int, ensure_checks:list[str]) -> str:
     """
@@ -25,6 +25,8 @@ def get_good_commit(token: str, project:str, start_ref:str, max_tries:int, ensur
 
     for i in range(0, max_tries):
         commit = repo.get_commit(sha=sha)
+        short_title = commit.commit.message.partition('\n')[0][:50]
+        print(f"{i}: {commit.commit.html_url} {short_title}", file=sys.stderr)
         combined_status = commit.get_combined_status().state
         if combined_status != "success":
             # move on with first parent if combined status is not successful
