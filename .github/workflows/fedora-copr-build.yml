@@ -80,7 +80,7 @@ jobs:
               --proj "${{ env.project_today }}" \
               --description-file "project-description.md" \
               --instructions-file "project-instructions.md" \
-              --delete-after-days 7 \
+              --delete-after-days 32 \
               --chroots \
                 fedora-36-aarch64 \
                 fedora-36-ppc64le \
