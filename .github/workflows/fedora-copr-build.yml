@@ -112,7 +112,7 @@ jobs:
           python -m llvm_snapshot_builder.cli --verbose \
             create-packages \
               --proj "${{ env.project_today }}" \
-              --packagenames python-lit llvm clang lld compiler-rt \
+              --packagenames python-lit llvm clang lld compiler-rt libomp \
               --update
 
       - name: "copr kick-off new builds in ${{ env.project_today }}"
@@ -128,7 +128,7 @@ jobs:
           python -m llvm_snapshot_builder.cli --verbose \
             build-packages \
             --proj "${{ env.project_today }}" \
-            --packagenames python-lit llvm clang lld compiler-rt \
+            --packagenames python-lit llvm clang lld compiler-rt libomp \
             --chroots \
                 fedora-36-aarch64 \
                 fedora-36-ppc64le \
