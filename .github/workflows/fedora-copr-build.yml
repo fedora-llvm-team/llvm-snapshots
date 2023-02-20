@@ -1,197 +1,310 @@
-name: fedora_copr-build
+name: "Build daily LLVM snapshots on Copr"
 
 on:
-  # Uncomment to be able to trigger the workflow manually
-  # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
-  workflow_dispatch: {}
-
   schedule:
     # Everyday at 00:45am
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    - cron: '45 0 * * *'
+    - cron: "45 0 * * *"
+
+  workflow_dispatch:
+    inputs:
+      day:
+        description: "Give YYYYMMDD for date you want to build for. Leave blank for today."
+        required: false
+        type: string
+        default: ""
+      packages:
+        description: "Package to build. Leave blank for default ones."
+        required: true
+        default: all
+        type: choice
+        options: [all, python-lit, llvm, clang, lld, compiler-rt, libomp]
+      chroots:
+        description: "An OS/architecture to build for. Leave blank for default ones"
+        required: true
+        default: all
+        type: choice
+        options:
+        - all
+        - fedora-36-aarch64
+        - fedora-36-ppc64le
+        - fedora-36-x86_64
+        - fedora-36-i386
+        - fedora-36-s390x
+        - fedora-37-aarch64
+        - fedora-37-ppc64le
+        - fedora-37-x86_64
+        - fedora-37-i386
+        - fedora-37-s390x
+        - fedora-rawhide-aarch64
+        - fedora-rawhide-ppc64le
+        - fedora-rawhide-x86_64
+        - fedora-rawhide-i386
+        - fedora-rawhide-s390
+      first_cancel_builds:
+        description: "At first, cancel active builds"
+        required: true
+        type: boolean
+        default: true
+      first_delete_project:
+        description: "At first, delete today's projects"
+        required: true
+        type: boolean
+        default: true
+      regenerate_target_repo:
+        description: "Regenerate the repo data of the target to fork in"
+        required: true
+        type: boolean
+        default: true
+      fork_into_target_project:
+        description: "Fork yesterday's project into the target project"
+        required: true
+        type: boolean
+        default: true
+      delete_target_project:
+        description: "Delete target project before forking to it."
+        required: true
+        type: boolean
+        default: true
 
 jobs:
-
-  fedora_copr-build:
-    name: Fedora Copr Build
+  build-on-copr:
     runs-on: ubuntu-latest
+    container: fedora:37
     steps:
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-
-      - name: "checkout this repo"
-        uses: actions/checkout@v3
-
-      - name: "Check for cached dependencies"
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: "install python requirements"
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: "prepare variables"
-        # We specify the secrets here and give them an alias for other steps to
-        # repeat the options.
+      - name: Setup Copr config file
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
-          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
-          COPR_URL: ${{ secrets.COPR_URL }}
-          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
-          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        id: vars
+          COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
         run: |
-          project_today="@fedora-llvm-team/llvm-snapshots-incubator-`date +%Y%m%d`"
-          project_yesterday="@fedora-llvm-team/llvm-snapshots-incubator-`date -d '-1 day' +%Y%m%d`"
-          project_target="@fedora-llvm-team/llvm-snapshots"
+          mkdir -p ~/.config
+          printf "$COPR_CONFIG_FILE" > ~/.config/copr
 
-          echo "project_today=$project_today" >> $GITHUB_ENV
-          echo "project_yesterday=$project_yesterday" >> $GITHUB_ENV
-          echo "project_target=$project_target" >> $GITHUB_ENV
-
-          # check if yesterday's project exists
-          yesterdays_project_exists=`python -m llvm_snapshot_builder.cli project-exists --proj "$project_yesterday" && echo "yes" || echo "no"`
-          echo "yesterdays_project_exists=$yesterdays_project_exists" >> $GITHUB_ENV
-
-          # check if target project exists
-          target_project_exists=`python -m llvm_snapshot_builder.cli project-exists --proj "$project_target" && echo "yes" || echo "no"`
-          echo "target_project_exists=$target_project_exists" >> $GITHUB_ENV
-
-      - name: "create today's project ${{ env.project_today }}"
-        env:
-          # You need to have those secrets in your repo.
-          # See also: https://copr.fedorainfracloud.org/api/.
-          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
-          COPR_URL: ${{ secrets.COPR_URL }}
-          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
-          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Copr CLI
         run: |
-          python -m llvm_snapshot_builder.cli --verbose \
-            create-project \
-              --proj "${{ env.project_today }}" \
-              --description-file "project-description.md" \
-              --instructions-file "project-instructions.md" \
-              --delete-after-days 32 \
-              --chroots \
-                fedora-36-aarch64 \
-                fedora-36-ppc64le \
-                fedora-36-x86_64 \
-                fedora-36-i386 \
-                fedora-36-s390x \
-                fedora-37-aarch64 \
-                fedora-37-ppc64le \
-                fedora-37-x86_64 \
-                fedora-37-i386 \
-                fedora-37-s390x \
-                fedora-rawhide-aarch64 \
-                fedora-rawhide-ppc64le \
-                fedora-rawhide-x86_64 \
-                fedora-rawhide-i386 \
-                fedora-rawhide-s390x \
-              --update
+          dnf install -y copr-cli
 
-      - name: "create packages in today's project ${{ env.project_today }}"
-        env:
-          # You need to have those secrets in your repo.
-          # See also: https://copr.fedorainfracloud.org/api/.
-          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
-          COPR_URL: ${{ secrets.COPR_URL }}
-          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
-          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Variables and functions"
+        shell: bash -e {0}
         run: |
-          python -m llvm_snapshot_builder.cli --verbose \
-            create-packages \
-              --proj "${{ env.project_today }}" \
-              --packagenames python-lit llvm clang lld compiler-rt libomp \
-              --update
+          today=`date +%Y%m%d`
+          if ! [[ "${{ inputs.day }}" =~ ^\s*$ ]]; then
+            if ! [[ "${{ inputs.day }}" =~ ^20[0-9]{2}(0[1-9]|1[012])(0[1-9]|1[012])$ ]]; then
+              echo "Input 'today' not matching YYYYMMDD pattern: ${{ inputs.day }}"
+              exit 3
+            fi
+            today=${{ inputs.day }}
+          fi
+          yesterday=`date -d "${today} -1 day" +%Y%m%d`
 
-      - name: "copr kick-off new builds in ${{ env.project_today }}"
-        env:
-          # You need to have those secrets in your repo.
-          # See also: https://copr.fedorainfracloud.org/api/.
-          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
-          COPR_URL: ${{ secrets.COPR_URL }}
-          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
-          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          packages="python-lit llvm clang lld compiler-rt libomp"
+          if [[ "${{ inputs.packages }}" != "all" && "${{ inputs.packages }}" != "" ]]; then
+            packages=${{ inputs.packages }}
+          fi
+
+          all_chroots="fedora-36-aarch64 \
+                       fedora-36-ppc64le \
+                       fedora-36-x86_64 \
+                       fedora-36-i386 \
+                       fedora-36-s390x \
+                       fedora-37-aarch64 \
+                       fedora-37-ppc64le \
+                       fedora-37-x86_64 \
+                       fedora-37-i386 \
+                       fedora-37-s390x \
+                       fedora-rawhide-aarch64 \
+                       fedora-rawhide-ppc64le \
+                       fedora-rawhide-x86_64 \
+                       fedora-rawhide-i386 \
+                       fedora-rawhide-s390x"
+          chroots=$all_chroots
+          if [[ "${{ inputs.chroots }}" != "all" && "${{ inputs.chroots }}" != "" ]]; then
+            chroots=${{ inputs.chroots }}
+          fi
+
+          first_delete_project=true
+          if [[ "${{ inputs.first_delete_project }}" != "" ]]; then
+            first_delete_project=${{ inputs.first_delete_project }}
+          fi
+
+          first_cancel_builds=true
+          if [[ "${{ inputs.first_cancel_builds }}" != "" ]]; then
+            first_cancel_builds=${{ inputs.first_cancel_builds }}
+          fi
+
+          fork_into_target_project=true
+          if [[ "${{ inputs.fork_into_target_project }}" != "" ]]; then
+            fork_into_target_project=${{ inputs.fork_into_target_project }}
+          fi
+
+          delete_target_project=true
+          if [[ "${{ inputs.delete_target_project }}" != "" ]]; then
+            delete_target_project=${{ inputs.delete_target_project }}
+          fi
+
+          username=@fedora-llvm-team
+          
+          echo "first_delete_project=$first_delete_project" >> $GITHUB_ENV
+          echo "first_cancel_builds=$first_cancel_builds" >> $GITHUB_ENV
+          echo "fork_into_target_rep=$fork_into_target_project" >> $GITHUB_ENV
+          echo "delete_target_project=$delete_target_project" >> $GITHUB_ENV
+          echo "username=$username" >> $GITHUB_ENV
+          echo "packages=$packages" >> $GITHUB_ENV
+          echo "chroots=$chroots" >> $GITHUB_ENV
+          echo "all_chroots=$all_chroots" >> $GITHUB_ENV
+          echo "project_today=$username/llvm-snapshots-incubator-$today" >> $GITHUB_ENV
+          echo "project_yesterday=$username/llvm-snapshots-incubator-$yesterday" >> $GITHUB_ENV
+          echo "project_target=$username/llvm-snapshots" >> $GITHUB_ENV
+
+          cat <<EOF > ~/functions.sh
+          #!/bin/bash
+          set +x
+          # TODO(kwk): Is there a better way to check project existence?
+          function project_exists(){
+            local project=\$1;
+            copr get-chroot \$project/fedora-rawhide-x86_64 > /dev/null 2>&1 \
+            && echo "true" || echo "false";
+          }
+
+          function package_exists(){
+            local project=\$1;
+            local package=\$2;
+            copr get-package --name \$package \$project > /dev/null 2>&1 \
+            && echo "true" || echo "false";
+          }
+
+          function get_active_build_ids(){
+            local project=\$1;
+            copr list-builds --output-format text-row \$project \
+              | grep --perl-regexp --regexp='(running|waiting|pending|importing)' \
+              | cut -f 1
+          }
+          EOF
+
+      - name: "Check for Copr projects existence (yesterday, today, target)"
+        shell: bash -e {0}
         run: |
-          python -m llvm_snapshot_builder.cli --verbose \
-            build-packages \
-            --proj "${{ env.project_today }}" \
-            --packagenames python-lit llvm clang lld compiler-rt libomp \
-            --chroots \
-                fedora-36-aarch64 \
-                fedora-36-ppc64le \
-                fedora-36-x86_64 \
-                fedora-36-i386 \
-                fedora-36-s390x \
-                fedora-37-aarch64 \
-                fedora-37-ppc64le \
-                fedora-37-x86_64 \
-                fedora-37-i386 \
-                fedora-37-s390x \
-                fedora-rawhide-aarch64 \
-                fedora-rawhide-ppc64le \
-                fedora-rawhide-x86_64 \
-                fedora-rawhide-i386 \
-                fedora-rawhide-s390x \
-            --timeout "108000" 
+          source ~/functions.sh
+          echo "todays_project_exists=`project_exists ${{ env.project_today }}`" >> $GITHUB_ENV
+          echo "yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`" >> $GITHUB_ENV
+          echo "target_project_exists=`project_exists ${{ env.project_target }}`" >> $GITHUB_ENV
 
-      - name: delete project at ${{ env.project_target }} before forking to it
-        if: ${{ env.yesterdays_project_exists == 'yes' && env.target_project_exists == 'yes' }}
-        env:
-          # You need to have those secrets in your repo.
-          # See also: https://copr.fedorainfracloud.org/api/.
-          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
-          COPR_URL: ${{ secrets.COPR_URL }}
-          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
-          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Canceling active builds (if any) in today's Copr project before recreating it: ${{ env.project_today }}"
+        shell: bash -e {0}
         run: |
-          python -m llvm_snapshot_builder.cli --verbose \
-          delete-project \
-            --proj "${{ env.project_target }}"
+          source ~/functions.sh
+          if [[ "${{ inputs.first_cancel_builds }}" == "true" && "${{ env.todays_project_exists }}" == "true" ]]; then
+            for build_id in `get_active_build_ids ${{ env.project_today }}`; do
+                copr cancel $build_id
+            done
+          fi
 
-      - name: copr fork project from ${{ env.project_yesterday }} to ${{ env.project_target }}
-        if: ${{ env.yesterdays_project_exists == 'yes' }}
-        env:
-          # You need to have those secrets in your repo.
-          # See also: https://copr.fedorainfracloud.org/api/.
-          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
-          COPR_URL: ${{ secrets.COPR_URL }}
-          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
-          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Deleting today's Copr project before recreating it: ${{ env.project_today }}"
+        shell: bash -e {0}
         run: |
-          python -m llvm_snapshot_builder.cli --verbose \
-          fork-project \
-            --source "${{ env.project_yesterday }}" \
-            --target "${{ env.project_target }}"
+          source ~/functions.sh
+          if [[ "${{ inputs.first_delete_project }}" == "true" && "${{ env.todays_project_exists }}" == "true" ]]; then
+            copr delete ${{ env.project_today }}
+          fi
 
+      - uses: actions/checkout@v3
 
-      - name: copr regenerate ${{ env.project_target }}
+      - name: "Create or modify today's Copr project: ${{ env.project_today }}"
+        shell: bash -e {0}
+        run: |
+          source ~/functions.sh
+          method=create
+          if [ "$todays_project_exists" == "true" ]; then
+            method=modify
+          fi
+
+          chroot_opts=`for c in ${{ env.all_chroots }}; do echo -n " --chroot $c "; done`
+
+          copr $method \
+            --instructions "`cat project-instructions.md`" \
+            --description  "`cat project-description.md`" \
+            --enable-net on \
+            --runtime-repo-dependency "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/fedora-\$releasever-\$basearch" \
+            --multilib on \
+            --disable_createrepo 1 \
+            --appstream off \
+            --repo "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-snapshot-builder/fedora-\$releasever-\$basearch" \
+            --delete-after-days 32 \
+            $chroot_opts "${{ env.project_today }}"
+
+      - name: "Create or edit today's packages: ${{ env.packages }}"
+        shell: bash -e {0}
+        run: |
+          source ~/functions.sh
+
+          for pkg in ${{ env.packages }}; do
+            method=add-package-scm
+            if [ "`package_exists ${{ env.project_today }} ${pkg}`" == "true" ]; then
+              method=edit-package-scm
+              echo "Editing already existing package: '${pkg}'"
+            fi
+            copr $method \
+              --clone-url https://src.fedoraproject.org/rpms/${pkg}.git \
+              --commit upstream-snapshot \
+              --spec ${pkg}.spec \
+              --type git \
+              --method make_srpm \
+              --name ${pkg} \
+              "${{ env.project_today }}"
+          done
+
+      - name: "Build packages in chroot batches in this order: ${{ env.packages }}"
+        shell: bash -e {0}
+        run: |
+          source ~/functions.sh
+
+          for chroot in ${{ env.chroots }}; do
+            # Modify chroot to know about compat package repo and about the --with=snapshot_build option
+            copr edit-chroot \
+              --repos "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-snapshot-builder/${chroot}/ https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/${chroot}/" \
+              --rpmbuild-with "snapshot_build" \
+              --packages "llvm-snapshot-builder" \
+              ${{ env.project_today }}/$chroot
+
+            # Start a new batch
+            after_build_id=""
+            for pkg in ${{ env.packages }}; do
+              if [[ "${pkg}" == "lld" && $chroot =~ -s390x$ ]]; then
+                echo "Skipping lld for s390x architecture in chroot: ${chroot}";
+              else
+                copr build-package \
+                  --timeout $((30*3600)) \
+                  --nowait \
+                  --name $pkg ${after_build_id} \
+                  --chroot ${chroot} \
+                  ${{ env.project_today }} \
+                  | tee ${pkg}.log
+              fi
+              
+              after_build_id="--after-build-id `cat ${pkg}.log | grep -Po 'Created builds: \K(\d+)'`"
+            done
+          done
+
+      - name: "Delete target Copr project at ${{ env.project_target }} before forking to it"
+        shell: bash -e {0}
+        run: |
+          if [[ "${{ env.delete_target_project }}" == "true" && "${{ env.yesterdays_project_exists }}" == "true" && "${{ env.target_project_exists }}" == "true" ]]; then
+            copr delete "${{ env.project_target }}"
+          fi
+
+      - name: "Fork Copr project from ${{ env.project_yesterday }} to ${{ env.project_target }}"
+        shell: bash -e {0}
+        run: |
+          if [[ "${{ inputs.fork_into_target_project }}" == "true" && "${{ env.yesterdays_project_exists }}" == "true" ]]; then
+            copr fork --confirm ${{ env.project_yesterday }} ${{ env.project_target }}
+          fi
+
+      - name: "Regenerate repos for target project ${{ env.project_target }}"
+        shell: bash -e {0}
         # If yesterday's project didn't exist, we haven't forked and so we don't
         # need to regenerate the repos.
-        if: ${{ env.yesterdays_project_exists == 'yes' }}
-        env:
-          # You need to have those secrets in your repo.
-          # See also: https://copr.fedorainfracloud.org/api/.
-          COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
-          COPR_URL: ${{ secrets.COPR_URL }}
-          COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
-          COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python -m llvm_snapshot_builder.cli --verbose \
-            regenerate-repos --proj "${{ env.project_target }}"
-            
+          if [[ "${{ inputs.regenerate_target_repo }}" == "true" && "${{ env.yesterdays_project_exists }}" == "true" ]]; then
+            copr regenerate-repos ${{ env.project_target }}
+          fi

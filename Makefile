@@ -34,6 +34,7 @@ copr_project ?= kkleine/llvm-snapshots-incubator-$(yyyymmdd)
 # Include the file that provides the "help" and "help-html" targets.
 include ./help.mk
 
+
 # Builds the mock config if it doesn't exist
 $(mockconfig): $(mockconfig_template)
 	echo "Creating mock config"

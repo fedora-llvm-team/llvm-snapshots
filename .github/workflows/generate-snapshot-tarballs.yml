@@ -118,7 +118,7 @@ jobs:
             --git-ref ${{ env.sha }} \
             --template '${PROJECT}-${YYYYMMDD}.src.tar.xz'
     
-      - name: "delete assets older than a week and from today"
+      - name: "delete assets older than a 33 days and from today"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -126,7 +126,7 @@ jobs:
             --token ${{ secrets.GITHUB_TOKEN }} \
             --project ${{ github.repository }} \
             --release-name source-snapshot \
-            --delete-older 7 \
+            --delete-older 33 \
             --delete-today
 
       - name: >-
