@@ -4,4 +4,4 @@
 # pip-compile -o requirements.txt  requirements.txt.in
 
 llvm_snapshot_builder==1.2.8
-PyGithub==1.57
+PyGithub==1.58.0
