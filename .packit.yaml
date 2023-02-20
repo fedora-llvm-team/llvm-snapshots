@@ -1,0 +1,61 @@
+# See the documentation for more information:
+# https://packit.dev/docs/configuration/
+
+# This is the packit configuration for the llvm-snapshot-builder package
+
+actions:
+  create-archive:
+  - make -C llvm-snapshot-builder clean
+  - make -C llvm-snapshot-builder tarball
+  get-current-version:
+  - make -C llvm-snapshot-builder version
+
+srpm_build_deps:
+  - make
+
+specfile_path: llvm-snapshot-builder/llvm-snapshot-builder.spec
+
+# Name of the github repository
+upstream_package_name: llvm-daily-fedora-rpms
+# URL of the upstream git project
+upstream_project_url: https://github.com/kwk/llvm-daily-fedora-rpms
+# Downstream (Fedora) RPM package name
+downstream_package_name: llvm-snapshot-builder
+
+# Packit by default modifies Version and Release in the spec file when creating
+# a SRPM. If you don’t want this, you can prevent it with
+update_release: false
+
+jobs:
+- job: copr_build
+  trigger: pull_request
+  targets:
+  - fedora-all
+  - epel-8
+  - epel-9
+  enable_net: False
+
+- job: tests
+  trigger: pull_request
+  targets:
+  - fedora-all
+  - epel-8
+  - epel-9
+
+# - job: propose_downstream
+#   trigger: release
+#   dist_git_branches:
+#     - fedora-all
+
+- job: copr_build
+  trigger: commit
+  branch: main
+  targets:
+  - fedora-all
+  - epel-8
+  - epel-9
+  enable_net: False
+  list_on_homepage: True
+  preserve_project: True
+  owner: kkleine
+  project: llvm-snapshot-builder
