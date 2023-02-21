@@ -1,4 +1,4 @@
-summary: Basic smoke test
-execute:
-    how: tmt
-    script: tmt --help
+summary: Test the evaluation of llvm_sb macro
+discover:
+    how: shell
+    script: rpm --eval "%{llvm_sb}" | grep "llvm_snapshot_version:"
