@@ -35,6 +35,18 @@ source:
 	mkdir -p $(TMP)/$(PACKAGE)
 	cp -a $(FILES) $(TMP)/$(PACKAGE)
 
+.PHONY: rpm
+rpm: tarball
+	rpmbuild --define '_topdir $(TMP)' -bb $(PACKAGE).spec
+
+.PHONY:
+srpm: tarball
+	rpmbuild --define '_topdir $(TMP)' -bs $(PACKAGE).spec
+
+.PHONY:
+packit-srpm:
+	cd $(CURDIR)/.. && packit srpm
+
 # .PHONY: lint
 # lint:
 # 	rpkg lint
