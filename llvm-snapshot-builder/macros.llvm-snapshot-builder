@@ -60,7 +60,7 @@
         return d
     end
 
-     -- Returns the contents of filename if it exists or requests it with curl.
+    -- Returns the contents of filename if it exists or requests it with curl.
     function llvm_sb_curl_file_cached(filename)
         local filepath = rpm.expand('%_sourcedir') .. '/' .. filename
         if not posix.access(filepath, 'f') then
@@ -76,7 +76,7 @@
         return string.gsub(f:read(), '(.-)%s*$', '%1')
     end
 
-     -- Returns the Major.Minor.Patch version for the date given by llvm_sb_yyyymmdd()
+    -- Returns the Major.Minor.Patch version for the date given by llvm_sb_yyyymmdd()
     function llvm_sb_version()
         local filename = "llvm-release-" .. llvm_sb_yyyymmdd() .. ".txt"
         return llvm_sb_curl_file_cached(filename)
@@ -89,19 +89,19 @@
         return major, minor, patch
     end
 
-     -- Returns just the major version
+    -- Returns just the major version
     function llvm_sb_version_major()
         local major, _, _ = llvm_sb_version_split()
         return major
     end
 
-     -- Returns just the minor version
+    -- Returns just the minor version
     function llvm_sb_version_minor()
         local _, minor, _ = llvm_sb_version_split()
         return minor
     end
 
-     -- Returns just the patch version
+    -- Returns just the patch version
     function llvm_sb_version_patch()
         local _, _, patch = llvm_sb_version_split()
         return patch
@@ -113,7 +113,7 @@
         return llvm_sb_curl_file_cached(filename)
     end
 
-     -- Returns the short Git commit sha1 for the date given by _yyyymmdd()
+    -- Returns the short Git commit sha1 for the date given by _yyyymmdd()
     function llvm_sb_git_revision_short()
         local revision = llvm_sb_git_revision()
         return string.sub(revision, 0, 14)
