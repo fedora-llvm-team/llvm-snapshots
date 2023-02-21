@@ -139,6 +139,4 @@ copr-build-%:
 		--proj "$(copr_project)" \
 		--chroots $(chroot) \
 		--packagenames $(package) \
-		--timeout "108000" 
-
-
+		--timeout "108000"

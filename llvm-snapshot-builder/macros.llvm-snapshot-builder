@@ -45,7 +45,7 @@
     -- Returns the date in reversed form (year month day) that is passed
     -- to the spec with --define "yyyymmdd 20220604". In case no date is
     -- supplied the current date is used.
-    -- 
+    --
     -- To manually set a date call:
     --     rpmspec -qv --define "yyyymmdd 20220606" package.spec
     function llvm_sb_yyyymmdd()
@@ -81,7 +81,7 @@
         local filename = "llvm-release-" .. llvm_sb_yyyymmdd() .. ".txt"
         return llvm_sb_curl_file_cached(filename)
     end
-    
+
     -- Returns the major and minor version as three separate arguments
     function llvm_sb_version_split()
         local version = llvm_sb_version()
@@ -134,13 +134,13 @@
     function llvm_sb_version_suffix()
         return "pre" .. llvm_sb_yyyymmdd() .. ".g" .. llvm_sb_git_revision_short()
     end
-    
+
     -- Returns the version that can be used in the Version: tag for the date given by llvm_sb_yyyymmdd()
     function llvm_sb_version_tag()
         return llvm_sb_version() .. '~' .. llvm_sb_version_suffix()
     end
 
-    -- Creates a string that 
+    -- Creates a string that
     function llvm_sb_changelog_entry()
         -- Make sure weekdays are printed in English for Changelog entries.
         assert(os.setlocale('C'))
@@ -177,9 +177,9 @@
     rpm.define('llvm_snapshot_version_suffix '..llvm_sb_version_suffix())
     rpm.define('llvm_snapshot_changelog_entry '..llvm_sb_changelog_entry())
 
-    rpm.expand('%{echo:}') 
-    rpm.expand('%{echo:LLVM-Snapshot-Builder}') 
-    rpm.expand('%{echo:----------------------------------}') 
+    rpm.expand('%{echo:}')
+    rpm.expand('%{echo:LLVM-Snapshot-Builder}')
+    rpm.expand('%{echo:----------------------------------}')
     rpm.expand('%{echo:llvm_snapshot_version:            '..rpm.expand('%{llvm_snapshot_version}')..'}')
     rpm.expand('%{echo:llvm_snapshot_version_tag:        '..rpm.expand('%{llvm_snapshot_version_tag}')..'}')
     rpm.expand('%{echo:llvm_snapshot_version_major:      '..rpm.expand('%{llvm_snapshot_version_major}')..'}')
@@ -190,8 +190,8 @@
     rpm.expand('%{echo:llvm_snapshot_git_revision_short: '..rpm.expand('%{llvm_snapshot_git_revision_short}')..'}')
     rpm.expand('%{echo:llvm_snapshot_source_prefix:      '..rpm.expand('%{llvm_snapshot_source_prefix}')..'}')
     rpm.expand('%{echo:llvm_snapshot_version_suffix:     '..rpm.expand('%{llvm_snapshot_version_suffix}')..'}')
-    rpm.expand('%{echo:llvm_snapshot_changelog_entry:    '..rpm.expand('%{llvm_snapshot_changelog_entry}')..'}') 
-    rpm.expand('%{echo:}') 
+    rpm.expand('%{echo:llvm_snapshot_changelog_entry:    '..rpm.expand('%{llvm_snapshot_changelog_entry}')..'}')
+    rpm.expand('%{echo:}')
 
     llvm_sb_echo('Done enabling LLVM Snapshot builder functions: llvm_sb_xy()')
  }

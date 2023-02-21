@@ -53,4 +53,3 @@ need `llvm` as a build dependency available in the mock environment. You're
 options are to run `make build-llvm && make build-clang` or you could just run
 `make build-clang`. Then the llvm version that is needed will be downloaded from
 the official Fedora snapshot YUM repository (if it is available there).
-

@@ -18,7 +18,7 @@ def delete_assets(token:str, project:str, release_name:str, delete_older:int, de
     """
     g = Github(login_or_token=token)
     repo = g.get_repo(project)
-    
+
     print("deleting assets older than a week and from today in release '{}'".format(release_name))
     try:
         release = repo.get_release(release_name)
@@ -52,7 +52,7 @@ def main():
                         dest='release_name',
                         type=str,
                         default="source-snapshot",
-                        help="name of the release to store the source snapshots (default: source-snapshot)")    
+                        help="name of the release to store the source snapshots (default: source-snapshot)")
     parser.add_argument('--delete-older',
                         dest='delete_older',
                         type=int,

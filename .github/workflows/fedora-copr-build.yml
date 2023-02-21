@@ -144,7 +144,7 @@ jobs:
           fi
 
           username=@fedora-llvm-team
-          
+
           echo "first_delete_project=$first_delete_project" >> $GITHUB_ENV
           echo "first_cancel_builds=$first_cancel_builds" >> $GITHUB_ENV
           echo "fork_into_target_rep=$fork_into_target_project" >> $GITHUB_ENV
@@ -281,7 +281,7 @@ jobs:
                   ${{ env.project_today }} \
                   | tee ${pkg}.log
               fi
-              
+
               after_build_id="--after-build-id `cat ${pkg}.log | grep -Po 'Created builds: \K(\d+)'`"
             done
           done

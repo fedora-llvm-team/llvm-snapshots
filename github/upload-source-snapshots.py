@@ -6,10 +6,10 @@ import datetime
 import os
 from glob import glob
 
-def main(args) -> None:    
+def main(args) -> None:
     g = Github(login_or_token=args.token)
     repo = g.get_repo(args.project)
-    
+
     yyyymmdd = args.yyyymmdd
     release_name = args.release_name
     tag_name = release_name
@@ -33,7 +33,7 @@ def main(args) -> None:
                 path = os.path.join(dir, name)
                 print("uploading path: {}".format(path))
                 release.upload_asset(path=path)
-        
+
 if __name__ == "__main__":
     yyyymmdd = datetime.date.today().strftime("%Y%m%d")
     parser = argparse.ArgumentParser(description='Uploads the source snapshots as assets')
@@ -57,5 +57,5 @@ if __name__ == "__main__":
                         type=str,
                         default=yyyymmdd,
                         help="year month day combination to filter upload files by (default for today: {})".format(yyyymmdd))
-    
+
     main(parser.parse_args())

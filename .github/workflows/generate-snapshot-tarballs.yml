@@ -63,7 +63,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: 3.9
-      
+
       - name: "checkout this project"
         uses: actions/checkout@v3
         with:
@@ -103,12 +103,12 @@ jobs:
       #   run: |
       #     sha=`llvm-daily-fedora-rpms/github/get-good-commit.py --token ${{ secrets.GITHUB_TOKEN }} --project "llvm/llvm-project" --start-ref main --ensure-checks clang-x86_64-debian-fast llvm-clang-x86_64-expensive-checks-debian --max-tries 400`
       #     echo "sha=$sha" >> $GITHUB_ENV
-      
+
       - name: "hack(just use main): determine last stable commit of llvm/llvm-project"
         id: stable-commit
         run: |
           echo "sha=main" >> $GITHUB_ENV
-      
+
       - name: "fetch stable revision to archive"
         run: git -C llvm-project fetch --depth=1 --no-tags origin ${{ env.sha }}
 
@@ -117,7 +117,7 @@ jobs:
           llvm-project/llvm/utils/release/export.sh \
             --git-ref ${{ env.sha }} \
             --template '${PROJECT}-${YYYYMMDD}.src.tar.xz'
-    
+
       - name: "delete assets older than a 33 days and from today"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
