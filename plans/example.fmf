@@ -1,4 +1,6 @@
 summary: Test the evaluation of llvm_sb macro
 discover:
     how: shell
-    script: rpm --eval "%{llvm_sb}" | grep "llvm_snapshot_version:"
+    tests:
+    - name: test evaluation of llvm_sb macro
+      test: rpm --eval "%{llvm_sb}" | grep "llvm_snapshot_version:"
