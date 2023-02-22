@@ -3,6 +3,6 @@ discover:
     how: shell
     tests:
     - name: test evaluation of llvm_sb macro
-      test: rpm --eval "%{llvm_sb}" | grep "llvm_snapshot_version:"
+      test: mkdir -p /root/rpmbuild/SOURCES && rpm --eval "%{llvm_sb}" | grep "llvm_snapshot_version:"
 execute:
     how: tmt
