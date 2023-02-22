@@ -98,7 +98,7 @@ jobs:
         run: |
           source ~/functions.sh
           for build_id in `get_active_build_ids ${{ env.project_today }}`; do
-              copr cancel $build_id
+            copr cancel $build_id
           done
 
       - name: "Deleting today's Copr project before recreating it: ${{ env.project_today }}"
@@ -124,6 +124,7 @@ jobs:
           copr $method \
             --instructions "`cat project-instructions.md`" \
             --description  "`cat project-description.md`" \
+            --unlisted-on-hp on \
             --enable-net on \
             --runtime-repo-dependency "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/fedora-\$releasever-\$basearch" \
             --multilib on \
@@ -194,12 +195,12 @@ jobs:
       - name: "Fork Copr project from ${{ env.project_yesterday }} to ${{ env.project_target }}"
         if: ${{ env.yesterdays_project_exists == 'true' }}
         run: |
-            copr fork --confirm ${{ env.project_yesterday }} ${{ env.project_target }}
-            copr modify --delete-after-days -1 ${{ env.project_target }}
+          copr fork --confirm ${{ env.project_yesterday }} ${{ env.project_target }}
+          copr modify --delete-after-days -1 --unlisted-on-hp off ${{ env.project_target }}
 
       - name: "Regenerate repos for target project ${{ env.project_target }}"
         # If yesterday's project didn't exist, we haven't forked and so we don't
         # need to regenerate the repos.
         if: ${{ env.yesterdays_project_exists == 'true' }}
         run: |
-            copr regenerate-repos ${{ env.project_target }}
+          copr regenerate-repos ${{ env.project_target }}
