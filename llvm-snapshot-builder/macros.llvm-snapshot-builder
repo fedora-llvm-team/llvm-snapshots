@@ -74,8 +74,12 @@
             llvm_sb_echo("File already exists: " .. filepath)
         end
         llvm_sb_echo("Reading content of file: " .. filepath)
-        local f = rpm.open(filepath)
-        return string.gsub(f:read(), '(.-)%s*$', '%1')
+        -- Altenative to io.read once rpm >= 4.17.0
+        -- local f = rpm.open(filepath)
+        -- return string.gsub(f:read(), '(.-)%s*$', '%1')
+        io.input(filepath)
+        local t = io.read("*all")
+        return string.gsub(t, '(.-)%s*$', '%1')
     end
 \
     -- Returns the Major.Minor.Patch version for the date given by llvm_sb_yyyymmdd()
