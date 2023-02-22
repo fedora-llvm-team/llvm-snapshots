@@ -91,7 +91,7 @@ jobs:
           echo "target_project_exists=`project_exists ${{ env.project_target }}`" >> $GITHUB_ENV
 
       - name: "Canceling active builds (if any) in today's Copr project before recreating it: ${{ env.project_today }}"
-        if: ${{ env.project_today == 'true' }}
+        if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
           source ~/functions.sh
