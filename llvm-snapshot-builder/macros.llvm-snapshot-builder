@@ -49,7 +49,7 @@
     -- To manually set a date call:
     --     rpmspec -qv --define "yyyymmdd 20220606" package.spec
     function llvm_sb_yyyymmdd()
-        if not rpm.isdefined('yyyymmdd') then
+        if not rpm.expand('%yyyymmdd') ~= '%yyyymmdd' then
             -- see https://www.lua.org/pil/22.1.html
             local d = os.date("%Y%m%d")
             llvm_sb_echo("No date supplied. Using current date: " .. d)
