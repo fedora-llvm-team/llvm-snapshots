@@ -6,67 +6,6 @@ on:
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
     - cron: "45 0 * * *"
 
-  workflow_dispatch:
-    inputs:
-      day:
-        description: "Give YYYYMMDD for date you want to build for. Leave blank for today."
-        required: false
-        type: string
-        default: ""
-      packages:
-        description: "Package to build. Leave blank for default ones."
-        required: true
-        default: all
-        type: choice
-        options: [all, python-lit, llvm, clang, lld, compiler-rt, libomp]
-      chroots:
-        description: "An OS/architecture to build for. Leave blank for default ones"
-        required: true
-        default: all
-        type: choice
-        options:
-        - all
-        - fedora-36-aarch64
-        - fedora-36-ppc64le
-        - fedora-36-x86_64
-        - fedora-36-i386
-        - fedora-36-s390x
-        - fedora-37-aarch64
-        - fedora-37-ppc64le
-        - fedora-37-x86_64
-        - fedora-37-i386
-        - fedora-37-s390x
-        - fedora-rawhide-aarch64
-        - fedora-rawhide-ppc64le
-        - fedora-rawhide-x86_64
-        - fedora-rawhide-i386
-        - fedora-rawhide-s390
-      first_cancel_builds:
-        description: "At first, cancel active builds"
-        required: true
-        type: boolean
-        default: true
-      first_delete_project:
-        description: "At first, delete today's projects"
-        required: true
-        type: boolean
-        default: true
-      regenerate_target_repo:
-        description: "Regenerate the repo data of the target to fork in"
-        required: true
-        type: boolean
-        default: true
-      fork_into_target_project:
-        description: "Fork yesterday's project into the target project"
-        required: true
-        type: boolean
-        default: true
-      delete_target_project:
-        description: "Delete target project before forking to it."
-        required: true
-        type: boolean
-        default: true
-
 jobs:
   build-on-copr:
     runs-on: ubuntu-latest
@@ -89,66 +28,26 @@ jobs:
         shell: bash -e {0}
         run: |
           today=`date +%Y%m%d`
-          if ! [[ "${{ inputs.day }}" =~ ^\s*$ ]]; then
-            if ! [[ "${{ inputs.day }}" =~ ^20[0-9]{2}(0[1-9]|1[012])(0[1-9]|1[012])$ ]]; then
-              echo "Input 'today' not matching YYYYMMDD pattern: ${{ inputs.day }}"
-              exit 3
-            fi
-            today=${{ inputs.day }}
-          fi
           yesterday=`date -d "${today} -1 day" +%Y%m%d`
 
           packages="python-lit llvm clang lld compiler-rt libomp"
-          if [[ "${{ inputs.packages }}" != "all" && "${{ inputs.packages }}" != "" ]]; then
-            packages=${{ inputs.packages }}
-          fi
-
-          all_chroots="fedora-36-aarch64 \
-                       fedora-36-ppc64le \
-                       fedora-36-x86_64 \
-                       fedora-36-i386 \
-                       fedora-36-s390x \
-                       fedora-37-aarch64 \
-                       fedora-37-ppc64le \
-                       fedora-37-x86_64 \
-                       fedora-37-i386 \
-                       fedora-37-s390x \
-                       fedora-rawhide-aarch64 \
-                       fedora-rawhide-ppc64le \
-                       fedora-rawhide-x86_64 \
-                       fedora-rawhide-i386 \
-                       fedora-rawhide-s390x"
-          chroots=$all_chroots
-          if [[ "${{ inputs.chroots }}" != "all" && "${{ inputs.chroots }}" != "" ]]; then
-            chroots=${{ inputs.chroots }}
-          fi
-
-          first_delete_project=true
-          if [[ "${{ inputs.first_delete_project }}" != "" ]]; then
-            first_delete_project=${{ inputs.first_delete_project }}
-          fi
-
-          first_cancel_builds=true
-          if [[ "${{ inputs.first_cancel_builds }}" != "" ]]; then
-            first_cancel_builds=${{ inputs.first_cancel_builds }}
-          fi
-
-          fork_into_target_project=true
-          if [[ "${{ inputs.fork_into_target_project }}" != "" ]]; then
-            fork_into_target_project=${{ inputs.fork_into_target_project }}
-          fi
-
-          delete_target_project=true
-          if [[ "${{ inputs.delete_target_project }}" != "" ]]; then
-            delete_target_project=${{ inputs.delete_target_project }}
-          fi
+          chroots="fedora-36-aarch64 \
+                   fedora-36-ppc64le \
+                   fedora-36-x86_64 \
+                   fedora-36-i386 \
+                   fedora-36-s390x \
+                   fedora-37-aarch64 \
+                   fedora-37-ppc64le \
+                   fedora-37-x86_64 \
+                   fedora-37-i386 \
+                   fedora-37-s390x \
+                   fedora-rawhide-aarch64 \
+                   fedora-rawhide-ppc64le \
+                   fedora-rawhide-x86_64 \
+                   fedora-rawhide-i386 \
+                   fedora-rawhide-s390x"
 
           username=@fedora-llvm-team
-
-          echo "first_delete_project=$first_delete_project" >> $GITHUB_ENV
-          echo "first_cancel_builds=$first_cancel_builds" >> $GITHUB_ENV
-          echo "fork_into_target_rep=$fork_into_target_project" >> $GITHUB_ENV
-          echo "delete_target_project=$delete_target_project" >> $GITHUB_ENV
           echo "username=$username" >> $GITHUB_ENV
           echo "packages=$packages" >> $GITHUB_ENV
           echo "chroots=$chroots" >> $GITHUB_ENV
@@ -160,6 +59,7 @@ jobs:
           cat <<EOF > ~/functions.sh
           #!/bin/bash
           set +x
+          set -e
           # TODO(kwk): Is there a better way to check project existence?
           function project_exists(){
             local project=\$1;
@@ -191,22 +91,20 @@ jobs:
           echo "target_project_exists=`project_exists ${{ env.project_target }}`" >> $GITHUB_ENV
 
       - name: "Canceling active builds (if any) in today's Copr project before recreating it: ${{ env.project_today }}"
+        if: ${{ env.project_today == 'true' }}
         shell: bash -e {0}
         run: |
           source ~/functions.sh
-          if [[ "${{ inputs.first_cancel_builds }}" == "true" && "${{ env.todays_project_exists }}" == "true" ]]; then
-            for build_id in `get_active_build_ids ${{ env.project_today }}`; do
-                copr cancel $build_id
-            done
-          fi
+          for build_id in `get_active_build_ids ${{ env.project_today }}`; do
+              copr cancel $build_id
+          done
 
       - name: "Deleting today's Copr project before recreating it: ${{ env.project_today }}"
+        if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
           source ~/functions.sh
-          if [[ "${{ inputs.first_delete_project }}" == "true" && "${{ env.todays_project_exists }}" == "true" ]]; then
-            copr delete ${{ env.project_today }}
-          fi
+          copr delete ${{ env.project_today }}
 
       - uses: actions/checkout@v3
 
@@ -219,7 +117,7 @@ jobs:
             method=modify
           fi
 
-          chroot_opts=`for c in ${{ env.all_chroots }}; do echo -n " --chroot $c "; done`
+          chroot_opts=`for c in ${{ env.chroots }}; do echo -n " --chroot $c "; done`
 
           copr $method \
             --instructions "`cat project-instructions.md`" \
@@ -287,24 +185,19 @@ jobs:
           done
 
       - name: "Delete target Copr project at ${{ env.project_target }} before forking to it"
-        shell: bash -e {0}
+        if: ${{ env.yesterdays_project_exists == 'true' && env.target_project_exists == 'true' }}
         run: |
-          if [[ "${{ env.delete_target_project }}" == "true" && "${{ env.yesterdays_project_exists }}" == "true" && "${{ env.target_project_exists }}" == "true" ]]; then
-            copr delete "${{ env.project_target }}"
-          fi
+          copr delete "${{ env.project_target }}"
 
       - name: "Fork Copr project from ${{ env.project_yesterday }} to ${{ env.project_target }}"
-        shell: bash -e {0}
+        if: ${{ env.yesterdays_project_exists == 'true' }}
         run: |
-          if [[ "${{ inputs.fork_into_target_project }}" == "true" && "${{ env.yesterdays_project_exists }}" == "true" ]]; then
             copr fork --confirm ${{ env.project_yesterday }} ${{ env.project_target }}
-          fi
+            copr modify --delete-after-days -1 ${{ env.project_target }}
 
       - name: "Regenerate repos for target project ${{ env.project_target }}"
-        shell: bash -e {0}
         # If yesterday's project didn't exist, we haven't forked and so we don't
         # need to regenerate the repos.
+        if: ${{ env.yesterdays_project_exists == 'true' }}
         run: |
-          if [[ "${{ inputs.regenerate_target_repo }}" == "true" && "${{ env.yesterdays_project_exists }}" == "true" ]]; then
             copr regenerate-repos ${{ env.project_target }}
-          fi
