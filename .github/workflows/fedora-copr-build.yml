@@ -69,13 +69,6 @@ jobs:
             && echo "true" || echo "false";
           }
 
-          function package_exists(){
-            local project=\$1;
-            local package=\$2;
-            copr get-package --name \$package \$project > /dev/null 2>&1 \
-            && echo "true" || echo "false";
-          }
-
           function get_active_build_ids(){
             local project=\$1;
             copr list-builds --output-format text-row \$project \
@@ -110,18 +103,14 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      - name: "Create or modify today's Copr project: ${{ env.project_today }}"
+      - name: "Create today's Copr project: ${{ env.project_today }}"
         shell: bash -e {0}
         run: |
           source ~/functions.sh
-          method=create
-          if [ "$todays_project_exists" == "true" ]; then
-            method=modify
-          fi
 
           chroot_opts=`for c in ${{ env.chroots }}; do echo -n " --chroot $c "; done`
 
-          copr $method \
+          copr create \
             --instructions "`cat project-instructions.md`" \
             --description  "`cat project-description.md`" \
             --unlisted-on-hp on \
@@ -134,18 +123,13 @@ jobs:
             --delete-after-days 32 \
             $chroot_opts "${{ env.project_today }}"
 
-      - name: "Create or edit today's packages: ${{ env.packages }}"
+      - name: "Create today's packages: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
           source ~/functions.sh
 
           for pkg in ${{ env.packages }}; do
-            method=add-package-scm
-            if [ "`package_exists ${{ env.project_today }} ${pkg}`" == "true" ]; then
-              method=edit-package-scm
-              echo "Editing already existing package: '${pkg}'"
-            fi
-            copr $method \
+            copr add-package-scm \
               --clone-url https://src.fedoraproject.org/rpms/${pkg}.git \
               --commit upstream-snapshot \
               --spec ${pkg}.spec \
