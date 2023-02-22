@@ -6,6 +6,8 @@ on:
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
     - cron: "45 0 * * *"
 
+  workflow_dispatch: {}
+
 jobs:
   build-on-copr:
     runs-on: ubuntu-latest
