@@ -26,14 +26,14 @@
             rpm.expand("%{echo:" .. msg .. "}")
         end
     end
-
+\
     llvm_sb_echo('Enabling LLVM Snapshot builder functions: llvm_sb_xy()')
-
+\
     -- Returns the URL to the snapshot releases.
     function llvm_sb_url_base()
         return 'https://github.com/kwk/llvm-daily-fedora-rpms/releases/download/source-snapshot'
     end
-
+\
     -- Returns the base URL concatenated with the given filename
     function llvm_sb_build_url(filename)
         return llvm_sb_url_base() .. '/' .. filename
@@ -41,7 +41,7 @@
         -- alternatively:
         -- return string.format("%s/%s", llvm_sb_url_base(), filename)
     end
-
+\
     -- Returns the date in reversed form (year month day) that is passed
     -- to the spec with --define "yyyymmdd 20220604". In case no date is
     -- supplied the current date is used.
@@ -59,7 +59,7 @@
         llvm_sb_echo("Using manually supplied date: " .. d)
         return d
     end
-
+\
     -- Returns the contents of filename if it exists or requests it with curl.
     function llvm_sb_curl_file_cached(filename)
         local filepath = rpm.expand('%_sourcedir') .. '/' .. filename
@@ -75,50 +75,50 @@
         local f = rpm.open(filepath)
         return string.gsub(f:read(), '(.-)%s*$', '%1')
     end
-
+\
     -- Returns the Major.Minor.Patch version for the date given by llvm_sb_yyyymmdd()
     function llvm_sb_version()
         local filename = "llvm-release-" .. llvm_sb_yyyymmdd() .. ".txt"
         return llvm_sb_curl_file_cached(filename)
     end
-
+\
     -- Returns the major and minor version as three separate arguments
     function llvm_sb_version_split()
         local version = llvm_sb_version()
         local major, minor, patch = string.match(version, "(%d+)%.(%d+)%.(%d+)")
         return major, minor, patch
     end
-
+\
     -- Returns just the major version
     function llvm_sb_version_major()
         local major, _, _ = llvm_sb_version_split()
         return major
     end
-
+\
     -- Returns just the minor version
     function llvm_sb_version_minor()
         local _, minor, _ = llvm_sb_version_split()
         return minor
     end
-
+\
     -- Returns just the patch version
     function llvm_sb_version_patch()
         local _, _, patch = llvm_sb_version_split()
         return patch
     end
-
+\
     -- Returns the Git commit sha1 for the date given by llvm_sb_yyyymmdd()
     function llvm_sb_git_revision()
         local filename = "llvm-git-revision-" .. llvm_sb_yyyymmdd() .. ".txt"
         return llvm_sb_curl_file_cached(filename)
     end
-
+\
     -- Returns the short Git commit sha1 for the date given by _yyyymmdd()
     function llvm_sb_git_revision_short()
         local revision = llvm_sb_git_revision()
         return string.sub(revision, 0, 14)
     end
-
+\
     -- If the snapshot build was triggered with copr, this returns a link to
     -- the build page. If not, an empty string is returned
     function llvm_sb_copr_build_link()
@@ -129,17 +129,17 @@
         -- see https://pagure.io/copr/copr/blob/main/f/rpmbuild/mock.cfg.j2#_22-25
         return string.sub(rpm.expand("%buildtag"), 6)
     end
-
+\
     -- Suffix to add to %Version tag so that the snapshot is clearly marked
     function llvm_sb_version_suffix()
         return "pre" .. llvm_sb_yyyymmdd() .. ".g" .. llvm_sb_git_revision_short()
     end
-
+\
     -- Returns the version that can be used in the Version: tag for the date given by llvm_sb_yyyymmdd()
     function llvm_sb_version_tag()
         return llvm_sb_version() .. '~' .. llvm_sb_version_suffix()
     end
-
+\
     -- Creates a string that
     function llvm_sb_changelog_entry()
         -- Make sure weekdays are printed in English for Changelog entries.
@@ -152,7 +152,7 @@
         end
         return string.format(entry, "")
     end
-
+\
     -- Returns a string with SourceX: tags starting at offset and with +1
     -- increments. These sources are needed so that source RPMs can bundle
     -- all dynamically loaded files and fall back to local reading when
@@ -164,7 +164,7 @@
         return 'Source'..offset..': '..url_base..'/llvm-release-'..yyyymmdd..'.txt\\n'..
                'Source'..tostring(offset+1)..': '..url_base..'/llvm-git-revision-'..yyyymmdd..'.txt'
     end
-
+\
     rpm.define('llvm_snapshot_version '..llvm_sb_version())
     rpm.define('llvm_snapshot_version_tag '..llvm_sb_version_tag())
     rpm.define('llvm_snapshot_version_major '..llvm_sb_version_major())
@@ -176,7 +176,7 @@
     rpm.define('llvm_snapshot_source_prefix '..llvm_sb_url_base()..'/')
     rpm.define('llvm_snapshot_version_suffix '..llvm_sb_version_suffix())
     rpm.define('llvm_snapshot_changelog_entry '..llvm_sb_changelog_entry())
-
+\
     rpm.expand('%{echo:}')
     rpm.expand('%{echo:LLVM-Snapshot-Builder}')
     rpm.expand('%{echo:----------------------------------}')
@@ -192,9 +192,9 @@
     rpm.expand('%{echo:llvm_snapshot_version_suffix:     '..rpm.expand('%{llvm_snapshot_version_suffix}')..'}')
     rpm.expand('%{echo:llvm_snapshot_changelog_entry:    '..rpm.expand('%{llvm_snapshot_changelog_entry}')..'}')
     rpm.expand('%{echo:}')
-
+\
     llvm_sb_echo('Done enabling LLVM Snapshot builder functions: llvm_sb_xy()')
- }
+}
 
 -- Prints the extra sources for convenience
 %llvm_snapshot_extra_source_tags %{lua: print(llvm_sb_extra_source_tags())}
