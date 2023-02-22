@@ -13,6 +13,8 @@
 # therefore just return the results except for llvm_sb_echo() which is used for
 # more verbose output without calling print().
 #
+# See also https://docs.fedoraproject.org/en-US/packaging-guidelines/Scriptlets/#_macros
+#
 # Author: Konrad Kleine <kkleine@redhat.com>
 
 %llvm_sb_verbose %{lua:
