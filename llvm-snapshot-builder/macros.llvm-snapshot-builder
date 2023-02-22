@@ -67,7 +67,9 @@
             local url = llvm_sb_build_url(filename)
             llvm_sb_echo("File not found: " .. filename)
             llvm_sb_echo("Fetching: " .. url)
-            rpm.execute('curl', '-sL', '-o', filepath, url)
+            -- Altenative to os.execute once rpm >= 4.15.0
+            -- rpm.execute('curl', '-sL', '-o', filepath, url)
+            os.execute('curl -sL -o ' .. filepath .. " " .. url)
         else
             llvm_sb_echo("File already exists: " .. filepath)
         end
