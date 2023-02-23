@@ -119,7 +119,7 @@ jobs:
             --multilib on \
             --disable_createrepo 1 \
             --appstream off \
-            --repo "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-snapshot-builder/fedora-\$releasever-\$basearch" \
+            --repo "copr://@fedora-llvm-team/llvm-snapshot-builder" \
             --delete-after-days 32 \
             $chroot_opts "${{ env.project_today }}"
 
