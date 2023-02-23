@@ -119,7 +119,6 @@ jobs:
             --multilib on \
             --disable_createrepo 1 \
             --appstream off \
-            --repo "copr://@fedora-llvm-team/llvm-snapshot-builder" \
             --delete-after-days 32 \
             $chroot_opts "${{ env.project_today }}"
 
@@ -139,6 +138,16 @@ jobs:
               "${{ env.project_today }}"
           done
 
+      - name: "Build llvm-snapshot-builder from SRPM into today's project: ${{ env.project_today }}"
+        shell: bash -e {0}
+        run: |
+          source ~/functions.sh
+          make -C llvm-snapshot-builder/ srpm
+          copr build "${{ env.project_today }}" llvm-snapshot-builder/tmp/SRPMS/llvm-snapshot-builder-*.rpm \
+            | tee llvm-snapshot-builder.log
+          after_build_id="--after-build-id `cat llvm-snapshot-builder.log | grep -Po 'Created builds: \K(\d+)'`"
+          echo "llvm_snapshot_builder_build_id=$after_build_id" >> $GITHUB_ENV
+
       - name: "Build packages in chroot batches in this order: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
@@ -147,13 +156,13 @@ jobs:
           for chroot in ${{ env.chroots }}; do
             # Modify chroot to know about compat package repo and about the --with=snapshot_build option
             copr edit-chroot \
-              --repos "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-snapshot-builder/${chroot}/ https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/${chroot}/" \
+              --repos "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/${chroot}/" \
               --rpmbuild-with "snapshot_build" \
               --packages "llvm-snapshot-builder" \
               ${{ env.project_today }}/$chroot
 
             # Start a new batch
-            after_build_id=""
+            after_build_id="${{ env.llvm_snapshot_builder_build_id }}"
             for pkg in ${{ env.packages }}; do
               if [[ "${pkg}" == "lld" && $chroot =~ -s390x$ ]]; then
                 echo "Skipping lld for s390x architecture in chroot: ${chroot}";

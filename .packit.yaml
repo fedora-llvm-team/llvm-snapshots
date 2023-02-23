@@ -42,17 +42,17 @@ jobs:
   - epel-8
   - epel-9
 
-# This job updates the Copr project at:
-# https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshot-builder/
-- job: copr_build
-  trigger: commit
-  branch: main
-  targets:
-  - fedora-all
-  - epel-8
-  - epel-9
-  enable_net: False
-  list_on_homepage: True
-  preserve_project: True
-  owner: "@fedora-llvm-team"
-  project: llvm-snapshot-builder
+# # This job updates the Copr project at:
+# # https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshot-builder/
+# - job: copr_build
+#   trigger: commit
+#   branch: main
+#   targets:
+#   - fedora-all
+#   - epel-8
+#   - epel-9
+#   enable_net: False
+#   list_on_homepage: True
+#   preserve_project: True
+#   owner: "@fedora-llvm-team"
+#   project: llvm-snapshot-builder
