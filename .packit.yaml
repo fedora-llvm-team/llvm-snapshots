@@ -42,11 +42,8 @@ jobs:
   - epel-8
   - epel-9
 
-# - job: propose_downstream
-#   trigger: release
-#   dist_git_branches:
-#     - fedora-all
-
+# This job updates the Copr project at:
+# https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshot-builder/
 - job: copr_build
   trigger: commit
   branch: main
@@ -57,5 +54,5 @@ jobs:
   enable_net: False
   list_on_homepage: True
   preserve_project: True
-  owner: kkleine
+  owner: "@fedora-llvm-team"
   project: llvm-snapshot-builder

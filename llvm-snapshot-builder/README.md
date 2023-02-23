@@ -2,7 +2,7 @@
 
 ## About
 
-The package "llvm-snaphot-builder" provides the `%{llvm_sb}` (sb=snaphot
+The package "llvm-snaphot-builder" provides the `%{llvm_sb}` (sb=snapshot
 builder) macro which unlocks llvm_sb_xy() LUA functions. Those are used when
 building LLVM snapshots.
 
