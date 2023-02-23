@@ -5,6 +5,7 @@ SHELL := /bin/bash
 PACKAGE=$(shell basename $(CURDIR))
 TMP=$(CURDIR)/tmp
 SPECFILE=$(PACKAGE).spec
+YYYYMMDD_TODAY = $(shell date +%Y%m%d)
 VERSION=$(shell grep -Po 'Version:\s*\K(.*)' $(SPECFILE))
 TARBALL=$(PACKAGE)-$(VERSION).tar.bz2
 FILES = README.md \
@@ -34,6 +35,7 @@ source:
 	mkdir -p $(TMP)/SOURCES
 	mkdir -p $(TMP)/$(PACKAGE)
 	cp -a $(FILES) $(TMP)/$(PACKAGE)
+	echo "%{lua: rpm.define('yyyymmdd $(YYYYMMDD_TODAY)')}" >> $(TMP)/$(PACKAGE)/macros.$(PACKAGE)
 
 .PHONY: rpm
 rpm: tarball
