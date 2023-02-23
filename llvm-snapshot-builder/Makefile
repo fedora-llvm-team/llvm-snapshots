@@ -46,36 +46,3 @@ srpm: tarball
 .PHONY:
 packit-srpm:
 	cd $(CURDIR)/.. && packit srpm
-
-# .PHONY: lint
-# lint:
-# 	rpkg lint
-
-# .PHONY: spec
-# spec:
-# 	rpkg spec --print --spec llvm-snapshot-builder.spec
-
-# .PHONY: local
-# local:
-# 	mkdir -pv $(shell pwd)/out
-# 	rpkg local --outdir=$(shell pwd)/out --spec llvm-snapshot-builder.spec
-# 	tree $(shell pwd)/out
-
-# .PHONY: clean
-# clean:
-# 	rm -rf $(shell pwd)/out
-
-# .PHONY: copr
-# copr:
-# 	rpkg copr-build \
-# 		--spec llvm-snapshot-builder.spec \
-# 		@fedora-llvm-team/llvm-snapshot-builder
-
-# .PHONY: reinstall
-# reinstall: clean local
-# 	sudo dnf -y remove llvm-snapshot-builder
-# 	sudo dnf -y install out/noarch/$(shell rpkg nvr)*.rpm
-
-# .PHONY: test
-# test: reinstall
-# 	rpm --eval "%{llvm_sb}"
