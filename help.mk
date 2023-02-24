@@ -61,3 +61,30 @@ help-html:/
           } \
         }' $(MAKEFILE_LIST)
 	@echo "</dl>"
+
+.PHONY: help-adoc
+## Display this help text as an AsciiDoc definition list for better documentation generation
+help-adoc:/
+	$(info Available targets)
+	@echo ""
+	@awk '/^[a-z%A-Z\-0-9]+:/ { \
+		helpMessage = match(lastLine, /^## (.*)/); \
+		helpCommand = substr($$1, 0, index($$1, ":")-1); \
+		if (helpMessage) { \
+			helpMessage = substr(lastLine, RSTART + 3, RLENGTH); \
+			gsub(/##/, "\n", helpMessage); \
+		} else { \
+			helpMessage = "(No documentation)"; \
+		} \
+		printf "%s:: %s\n", helpCommand, helpMessage; \
+		lastLine = "" \
+	} \
+	{ hasComment = match(lastLine, /^## (.*)/); \
+          if(hasComment) { \
+            lastLine=lastLine$$0; \
+	  } \
+          else { \
+	    lastLine = $$0 \
+          } \
+        }' $(MAKEFILE_LIST)
+	@echo ""
