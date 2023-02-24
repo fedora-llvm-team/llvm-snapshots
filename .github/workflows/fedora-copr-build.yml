@@ -150,8 +150,11 @@ jobs:
         run: |
           source ~/functions.sh
           make -C llvm-snapshot-builder/ srpm
-          copr build "${{ env.project_today }}" llvm-snapshot-builder/tmp/SRPMS/llvm-snapshot-builder-*.rpm \
-            | tee llvm-snapshot-builder.log
+          copr build \
+            --nowait \
+            "${{ env.project_today }}" \
+            llvm-snapshot-builder/tmp/SRPMS/llvm-snapshot-builder-*.rpm \
+          | tee llvm-snapshot-builder.log
           after_build_id="--after-build-id `cat llvm-snapshot-builder.log | grep -Po 'Created builds: \K(\d+)'`"
           echo "llvm_snapshot_builder_build_id=$after_build_id" >> $GITHUB_ENV
 
