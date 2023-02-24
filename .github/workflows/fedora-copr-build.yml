@@ -24,7 +24,7 @@ jobs:
 
       - name: Install Copr CLI
         run: |
-          dnf install -y copr-cli
+          dnf install -y copr-cli make
 
       - name: "Variables and functions"
         shell: bash -e {0}
