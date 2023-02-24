@@ -22,9 +22,9 @@ jobs:
           mkdir -p ~/.config
           printf "$COPR_CONFIG_FILE" > ~/.config/copr
 
-      - name: Install Copr CLI
+      - name: Install Copr CLI and required tools
         run: |
-          dnf install -y copr-cli make
+          dnf install -y copr-cli make bzip2
 
       - name: "Variables and functions"
         shell: bash -e {0}
