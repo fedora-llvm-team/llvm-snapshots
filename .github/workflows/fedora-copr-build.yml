@@ -24,7 +24,7 @@ jobs:
 
       - name: Install Copr CLI and required tools
         run: |
-          dnf install -y copr-cli make bzip2
+          dnf install -y copr-cli make bzip2 rpm-build
 
       - name: "Variables and functions"
         shell: bash -e {0}
