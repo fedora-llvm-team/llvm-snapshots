@@ -90,9 +90,16 @@ jobs:
         shell: bash -e {0}
         run: |
           source ~/functions.sh
+          build_ids=""
           for build_id in `get_active_build_ids ${{ env.project_today }}`; do
+            echo "Canceling build with ID $build_id"
             copr cancel $build_id
+            build_ids="$build_ids $build_id"
           done
+          if [[ "$build_ids" != "" ]]; then
+            echo "Waiting for build IDs to be canceled: $build_ids"
+            copr watch-build $build_ids || true
+          fi
 
       - name: "Deleting today's Copr project before recreating it: ${{ env.project_today }}"
         if: ${{ env.todays_project_exists == 'true' }}
