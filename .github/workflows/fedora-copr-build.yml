@@ -63,6 +63,7 @@ jobs:
           set +x
           set -e
           # TODO(kwk): Is there a better way to check project existence?
+          # TODO(kwk): Maybe: copr list $username | grep --regexp="^Name: \$project$"
           function project_exists(){
             local project=\$1;
             copr get-chroot \$project/fedora-rawhide-x86_64 > /dev/null 2>&1 \
@@ -77,12 +78,25 @@ jobs:
           }
           EOF
 
+      - uses: actions/checkout@v3
+
       - name: "Check for Copr projects existence (yesterday, today, target)"
         shell: bash -e {0}
         run: |
           source ~/functions.sh
+
+          # Check if yesterday's project exists and is waved through
+          yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`
+          if [[ "$yesterdays_project_exists" == "true" ]]; then
+            url=https://copr.fedorainfracloud.org/coprs/`echo ${{ env.project_yesterday }} | sed -s 's/^@/\/g\//'`
+            curl -sL $url | grep "`head -n1 project-instructions.md`"
+            if [[ "$?" == 0 ]];
+              yesterdays_project_exists="false"
+            fi
+          fi
+
           echo "todays_project_exists=`project_exists ${{ env.project_today }}`" >> $GITHUB_ENV
-          echo "yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`" >> $GITHUB_ENV
+          echo "yesterdays_project_exists=$yesterdays_project_exists" >> $GITHUB_ENV
           echo "target_project_exists=`project_exists ${{ env.project_target }}`" >> $GITHUB_ENV
 
       - name: "Canceling active builds (if any) in today's Copr project before recreating it: ${{ env.project_today }}"
@@ -107,8 +121,6 @@ jobs:
         run: |
           source ~/functions.sh
           copr delete ${{ env.project_today }}
-
-      - uses: actions/checkout@v3
 
       - name: "Create today's Copr project: ${{ env.project_today }}"
         shell: bash -e {0}
