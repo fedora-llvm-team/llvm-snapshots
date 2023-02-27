@@ -72,7 +72,7 @@ jobs:
           function get_active_build_ids(){
             local project=\$1;
             copr list-builds --output-format text-row \$project \
-              | grep --perl-regexp --regexp='(running|waiting|pending|importing)' \
+              | grep --perl-regexp --regexp='(running|waiting|pending|importing|starting)' \
               | cut -f 1
           }
           EOF
