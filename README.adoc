@@ -38,6 +38,10 @@ This workflow contains `copr` CLI calls that are needed in order to:
 NOTE: Replace `<YYYYMMDD>` with a date in reversed year month day order (e.g. `20230223`).
 --
 2. Take the snapshots from yesterday and make them available ("fork" in Copr) under link:https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots/monitor/[@fedora-llvm-team/llvm-snapshots]
++
+--
+NOTE: See the section <<wave-through>> to learn the prerequisites for yesterday's build to become the new `@fedora-llvm-team/llvm-snapshots`.
+--
 
 When you repeat these two steps every day, you get a project for each day with with `@fedora-llvm-team/llvm-snapshots` "pointing to" the build from yesterday.
 
@@ -145,6 +149,28 @@ history of downstream patches and changes being made to a `.spec` file.
 IMPORTANT: That is why we almost always prefer `git merge --no-ff --log --summary` over `git rebase`.
 
 == Frequently Asked Questions [[faq]]
+
+=== How to manually wave a build through? [[wave-through]]
+
+It can happen at any day that there's an error with LLVM upstream which prevents it from being compilable or testable. When this happens, you don't want the Copr project `@fedora-llvm-team/llvm-snapshots` to be overwritten with broken builds. That is why we manually have to wave today's project through.
+
+1. Open the snapshot build monitor for the current day:
++
+----
+xdg-open https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-`date +%Y%m%d`/monitor
+----
+
+2. Check if you like what you see and if there's not "too much" red as in failed builds, click the btn:[Settings] tab/button in the menu bar for your project.
+
+3. Find the Description field and remove this from the description:
++
+----
+REMOVE THIS LINE TO WAVE THIS BUILD THROUGH
+----
+
+4. Scroll down and hit the btn:[Update] button.
+
+5. At the next midnight build job, this day will be automatically forked into the `@fedora-llvm-team/llvm-snapshots` project (see <<overview>>).
 
 === What git remotes do I need? [[git-remotes]]
 
