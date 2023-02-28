@@ -43,6 +43,11 @@ jobs:
                    fedora-37-x86_64 \
                    fedora-37-i386 \
                    fedora-37-s390x \
+                   fedora-38-aarch64 \
+                   fedora-38-ppc64le \
+                   fedora-38-x86_64 \
+                   fedora-38-i386 \
+                   fedora-38-s390x \
                    fedora-rawhide-aarch64 \
                    fedora-rawhide-ppc64le \
                    fedora-rawhide-x86_64 \
