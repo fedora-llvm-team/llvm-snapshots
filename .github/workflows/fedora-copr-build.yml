@@ -186,7 +186,7 @@ jobs:
             # Start a new batch
             after_build_id=""
             for pkg in ${{ env.packages }}; do
-              if [[ "${pkg}" == "lld" && $chroot =~ -s390x$ ]]; then
+              if [[ ("${pkg}" == "lld" || "${pkg}" == "libomp") && $chroot =~ -s390x$ ]]; then
                 echo "Skipping lld for s390x architecture in chroot: ${chroot}";
               else
                 copr build-package \
