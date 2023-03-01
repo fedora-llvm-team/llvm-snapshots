@@ -88,10 +88,10 @@ jobs:
           yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`
           if [[ "$yesterdays_project_exists" == "true" ]]; then
             url=https://copr.fedorainfracloud.org/coprs/`echo ${{ env.project_yesterday }} | sed -s 's/^@/\/g\//'`
-            curl -sL $url | grep "`head -n1 project-description.md`"
-            if [[ "$?" == "0" ]]; then
-              yesterdays_project_exists="false"
-            fi
+            curl -sL -o page.html $url 2>&1
+            grep "`head -n1 project-description.md`" page.html
+              && yesterdays_project_exists="false"
+              || true
           fi
 
           echo "todays_project_exists=`project_exists ${{ env.project_today }}`" >> $GITHUB_ENV
