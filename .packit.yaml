@@ -8,7 +8,7 @@ actions:
   - make -C llvm-snapshot-builder clean
   - make -C llvm-snapshot-builder tarball
   get-current-version:
-  - make -C llvm-snapshot-builder version
+  - make -s -C llvm-snapshot-builder version
 
 srpm_build_deps:
   - make
