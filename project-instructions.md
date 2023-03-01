@@ -10,4 +10,3 @@ $ dnf copr enable -y @fedora-llvm-team/llvm-snapshots
 ```
 
 Then install `clang` or some of the other packages.
-Please note, that we keep the packages available here for a week or so.

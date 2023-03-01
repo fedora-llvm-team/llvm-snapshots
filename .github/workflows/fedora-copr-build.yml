@@ -59,9 +59,8 @@ jobs:
           echo "project_target=$username/llvm-snapshots" >> $GITHUB_ENV
 
           cat <<EOF > ~/functions.sh
-          #!/bin/bash
-          set +x
-          set -e
+          set -x
+          # set -e
           # TODO(kwk): Is there a better way to check project existence?
           # TODO(kwk): Maybe: copr list $username | grep --regexp="^Name: \$project$"
           function project_exists(){
