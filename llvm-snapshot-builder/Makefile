@@ -35,7 +35,7 @@ source:
 	mkdir -p $(TMP)/SOURCES
 	mkdir -p $(TMP)/$(PACKAGE)
 	cp -a $(FILES) $(TMP)/$(PACKAGE)
-	echo "%{lua: rpm.define('yyyymmdd $(YYYYMMDD_TODAY)')}" >> $(TMP)/$(PACKAGE)/macros.$(PACKAGE)
+	echo "%yyyymmdd $(YYYYMMDD_TODAY)" >> $(TMP)/$(PACKAGE)/macros.$(PACKAGE)
 
 .PHONY: rpm
 rpm: tarball
