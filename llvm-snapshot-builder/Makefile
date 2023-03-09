@@ -41,10 +41,10 @@ source:
 rpm: tarball
 	rpmbuild --define '_topdir $(TMP)' -bb $(PACKAGE).spec
 
-.PHONY:
+.PHONY: srpm
 srpm: tarball
 	rpmbuild --define '_topdir $(TMP)' -bs $(PACKAGE).spec
 
-.PHONY:
+.PHONY: packit-srpm
 packit-srpm:
 	cd $(CURDIR)/.. && packit srpm
