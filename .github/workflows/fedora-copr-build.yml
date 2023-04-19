@@ -140,7 +140,6 @@ jobs:
             --enable-net on \
             --runtime-repo-dependency "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/fedora-\$releasever-\$basearch" \
             --multilib on \
-            --disable_createrepo 1 \
             --appstream off \
             --delete-after-days 32 \
             $chroot_opts "${{ env.project_today }}"
