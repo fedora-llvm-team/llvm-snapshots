@@ -206,6 +206,7 @@ jobs:
         run: |
           copr delete "${{ env.project_target }}"
           # Give Copr some time to process the deletion, to avoid race conditions with forking.
+          # TODO: Keep and eye on https://github.com/fedora-copr/copr/issues/2698 if there's a better way to handle this.
           sleep 1m
 
       - name: "Fork Copr project from ${{ env.project_yesterday }} to ${{ env.project_target }}"
