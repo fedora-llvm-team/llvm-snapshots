@@ -18,7 +18,7 @@ yyyymmdd ?= $(today)
 buildroot ?= $(pwd)/buildroot/$(yyyymmdd)
 
 # The default chroot to build for.
-chroot ?= fedora-36-x86_64
+chroot ?= fedora-37-x86_64
 
 # The mock config that will be used as a template for the final mock config.
 # In it we will place the chroot defined above.
