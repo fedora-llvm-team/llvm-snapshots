@@ -33,12 +33,7 @@ jobs:
           yesterday=`date -d "${today} -1 day" +%Y%m%d`
 
           packages="python-lit llvm clang lld compiler-rt libomp"
-          chroots="fedora-36-aarch64 \
-                   fedora-36-ppc64le \
-                   fedora-36-x86_64 \
-                   fedora-36-i386 \
-                   fedora-36-s390x \
-                   fedora-37-aarch64 \
+          chroots="fedora-37-aarch64 \
                    fedora-37-ppc64le \
                    fedora-37-x86_64 \
                    fedora-37-i386 \
