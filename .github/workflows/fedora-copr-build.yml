@@ -33,21 +33,7 @@ jobs:
           yesterday=`date -d "${today} -1 day" +%Y%m%d`
 
           packages="python-lit llvm clang lld compiler-rt libomp"
-          chroots="fedora-37-aarch64 \
-                   fedora-37-ppc64le \
-                   fedora-37-x86_64 \
-                   fedora-37-i386 \
-                   fedora-37-s390x \
-                   fedora-38-aarch64 \
-                   fedora-38-ppc64le \
-                   fedora-38-x86_64 \
-                   fedora-38-i386 \
-                   fedora-38-s390x \
-                   fedora-rawhide-aarch64 \
-                   fedora-rawhide-ppc64le \
-                   fedora-rawhide-x86_64 \
-                   fedora-rawhide-i386 \
-                   fedora-rawhide-s390x"
+          chroots="`copr list-chroots | grep -P '^fedora-(rawhide|[0-9]+)'`"
 
           username=@fedora-llvm-team
           echo "username=$username" >> $GITHUB_ENV
