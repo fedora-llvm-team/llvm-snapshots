@@ -56,7 +56,7 @@ jobs:
           # Check if yesterday's project exists and all builds succeeded
           yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`
           if [[ "$yesterdays_project_exists" == "true" ]]; then
-            if has_not_succeeded_builds ${{env.project_yesterday}}; then
+            if ! has_all_good_builds ${{env.project_yesterday}}; then
               yesterdays_project_exists=false
             fi
           fi
