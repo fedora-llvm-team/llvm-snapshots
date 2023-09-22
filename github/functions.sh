@@ -25,7 +25,7 @@ function get_packages() {
   echo "python-lit llvm clang lld compiler-rt libomp"
 }
 
-# Returns true if a package needs special handling on certain architectures
+# Returns false if a package needs special handling on certain architectures
 function is_package_supported_by_chroot() {
   local pkg=$1;
   local chroot=$2;
