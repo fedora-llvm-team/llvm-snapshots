@@ -29,11 +29,13 @@ jobs:
       - name: "Variables and functions"
         shell: bash -e {0}
         run: |
+          source github/functions.sh
+
           today=`date +%Y%m%d`
           yesterday=`date -d "${today} -1 day" +%Y%m%d`
 
-          packages="python-lit llvm clang lld compiler-rt libomp"
-          chroots="`copr list-chroots | grep -P '^fedora-(rawhide|[0-9]+)' | tr '\n' ' '`"
+          packages="`get_packages`"
+          chroots="`get_chroots"
 
           username=@fedora-llvm-team
           echo "username=$username" >> $GITHUB_ENV
@@ -145,7 +147,7 @@ jobs:
             # Start a new batch
             after_build_id=""
             for pkg in ${{ env.packages }}; do
-              if [[ ("${pkg}" == "lld" || "${pkg}" == "libomp") && $chroot =~ -s390x$ ]]; then
+              if is_package_supported_by_chroot "$pkg" "$chroot"; then
                 echo "Skipping lld for s390x architecture in chroot: ${chroot}";
               else
                 copr build-package \
