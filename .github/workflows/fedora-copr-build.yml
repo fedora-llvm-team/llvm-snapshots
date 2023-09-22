@@ -44,31 +44,12 @@ jobs:
           echo "project_yesterday=$username/llvm-snapshots-incubator-$yesterday" >> $GITHUB_ENV
           echo "project_target=$username/llvm-snapshots" >> $GITHUB_ENV
 
-          cat <<EOF > ~/functions.sh
-          set -x
-          # set -e
-          # TODO(kwk): Is there a better way to check project existence?
-          # TODO(kwk): Maybe: copr list $username | grep --regexp="^Name: \$project$"
-          function project_exists(){
-            local project=\$1;
-            copr get-chroot \$project/fedora-rawhide-x86_64 > /dev/null 2>&1 \
-            && echo "true" || echo "false";
-          }
-
-          function get_active_build_ids(){
-            local project=\$1;
-            copr list-builds --output-format text-row \$project \
-              | grep --perl-regexp --regexp='(running|waiting|pending|importing|starting)' \
-              | cut -f 1
-          }
-          EOF
-
       - uses: actions/checkout@v3
 
       - name: "Check for Copr projects existence (yesterday, today, target)"
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
 
           # Check if yesterday's project exists and is waved through
           yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`
@@ -88,7 +69,7 @@ jobs:
         if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
           build_ids=""
           for build_id in `get_active_build_ids ${{ env.project_today }}`; do
             echo "Canceling build with ID $build_id"
@@ -104,13 +85,13 @@ jobs:
         if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
           copr delete ${{ env.project_today }}
 
       - name: "Create today's Copr project: ${{ env.project_today }}"
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
 
           chroot_opts=`for c in ${{ env.chroots }}; do echo -n " --chroot $c "; done`
 
@@ -128,7 +109,7 @@ jobs:
       - name: "Create today's packages: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
 
           for pkg in ${{ env.packages }}; do
             copr add-package-scm \
@@ -144,7 +125,7 @@ jobs:
       - name: "Build llvm-snapshot-builder from SRPM into today's project: ${{ env.project_today }}"
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
           make -C llvm-snapshot-builder/ srpm
           copr build \
             "${{ env.project_today }}" \
@@ -153,7 +134,7 @@ jobs:
       - name: "Build packages in chroot batches in this order: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
 
           for chroot in ${{ env.chroots }}; do
             # Modify chroot to know about compat package repo and about the --with=snapshot_build option
