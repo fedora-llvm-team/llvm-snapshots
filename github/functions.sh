@@ -14,3 +14,9 @@ function get_active_build_ids(){
     | grep --perl-regexp --regexp='(running|waiting|pending|importing|starting)' \
     | cut -f 1
 }
+
+function has_not_succeeded_builds(){
+  local project=$1;
+  copr monitor --output-format text-row $project \
+    | grep -v succeeded
+}
