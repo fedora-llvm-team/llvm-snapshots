@@ -26,6 +26,8 @@ jobs:
         run: |
           dnf install -y copr-cli make bzip2 rpm-build
 
+      - uses: actions/checkout@v3
+
       - name: "Variables and functions"
         shell: bash -e {0}
         run: |
@@ -45,8 +47,6 @@ jobs:
           echo "project_today=$username/llvm-snapshots-incubator-$today" >> $GITHUB_ENV
           echo "project_yesterday=$username/llvm-snapshots-incubator-$yesterday" >> $GITHUB_ENV
           echo "project_target=$username/llvm-snapshots" >> $GITHUB_ENV
-
-      - uses: actions/checkout@v3
 
       - name: "Check for Copr projects existence (yesterday, today, target)"
         shell: bash -e {0}
