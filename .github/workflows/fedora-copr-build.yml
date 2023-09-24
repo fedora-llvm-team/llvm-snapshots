@@ -37,7 +37,7 @@ jobs:
           yesterday=`date -d "${today} -1 day" +%Y%m%d`
 
           packages="`get_packages`"
-          chroots="`get_chroots"
+          chroots="`get_chroots`"
 
           username=@fedora-llvm-team
           echo "username=$username" >> $GITHUB_ENV
