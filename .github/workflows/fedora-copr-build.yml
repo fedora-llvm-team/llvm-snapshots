@@ -147,8 +147,8 @@ jobs:
             # Start a new batch
             after_build_id=""
             for pkg in ${{ env.packages }}; do
-              if is_package_supported_by_chroot "$pkg" "$chroot"; then
-                echo "Skipping lld for s390x architecture in chroot: ${chroot}";
+              if ! is_package_supported_by_chroot "${pkg}" "${chroot}"; then
+                echo "Skipping ${pkg} for s390x architecture in chroot: ${chroot}";
               else
                 copr build-package \
                   --timeout $((30*3600)) \
