@@ -11,7 +11,7 @@ on:
 jobs:
   build-on-copr:
     runs-on: ubuntu-latest
-    container: fedora:37
+    container: fedora:38
     steps:
       - name: Setup Copr config file
         env:

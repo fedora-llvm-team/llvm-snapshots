@@ -1,4 +1,5 @@
 set +x
+
 # set -e
 # TODO(kwk): Is there a better way to check project existence?
 # TODO(kwk): Maybe: copr list $username | grep --regexp="^Name: \$project$"
@@ -54,4 +55,12 @@ function has_all_good_builds(){
   done
   sort -k1 -k2 -k3 -o /tmp/expected.txt /tmp/expected.txt
   diff -bus /tmp/expected.txt /tmp/actual.txt
+}
+
+# This installs the gh client for Fedora as described here:
+# https://github.com/cli/cli/blob/trunk/docs/install_linux.md#fedora-centos-red-hat-enterprise-linux-dnf
+function install_gh_client() {
+  dnf install -y 'dnf-command(config-manager)'
+  dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+  dnf install -y gh
 }

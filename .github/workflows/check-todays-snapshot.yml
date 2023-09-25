@@ -1,0 +1,76 @@
+name: "Check today's snapshot"
+
+on:
+  schedule:
+    # Everyday at 13:00 UTC
+    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+    - cron: "00 13 * * *"
+
+  workflow_dispatch: {}
+
+jobs:
+  build-on-copr:
+    runs-on: ubuntu-latest
+    container: fedora:38
+    steps:
+      - name: Setup Copr config file
+        env:
+          # You need to have those secrets in your repo.
+          # See also: https://copr.fedorainfracloud.org/api/.
+          COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
+        run: |
+          mkdir -p ~/.config
+          printf "$COPR_CONFIG_FILE" > ~/.config/copr
+
+      - name: Install Copr CLI
+        run: |
+          dnf install -y copr-cli diffutils
+
+      - uses: actions/checkout@v3
+
+      - name: "Variables and functions"
+        shell: bash -e {0}
+        run: |
+          source github/functions.sh
+
+          today=`date +%Y%m%d`
+
+          username=@fedora-llvm-team
+          echo "username=$username" >> $GITHUB_ENV
+          echo "today_yyyymmdd=$today" >> $GITHUB_ENV
+          echo "project_today=$username/llvm-snapshots-incubator-$today" >> $GITHUB_ENV
+
+      - name: "Install GitHub’s official command line tool: gh"
+        shell: bash -e {0}
+        run: |
+          source github/functions.sh
+          install_gh_client
+
+      - name: "Check for good builds"
+        shell: bash -e {0}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          source github/functions.sh
+          if ! has_all_good_builds ${{env.project_today}} > /tmp/diff; then
+            cat <<EOF > body.txt
+          Hey @kwk,
+
+          by now the snapshot build for the date ${{env.today_yyyymmdd}} should be complete.
+
+          Looking at the build [Fedora Copr build monitor](https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-${{env.today_yyyymmdd}}/monitor/) we see a deviation:
+
+          \`\`\`diff
+          $(cat /tmp/diff)
+          \`\`\`
+
+          If you feel responsible, please assign this issue to yourself and work on it.
+
+          Thank you!
+          EOF
+            gh --repo ${GITHUB_REPOSITORY} issue create \
+              --label broken_snapshot_detected \
+              --title "LLVM Snapshot build for ${{env.today_yyyymmdd}} broken" \
+              --body-file body.txt
+            exit 1
+          fi
