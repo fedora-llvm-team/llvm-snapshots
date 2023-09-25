@@ -1,0 +1,67 @@
+name: "Update build time plots"
+
+on:
+  # schedule:
+  #   # At every 60th minute.
+  #   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+  #   - cron: "*/60 * * * *"
+
+  workflow_dispatch: {}
+
+jobs:
+  build-on-copr:
+    runs-on: ubuntu-latest
+    container: fedora:38
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: 'main'
+          path: 'main'
+      
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v3
+        with:
+          ref: 'gh-pages'
+          path: 'gh-pages'
+      
+      - name: "Check for cached dependencies"
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -r main/build-stats/requirements.txt
+
+      - name: Setup git config
+        run: |
+          git config user.name "Github Action Bot"
+          git config user.email "<>"
+
+      - name: "Update build stats"
+        shell: bash -e {0}
+        run: |
+          main/build-stats/get-build-stats.py | tee -a gh-pages/build-stats.csv &
+          
+          cd gh-pages
+          git add build-stats.csv
+          git commit -m "Automatically updated build-stats.csv"
+          git push origin HEAD:gh-pages
+          cd -
+      
+      - name: "Re-generate diagrams"
+        shell: bash -e {0}
+        run: |
+          main/build-stats/create-diagrams.py --datafile gh-pages/build-stats.csv
+          
+          mv index.html gh-pages/index.html
+          mv fig-*.html gh-pages/
+          cd gh-pages
+          git add index.html fig-*.html
+          git commit -m "Automatically regenerated diagrams"
+          git push origin HEAD:gh-pages
+          cd -
