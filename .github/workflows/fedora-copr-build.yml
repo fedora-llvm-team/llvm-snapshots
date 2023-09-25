@@ -157,9 +157,9 @@ jobs:
                   --chroot ${chroot} \
                   ${{ env.project_today }} \
                   | tee ${pkg}.log
-              fi
 
-              after_build_id="--after-build-id `cat ${pkg}.log | grep -Po 'Created builds: \K(\d+)'`"
+                after_build_id="--after-build-id `cat ${pkg}.log | grep -Po 'Created builds: \K(\d+)'`"
+              fi
             done
           done
 
