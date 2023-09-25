@@ -11,7 +11,7 @@ on:
 jobs:
   build-on-copr:
     runs-on: ubuntu-latest
-    container: fedora:37
+    container: fedora:38
     steps:
       - name: Setup Copr config file
         env:
@@ -26,33 +26,18 @@ jobs:
         run: |
           dnf install -y copr-cli make bzip2 rpm-build
 
+      - uses: actions/checkout@v3
+
       - name: "Variables and functions"
         shell: bash -e {0}
         run: |
+          source github/functions.sh
+
           today=`date +%Y%m%d`
           yesterday=`date -d "${today} -1 day" +%Y%m%d`
 
-          packages="python-lit llvm clang lld compiler-rt libomp"
-          chroots="fedora-36-aarch64 \
-                   fedora-36-ppc64le \
-                   fedora-36-x86_64 \
-                   fedora-36-i386 \
-                   fedora-36-s390x \
-                   fedora-37-aarch64 \
-                   fedora-37-ppc64le \
-                   fedora-37-x86_64 \
-                   fedora-37-i386 \
-                   fedora-37-s390x \
-                   fedora-38-aarch64 \
-                   fedora-38-ppc64le \
-                   fedora-38-x86_64 \
-                   fedora-38-i386 \
-                   fedora-38-s390x \
-                   fedora-rawhide-aarch64 \
-                   fedora-rawhide-ppc64le \
-                   fedora-rawhide-x86_64 \
-                   fedora-rawhide-i386 \
-                   fedora-rawhide-s390x"
+          packages="`get_packages`"
+          chroots="`get_chroots`"
 
           username=@fedora-llvm-team
           echo "username=$username" >> $GITHUB_ENV
@@ -63,40 +48,17 @@ jobs:
           echo "project_yesterday=$username/llvm-snapshots-incubator-$yesterday" >> $GITHUB_ENV
           echo "project_target=$username/llvm-snapshots" >> $GITHUB_ENV
 
-          cat <<EOF > ~/functions.sh
-          set -x
-          # set -e
-          # TODO(kwk): Is there a better way to check project existence?
-          # TODO(kwk): Maybe: copr list $username | grep --regexp="^Name: \$project$"
-          function project_exists(){
-            local project=\$1;
-            copr get-chroot \$project/fedora-rawhide-x86_64 > /dev/null 2>&1 \
-            && echo "true" || echo "false";
-          }
-
-          function get_active_build_ids(){
-            local project=\$1;
-            copr list-builds --output-format text-row \$project \
-              | grep --perl-regexp --regexp='(running|waiting|pending|importing|starting)' \
-              | cut -f 1
-          }
-          EOF
-
-      - uses: actions/checkout@v3
-
       - name: "Check for Copr projects existence (yesterday, today, target)"
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
 
-          # Check if yesterday's project exists and is waved through
+          # Check if yesterday's project exists and all builds succeeded
           yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`
           if [[ "$yesterdays_project_exists" == "true" ]]; then
-            url=https://copr.fedorainfracloud.org/coprs/`echo ${{ env.project_yesterday }} | sed -s 's/^@/\/g\//'`
-            curl -sL -o page.html $url 2>&1
-            grep "`head -n1 project-description.md`" page.html \
-              && yesterdays_project_exists="false" \
-              || true
+            if ! has_all_good_builds ${{env.project_yesterday}}; then
+              yesterdays_project_exists=false
+            fi
           fi
 
           echo "todays_project_exists=`project_exists ${{ env.project_today }}`" >> $GITHUB_ENV
@@ -107,7 +69,7 @@ jobs:
         if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
           build_ids=""
           for build_id in `get_active_build_ids ${{ env.project_today }}`; do
             echo "Canceling build with ID $build_id"
@@ -123,13 +85,13 @@ jobs:
         if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
           copr delete ${{ env.project_today }}
 
       - name: "Create today's Copr project: ${{ env.project_today }}"
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
 
           chroot_opts=`for c in ${{ env.chroots }}; do echo -n " --chroot $c "; done`
 
@@ -147,7 +109,7 @@ jobs:
       - name: "Create today's packages: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
 
           for pkg in ${{ env.packages }}; do
             copr add-package-scm \
@@ -163,7 +125,7 @@ jobs:
       - name: "Build llvm-snapshot-builder from SRPM into today's project: ${{ env.project_today }}"
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
           make -C llvm-snapshot-builder/ srpm
           copr build \
             "${{ env.project_today }}" \
@@ -172,7 +134,7 @@ jobs:
       - name: "Build packages in chroot batches in this order: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
-          source ~/functions.sh
+          source github/functions.sh
 
           for chroot in ${{ env.chroots }}; do
             # Modify chroot to know about compat package repo and about the --with=snapshot_build option
@@ -185,8 +147,8 @@ jobs:
             # Start a new batch
             after_build_id=""
             for pkg in ${{ env.packages }}; do
-              if [[ ("${pkg}" == "lld" || "${pkg}" == "libomp") && $chroot =~ -s390x$ ]]; then
-                echo "Skipping lld for s390x architecture in chroot: ${chroot}";
+              if ! is_package_supported_by_chroot "${pkg}" "${chroot}"; then
+                echo "Skipping ${pkg} for s390x architecture in chroot: ${chroot}";
               else
                 copr build-package \
                   --timeout $((30*3600)) \
