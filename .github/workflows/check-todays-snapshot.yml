@@ -50,13 +50,13 @@ jobs:
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MAINTAINER_HANDLE: "@nikic"
+          MAINTAINER_HANDLE: "nikic"
         run: |
           source github/functions.sh
           if ! has_all_good_builds ${{env.project_today}} > /tmp/diff; then
             if grep -i "failed" /tmp/diff; then
               cat <<EOF > body.txt
-          Hello ${MAINTAINER_HANDLE},
+          Hello @${MAINTAINER_HANDLE},
 
           looking at the [Fedora Copr build monitor](https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-${{env.today_yyyymmdd}}/monitor/) for ${{env.today_yyyymmdd}} we found at least one failed build:
 
