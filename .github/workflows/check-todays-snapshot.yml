@@ -50,7 +50,7 @@ jobs:
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MAINTAINER_HANDLE: "@kwk"
+          MAINTAINER_HANDLE: "@nikic"
         run: |
           source github/functions.sh
           if ! has_all_good_builds ${{env.project_today}} > /tmp/diff; then
