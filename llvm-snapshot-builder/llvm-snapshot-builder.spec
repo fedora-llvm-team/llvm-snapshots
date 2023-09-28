@@ -1,10 +1,9 @@
 Name:       llvm-snapshot-builder
-Version:    3.0.0
 Release:    1%{?dist}
 Summary:    A set of LUA functions used to build LLVM snaphots
 License:    BSD
 URL:        https://pagure.io/llvm-snapshot-builder
-Source0:    llvm-snapshot-builder-3.0.0.tar.bz2
+Source0:    %{name}-%{version}.tar.bz2
 BuildArch:  noarch
 Requires:   curl
 
@@ -12,7 +11,7 @@ Requires:   curl
 This package provides the llvm_sb macro for LLVM snaphot building.
 
 %prep
-%autosetup -n llvm-snapshot-builder
+%autosetup -n %{name}
 
 %build
 
@@ -23,6 +22,9 @@ install -p -m0644 -D macros.%{name} %{buildroot}%{_rpmmacrodir}/macros.%{name}
 %{_rpmmacrodir}/macros.%{name}
 
 %changelog
+* %{lua: print(os.date("%a %b %d %Y"))} LLVM snapshot - %{version}
+- This is an automated snapshot build
+
 * Thu Feb 23 2023 Konrad Kleine <kkleine@redhat.com> - 3.0.0-1
 - Bump version to be newer than what's currently in Copr @fedora-llvm-team/llvm-snapshot-builder
 

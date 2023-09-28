@@ -5,8 +5,9 @@ SHELL := /bin/bash
 PACKAGE=$(shell basename $(CURDIR))
 TMP=$(CURDIR)/tmp
 SPECFILE=$(PACKAGE).spec
-YYYYMMDD_TODAY = $(shell date +%Y%m%d)
-VERSION=$(shell grep -Po 'Version:\s*\K(.*)' $(SPECFILE))
+YYYYMMDD_TODAY=$(shell date +%Y%m%d)
+GIT_REF=$(shell git rev-parse --short HEAD)
+VERSION=3.0.3~pre$(YYYYMMDD_TODAY).g$(GIT_REF)
 TARBALL=$(PACKAGE)-$(VERSION).tar.bz2
 FILES = README.md \
 		$(SPECFILE) \
@@ -36,14 +37,17 @@ source:
 	mkdir -p $(TMP)/$(PACKAGE)
 	cp -a $(FILES) $(TMP)/$(PACKAGE)
 	echo "%yyyymmdd $(YYYYMMDD_TODAY)" >> $(TMP)/$(PACKAGE)/macros.$(PACKAGE)
+	echo "Version: $(VERSION)" > $(TMP)/$(PACKAGE)/$(SPECFILE).tmp
+	cat $(TMP)/$(PACKAGE)/$(SPECFILE) >> $(TMP)/$(PACKAGE)/$(SPECFILE).tmp
+	mv $(TMP)/$(PACKAGE)/$(SPECFILE).tmp $(TMP)/$(PACKAGE)/$(SPECFILE)
 
 .PHONY: rpm
 rpm: tarball
-	rpmbuild --define '_topdir $(TMP)' -bb $(PACKAGE).spec
+	rpmbuild --define '_topdir $(TMP)' -bb $(TMP)/$(PACKAGE)/$(SPECFILE)
 
 .PHONY: srpm
 srpm: tarball
-	rpmbuild --define '_topdir $(TMP)' -bs $(PACKAGE).spec
+	rpmbuild --define '_topdir $(TMP)' -bs $(TMP)/$(PACKAGE)/$(SPECFILE)
 
 .PHONY: packit-srpm
 packit-srpm:
