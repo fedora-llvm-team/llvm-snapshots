@@ -40,6 +40,7 @@ source:
 	echo "Version: $(VERSION)" > $(TMP)/$(PACKAGE)/$(SPECFILE).tmp
 	cat $(TMP)/$(PACKAGE)/$(SPECFILE) >> $(TMP)/$(PACKAGE)/$(SPECFILE).tmp
 	mv $(TMP)/$(PACKAGE)/$(SPECFILE).tmp $(TMP)/$(PACKAGE)/$(SPECFILE)
+	sed -i '/^Version:\s*6\.6\.6/d' $(TMP)/$(PACKAGE)/$(SPECFILE)
 
 .PHONY: rpm
 rpm: tarball
