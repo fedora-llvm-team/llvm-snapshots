@@ -1,4 +1,5 @@
 Name:       llvm-snapshot-builder
+Version:    6.6.6
 Release:    1%{?dist}
 Summary:    A set of LUA functions used to build LLVM snaphots
 License:    BSD
