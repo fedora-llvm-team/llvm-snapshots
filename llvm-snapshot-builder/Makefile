@@ -6,8 +6,7 @@ PACKAGE=$(shell basename $(CURDIR))
 TMP=$(CURDIR)/tmp
 SPECFILE=$(PACKAGE).spec
 YYYYMMDD_TODAY=$(shell date +%Y%m%d)
-GIT_REF=$(shell git rev-parse --short HEAD)
-VERSION=3.0.3~pre$(YYYYMMDD_TODAY).g$(GIT_REF)
+VERSION=3.0.3~pre$(YYYYMMDD_TODAY)
 TARBALL=$(PACKAGE)-$(VERSION).tar.bz2
 FILES = README.md \
 		$(SPECFILE) \
