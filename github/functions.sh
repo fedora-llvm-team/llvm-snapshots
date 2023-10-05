@@ -1,5 +1,16 @@
 set +x
 
+# Prints the year month and day combination for today
+function yyyymmdd() {
+  date +%Y%m%d
+}
+
+# Checks if there's an issue for a broken snapshot reported today
+function was_broken_snapshot_detected_today() {
+  local d=`yyyymmdd`
+  gh issue list --label broken_snapshot_detected --state all | grep $d > /dev/null 2>&1
+}
+
 # set -e
 # TODO(kwk): Is there a better way to check project existence?
 # TODO(kwk): Maybe: copr list $username | grep --regexp="^Name: \$project$"
