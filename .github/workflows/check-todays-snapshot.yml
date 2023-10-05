@@ -59,6 +59,11 @@ jobs:
             exit 0;
           fi
 
+          if ! copr_project_exists ${{env.project_today}}; then
+            echo "The copr project ${{env.project_today}} does not exist (yet)."
+            exit 0;
+          fi
+
           if ! has_all_good_builds ${{env.project_today}} > /tmp/diff; then
             if grep -i "failed" /tmp/diff; then
               cat <<EOF > body.txt
