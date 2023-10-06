@@ -9,11 +9,21 @@ certifi==2023.7.22
 charset-normalizer==3.3.0
     # via requests
 copr==1.130
+    # via
+    #   -r requirements.in
+    #   copr-cli
+copr-cli==1.110
     # via -r requirements.in
 filelock==3.12.4
     # via copr
+humanize==4.8.0
+    # via copr-cli
 idna==3.4
     # via requests
+jinja2==3.1.2
+    # via copr-cli
+markupsafe==2.1.3
+    # via jinja2
 munch==4.0.0
     # via copr
 numpy==1.26.0
@@ -34,6 +44,8 @@ requests==2.31.0
     #   requests-toolbelt
 requests-toolbelt==1.0.0
     # via copr
+simplejson==3.19.2
+    # via copr-cli
 six==1.16.0
     # via
     #   copr

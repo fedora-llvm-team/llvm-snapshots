@@ -9,7 +9,7 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  build-on-copr:
+  check-todays-snapshot:
     runs-on: ubuntu-latest
     container: fedora:38
     steps:
