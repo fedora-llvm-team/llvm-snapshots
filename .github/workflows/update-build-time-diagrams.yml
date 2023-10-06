@@ -59,6 +59,9 @@ jobs:
         shell: bash -e {0}
         run: |
           pip list
+          echo "import sys; print(sys.path)" | python
+          echo "import sys; print(sys.path)" | python3
+          echo $PYTHONPATH
           main/build-stats/get-build-stats.py | tee -a gh-pages/build-stats.csv
           
           cd gh-pages

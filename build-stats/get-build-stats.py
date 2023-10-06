@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+import sys;
+print(sys.path)
+
 import os
 from datetime import datetime
 import argparse
