@@ -3602,3 +3602,4 @@
 2023/10/01;python-lit;fedora-37-aarch64;126;succeeded;6478462;1696517703
 2023/09/10;python-lit;fedora-37-aarch64;38;failed;6390964;1696517702
 2023/09/29;python-lit;fedora-37-aarch64;983;succeeded;6467323;1696517703
+['/home/runner/work/llvm-daily-fedora-rpms/llvm-daily-fedora-rpms/main/build-stats', '/usr/lib/python310.zip', '/usr/lib/python3.10', '/usr/lib/python3.10/lib-dynload', '/usr/local/lib/python3.10/dist-packages', '/usr/lib/python3/dist-packages']
