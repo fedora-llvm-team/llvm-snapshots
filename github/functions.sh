@@ -1,12 +1,29 @@
 set +x
 
+# Prints the year month and day combination for today
+function yyyymmdd() {
+  date +%Y%m%d
+}
+
+# Checks if there's an issue for a broken snapshot reported today
+function was_broken_snapshot_detected_today() {
+  local d=`yyyymmdd`
+  gh issue list --label broken_snapshot_detected --state all | grep $d > /dev/null 2>&1
+}
+
+# Checks if a copr project exists
+function copr_project_exists(){
+  local project=$1;
+  copr get-chroot $project/fedora-rawhide-x86_64 > /dev/null 2>&1
+}
+
 # set -e
 # TODO(kwk): Is there a better way to check project existence?
 # TODO(kwk): Maybe: copr list $username | grep --regexp="^Name: \$project$"
+# TODO(kwk): get rid of echoing "true" and "false"
 function project_exists(){
   local project=$1;
-  copr get-chroot $project/fedora-rawhide-x86_64 > /dev/null 2>&1 \
-  && echo "true" || echo "false";
+  copr_project_exists $project && echo "true" || echo "false";
 }
 
 function get_active_build_ids(){

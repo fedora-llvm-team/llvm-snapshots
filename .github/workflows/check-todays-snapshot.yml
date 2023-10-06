@@ -2,9 +2,9 @@ name: "Check today's snapshot"
 
 on:
   schedule:
-    # Everyday at 13:00 UTC
+    # At every 60th minute.
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    - cron: "00 13 * * *"
+    - cron: "*/60 * * * *"
 
   workflow_dispatch: {}
 
@@ -53,6 +53,17 @@ jobs:
           MAINTAINER_HANDLE: "nikic"
         run: |
           source github/functions.sh
+
+          if was_broken_snapshot_detected_today; then
+            echo "We already filed an issue for broken snapshots today."
+            exit 0;
+          fi
+
+          if ! copr_project_exists ${{env.project_today}}; then
+            echo "The copr project ${{env.project_today}} does not exist (yet)."
+            exit 0;
+          fi
+
           if ! has_all_good_builds ${{env.project_today}} > /tmp/diff; then
             if grep -i "failed" /tmp/diff; then
               cat <<EOF > body.txt
