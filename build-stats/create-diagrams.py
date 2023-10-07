@@ -238,6 +238,7 @@ def main() -> None:
 
     # Get a list of unique package names and sort them
     all_packages = df.package.unique()
+    print("all_packages={}".format(all_packages))
     all_packages.sort()
 
     # Create and safe a figure as an HTML file for each package.
