@@ -2,9 +2,9 @@ name: "Update build time diagrams"
 
 on:
   schedule:
-    # Everyday at 00:45am
+    # At 23:00
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    - cron: "45 0 * * *"
+    - cron: "0 23 * * *"
 
   workflow_dispatch: {}
 
