@@ -150,7 +150,7 @@ def prepare_data(filepath: str = "build-stats.csv") -> pd.DataFrame:
     df = pd.read_csv(
         filepath_or_buffer=filepath,
         parse_dates=True,
-        delimiter=";",
+        delimiter=",",
         header=0,
         names=[
             "date",

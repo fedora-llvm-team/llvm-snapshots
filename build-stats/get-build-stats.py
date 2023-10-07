@@ -1,8 +1,5 @@
 #!/bin/env python3
 
-import sys;
-print(sys.path)
-
 import os
 from datetime import datetime
 import argparse
@@ -13,15 +10,27 @@ import time
 
 
 def gather_build_stats(
-    copr_ownername: str, copr_projectname: str, separator: str
+    copr_ownername: str, copr_projectname: str, separator: str, show_header: bool
 ) -> None:
-    """
-    Prints stats for each build of the passed copr project
+    """Prints stats for each build of the passed copr project
+
+    Args:
+        copr_ownername (str): The copr project's owner
+        copr_projectname (str): The copr project's name
+        separator (str): How to separate CSV data (e.g. by semicolon or comma)
+        show_header (bool): Show a first line header
     """
 
     client = Client.create_from_config_file()
     current_GMT = time.gmtime()
     timestamp = calendar.timegm(current_GMT)
+
+    if show_header:
+        print(
+            "date{sep}package{sep}chroot{sep}build_time{sep}state{sep}build_id{sep}timestamp".format(
+                sep=separator
+            )
+        )
 
     try:
         monitor = client.monitor_proxy.monitor(
@@ -88,8 +97,15 @@ def main():
         "--separator",
         dest="separator",
         type=str,
-        default=";",
+        default=",",
         help="separator to delimit fields",
+    )
+
+    parser.add_argument(
+        "--show-header",
+        dest="show_header",
+        action="store_true",
+        help="The first row will be a header row",
     )
 
     args = parser.parse_args()
@@ -97,6 +113,7 @@ def main():
         copr_ownername=args.copr_ownername,
         copr_projectname=args.copr_projectname,
         separator=args.separator,
+        show_header=args.show_header,
     )
     sys.exit(0)
 
