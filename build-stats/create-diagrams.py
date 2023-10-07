@@ -111,12 +111,6 @@ def save_figure(fig: go.Figure, filepath: str, title: str) -> None:
 
     # Build HTML string
     html_str = """
-    <html>
-    <body>
-    {plot_div}
-    {js_callback}
-    </body>
-    </html>
     <!DOCTYPE html>
     <html lang="en">
         <head>
