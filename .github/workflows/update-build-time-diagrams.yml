@@ -55,30 +55,17 @@ jobs:
           git config --global user.name "Github Action Bot"
           git config --global user.email "<>"
 
-      - name: "Update build stats"
+      - name: "Update build stats and re-generate diagrams"
         shell: bash -e {0}
         run: |
-          pip list
-          echo "import sys; print(sys.path)" | python
-          echo "import sys; print(sys.path)" | python3
-          echo $PYTHONPATH
           main/build-stats/get-build-stats.py | tee -a gh-pages/build-stats.csv
-          
-          cd gh-pages
-          git add build-stats.csv
-          git commit -m "Automatically updated build-stats.csv"
-          git push origin HEAD:gh-pages
-          cd -
-      
-      - name: "Re-generate diagrams"
-        shell: bash -e {0}
-        run: |
           main/build-stats/create-diagrams.py --datafile gh-pages/build-stats.csv
           
           mv index.html gh-pages/index.html
           mv fig-*.html gh-pages/
+          
           cd gh-pages
+          git add build-stats.csv
           git add index.html fig-*.html
-          git commit -m "Automatically regenerated diagrams"
+          git commit -m "Automatically update stats and regenerated diagrams"
           git push origin HEAD:gh-pages
-          cd -
