@@ -143,31 +143,21 @@ def prepare_data(filepath: str = "build-stats.csv") -> pd.DataFrame:
     """
     df = pd.read_csv(
         filepath_or_buffer=filepath,
-        parse_dates=True,
+        parse_dates=['date'],
         delimiter=",",
         header=0,
-        names=[
-            "date",
-            "package",
-            "chroot",
-            "build_time",
-            "state",
-            "build_id",
-            "timestamp",
-        ],
     )
 
     # Sort data frame by criteria and make sure to include timestamp for later
     # dropping of duplicates.
-    df.sort_values(by=["date", "chroot", "timestamp"], inplace=True)
+    df.sort_values(by=["date", "chroot", "timestamp"], inplace=True, )
 
     # We don't want a build to appear twice, so drop it based on the build_id and
     # only keep the latest information about a build.
     df.drop_duplicates(keep="last", inplace=True, subset=["build_id"])
 
+    df.info()
     return df
-    all_packages = df.package.unique()
-    # dataframes_by_package = { pkg: df[df.package == pkg] for pkg in all_packages }
 
 
 def create_index_page(all_packages: [str], filepath: str = "index.html") -> None:
@@ -232,7 +222,6 @@ def main() -> None:
 
     # Get a list of unique package names and sort them
     all_packages = df.package.unique()
-    print("all_packages={}".format(all_packages))
     all_packages.sort()
 
     # Create and safe a figure as an HTML file for each package.
