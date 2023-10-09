@@ -6,7 +6,19 @@ on:
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
     - cron: "0 23 * * *"
 
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      get_stats:
+        description: 'Get stats'
+        default: true
+        required: false
+        type: boolean
+      create_diagrams:
+          description: 'Create diagrams'
+          default: true
+          required: false
+          type: boolean
+
 
 jobs:
   update-build-time-diagrams:
@@ -52,20 +64,24 @@ jobs:
 
       - name: Setup git config
         run: |
-          git config --global user.name "Github Action Bot"
+          git config --global user.name "Github Actions Bot"
           git config --global user.email "<>"
 
       - name: "Update build stats and re-generate diagrams"
         shell: bash -e {0}
         run: |
-          main/build-stats/get-build-stats.py | tee -a gh-pages/build-stats.csv
-          main/build-stats/create-diagrams.py --datafile gh-pages/build-stats.csv
-          
-          mv index.html gh-pages/index.html
-          mv fig-*.html gh-pages/
-          
-          cd gh-pages
-          git add build-stats.csv
-          git add index.html fig-*.html
-          git commit -m "Automatically update stats and regenerated diagrams"
-          git push origin HEAD:gh-pages
+          if ${{ inputs.get_stats }}; then
+            main/build-stats/get-build-stats.py | tee -a gh-pages/build-stats.csv
+            git -C gh-pages add build-stats.csv
+          fi
+          if ${{ inputs.create_diagrams }}; then
+            main/build-stats/create-diagrams.py --datafile gh-pages/build-stats.csv
+            mv index.html gh-pages/index.html
+            mv fig-*.html gh-pages/
+            git -C gh-pages add index.html fig-*.html
+          fi
+          if [[ ${{ inputs.get_stats }} || ${{ inputs.create_diagrams }} ]]; then
+            cd gh-pages
+            git commit -m "Automatically update stats build stats"
+            git push origin HEAD:gh-pages
+          fi
