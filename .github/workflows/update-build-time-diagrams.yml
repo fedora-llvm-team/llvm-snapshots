@@ -5,7 +5,6 @@ on:
     # At 23:00
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
     - cron: "0 23 * * *"
-    - cron: "20 11 * * *"
 
   workflow_dispatch:
     inputs:
