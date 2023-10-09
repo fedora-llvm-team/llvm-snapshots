@@ -35,7 +35,7 @@ def create_figure(df: pd.DataFrame, package_name: str) -> go.Figure:
         symbol="chroot",
         hover_data=["package", "date", "state", "build_id"],
         labels={
-            "build_time": "Build time in seconds",
+            "build_time": "Build time",
             "date": "Date",
             "chroot": "OS + Arch",
             "state": "State",
@@ -66,6 +66,9 @@ def create_figure(df: pd.DataFrame, package_name: str) -> go.Figure:
     # Increase the size of markers
     fig.update_traces(marker_size=7)
     fig.update_traces(textposition="bottom left")
+    fig.update_xaxes(minor=dict(ticks="outside", showgrid=True))
+    fig.update_layout(yaxis_tickformat="%H:%M:%S")
+
     return fig
 
 
@@ -155,6 +158,10 @@ def prepare_data(filepath: str = "build-stats.csv") -> pd.DataFrame:
     # We don't want a build to appear twice, so drop it based on the build_id and
     # only keep the latest information about a build.
     df.drop_duplicates(keep="last", inplace=True, subset=["build_id"])
+
+    # Convert seconds in the build_time column to a timedelta 
+    # See https://stackoverflow.com/q/76532998
+    df.build_time = pd.to_timedelta(df.build_time, unit='seconds') + pd.to_datetime('1970/01/01')
 
     df.info()
     return df
