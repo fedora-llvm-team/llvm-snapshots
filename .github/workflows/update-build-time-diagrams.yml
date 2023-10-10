@@ -1,12 +1,24 @@
 name: "Update build time diagrams"
 
 on:
-  # schedule:
-  #   # At every 60th minute.
-  #   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-  #   - cron: "*/60 * * * *"
+  schedule:
+    # At 23:00
+    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+    - cron: "0 23 * * *"
 
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      get_stats:
+        description: 'Get stats'
+        default: true
+        required: false
+        type: boolean
+      create_diagrams:
+          description: 'Create diagrams'
+          default: true
+          required: false
+          type: boolean
+
 
 jobs:
   update-build-time-diagrams:
@@ -37,13 +49,13 @@ jobs:
           ref: 'gh-pages'
           path: 'gh-pages'
       
-      # - name: "Check for cached dependencies"
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: ~/.cache/pip
-      #     key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-pip-
+      - name: "Check for cached dependencies"
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install python dependencies
         run: |
@@ -52,30 +64,27 @@ jobs:
 
       - name: Setup git config
         run: |
-          git config --global user.name "Github Action Bot"
+          git config --global user.name "Github Actions Bot"
           git config --global user.email "<>"
 
-      - name: "Update build stats"
+      - name: "Update build stats and re-generate diagrams"
         shell: bash -e {0}
+        env:
+          get_stats: ${{ github.event_name == 'schedule' && true || github.event.inputs.get_stats }}
+          create_diagrams: ${{ github.event_name == 'schedule' && true || github.event.inputs.create_diagrams }} 
         run: |
-          pip list
-          main/build-stats/get-build-stats.py | tee -a gh-pages/build-stats.csv
-          
-          cd gh-pages
-          git add build-stats.csv
-          git commit -m "Automatically updated build-stats.csv"
-          git push origin HEAD:gh-pages
-          cd -
-      
-      - name: "Re-generate diagrams"
-        shell: bash -e {0}
-        run: |
-          main/build-stats/create-diagrams.py --datafile gh-pages/build-stats.csv
-          
-          mv index.html gh-pages/index.html
-          mv fig-*.html gh-pages/
-          cd gh-pages
-          git add index.html fig-*.html
-          git commit -m "Automatically regenerated diagrams"
-          git push origin HEAD:gh-pages
-          cd -
+          if ${{ env.get_stats }}; then
+            main/build-stats/get-build-stats.py | tee -a gh-pages/build-stats.csv
+            git -C gh-pages add build-stats.csv
+          fi
+          if ${{ env.create_diagrams }}; then
+            main/build-stats/create-diagrams.py --datafile gh-pages/build-stats.csv
+            mv index.html gh-pages/index.html
+            mv fig-*.html gh-pages/
+            git -C gh-pages add index.html fig-*.html
+          fi
+          if [[ ${{ env.get_stats }} || ${{ env.create_diagrams }} ]]; then
+            cd gh-pages
+            git commit -m "Automatically update stats build stats"
+            git push origin HEAD:gh-pages
+          fi

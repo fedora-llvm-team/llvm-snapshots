@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/bin/env python3
 
 # %%
 import argparse
@@ -35,7 +35,7 @@ def create_figure(df: pd.DataFrame, package_name: str) -> go.Figure:
         symbol="chroot",
         hover_data=["package", "date", "state", "build_id"],
         labels={
-            "build_time": "Build time in seconds",
+            "build_time": "Build time",
             "date": "Date",
             "chroot": "OS + Arch",
             "state": "State",
@@ -66,6 +66,9 @@ def create_figure(df: pd.DataFrame, package_name: str) -> go.Figure:
     # Increase the size of markers
     fig.update_traces(marker_size=7)
     fig.update_traces(textposition="bottom left")
+    fig.update_xaxes(minor=dict(ticks="outside", showgrid=True))
+    fig.update_layout(yaxis_tickformat="%H:%M:%S")
+
     return fig
 
 
@@ -111,12 +114,6 @@ def save_figure(fig: go.Figure, filepath: str, title: str) -> None:
 
     # Build HTML string
     html_str = """
-    <html>
-    <body>
-    {plot_div}
-    {js_callback}
-    </body>
-    </html>
     <!DOCTYPE html>
     <html lang="en">
         <head>
@@ -149,31 +146,30 @@ def prepare_data(filepath: str = "build-stats.csv") -> pd.DataFrame:
     """
     df = pd.read_csv(
         filepath_or_buffer=filepath,
-        parse_dates=True,
-        delimiter=";",
+        parse_dates=["date"],
+        delimiter=",",
         header=0,
-        names=[
-            "date",
-            "package",
-            "chroot",
-            "build_time",
-            "state",
-            "build_id",
-            "timestamp",
-        ],
     )
 
     # Sort data frame by criteria and make sure to include timestamp for later
     # dropping of duplicates.
-    df.sort_values(by=["date", "chroot", "timestamp"], inplace=True)
+    df.sort_values(
+        by=["date", "chroot", "timestamp"],
+        inplace=True,
+    )
 
     # We don't want a build to appear twice, so drop it based on the build_id and
     # only keep the latest information about a build.
     df.drop_duplicates(keep="last", inplace=True, subset=["build_id"])
 
+    # Convert seconds in the build_time column to a timedelta
+    # See https://stackoverflow.com/q/76532998
+    df.build_time = pd.to_timedelta(df.build_time, unit="seconds") + pd.to_datetime(
+        "1970/01/01"
+    )
+
+    df.info()
     return df
-    all_packages = df.package.unique()
-    # dataframes_by_package = { pkg: df[df.package == pkg] for pkg in all_packages }
 
 
 def create_index_page(all_packages: [str], filepath: str = "index.html") -> None:
@@ -218,14 +214,18 @@ def create_index_page(all_packages: [str], filepath: str = "index.html") -> None
 def main() -> None:
     """The main program to prepare the data, generate figures, save them and create an index page for them."""
 
-    parser = argparse.ArgumentParser(description='Create build time diagrams for a given CSV file')
-    parser.add_argument('--datafile',
-                        dest='datafile',
-                        type=str,
-                        default="build-stats.csv",
-                        help="path to your build-stats.csv file")
+    parser = argparse.ArgumentParser(
+        description="Create build time diagrams for a given CSV file"
+    )
+    parser.add_argument(
+        "--datafile",
+        dest="datafile",
+        type=str,
+        default="build-stats.csv",
+        help="path to your build-stats.csv file",
+    )
     args = parser.parse_args()
-    
+
     # %%
     # Do some visualization preparation
     pio.renderers.default = "browser"  # See https://plotly.com/python/renderers/#setting-the-default-renderer
