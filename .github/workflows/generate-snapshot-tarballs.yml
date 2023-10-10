@@ -1,4 +1,4 @@
-name: generate-snapshot-tarballs
+name: "Generate LLVM snapshot tarballs"
 
 # PURPOSE:
 #
