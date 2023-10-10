@@ -146,22 +146,27 @@ def prepare_data(filepath: str = "build-stats.csv") -> pd.DataFrame:
     """
     df = pd.read_csv(
         filepath_or_buffer=filepath,
-        parse_dates=['date'],
+        parse_dates=["date"],
         delimiter=",",
         header=0,
     )
 
     # Sort data frame by criteria and make sure to include timestamp for later
     # dropping of duplicates.
-    df.sort_values(by=["date", "chroot", "timestamp"], inplace=True, )
+    df.sort_values(
+        by=["date", "chroot", "timestamp"],
+        inplace=True,
+    )
 
     # We don't want a build to appear twice, so drop it based on the build_id and
     # only keep the latest information about a build.
     df.drop_duplicates(keep="last", inplace=True, subset=["build_id"])
 
-    # Convert seconds in the build_time column to a timedelta 
+    # Convert seconds in the build_time column to a timedelta
     # See https://stackoverflow.com/q/76532998
-    df.build_time = pd.to_timedelta(df.build_time, unit='seconds') + pd.to_datetime('1970/01/01')
+    df.build_time = pd.to_timedelta(df.build_time, unit="seconds") + pd.to_datetime(
+        "1970/01/01"
+    )
 
     df.info()
     return df
@@ -209,14 +214,18 @@ def create_index_page(all_packages: [str], filepath: str = "index.html") -> None
 def main() -> None:
     """The main program to prepare the data, generate figures, save them and create an index page for them."""
 
-    parser = argparse.ArgumentParser(description='Create build time diagrams for a given CSV file')
-    parser.add_argument('--datafile',
-                        dest='datafile',
-                        type=str,
-                        default="build-stats.csv",
-                        help="path to your build-stats.csv file")
+    parser = argparse.ArgumentParser(
+        description="Create build time diagrams for a given CSV file"
+    )
+    parser.add_argument(
+        "--datafile",
+        dest="datafile",
+        type=str,
+        default="build-stats.csv",
+        help="path to your build-stats.csv file",
+    )
     args = parser.parse_args()
-    
+
     # %%
     # Do some visualization preparation
     pio.renderers.default = "browser"  # See https://plotly.com/python/renderers/#setting-the-default-renderer
