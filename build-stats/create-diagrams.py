@@ -67,7 +67,7 @@ def create_figure(df: pd.DataFrame, package_name: str) -> go.Figure:
     fig.update_traces(marker_size=7)
     fig.update_traces(textposition="bottom left")
     fig.update_xaxes(minor=dict(ticks="outside", showgrid=True))
-    fig.update_layout(yaxis_tickformat="%H:%M:%S")
+    fig.update_layout(yaxis_tickformat="%H:%M:%S", height=800)
 
     return fig
 
