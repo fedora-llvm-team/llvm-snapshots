@@ -1,11 +1,11 @@
-name: "Python formatting with black"
+name: "Check Python with black"
 
 # See https://black.readthedocs.io/en/stable/integrations/github_actions.html
 
 on: [push, pull_request]
 
 jobs:
-  lint:
+  check-python-with-black:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
