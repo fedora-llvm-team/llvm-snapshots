@@ -38,7 +38,7 @@ jobs:
 
           # We only want to build these three because in the future, clang shall
           # be part of the llvm package.
-          packages="`python-lit llvm lld`"
+          packages="python-lit llvm lld"
           chroots="`get_chroots`"
           
           # Use my personal copr username for now.
