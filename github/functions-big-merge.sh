@@ -36,12 +36,12 @@ function get_active_build_ids(){
 
 # Prints the chroots we care about.
 function get_chroots() {
-  copr list-chroots | grep -P '^fedora-(rawhide|[0-9]+)' | tr '\n' ' '
+  echo -n "fedora-38-x86_64"
 }
 
 # Prints the packages we care about
 function get_packages() {
-  echo "python-lit llvm clang lld compiler-rt libomp"
+  echo "python-lit llvm lld"
 }
 
 # Returns false if a package needs special handling on certain architectures

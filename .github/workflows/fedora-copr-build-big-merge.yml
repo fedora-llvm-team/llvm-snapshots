@@ -31,16 +31,14 @@ jobs:
       - name: "Variables and functions"
         shell: bash -e {0}
         run: |
-          source github/functions.sh
+          source github/functions-big-merge.sh
 
           today=`date +%Y%m%d`
           yesterday=`date -d "${today} -1 day" +%Y%m%d`
 
-          # We only want to build these three because in the future, clang shall
-          # be part of the llvm package.
-          packages="python-lit llvm lld"
+          packages="`get_packages`"
           chroots="`get_chroots`"
-          
+
           # Use my personal copr username for now.
           username=kkleine
           echo "username=$username" >> $GITHUB_ENV
@@ -54,7 +52,7 @@ jobs:
       - name: "Check for Copr projects existence (yesterday, today, target)"
         shell: bash -e {0}
         run: |
-          source github/functions.sh
+          source github/functions-big-merge.sh
 
           # Check if yesterday's project exists and all builds succeeded
           yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`
@@ -72,7 +70,7 @@ jobs:
         if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
-          source github/functions.sh
+          source github/functions-big-merge.sh
           build_ids=""
           for build_id in `get_active_build_ids ${{ env.project_today }}`; do
             echo "Canceling build with ID $build_id"
@@ -88,13 +86,13 @@ jobs:
         if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
-          source github/functions.sh
+          source github/functions-big-merge.sh
           copr delete ${{ env.project_today }}
 
       - name: "Create today's Copr project: ${{ env.project_today }}"
         shell: bash -e {0}
         run: |
-          source github/functions.sh
+          source github/functions-big-merge.sh
 
           chroot_opts=`for c in ${{ env.chroots }}; do echo -n " --chroot $c "; done`
 
@@ -112,7 +110,7 @@ jobs:
       - name: "Create today's packages: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
-          source github/functions.sh
+          source github/functions-big-merge.sh
 
           for pkg in ${{ env.packages }}; do
             copr add-package-scm \
@@ -128,7 +126,7 @@ jobs:
       - name: "Build llvm-snapshot-builder from SRPM into today's project: ${{ env.project_today }}"
         shell: bash -e {0}
         run: |
-          source github/functions.sh
+          source github/functions-big-merge.sh
           make -C llvm-snapshot-builder/ srpm
           copr build \
             "${{ env.project_today }}" \
@@ -137,7 +135,7 @@ jobs:
       - name: "Build packages in chroot batches in this order: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
-          source github/functions.sh
+          source github/functions-big-merge.sh
 
           for chroot in ${{ env.chroots }}; do
             # Modify chroot to know about compat package repo and about the --with=snapshot_build option

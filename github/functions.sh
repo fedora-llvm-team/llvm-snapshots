@@ -1,3 +1,9 @@
+# This is a duplicate of the functions.sh file with only slight modifications:
+# We only want these packages: python-lit, llvm, lld. And we only want one
+# chroot for now.
+#
+# TODO(kkleine): Remove me once big merge is a reality
+
 set +x
 
 # Prints the year month and day combination for today
