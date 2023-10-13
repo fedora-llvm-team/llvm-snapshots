@@ -8,7 +8,8 @@ function yyyymmdd() {
 # Checks if there's an issue for a broken snapshot reported today
 function was_broken_snapshot_detected_today() {
   local d=`yyyymmdd`
-  gh issue list --label broken_snapshot_detected --state all | grep $d > /dev/null 2>&1
+  gh --repo ${GITHUB_REPOSITORY} issue list \
+    --label broken_snapshot_detected --state all | grep $d > /dev/null 2>&1
 }
 
 # Checks if a copr project exists
