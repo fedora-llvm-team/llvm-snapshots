@@ -67,37 +67,27 @@ def create_figure(df: pd.DataFrame, package_name: str) -> go.Figure:
     fig.update_traces(marker_size=7)
     fig.update_traces(textposition="bottom left")
     fig.update_xaxes(minor=dict(ticks="outside", showgrid=True))
-    fig.update_layout(yaxis_tickformat="%H:%M:%S", height=800)
+    fig.update_layout(yaxis_tickformat="%H:%M:%S")
 
     return fig
 
 
 # %%
-def save_figure(fig: go.Figure, filepath: str, title: str) -> None:
+def save_figure(fig: go.Figure, filepath: str) -> None:
     """Saves a figure to an HTML file.
 
     Args:
         fig (go.Figure): The figure object to save
         filepath (str): The filepath to save to
-        title (str): HTML title for the page
 
     Returns:
         None
     """
-    # Get HTML representation of plotly.js and this figure
-    plot_div = plot(fig, output_type="div", include_plotlyjs="cdn")
 
-    # Get id of html div element that looks like
-    # <div id="301d22ab-bfba-4621-8f5d-dc4fd855bb33" ... >
-    res = re.search('<div id="([^"]*)"', plot_div)
-    div_id = res.groups()[0]
-
-    # Build JavaScript callback for handling clicks
-    # and opening the URL in the trace's customdata
-    # Inspired by: https://community.plotly.com/t/hyperlink-to-markers-on-map/17858/6
-    js_callback = """
-    <script>
-    var plot_element = document.getElementById("{div_id}");
+    post_script = """
+    // We inject this script into the final HTML page in order to be able to click on
+    // a point on a line and be taken to the build in Copr.
+    var plot_element = document.getElementById("{plot_id}");
     plot_element.on('plotly_click', function(data){{
         console.log(data);
         var point = data.points[0];
@@ -107,31 +97,11 @@ def save_figure(fig: go.Figure, filepath: str, title: str) -> None:
             window.open('https://copr.fedorainfracloud.org/coprs/build/' + build_id);
         }}
     }})
-    </script>
-    """.format(
-        div_id=div_id
-    )
+    """
 
-    # Build HTML string
-    html_str = """
-    <!DOCTYPE html>
-    <html lang="en">
-        <head>
-            <meta charset="utf-8" />
-            <title>{title}</title>
-        </head>
-        <body>
-            {plot_div}
-            {js_callback}
-        </body>
-    </html>
-    """.format(
-        plot_div=plot_div, js_callback=js_callback, title=title
+    fig.write_html(
+        file=filepath, include_plotlyjs="cdn", full_html=True, post_script=post_script
     )
-
-    # Write out HTML file
-    with open(filepath, "w") as f:
-        f.write(html_str)
 
 
 # %%
@@ -246,11 +216,7 @@ def main() -> None:
         # To debug, uncomment the following:
         # fig.show()
         # break
-        save_figure(
-            fig=fig,
-            filepath="fig-{}.html".format(package_name),
-            title="{} build times".format(package_name),
-        )
+        save_figure(fig=fig, filepath="fig-{}.html".format(package_name))
 
     # Create an index HTML overview page that links to each figure page
     create_index_page(all_packages=all_packages, filepath="index.html")
