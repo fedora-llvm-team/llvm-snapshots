@@ -10,10 +10,10 @@ charset-normalizer==3.3.0
     # via requests
 copr==1.130
     # via
-    #   -r build-stats/requirements.in
+    #   -r requirements.in
     #   copr-cli
 copr-cli==1.110
-    # via -r build-stats/requirements.in
+    # via -r requirements.in
 filelock==3.12.4
     # via copr
 humanize==4.8.0
@@ -31,9 +31,9 @@ numpy==1.26.0
 packaging==23.2
     # via plotly
 pandas==2.1.1
-    # via -r build-stats/requirements.in
+    # via -r requirements.in
 plotly==5.17.0
-    # via -r build-stats/requirements.in
+    # via -r requirements.in
 python-dateutil==2.8.2
     # via pandas
 pytz==2023.3.post1
@@ -54,7 +54,7 @@ tenacity==8.2.3
     # via plotly
 tzdata==2023.3
     # via pandas
-urllib3==1.26.17
+urllib3==1.26.18
     # via requests
 
 # The following packages are considered to be unsafe in a requirements file:
