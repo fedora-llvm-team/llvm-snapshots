@@ -54,7 +54,7 @@ tenacity==8.2.3
     # via plotly
 tzdata==2023.3
     # via pandas
-urllib3==1.26.17
+urllib3==1.26.18
     # via requests
 
 # The following packages are considered to be unsafe in a requirements file:
