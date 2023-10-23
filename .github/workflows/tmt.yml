@@ -75,5 +75,5 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: tmt-test-results
-          path: /**/tmt/**/output.txt
+          path: /var/tmp/**/tmt/**/output.txt
           if-no-files-found: warn
