@@ -1,0 +1,71 @@
+name: "Test Management Tool"
+# See https://docs.fedoraproject.org/en-US/ci/tmt/
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  run-tmt:
+    strategy:
+      matrix:
+        os: [37, 38, 39, rawhide]
+        version: [fedora]
+    runs-on: ubuntu-latest
+    container: ${{ matrix.os }}:${{ matrix.version }}
+    steps:
+      - name: "Setup tmt and fedpkg"
+        run: |
+          dnf install -y 'dnf-command(copr)'
+          dnf copr enable -y psss/tmt
+          dnf install -y tmt-all fedpkg git
+
+      - uses: actions/checkout@v3
+
+      - name: "Variables and functions"
+        shell: bash -e {0}
+        run: |
+          source github/functions.sh
+
+          packages=`get_packages`
+
+          today=`date +%Y%m%d`
+          # TODO(kwk): Determine date some other way...
+          today="20231022"
+
+          username=@fedora-llvm-team
+          echo "packages=$packages" >> $GITHUB_ENV
+          echo "username=$username" >> $GITHUB_ENV
+          echo "today_yyyymmdd=$today" >> $GITHUB_ENV
+          echo "project_today=$username/llvm-snapshots-incubator-$today" >> $GITHUB_ENV
+
+      - name: "Check for good builds"
+        shell: bash -e {0}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          source github/functions.sh
+
+          dnf copr enable -y ${{env.project_today}}
+
+          cur_dir=`pwd`
+
+          for pkg in ${{ env.packages }}; do
+            
+            branch="f${{ matrix.version }}"
+            
+            if [[ "${{ matrix.version }}" == "rawhide" ]]; then
+              branch="rawhide";
+            fi
+            
+            fedpkg clone \
+              --depth 1 \
+              --anonymous \
+              --branch ${branch} \
+              rpms/${pkg} \
+              ${cur_dir}/${pkg}
+
+            cd ${cur_dir}/${pkg}
+            
+            tmt -c distro=${{ matrix.os }}-${{ matrix.version }} -c arch=x86_64 run -avv provision -h local
+
+          done
