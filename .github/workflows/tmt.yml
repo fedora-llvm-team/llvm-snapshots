@@ -5,7 +5,7 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  run-tmt:
+  tmt:
     strategy:
       matrix:
         os: [fedora]
@@ -38,7 +38,7 @@ jobs:
           echo "today_yyyymmdd=$today" >> $GITHUB_ENV
           echo "project_today=$username/llvm-snapshots-incubator-$today" >> $GITHUB_ENV
 
-      - name: "Check for good builds"
+      - name: "Run tmt"
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
