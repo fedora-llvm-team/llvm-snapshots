@@ -34,7 +34,7 @@ six==1.16.0
     # via python-dateutil
 typing-extensions==4.8.0
     # via pygithub
-urllib3==1.26.17
+urllib3==1.26.18
     # via
     #   pygithub
     #   requests
