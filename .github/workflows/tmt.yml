@@ -66,6 +66,6 @@ jobs:
 
             cd ${cur_dir}/${pkg}
             
-            tmt -c distro=${{ matrix.os }}-${{ matrix.version }} -c arch=x86_64 run -avv provision -h local
+            tmt -c distro=${{ matrix.os }}-${{ matrix.version }} -c arch=x86_64 run -avv provision -h local -vv --log-topic cli-invocations
 
           done
