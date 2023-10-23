@@ -11,7 +11,11 @@ jobs:
         os: [fedora]
         version: [37, 38, 39, rawhide]
     runs-on: ubuntu-latest
-    container: ${{ matrix.os }}:${{ matrix.version }}
+    container:
+      image: "${{ matrix.os }}:${{ matrix.version }}"
+      # These options are required to be able to run lldb inside the container
+      # See https://github.com/opencollab/llvm-toolchain-integration-test-suite/pull/96
+      options: "--cap-add=SYS_PTRACE --security-opt seccomp=unconfined"
     steps:
       - name: "Setup tmt and fedpkg"
         run: |
