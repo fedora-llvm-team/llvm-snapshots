@@ -8,8 +8,8 @@ jobs:
   run-tmt:
     strategy:
       matrix:
-        os: [37, 38, 39, rawhide]
-        version: [fedora]
+        os: [fedora]
+        version: [37, 38, 39, rawhide]
     runs-on: ubuntu-latest
     container: ${{ matrix.os }}:${{ matrix.version }}
     steps:
