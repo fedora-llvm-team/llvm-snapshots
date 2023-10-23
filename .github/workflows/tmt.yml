@@ -69,3 +69,11 @@ jobs:
             tmt -c distro=${{ matrix.os }}-${{ matrix.version }} -c arch=x86_64 run -avv provision -h local -vv --log-topic cli-invocations
 
           done
+
+      - name: Archive tmt output.txt files
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: tmt-test-results
+          path: /**/tmt/**/output.txt
+          if-no-files-found: warn
