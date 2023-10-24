@@ -1,5 +1,3 @@
-= Maintaining the LLVM Snapshots for Fedora
-Konrad Kleine <kkleine@redhat.com>;
 :toc:
 :toc-placement: preamble
 :sectnums:
@@ -7,11 +5,24 @@ Konrad Kleine <kkleine@redhat.com>;
 :showtitle:
 :homepage: https://github.com/kwk/llvm-daily-fedora-rpms
 
+image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/generate-snapshot-tarballs.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/generate-snapshot-tarballs.yml"]
+image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/fedora-copr-build.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/fedora-copr-build.yml"]
+image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/check-todays-snapshot.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/check-todays-snapshot.yml"]
+image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/tmt.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/tmt.yml"]
+image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/python-with-black.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/python-with-black.yml"]
+image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/update-build-time-diagrams.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/update-build-time-diagrams.yml"]
+link:https://kwk.github.io/llvm-daily-fedora-rpms/[Build time Diagrams]
+
+= Maintaining the LLVM Snapshots for Fedora
+Konrad Kleine <kkleine@redhat.com>
+
 This document is supposed to give you an idea of what goes into maintaining the
 LLVM snapshots for Fedora. Don't feel like you have read this document from top
 to bottom but instead consider it a reference. There is a <<faq, Frequently
 Asked Questions (FAQ)>> section at the botton that probably contains many
 answers. Feel free to add your own there.
+
+WARNING: This page needs to be updated to reflect the latest updates.
 
 This is home for the generation of daily
 
