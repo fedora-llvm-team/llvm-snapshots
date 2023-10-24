@@ -83,6 +83,15 @@ jobs:
 
           done
 
+      - name: Print some information
+        if: always
+        shell: bash -e {0}
+        run: |
+          /sbin/ldconfig -p | grep libgcc
+          echo "int main(int argc, char* argv[]) { return 0; }" > main.cpp
+          clang -fuse-ld=gold main.cpp
+          clang -fuse-ld=gold -lgcc_s main.cpp
+
       - name: Archive tmt output.txt files
         if: always()
         uses: actions/upload-artifact@v3
