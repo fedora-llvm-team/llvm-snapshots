@@ -70,7 +70,16 @@ jobs:
 
             cd ${cur_dir}/${pkg}
             
-            tmt -c distro=${{ matrix.os }}-${{ matrix.version }} -c arch=x86_64 run -avv provision -h local -vv --log-topic cli-invocations report -vvv
+            # See https://src.fedoraproject.org/tests/llvm/pull-request/19 for
+            # the definition of the "snapshot" dimension
+            # (https://fmf.readthedocs.io/en/latest/context.html#dimensions).
+            tmt \
+              -c distro=${{ matrix.os }}-${{ matrix.version }} \
+              -c arch=x86_64 \
+              -c snapshot=${{env.today_yyyymmdd}} \
+              run --all -v \
+              provision --how local -v \
+              report -vvv
 
           done
 
