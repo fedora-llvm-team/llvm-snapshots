@@ -17,27 +17,22 @@ jobs:
       # See https://github.com/opencollab/llvm-toolchain-integration-test-suite/pull/96
       options: "--cap-add=SYS_PTRACE --security-opt seccomp=unconfined"
     steps:
-      - name: "Setup tmt and fedpkg"
+      - name: "Setup tmt"
         run: |
           dnf install -y 'dnf-command(copr)'
           dnf copr enable -y psss/tmt
-          dnf install -y tmt-all fedpkg git
+          dnf install -y tmt-all
 
       - uses: actions/checkout@v3
 
       - name: "Variables and functions"
         shell: bash -e {0}
         run: |
-          source github/functions.sh
-
-          packages=`get_packages`
-
           today=`date +%Y%m%d`
           # TODO(kwk): Determine date some other way...
           today="20231022"
 
           username=@fedora-llvm-team
-          echo "packages=$packages" >> $GITHUB_ENV
           echo "username=$username" >> $GITHUB_ENV
           echo "today_yyyymmdd=$today" >> $GITHUB_ENV
           echo "project_today=$username/llvm-snapshots-incubator-$today" >> $GITHUB_ENV
@@ -47,49 +42,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          source github/functions.sh
-
-          cur_dir=`pwd`
-
-          for pkg in ${{ env.packages }}; do
-            
-            branch="f${{ matrix.version }}"
-            
-            if [[ "${{ matrix.version }}" == "rawhide" ]]; then
-              branch="rawhide";
-            fi
-            
-            fedpkg clone \
-              --depth 1 \
-              --anonymous \
-              --branch ${branch} \
-              rpms/${pkg} \
-              ${cur_dir}/${pkg}
-
-            cd ${cur_dir}/${pkg}
-            
-            # See https://src.fedoraproject.org/tests/llvm/pull-request/19 for
-            # the definition of the "snapshot" dimension
-            # (https://fmf.readthedocs.io/en/latest/context.html#dimensions).
-            tmt \
-              -c distro=${{ matrix.os }}-${{ matrix.version }} \
-              -c arch=x86_64 \
-              -c snapshot=${{env.today_yyyymmdd}} \
-              -e TODAY=${{env.today_yyyymmdd}} \
-              run --all -v \
-              provision --how local -v \
-              report -vvv
-
-          done
-
-      - name: Print some information
-        if: always()
-        shell: bash -e {0}
-        run: |
-          /sbin/ldconfig -p | grep libgcc
-          echo "int main(int argc, char* argv[]) { return 0; }" > main.cpp
-          clang -fuse-ld=gold main.cpp
-          clang -fuse-ld=gold -lgcc_s main.cpp
+          cd tests
+          # See https://src.fedoraproject.org/tests/llvm/pull-request/19 for
+          # the definition of the "snapshot" dimension
+          # (https://fmf.readthedocs.io/en/latest/context.html#dimensions).
+          tmt \
+            -c distro=${{ matrix.os }}-${{ matrix.version }} \
+            -c arch=x86_64 \
+            -c snapshot=${{env.today_yyyymmdd}} \
+            -e TODAY=${{env.today_yyyymmdd}} \
+            run --all -v \
+            provision --how local -v \
+            report -vvv
 
       - name: Archive tmt output.txt files
         if: always()
