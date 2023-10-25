@@ -49,7 +49,7 @@ jobs:
             -c distro=${{ matrix.os }}-${{ matrix.version }} \
             -c arch=x86_64 \
             -c snapshot=${{env.today_yyyymmdd}} \
-            run --all -v -e TODAY=${{env.today_yyyymmdd}} \
+            run --all -v -e YYYYMMDD=${{env.today_yyyymmdd}} \
             provision --how local -v \
             report -vvv \
             plan -n snapshot-gating
