@@ -10,6 +10,16 @@ summary: LLVM Tests for snapshot gating
 prepare:
   how: install
   copr: "@fedora-llvm-team/llvm-snapshots-incubator-$YYYYMMDD"
+adjust:
+  - discover+:
+      - name: redhat-rpm-config-tests
+        how: fmf
+        url: https://src.fedoraproject.org/rpms/redhat-rpm-config.git
+        ref: main
+        filter: "tag:-spoils-installation & tag:-not-in-default"
+        test: brp-llvm-compile-lto-elf
+    when: distro > fedora-37
+
 discover:
     - name: clang-tests
       how: fmf
@@ -41,12 +51,5 @@ discover:
       url: https://src.fedoraproject.org/tests/lld.git
       ref: main
       filter: "tag:-spoils-installation & tag:-not-in-default"
-    - name: redhat-rpm-config-tests
-      how: fmf
-      url: https://src.fedoraproject.org/rpms/redhat-rpm-config.git
-      ref: main
-      filter: "tag:-spoils-installation & tag:-not-in-default"
-      test: brp-llvm-compile-lto-elf
-      when: "distro > fedora-37"
 execute:
     how: tmt
