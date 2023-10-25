@@ -46,5 +46,6 @@ discover:
       url: https://src.fedoraproject.org/rpms/redhat-rpm-config.git
       ref: main
       filter: "tag:-spoils-installation & tag:-not-in-default"
+      test: brp-llvm-compile-lto-elf
 execute:
     how: tmt
