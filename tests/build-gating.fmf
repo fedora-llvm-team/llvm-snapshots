@@ -26,11 +26,10 @@ discover:
       url: https://src.fedoraproject.org/tests/libomp.git
       ref: main
       filter: "tag:-spoils-installation & tag:-not-in-default"
-    - name: upstream-llvm-integration-testsuite
+    - name: llvm-tests
       how: fmf
       url: https://src.fedoraproject.org/tests/llvm.git
       ref: main
-      test: integration-test-suite
       filter: "tag:-spoils-installation & tag:-not-in-default"
     - name: python-lit
       how: fmf
