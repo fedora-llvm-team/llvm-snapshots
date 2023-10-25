@@ -12,31 +12,37 @@ discover:
       how: fmf
       url: https://src.fedoraproject.org/tests/clang.git
       ref: main
-      filter: "tag:-not-in-default"
+      filter: "tag:-spoils-installation & tag:-not-in-default"
     - name: compiler-rt-tests
       how: fmf
       url: https://src.fedoraproject.org/tests/compiler-rt.git
       ref: main
+      filter: "tag:-spoils-installation & tag:-not-in-default"
     - name: libomp-tests
       how: fmf
       url: https://src.fedoraproject.org/tests/libomp.git
       ref: main
+      filter: "tag:-spoils-installation & tag:-not-in-default"
     - name: upstream-llvm-integration-testsuite
       how: fmf
       url: https://src.fedoraproject.org/tests/llvm.git
       ref: main
       test: integration-test-suite
+      filter: "tag:-spoils-installation & tag:-not-in-default"
     - name: python-lit
       how: fmf
       url: https://src.fedoraproject.org/tests/python-lit.git
       ref: main
+      filter: "tag:-spoils-installation & tag:-not-in-default"
     - name: lld-tests
       how: fmf
       url: https://src.fedoraproject.org/tests/lld.git
       ref: main
+      filter: "tag:-spoils-installation & tag:-not-in-default"
     - name: redhat-rpm-config-tests
       how: fmf
       url: https://src.fedoraproject.org/rpms/redhat-rpm-config.git
       ref: main
+      filter: "tag:-spoils-installation & tag:-not-in-default"
 execute:
     how: tmt
