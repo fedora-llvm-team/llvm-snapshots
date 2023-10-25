@@ -49,8 +49,6 @@ jobs:
         run: |
           source github/functions.sh
 
-          dnf copr enable -y ${{env.project_today}}
-
           cur_dir=`pwd`
 
           for pkg in ${{ env.packages }}; do
@@ -77,6 +75,7 @@ jobs:
               -c distro=${{ matrix.os }}-${{ matrix.version }} \
               -c arch=x86_64 \
               -c snapshot=${{env.today_yyyymmdd}} \
+              -e TODAY=${{env.today_yyyymmdd}} \
               run --all -v \
               provision --how local -v \
               report -vvv

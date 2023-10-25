@@ -7,6 +7,9 @@
 #
 
 summary: LLVM Tests for snapshot gating
+prepare:
+  how: install
+  copr: "@fedora-llvm-team/llvm-snapshots-incubator-$TODAY"
 discover:
     - name: clang-tests
       how: fmf
