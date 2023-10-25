@@ -42,7 +42,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd tests
           # See https://src.fedoraproject.org/tests/llvm/pull-request/19 for
           # the definition of the "snapshot" dimension
           # (https://fmf.readthedocs.io/en/latest/context.html#dimensions).
@@ -52,7 +51,8 @@ jobs:
             -c snapshot=${{env.today_yyyymmdd}} \
             run --all -v -e TODAY=${{env.today_yyyymmdd}} \
             provision --how local -v \
-            report -vvv
+            report -vvv \
+            plan -n snapshot-gating
 
       - name: Archive tmt output.txt files
         if: always()
