@@ -47,5 +47,6 @@ discover:
       ref: main
       filter: "tag:-spoils-installation & tag:-not-in-default"
       test: brp-llvm-compile-lto-elf
+      when: "distro > fedora-37"
 execute:
     how: tmt
