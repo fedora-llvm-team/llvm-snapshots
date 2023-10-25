@@ -26,6 +26,11 @@ discover:
       url: https://src.fedoraproject.org/tests/clang.git
       ref: main
       filter: "tag:-spoils-installation & tag:-not-in-default"
+      exclude:
+        # The following test only runs with qemu and we're executing in a github
+        # action runner in a container.
+        # See https://src.fedoraproject.org/tests/clang/blob/main/f/ppc64le-long-double/main.fmf#_19
+        - ppc64le-long-double
     - name: compiler-rt-tests
       how: fmf
       url: https://src.fedoraproject.org/tests/compiler-rt.git
