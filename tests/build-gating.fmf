@@ -1,0 +1,70 @@
+#
+# Build/PR gating tests for *LLVM 13*
+#
+# Compatible with various LLVM 13 distributions:
+#
+#   * Fedora (ursine packages)
+#   * Centos 9 stream (ursine packages)
+#   * RHEL-9 (ursine packages)
+#   * RHEL-8 (Red Hat module)
+#   * RHEL-7 (software collection)
+#
+
+summary: Clang tests for build/PR gating
+adjust:
+  - because: "Plan to be ran when either executed locally, or executed by CI system to gate a build or PR."
+    when: >-
+      trigger is defined
+      and trigger != commit
+      and trigger != build
+    enabled: false
+
+  - because: "When testing SCL-ized LLVM, the collection must be enabled first"
+    environment+:
+      WITH_SCL: "scl enable llvm-toolset-13.0"
+    when: "collection == llvm-toolset-13.0"
+  - because: "When testing SCL-ized LLVM, the collection must be enabled first"
+    environment+:
+      WITH_SCL: "scl enable llvm-toolset-14.0"
+    when: "collection == llvm-toolset-14.0"
+
+  # Unfortunately, TMT does not support more declarative approach, we need to run commands on our own.
+  - because: "On RHEL, CRB must be enabled to provide rarer packages"
+    prepare+:
+      - name: Enable CRB
+        how: shell
+        script: dnf config-manager --set-enabled rhel-CRB
+    when: >-
+      distro == rhel-9
+      or distro == rhel-8
+
+  # Unfortunately, TMT does not support more declarative approach, we need to run commands on our own.
+  - because: "On CentOS, CRB must be enabled to provide rarer packages"
+    prepare+:
+      - name: Enable CRB
+        how: shell
+        script: dnf config-manager --set-enabled crb
+    when: >-
+      distro == centos
+
+discover:
+    - name: clang-tests
+      how: fmf
+      url: https://src.fedoraproject.org/tests/clang.git
+      ref: main
+      filter: "tag:-not-in-default"
+    - name: upstream-llvm-integration-testsuite
+      how: fmf
+      url: https://src.fedoraproject.org/tests/llvm.git
+      ref: main
+      test: integration-test-suite
+    - name: redhat-rpm-config
+      how: fmf
+      url: https://src.fedoraproject.org/rpms/redhat-rpm-config.git
+      ref: rawhide
+      test: brp-llvm-compile-lto-elf
+execute:
+    how: tmt
+provision:
+  hardware:
+    memory: ">= 4 GiB"
