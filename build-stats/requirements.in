@@ -3,6 +3,6 @@
 # pip install pip-tools
 # pip-compile --rebuild --header --verbose
 pandas
-plotly
+plotly==5.18.0
 copr
 copr-cli
