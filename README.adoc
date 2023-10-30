@@ -11,7 +11,7 @@ image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/check-toda
 image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/tmt.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/tmt.yml"]
 image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/python-with-black.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/python-with-black.yml"]
 image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/update-build-time-diagrams.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/update-build-time-diagrams.yml"]
-link:https://kwk.github.io/llvm-daily-fedora-rpms/[Build time Diagrams]
+link:https://kwk.github.io/llvm-daily-fedora-rpms/fig-llvm.html[Build time Diagrams]
 
 = Maintaining the LLVM Snapshots for Fedora
 Konrad Kleine <kkleine@redhat.com>
