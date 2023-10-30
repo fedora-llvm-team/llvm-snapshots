@@ -10,6 +10,7 @@ import plotly.express as px
 import plotly.io as pio
 import plotly.graph_objects as go
 from plotly.offline import plot
+from pathlib import Path
 
 
 # %%
@@ -100,8 +101,26 @@ def save_figure(fig: go.Figure, filepath: str) -> None:
     """
 
     fig.write_html(
-        file=filepath, include_plotlyjs="cdn", full_html=True, post_script=post_script
+        file=filepath, include_plotlyjs="cdn", full_html=True, post_script=post_script, div_id="plotly_div_id",
     )
+
+def add_html_header_menu(filepath: str, all_packages: [str],  plotly_div_id: str="plotly_div_id")  -> None:
+    replace_me = '<div id="{}"'.format(plotly_div_id)
+
+    file = Path(filepath)
+    header_menu = '<div id="headermenu">Build-Stats by package: '
+    header_menu += " | ".join(
+            [
+                '<a href="fig-{package_name}.html">{package_name}</a> '.format(
+                    package_name=package_name
+                )
+                for package_name in all_packages
+            ]
+        )
+    header_menu += '</div>'
+    header_menu += replace_me
+
+    file.write_text(file.read_text().replace(replace_me, header_menu))
 
 
 # %%
@@ -216,7 +235,9 @@ def main() -> None:
         # To debug, uncomment the following:
         # fig.show()
         # break
-        save_figure(fig=fig, filepath="fig-{}.html".format(package_name))
+        filepath="fig-{}.html".format(package_name)
+        save_figure(fig=fig, filepath=filepath)
+        add_html_header_menu(filepath=filepath, all_packages=all_packages)
 
     # Create an index HTML overview page that links to each figure page
     create_index_page(all_packages=all_packages, filepath="index.html")
