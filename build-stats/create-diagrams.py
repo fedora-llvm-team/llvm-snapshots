@@ -105,6 +105,15 @@ def save_figure(fig: go.Figure, filepath: str) -> None:
     )
 
 def add_html_header_menu(filepath: str, all_packages: [str],  plotly_div_id: str="plotly_div_id")  -> None:
+    """Replace plotly's opening HTML-div element with itself and an additional
+       menu so that you can navigate from any package to any other package
+       without needing to visit the index again.
+
+    Args:
+        filepath (str): HTML file in which to do the replacement.
+        all_packages (str]): All the packages names for which to generate a menu entry
+        plotly_div_id (str, optional): Plotly's HTML div's ID. Defaults to "plotly_div_id".
+    """    
     replace_me = '<div id="{}"'.format(plotly_div_id)
 
     file = Path(filepath)
