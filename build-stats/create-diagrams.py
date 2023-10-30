@@ -177,6 +177,45 @@ def prepare_data(filepath: str = "build-stats.csv") -> pd.DataFrame:
     return df
 
 
+def create_index_page(all_packages: [str], filepath: str = "index.html") -> None:
+    """Create an index HTML overview page that links to each figure page
+
+    Args:
+        all_packages (str]): A list of package names
+        filepath (str, optional): File name to use when saving the index page. Defaults to 'index.html'.
+    """ """"""
+    with open(filepath, "w") as f:
+        template = """
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="utf-8" />
+            <title>{title}</title>
+        </head>
+        <body>
+            <h1>{title}</h1>
+            <ul>{package_link_items}</ul>
+            <hr/>
+            <small>Last updated: {last_updated}</small>
+        </body>
+    </html>
+        """
+        package_link_items = "\n".join(
+            [
+                '<li><a href="fig-{package_name}.html">{package_name}</a></li>'.format(
+                    package_name=package_name
+                )
+                for package_name in all_packages
+            ]
+        )
+        html_str = template.format(
+            package_link_items=package_link_items,
+            title="Build times for the LLVM snapshot packages",
+            last_updated=datetime.today().strftime("%c"),
+        )
+        f.write(html_str)
+
+
 def main() -> None:
     """The main program to prepare the data, generate figures, save them and create an index page for them."""
 
@@ -215,6 +254,9 @@ def main() -> None:
         filepath = "fig-{}.html".format(package_name)
         save_figure(fig=fig, filepath=filepath)
         add_html_header_menu(filepath=filepath, all_packages=all_packages)
+
+    # Create an index HTML overview page that links to each figure page
+    create_index_page(all_packages=all_packages, filepath="index.html")
 
 
 if __name__ == "__main__":
