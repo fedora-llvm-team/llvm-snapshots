@@ -101,10 +101,17 @@ def save_figure(fig: go.Figure, filepath: str) -> None:
     """
 
     fig.write_html(
-        file=filepath, include_plotlyjs="cdn", full_html=True, post_script=post_script, div_id="plotly_div_id",
+        file=filepath,
+        include_plotlyjs="cdn",
+        full_html=True,
+        post_script=post_script,
+        div_id="plotly_div_id",
     )
 
-def add_html_header_menu(filepath: str, all_packages: [str],  plotly_div_id: str="plotly_div_id")  -> None:
+
+def add_html_header_menu(
+    filepath: str, all_packages: [str], plotly_div_id: str = "plotly_div_id"
+) -> None:
     """Replace plotly's opening HTML-div element with itself and an additional
        menu so that you can navigate from any package to any other package
        without needing to visit the index again.
@@ -113,20 +120,20 @@ def add_html_header_menu(filepath: str, all_packages: [str],  plotly_div_id: str
         filepath (str): HTML file in which to do the replacement.
         all_packages (str]): All the packages names for which to generate a menu entry
         plotly_div_id (str, optional): Plotly's HTML div's ID. Defaults to "plotly_div_id".
-    """    
+    """
     replace_me = '<div id="{}"'.format(plotly_div_id)
 
     file = Path(filepath)
     header_menu = '<div id="headermenu">Build-Stats by package: '
     header_menu += " | ".join(
-            [
-                '<a href="fig-{package_name}.html">{package_name}</a> '.format(
-                    package_name=package_name
-                )
-                for package_name in all_packages
-            ]
-        )
-    header_menu += '</div>'
+        [
+            '<a href="fig-{package_name}.html">{package_name}</a> '.format(
+                package_name=package_name
+            )
+            for package_name in all_packages
+        ]
+    )
+    header_menu += "</div>"
     header_menu += replace_me
 
     file.write_text(file.read_text().replace(replace_me, header_menu))
@@ -169,6 +176,7 @@ def prepare_data(filepath: str = "build-stats.csv") -> pd.DataFrame:
     df.info()
     return df
 
+
 def main() -> None:
     """The main program to prepare the data, generate figures, save them and create an index page for them."""
 
@@ -204,9 +212,10 @@ def main() -> None:
         # To debug, uncomment the following:
         # fig.show()
         # break
-        filepath="fig-{}.html".format(package_name)
+        filepath = "fig-{}.html".format(package_name)
         save_figure(fig=fig, filepath=filepath)
         add_html_header_menu(filepath=filepath, all_packages=all_packages)
+
 
 if __name__ == "__main__":
     main()
