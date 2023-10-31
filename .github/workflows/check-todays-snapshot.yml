@@ -50,7 +50,7 @@ jobs:
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MAINTAINER_HANDLE: "nikic"
+          MAINTAINER_HANDLE: "tuliom"
         run: |
           source github/functions.sh
 
