@@ -1,7 +1,7 @@
 #
 # Snapshot gating tests for all *LLVM* packages in the mix
 #
-# Compatible with various these distributions:
+# Compatible with these distributions:
 #
 #   * Fedora
 #
