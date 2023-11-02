@@ -16,7 +16,7 @@ link:https://kwk.github.io/llvm-daily-fedora-rpms/fig-llvm.html[Build time Diagr
 
 == Tips on contributing
 
-This project uses `pre-commit` to validate that certain files (e.g. fmf or python) are not broken. Please install `pre-commit` using `pip install pre-commit` as described link:https://pre-commit.com/#install[here] and then install the gith hook scripts using `pre-commit install`. This will run pre-commit on every `git commit`.
+This project uses `pre-commit` to validate that certain files (e.g. fmf or python) are not broken. Please install `pre-commit` using `pip install pre-commit` as described link:https://pre-commit.com/#install[here]. Then navigate to your clone of this project and install the git hook scripts using `cd ~/llvm-daily-fedora-rpms && pre-commit install`. This will run pre-commit on every `git commit`.
 
 == Maintaining the LLVM Snapshots for Fedora
 Konrad Kleine <kkleine@redhat.com>
