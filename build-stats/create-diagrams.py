@@ -183,7 +183,7 @@ def create_index_page(all_packages: [str], filepath: str = "index.html") -> None
     Args:
         all_packages (str]): A list of package names
         filepath (str, optional): File name to use when saving the index page. Defaults to 'index.html'.
-    """ """"""
+    """
     with open(filepath, "w") as f:
         template = """
     <!DOCTYPE html>
