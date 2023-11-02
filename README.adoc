@@ -14,7 +14,11 @@ image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/update-bui
 image:https://img.shields.io/badge/code%20style-black-000000.svg[link="https://github.com/psf/black"]
 link:https://kwk.github.io/llvm-daily-fedora-rpms/fig-llvm.html[Build time Diagrams]
 
-= Maintaining the LLVM Snapshots for Fedora
+== Tips on contributing
+
+This project uses `pre-commit` to validate that certain files (e.g. fmf or python) are not broken. Please install `pre-commit` using `pip install pre-commit` as described link:https://pre-commit.com/#install[here] and then install the gith hook scripts using `pre-commit install`. This will run pre-commit on every `git commit`.
+
+== Maintaining the LLVM Snapshots for Fedora
 Konrad Kleine <kkleine@redhat.com>
 
 This document is supposed to give you an idea of what goes into maintaining the
