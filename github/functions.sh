@@ -55,7 +55,7 @@ function is_package_supported_by_chroot() {
   local pkg=$1;
   local chroot=$2;
 
-  if [[ ("$pkg" == "lld" || "$pkg" == "libomp") && $chroot =~ -s390x$ ]]; then
+  if [[ ("$pkg" == "lld") && $chroot =~ -s390x$ ]]; then
     false
   else
     true
