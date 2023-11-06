@@ -75,8 +75,22 @@ jobs:
           $(cat /tmp/diff)
           \`\`\`
           EOF
+
+              archs=`grep -ioP 'failed\s+[^-]+-[0-9,rawhide]+-\K[^\s]+' /tmp/diff | sort | uniq`
+              projects=`grep -ioP 'failed\s+[^\s]+\s+\K[^\s]+$' /tmp/diff | sort | uniq`
+              oses=`grep -ioP 'failed\s+\K.*' /tmp/diff | cut -d '-' -f 1-2 | sort | uniq`
+
+              # Ensure labels for OS, project and arch exist in github project
+              for arch in $archs; do gh label create arch/$arch --force; done
+              for project in $projects; do gh label create project/$project --force; done
+              for os in $oses; do gh label create os/$os --force; done
+
+              os_labels=`for os in $oses; do echo --label os/$os; done | tr "\n" " "`
+              arch_labels=`for arch in $archs; do echo --label arch/$arch; done | tr "\n" " "`
+              project_labels=`for project in $projects; do echo --label project/$project; done | tr "\n" " "`
+
               gh --repo ${GITHUB_REPOSITORY} issue create \
-                --label broken_snapshot_detected \
+                --label broken_snapshot_detected $os_labels $arch_labels $project_labels \
                 --assignee ${MAINTAINER_HANDLE} \
                 --title "Broken snapshot for ${{env.today_yyyymmdd}} detected" \
                 --body-file body.txt
