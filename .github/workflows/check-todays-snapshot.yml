@@ -81,9 +81,9 @@ jobs:
               oses=`grep -ioP 'failed\s+\K.*' /tmp/diff | cut -d '-' -f 1-2 | sort | uniq`
 
               # Ensure labels for OS, project and arch exist in github project
-              for arch in $archs; do gh label create arch/$arch --force; done
-              for project in $projects; do gh label create project/$project --force; done
-              for os in $oses; do gh label create os/$os --force; done
+              for arch in $archs; do gh --repo ${GITHUB_REPOSITORY} label create arch/$arch --force; done
+              for project in $projects; do gh --repo ${GITHUB_REPOSITORY} label create project/$project --force; done
+              for os in $oses; do gh --repo ${GITHUB_REPOSITORY} label create os/$os --force; done
 
               os_labels=`for os in $oses; do echo -n --label os/$os; done`
               arch_labels=`for arch in $archs; do echo -n --label arch/$arch; done`
