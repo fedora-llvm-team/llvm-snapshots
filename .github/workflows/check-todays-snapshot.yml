@@ -85,9 +85,9 @@ jobs:
               for project in $projects; do gh --repo ${GITHUB_REPOSITORY} label create project/$project --force; done
               for os in $oses; do gh --repo ${GITHUB_REPOSITORY} label create os/$os --force; done
 
-              os_labels=`for os in $oses; do echo -n --label os/$os; done`
-              arch_labels=`for arch in $archs; do echo -n --label arch/$arch; done`
-              project_labels=`for project in $projects; do echo -n --label project/$project; done`
+              os_labels=`for os in $oses; do echo -n " --label os/$os "; done`
+              arch_labels=`for arch in $archs; do echo -n " --label arch/$arch " ; done`
+              project_labels=`for project in $projects; do echo -n " --label project/$project "; done`
 
               gh --repo ${GITHUB_REPOSITORY} issue create \
                 --label broken_snapshot_detected $os_labels $arch_labels $project_labels \
