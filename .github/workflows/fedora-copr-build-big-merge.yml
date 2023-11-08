@@ -40,14 +40,14 @@ jobs:
           chroots="`get_chroots`"
 
           # Use my personal copr username for now.
-          username=kkleine
+          username=@fedora-llvm-team
           echo "username=$username" >> $GITHUB_ENV
           echo "packages=$packages" >> $GITHUB_ENV
           echo "chroots=$chroots" >> $GITHUB_ENV
           echo "all_chroots=$all_chroots" >> $GITHUB_ENV
-          echo "project_today=$username/llvm-snapshots-incubator-$today" >> $GITHUB_ENV
-          echo "project_yesterday=$username/llvm-snapshots-incubator-$yesterday" >> $GITHUB_ENV
-          echo "project_target=$username/llvm-snapshots" >> $GITHUB_ENV
+          echo "project_today=$username/llvm-snapshots-big-merge-$today" >> $GITHUB_ENV
+          echo "project_yesterday=$username/llvm-snapshots-big-merge-$yesterday" >> $GITHUB_ENV
+          echo "project_target=$username/llvm-snapshots-big-merge" >> $GITHUB_ENV
 
       - name: "Check for Copr projects existence (yesterday, today, target)"
         shell: bash -e {0}
