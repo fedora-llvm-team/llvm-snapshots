@@ -24,7 +24,5 @@ updates:
     target-branch: "main"
     reviewers:
       - "kwk"
-      - "octocat"
     assignees:
       - "kwk"
-      - "octocat"
