@@ -123,28 +123,12 @@ jobs:
               "${{ env.project_today }}"
           done
 
-      - name: "Build llvm-snapshot-builder from SRPM into today's project: ${{ env.project_today }}"
-        shell: bash -e {0}
-        run: |
-          source github/functions-big-merge.sh
-          make -C llvm-snapshot-builder/ srpm
-          copr build \
-            "${{ env.project_today }}" \
-            llvm-snapshot-builder/tmp/SRPMS/llvm-snapshot-builder-*.rpm \
-
       - name: "Build packages in chroot batches in this order: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
           source github/functions-big-merge.sh
 
           for chroot in ${{ env.chroots }}; do
-            # Modify chroot to know about compat package repo and about the --with=snapshot_build option
-            copr edit-chroot \
-              --repos "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/${chroot}/" \
-              --rpmbuild-with "snapshot_build" \
-              --packages "llvm-snapshot-builder" \
-              ${{ env.project_today }}/$chroot
-
             # Start a new batch
             after_build_id=""
             for pkg in ${{ env.packages }}; do

@@ -41,7 +41,7 @@ function get_chroots() {
 
 # Prints the packages we care about
 function get_packages() {
-  echo "python-lit llvm lld"
+  echo "llvm"
 }
 
 # Returns false if a package needs special handling on certain architectures
