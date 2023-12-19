@@ -36,7 +36,7 @@ function get_active_build_ids(){
 
 # Prints the chroots we care about.
 function get_chroots() {
-  echo -n "fedora-38-x86_64"
+  copr list-chroots | grep -P '^fedora-(rawhide|[0-9]+)' | tr '\n' ' '
 }
 
 # Prints the packages we care about
