@@ -43,7 +43,7 @@ jobs:
       - name: "Install GitHub’s official command line tool: gh"
         shell: bash -e {0}
         run: |
-          source github/functions.sh
+          source github/functions-big-merge.sh
           install_gh_client
 
       - name: "Check for good builds"
@@ -52,7 +52,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAINTAINER_HANDLE: "kwk"
         run: |
-          source github/functions.sh
+          source github/functions-big-merge.sh
 
           if was_broken_snapshot_detected_today; then
             echo "We already filed an issue for broken snapshots today."
