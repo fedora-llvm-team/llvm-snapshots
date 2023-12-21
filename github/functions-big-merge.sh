@@ -65,7 +65,7 @@ function has_all_good_builds(){
   copr monitor --output-format text-row --fields state,chroot,name $project | sort -k1 -k2 -k3 > /tmp/actual.txt
   truncate -s 0 /tmp/expected.txt
   for chroot in $(get_chroots); do
-    for package in $(get_packages) llvm-snapshot-builder; do
+    for package in $(get_packages); do
       if is_package_supported_by_chroot "$package" "$chroot"; then
         echo "succeeded $chroot $package" >> /tmp/expected.txt
       fi
