@@ -1,8 +1,6 @@
-Please, use this at your own risk!
-
 For instructions on how to use this repository, consult the [official docs](https://docs.pagure.org/copr.copr/how_to_enable_repo.html#how-to-enable-repo).
 
-In theory, this should be enough on a recent Fedora version:
+It should be enough to enable the copr repository for this project using the following command:
 
 ```
 $ dnf install 'dnf-command(copr)'
