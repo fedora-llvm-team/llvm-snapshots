@@ -11,20 +11,29 @@ import plotly.io as pio
 import plotly.graph_objects as go
 from plotly.offline import plot
 from pathlib import Path
+import numpy as np
 
 
 # %%
-def create_figure(df: pd.DataFrame, package_name: str) -> go.Figure:
+def create_figure(df: pd.DataFrame, package_name: str = None) -> go.Figure:
     """Creates a figure for a particular package name
+
+    When no package_name is specified, the whole dataframe is used.
 
     Args:
         df (pd.DataFrame): The complete dataframe to grab information from
-        package_name (str): The package name by which to lookup information from the dataframe df
+        package_names (str , optional): The package name by which to lookup information from the dataframe df.
 
     Returns:
         go.Figure: A line figure with all chroots in one graph
     """
-    df = df[df.package == package_name]
+    title = "Build times for the package(s): {}"
+    if package_name is not None:
+        df = df[df.package == package_name]
+        title = title.format(package_name)
+    else:
+        package_names = df["package"].explode().drop_duplicates().values
+        title = title.format(package_names)
     fig = px.line(
         data_frame=df,
         x="date",
@@ -32,7 +41,7 @@ def create_figure(df: pd.DataFrame, package_name: str) -> go.Figure:
         color="chroot",
         markers=True,
         line_shape="linear",
-        title='Build times for the "{}" package'.format(package_name),
+        title=title,
         symbol="chroot",
         hover_data=["package", "date", "state", "build_id"],
         labels={
@@ -133,6 +142,7 @@ def add_html_header_menu(
             for package_name in all_packages
         ]
     )
+    header_menu += ' | <a href="fig-combined-standalone.html">llvm+clang+compiler-rt+libomp (standalone)</a>'
     header_menu += "</div>"
     header_menu += replace_me
 
@@ -167,13 +177,57 @@ def prepare_data(filepath: str = "build-stats.csv") -> pd.DataFrame:
     # only keep the latest information about a build.
     df.drop_duplicates(keep="last", inplace=True, subset=["build_id"])
 
+    # Keep build time seconds as a separate column and
     # Convert seconds in the build_time column to a timedelta
     # See https://stackoverflow.com/q/76532998
-    df.build_time = pd.to_timedelta(df.build_time, unit="seconds") + pd.to_datetime(
-        "1970/01/01"
-    )
+    df["build_time_secs"] = df.build_time
+    df.build_time = np.array(
+        pd.to_timedelta(df.build_time, unit="seconds")
+    ) + pd.to_datetime("1970/01/01")
 
     df.info()
+    return df
+
+
+def prepare_data_combined(
+    filepath: str = "build-stats.csv",
+    package_names: list[str] = ["llvm", "clang", "compiler-rt", "libomp"],
+) -> pd.DataFrame:
+    """Same as prepare_data but it combines builds of the given packages.
+
+    The combination groups rows by their date and chroot and then sums up the build times.
+    Columns like "package", "build_id", or "state" will be changed into lists.
+
+    Args:
+        filepath (str, optional): The path to the CSV file to read in. Defaults to "build-stats.csv".
+        package_names (list[str], optional): List of package names that will be combined. Defaults to ["llvm", "clang", "compiler-rt", "libomp"].
+
+    Returns:
+        pd.DataFrame: A dataframe that contains only entries for the given package_names.
+    """
+    df = prepare_data(filepath=filepath)
+
+    # limit to only those rows that are
+    df = df[df.package.isin(package_names)]
+    df = (
+        df.groupby(by=["date", "chroot"], as_index=False)
+        .agg(
+            {
+                "build_time_secs": "sum",
+                "package": lambda x: list(x),
+                "state": lambda x: list(x),
+                "build_id": lambda x: list(x),
+                "timestamp": "max",
+            }
+        )
+        .reset_index()
+    )
+
+    # Overwrite the "build_time" column with the sum of build times for all packages within this group
+    df["build_time"] = np.array(
+        pd.to_timedelta(df.build_time_secs, unit="seconds")
+    ) + pd.to_datetime("1970/01/01")
+
     return df
 
 
@@ -254,6 +308,15 @@ def main() -> None:
         filepath = "fig-{}.html".format(package_name)
         save_figure(fig=fig, filepath=filepath)
         add_html_header_menu(filepath=filepath, all_packages=all_packages)
+
+    # Create combined plot of llvm, clang, compiler-rt and openmp (aka libomp)
+    df_combined = prepare_data_combined(
+        filepath=args.datafile, package_names=["llvm", "clang", "compiler-rt", "libomp"]
+    )
+    fig = create_figure(df=df_combined)
+    filepath = "fig-combined-standalone.html"
+    save_figure(fig=fig, filepath=filepath)
+    add_html_header_menu(filepath=filepath, all_packages=all_packages)
 
     # Create an index HTML overview page that links to each figure page
     create_index_page(all_packages=all_packages, filepath="index.html")
