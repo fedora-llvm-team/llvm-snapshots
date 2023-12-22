@@ -142,7 +142,9 @@ def add_html_header_menu(
             for package_name in all_packages
         ]
     )
-    header_menu += ' | <a href="fig-combined-standalone.html">llvm+clang+compiler-rt+libomp (standalone)</a>'
+    header_menu += (
+        ' | <a href="fig-combined-standalone.html">llvm+clang+compiler-rt+libomp</a>'
+    )
     header_menu += "</div>"
     header_menu += replace_me
 
@@ -248,7 +250,10 @@ def create_index_page(all_packages: [str], filepath: str = "index.html") -> None
         </head>
         <body>
             <h1>{title}</h1>
-            <ul>{package_link_items}</ul>
+            <ul>
+                {package_link_items}
+                <li><a href="fig-combined-standalone.html">llvm+clang+compiler-rt+libomp</a></li>
+            </ul>
             <hr/>
             <small>Last updated: {last_updated}</small>
         </body>
@@ -283,6 +288,13 @@ def main() -> None:
         default="build-stats.csv",
         help="path to your build-stats.csv file",
     )
+    parser.add_argument(
+        "--datafile-big-merge",
+        dest="datafile_big_merge",
+        type=str,
+        default="build-stats-big-merge.csv",
+        help="path to your build-stats-big-merge.csv file",
+    )
     args = parser.parse_args()
 
     # %%
@@ -309,11 +321,26 @@ def main() -> None:
         save_figure(fig=fig, filepath=filepath)
         add_html_header_menu(filepath=filepath, all_packages=all_packages)
 
-    # Create combined plot of llvm, clang, compiler-rt and openmp (aka libomp)
+    # Create dataframe of llvm, clang, compiler-rt and libomp combined in
+    # standalone-mode
     df_combined = prepare_data_combined(
-        filepath=args.datafile, package_names=["llvm", "clang", "compiler-rt", "libomp"]
+        filepath=args.datafile,
+        package_names=["llvm", "clang", "compiler-rt", "libomp"],
     )
-    fig = create_figure(df=df_combined)
+
+    # Create dataframe of llvm, clang, compiler-rt and libomp but when build in
+    # big-merge mode. The chroots are suffixed with "-big-merge" on the fly to
+    # be able to distinguish the two cases.
+    df_big_merge = prepare_data(filepath=args.datafile_big_merge)
+    df_big_merge["chroot"] = "big-merge-" + df_big_merge["chroot"]
+    # Convert build_id column with int64's in it to an array of int64's to match
+    # that of the combined standalone dataframe above (see: df_combined).
+    df_big_merge.build_id = df_big_merge.build_id.apply(lambda x: [x])
+
+    # Concat the two dataframes of combined standalone and big-merge
+    df_result = pd.concat([df_combined, df_big_merge])
+
+    fig = create_figure(df=df_result)
     filepath = "fig-combined-standalone.html"
     save_figure(fig=fig, filepath=filepath)
     add_html_header_menu(filepath=filepath, all_packages=all_packages)
