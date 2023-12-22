@@ -324,7 +324,7 @@ def main() -> None:
     # Create dataframe of llvm, clang, compiler-rt and libomp combined in
     # standalone-mode
     df_combined = prepare_data_combined(
-        filepath=args.datafile_big_merge,
+        filepath=args.datafile,
         package_names=["llvm", "clang", "compiler-rt", "libomp"],
     )
 
