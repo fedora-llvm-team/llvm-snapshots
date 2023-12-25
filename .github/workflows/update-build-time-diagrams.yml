@@ -74,8 +74,9 @@ jobs:
           create_diagrams: ${{ github.event_name == 'schedule' && true || github.event.inputs.create_diagrams }}
         run: |
           if ${{ env.get_stats }}; then
-            main/build-stats/get-build-stats.py --copr-projectname llvm-snapshots-incubator-$d | tee -a gh-pages/build-stats.csv
-            main/build-stats/get-build-stats.py --copr-projectname llvm-snapshots-big-merge-$d | tee -a gh-pages/build-stats-big-merge.csv
+            main/build-stats/get-build-stats.py --copr-projectname llvm-snapshots-incubator-`date '+%Y%m%d'` | tee -a gh-pages/build-stats.csv
+            main/build-stats/get-build-stats.py --copr-projectname llvm-snapshots-big-merge-`date '+%Y%m%d'` | tee -a gh-pages/build-stats-big-merge.csv
+            git -C gh-pages add build-stats.csv build-stats-big-merge.csv
           fi
           if ${{ env.create_diagrams }}; then
             main/build-stats/create-diagrams.py --datafile gh-pages/build-stats.csv --datafile-big-merge gh-pages/build-stats-big-merge.csv
@@ -85,7 +86,6 @@ jobs:
           fi
           if [[ ${{ env.get_stats }} || ${{ env.create_diagrams }} ]]; then
             cd gh-pages
-            git add build-stats.csv build-stats-big-merge.csv
             git commit -m "Automatically update build stats"
             git push origin HEAD:gh-pages
           fi
