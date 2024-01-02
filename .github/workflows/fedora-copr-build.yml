@@ -137,7 +137,7 @@ jobs:
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           for pkg in ${{ env.packages }}; do
-            clone_url=`echo ${{ matrix.clone_url_tpl }}" | sed "s/PKG/$pkg/"`
+            clone_url=`echo "${{ matrix.clone_url_tpl }}" | sed "s/PKG/$pkg/"`
             copr add-package-scm \
               --clone-url ${clone_url} \
               --commit ${{ matrix.clone_ref }} \
