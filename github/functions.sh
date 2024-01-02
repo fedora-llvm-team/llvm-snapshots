@@ -10,7 +10,7 @@ function was_broken_snapshot_detected_today() {
   local d=`yyyymmdd`
   gh --repo ${GITHUB_REPOSITORY} issue list \
     --label broken_snapshot_detected \
-    --label standalone \
+    --label strategy/standalone \
     --state all \
   | grep -P "$d" > /dev/null 2>&1
 }

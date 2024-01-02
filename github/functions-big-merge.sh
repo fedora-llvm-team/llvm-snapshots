@@ -6,7 +6,7 @@ function was_broken_snapshot_detected_today() {
   local d=`yyyymmdd`
   gh --repo ${GITHUB_REPOSITORY} issue list \
     --label broken_snapshot_detected \
-    --label big-merge \
+    --label strategy/big-merge \
     --state all \
   | grep -P "$d" > /dev/null 2>&1
 }
