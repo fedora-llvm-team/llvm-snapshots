@@ -10,6 +10,20 @@ on:
 
 jobs:
   check-todays-snapshot:
+    strategy:
+      matrix:
+        name: [standalone, big-merge]
+        include:
+          - name: standalone
+            maintainer_handle: "nikic"
+            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
+            copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
+          - name: big-merge
+            maintainer_handle: "kwk"
+            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
+            copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/"
+            extra_script_file: "github/functions-big-merge.sh"
+
     runs-on: ubuntu-latest
     container: fedora:38
     steps:
@@ -32,44 +46,48 @@ jobs:
         shell: bash -e {0}
         run: |
           source github/functions.sh
+          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           today=`date +%Y%m%d`
 
           username=@fedora-llvm-team
           echo "username=$username" >> $GITHUB_ENV
           echo "today_yyyymmdd=$today" >> $GITHUB_ENV
-          echo "project_today=$username/llvm-snapshots-incubator-$today" >> $GITHUB_ENV
+          echo "project_today=${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/" >> $GITHUB_ENV
+          echo "monitor_url=${{ matrix.copr_monitor_tpl }}" | sed "s/YYYYMMDD/$today/" >> $GITHUB_ENV
 
       - name: "Install GitHub’s official command line tool: gh"
         shell: bash -e {0}
         run: |
           source github/functions.sh
+          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+
           install_gh_client
 
       - name: "Check for good builds"
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MAINTAINER_HANDLE: "nikic"
         run: |
           source github/functions.sh
+          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           if was_broken_snapshot_detected_today; then
             echo "We already filed an issue for broken snapshots today."
             exit 0;
           fi
 
-          if ! copr_project_exists ${{env.project_today}}; then
-            echo "The copr project ${{env.project_today}} does not exist (yet)."
+          if ! copr_project_exists ${{ env.project_today }}; then
+            echo "The copr project ${{ env.project_today }} does not exist (yet)."
             exit 0;
           fi
 
-          if ! has_all_good_builds ${{env.project_today}} > /tmp/diff; then
+          if ! has_all_good_builds ${{ env.project_today }} > /tmp/diff; then
             if grep -i "failed" /tmp/diff; then
               cat <<EOF > body.txt
-          Hello @${MAINTAINER_HANDLE},
+          Hello @${{ matrix.maintainer_handle }},
 
-          looking at the [Fedora Copr build monitor](https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-${{env.today_yyyymmdd}}/monitor/) for ${{env.today_yyyymmdd}} we found at least one failed build:
+          looking at the [Fedora Copr build monitor](${{ env.monitor_url }}) for ${{ env.today_yyyymmdd }} we found at least one failed build:
 
           \`\`\`diff
           $(cat /tmp/diff)
@@ -84,15 +102,17 @@ jobs:
               for arch in $archs; do gh --repo ${GITHUB_REPOSITORY} label create arch/$arch --force; done
               for project in $projects; do gh --repo ${GITHUB_REPOSITORY} label create project/$project --force; done
               for os in $oses; do gh --repo ${GITHUB_REPOSITORY} label create os/$os --force; done
+              # Ensure label for strategy name exists in github project
+              gh --repo ${GITHUB_REPOSITORY} label create strategy/${{ matrix.name }} --force
 
               os_labels=`for os in $oses; do echo -n " --label os/$os "; done`
               arch_labels=`for arch in $archs; do echo -n " --label arch/$arch " ; done`
               project_labels=`for project in $projects; do echo -n " --label project/$project "; done`
 
               gh --repo ${GITHUB_REPOSITORY} issue create \
-                --label broken_snapshot_detected $os_labels $arch_labels $project_labels \
-                --assignee ${MAINTAINER_HANDLE} \
-                --title "Broken snapshot for ${{env.today_yyyymmdd}} detected" \
+                --label broken_snapshot_detected --label strategy/${{ matrix.name }} $os_labels $arch_labels $project_labels \
+                --assignee ${{ matrix.maintainer_handle }} \
+                --title "Broken snapshot for ${{ env.today_yyyymmdd }} detected (${{ matrix.name }})" \
                 --body-file body.txt
               exit 1
             fi
