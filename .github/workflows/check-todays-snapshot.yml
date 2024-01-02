@@ -103,14 +103,14 @@ jobs:
               for project in $projects; do gh --repo ${GITHUB_REPOSITORY} label create project/$project --force; done
               for os in $oses; do gh --repo ${GITHUB_REPOSITORY} label create os/$os --force; done
               # Ensure label for strategy name exists in github project
-              gh --repo ${GITHUB_REPOSITORY} label create ${{ matrix.name }} --force
+              gh --repo ${GITHUB_REPOSITORY} label create strategy/${{ matrix.name }} --force
 
               os_labels=`for os in $oses; do echo -n " --label os/$os "; done`
               arch_labels=`for arch in $archs; do echo -n " --label arch/$arch " ; done`
               project_labels=`for project in $projects; do echo -n " --label project/$project "; done`
 
               gh --repo ${GITHUB_REPOSITORY} issue create \
-                --label broken_snapshot_detected --label ${{ matrix.name }} $os_labels $arch_labels $project_labels \
+                --label broken_snapshot_detected --label strategy/${{ matrix.name }} $os_labels $arch_labels $project_labels \
                 --assignee ${{ matrix.maintainer_handle }} \
                 --title "Broken snapshot for ${{ env.today_yyyymmdd }} detected (${{ matrix.name }})" \
                 --body-file body.txt
