@@ -18,11 +18,13 @@ jobs:
             maintainer_handle: "nikic"
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
+            needs_llvm_snapshot_builder: true
           - name: big-merge
             maintainer_handle: "kwk"
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/"
             extra_script_file: "github/functions-big-merge.sh"
+            needs_llvm_snapshot_builder: false
 
     runs-on: ubuntu-latest
     container: fedora:38
@@ -82,7 +84,11 @@ jobs:
             exit 0;
           fi
 
-          if ! has_all_good_builds ${{ env.project_today }} > /tmp/diff; then
+          if [ "${{ matrix.needs_llvm_snapshot_builder }}" == "true" ]; then
+            extra_packages=llvm-snapshot-builder
+          fi
+
+          if ! has_all_good_builds ${{ env.project_today }} $extra_packages > /tmp/diff; then
             if grep -i "failed" /tmp/diff; then
               cat <<EOF > body.txt
           Hello @${{ matrix.maintainer_handle }},

@@ -12,6 +12,7 @@ function was_broken_snapshot_detected_today() {
     --label broken_snapshot_detected \
     --label strategy/standalone \
     --state all \
+    --search "$d" \
   | grep -P "$d" > /dev/null 2>&1
 }
 
@@ -64,11 +65,12 @@ function is_package_supported_by_chroot() {
 # *: All supported combinations of package + chroot (see is_package_supported_by_chroot).
 function has_all_good_builds(){
   local project=$1;
+  local extra_packages=$2
 
   copr monitor --output-format text-row --fields state,chroot,name $project | sort -k1 -k2 -k3 > /tmp/actual.txt
   truncate -s 0 /tmp/expected.txt
   for chroot in $(get_chroots); do
-    for package in $(get_packages) llvm-snapshot-builder; do
+    for package in $(get_packages) $extra_packages; do
       if is_package_supported_by_chroot "$package" "$chroot"; then
         echo "succeeded $chroot $package" >> /tmp/expected.txt
       fi

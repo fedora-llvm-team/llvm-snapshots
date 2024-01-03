@@ -8,6 +8,7 @@ function was_broken_snapshot_detected_today() {
     --label broken_snapshot_detected \
     --label strategy/big-merge \
     --state all \
+    --search "$d" \
   | grep -P "$d" > /dev/null 2>&1
 }
 
