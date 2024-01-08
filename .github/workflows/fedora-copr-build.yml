@@ -75,7 +75,10 @@ jobs:
           # Check if yesterday's project exists and all builds succeeded
           yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`
           if [[ "$yesterdays_project_exists" == "true" ]]; then
-            if ! has_all_good_builds ${{env.project_yesterday}}; then
+            if [ "${{ matrix.needs_llvm_snapshot_builder }}" == "true" ]; then
+              extra_packages=llvm-snapshot-builder
+            fi
+            if ! has_all_good_builds ${{env.project_yesterday}} $extra_packages; then
               yesterdays_project_exists=false
             fi
           fi
