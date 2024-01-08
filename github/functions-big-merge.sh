@@ -12,6 +12,12 @@ function was_broken_snapshot_detected_today() {
   | grep -P "$d" > /dev/null 2>&1
 }
 
+# Prints the chroots we care about.
+# overwrite
+function get_chroots() {
+  copr list-chroots | grep -P '^fedora-(rawhide|[0-9]+)' | tr '\n' ' '; echo -n "rhel-9-x86_64 "
+}
+
 # Prints the packages we care about
 # overwrite
 function get_packages() {
