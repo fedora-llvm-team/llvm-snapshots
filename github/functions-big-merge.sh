@@ -1,6 +1,13 @@
 # This file contains overwrite for the functions in functions.sh
 set +x
 
+# Prefixes the old version of the given function with "_" to make it callable
+# from the overwriting function.
+function overwrite_function() {
+  local function_name=$1
+  eval "`declare -f $function_name | sed '1s/.*/_&/'`"
+}
+
 # overwrite
 function was_broken_snapshot_detected_today() {
   local d=`yyyymmdd`
@@ -13,9 +20,10 @@ function was_broken_snapshot_detected_today() {
 }
 
 # Prints the chroots we care about.
-# overwrite
+overwrite_function get_chroots
 function get_chroots() {
-  copr list-chroots | grep -P '^fedora-(rawhide|[0-9]+)' | tr '\n' ' '; echo -n "rhel-9-x86_64 "
+  _get_chroots
+  echo -n "rhel-9-x86_64 "
 }
 
 # Prints the packages we care about
