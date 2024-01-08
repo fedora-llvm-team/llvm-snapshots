@@ -5,7 +5,7 @@ set +x
 # from the overwriting function.
 function overwrite_function() {
   local function_name=$1
-  eval "`declare -f $function_name | sed '1s/.*/_&/'`"
+  eval "_`declare -f $function_name`"
 }
 
 # overwrite
