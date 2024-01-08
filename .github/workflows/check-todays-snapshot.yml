@@ -74,8 +74,16 @@ jobs:
           source github/functions.sh
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          if was_broken_snapshot_detected_today; then
+          if was_broken_snapshot_detected_today ${{ matrix.name }}; then
             echo "We already filed an issue for broken snapshots today."
+            echo "Maybe we can identify new causes for errors by inspecting the build logs."
+
+            issue_number=`todays_issue_number ${{ matrix.name }}`
+            for error_cause in `list_error_causes ${{ env.project_today }}`; do
+              gh --repo ${GITHUB_REPOSITORY} label create error/$error_cause --force
+              gh --repo ${GITHUB_REPOSITORY} issue edit --add-label $issue_number error/$error_cause"
+            done
+
             exit 0;
           fi
 
@@ -121,11 +129,18 @@ jobs:
               arch_labels=`for arch in $archs; do echo -n " --label arch/$arch " ; done`
               project_labels=`for project in $projects; do echo -n " --label project/$project "; done`
 
+              error_labels=""
+              for error_cause in `list_error_causes ${{ env.project_today }}`; do
+                gh --repo ${GITHUB_REPOSITORY} label create error/$error_cause --force
+                error_labels="$error_labels --label error/$error_cause"
+              done
+
               gh --repo ${GITHUB_REPOSITORY} issue create \
-                --label broken_snapshot_detected --label strategy/${{ matrix.name }} $os_labels $arch_labels $project_labels \
+                --label broken_snapshot_detected --label strategy/${{ matrix.name }} $os_labels $arch_labels $project_labels $error_labels \
                 --assignee ${{ matrix.maintainer_handle }} \
                 --title "Broken snapshot for ${{ env.today_yyyymmdd }} detected (${{ matrix.name }})" \
                 --body-file body.txt
+
               exit 1
             fi
           fi

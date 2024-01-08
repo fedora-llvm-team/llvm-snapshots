@@ -7,13 +7,27 @@ function yyyymmdd() {
 
 # Checks if there's an issue for a broken snapshot reported today
 function was_broken_snapshot_detected_today() {
+  local strategy=$1
   local d=`yyyymmdd`
   gh --repo ${GITHUB_REPOSITORY} issue list \
     --label broken_snapshot_detected \
-    --label strategy/standalone \
+    --label strategy/$strategy \
     --state all \
     --search "$d" \
   | grep -P "$d" > /dev/null 2>&1
+}
+
+# Get today's issue. Make sure was_broken_snapshot_detected_today found one.
+function todays_issue_number() {
+  local strategy=$1
+  local d=`yyyymmdd`
+  gh --repo ${GITHUB_REPOSITORY} issue list \
+    --label broken_snapshot_detected \
+    --label strategy/$strategy \
+    --state all \
+    --search "$d" \
+    --json number \
+    | jq .[0].number
 }
 
 # Checks if a copr project exists
@@ -78,6 +92,39 @@ function has_all_good_builds(){
   done
   sort -k1 -k2 -k3 -o /tmp/expected.txt /tmp/expected.txt
   diff -bus /tmp/expected.txt /tmp/actual.txt
+}
+
+# For a given project this function prints causes for all cases of errors it can
+# automatically identify (e.g. copr_timeout or network_issue). The caller needs
+# to make sure the labels exists before attaching them to an issue.
+function list_error_causes(){
+  local project=$1;
+
+  copr monitor \
+    --output-format text-row \
+    --fields state,url_build_log $project \
+    | grep -oP '^failed\K.*' \
+    > /tmp/failed_build_log_urls.txt
+
+
+  while read -r url; do
+    log_file=$(mktemp)
+    curl -sL $url | gunzip -c  > $log_file
+
+    # Check for timeout
+    if [ ! -z "$(grep '!! Copr timeout' $log_file)" ]; then
+      echo "copr_timeout"
+    fi
+
+    # Check for network issues
+    if [ ! -z "$(grep 'Errors during downloading metadata for repository' $log_file)" ]; then
+      echo "network_issue"
+    fi
+
+    # TODO: Feel free to add your check here...
+
+    rm $log_file
+  done < /tmp/failed_build_log_urls.txt | sort | uniq
 }
 
 # This installs the gh client for Fedora as described here:
