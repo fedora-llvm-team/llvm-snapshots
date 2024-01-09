@@ -106,16 +106,16 @@ jobs:
 
               # Ensure labels for OS, project and arch exist in github project
               for arch in $archs; do
-                gh --repo ${GITHUB_REPOSITORY} label create arch/$arch --color "#C5DEF5" --force;
+                gh --repo ${GITHUB_REPOSITORY} label create arch/$arch --color "C5DEF5" --force;
               done
               for project in $projects; do
-                gh --repo ${GITHUB_REPOSITORY} label create project/$project --color "#BFDADC" --force;
+                gh --repo ${GITHUB_REPOSITORY} label create project/$project --color "BFDADC" --force;
               done
               for os in $oses; do
-                gh --repo ${GITHUB_REPOSITORY} label create os/$os --color "#F9D0C4" --force;
+                gh --repo ${GITHUB_REPOSITORY} label create os/$os --color "F9D0C4" --force;
               done
               # Ensure label for strategy name exists in github project
-              gh --repo ${GITHUB_REPOSITORY} label create strategy/${{ matrix.name }} --color "#FFFFFF" --force
+              gh --repo ${GITHUB_REPOSITORY} label create strategy/${{ matrix.name }} --color "FFFFFF" --force
 
               os_labels=`for os in $oses; do echo -n " --label os/$os "; done`
               arch_labels=`for arch in $archs; do echo -n " --label arch/$arch " ; done`
