@@ -40,7 +40,7 @@ jobs:
 
       - name: Install Copr CLI
         run: |
-          dnf install -y copr-cli diffutils
+          dnf install -y copr-cli diffutils pcre2-tools
 
       - uses: actions/checkout@v3
 
@@ -74,16 +74,35 @@ jobs:
           source github/functions.sh
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          if was_broken_snapshot_detected_today ${{ matrix.name }}; then
-            echo "We already filed an issue for broken snapshots today."
+          # This function inspects causes of build errors and adds a comment to
+          # today's issue.
+          function handle_error_causes() {
+            local causes_file=$1
+            local issue_number=`todays_issue_number ${GITHUB_REPOSITORY} ${{ matrix.name }}`
+            local error_labels=""
+            local comment_file=`mktemp`
+
             echo "Maybe we can identify new causes for errors by inspecting the build logs."
 
-            issue_number=`todays_issue_number ${{ matrix.name }}`
-            for error_cause in `list_error_causes ${{ env.project_today }}`; do
-              gh --repo ${GITHUB_REPOSITORY} label create error/$error_cause --force
-              gh --repo ${GITHUB_REPOSITORY} issue edit --add-label $issue_number error/$error_cause"
-            done
+            # If no error causes file was passed, process build logs to get
+            # error causes. Also ensure the error cause labels are created.
+            if [[ -n "$causes_file" && ! -f "$causes_file" ]]; then
+              causes_file=`mktemp`
+              error_causes=`list_error_causes ${{ env.project_today }} $causes_file`
+              create_labels_for_error_causes ${GITHUB_REPOSITORY} $error_causes
+            fi
 
+            # Turn some error causes into their own comment.
+            report_build_issues \
+              ${GITHUB_REPOSITORY} \
+              $issue_number \
+              $causes_file \
+              ${{ matrix.maintainer_handle }}
+          }
+
+          if was_broken_snapshot_detected_today ${GITHUB_REPOSITORY} ${{ matrix.name }}; then
+            echo "We already filed an issue for broken snapshots today."
+            handle_error_causes
             exit 0;
           fi
 
@@ -107,39 +126,34 @@ jobs:
           $(cat /tmp/diff)
           \`\`\`
           EOF
+              causes_file=`mktemp`
 
               archs=`grep -ioP 'failed\s+[^-]+-[0-9,rawhide]+-\K[^\s]+' /tmp/diff | sort | uniq`
               projects=`grep -ioP 'failed\s+[^\s]+\s+\K[^\s]+$' /tmp/diff | sort | uniq`
               oses=`grep -ioP 'failed\s+\K.*' /tmp/diff | cut -d '-' -f 1-2 | sort | uniq`
+              error_causes=`list_error_causes ${{ env.project_today }} $causes_file`
 
-              # Ensure labels for OS, project and arch exist in github project
-              for arch in $archs; do
-                gh --repo ${GITHUB_REPOSITORY} label create arch/$arch --color "C5DEF5" --force;
-              done
-              for project in $projects; do
-                gh --repo ${GITHUB_REPOSITORY} label create project/$project --color "BFDADC" --force;
-              done
-              for os in $oses; do
-                gh --repo ${GITHUB_REPOSITORY} label create os/$os --color "F9D0C4" --force;
-              done
-              # Ensure label for strategy name exists in github project
-              gh --repo ${GITHUB_REPOSITORY} label create strategy/${{ matrix.name }} --color "FFFFFF" --force
+              # Ensure labels for arch, project, OS, strategy and error cause
+              # exist in the github project
+              create_labels_for_archs ${GITHUB_REPOSITORY} $archs
+              create_labels_for_projects ${GITHUB_REPOSITORY} $projects
+              create_labels_for_oses ${GITHUB_REPOSITORY} $oses
+              create_labels_for_strategies ${GITHUB_REPOSITORY} ${{ matrix.name }}
+              create_labels_for_error_causes ${GITHUB_REPOSITORY} $error_causes
 
               os_labels=`for os in $oses; do echo -n " --label os/$os "; done`
               arch_labels=`for arch in $archs; do echo -n " --label arch/$arch " ; done`
               project_labels=`for project in $projects; do echo -n " --label project/$project "; done`
-
-              error_labels=""
-              for error_cause in `list_error_causes ${{ env.project_today }}`; do
-                gh --repo ${GITHUB_REPOSITORY} label create error/$error_cause --force
-                error_labels="$error_labels --label error/$error_cause"
-              done
+              error_labels=`for cause in $error_causes; do echo -n " --label error/$cause "; done`
+              strategy_labels=" --label strategy/${{ matrix.name }} "
 
               gh --repo ${GITHUB_REPOSITORY} issue create \
-                --label broken_snapshot_detected --label strategy/${{ matrix.name }} $os_labels $arch_labels $project_labels $error_labels \
+                --label broken_snapshot_detected $strategy_labels $os_labels $arch_labels $project_labels $error_labels \
                 --assignee ${{ matrix.maintainer_handle }} \
                 --title "Broken snapshot for ${{ env.today_yyyymmdd }} detected (${{ matrix.name }})" \
                 --body-file body.txt
+
+                handle_error_causes $causes_file
 
               exit 1
             fi
