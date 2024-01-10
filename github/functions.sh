@@ -202,7 +202,7 @@ function list_error_causes(){
     fi
 
     # Check for test issues
-    if [ -n "$(pcre2grep -n --before-context=2 --after-context=10 -M 'Failed Tests.*(\n|.)*Total Discovered Tests:' $log_file | tee $context_file)" ]; then
+    if [ -n "$(pcre2grep -n --before-context=2 --after-context=10 -M '(Failed Tests|Unexpectedly Passed Tests).*(\n|.)*Total Discovered Tests:' $log_file | tee $context_file)" ]; then
       store_cause "test"
     fi
 
