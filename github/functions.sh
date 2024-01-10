@@ -43,7 +43,7 @@ function copr_project_exists(){
 # TODO(kwk): Maybe: copr list $username | grep --regexp="^Name: \$project$"
 # TODO(kwk): get rid of echoing "true" and "false"
 function project_exists(){
-  local project=$1;
+  local project=$1
   copr_project_exists $project && echo "true" || echo "false";
 }
 
@@ -66,8 +66,8 @@ function get_packages() {
 
 # Returns false if a package needs special handling on certain architectures
 function is_package_supported_by_chroot() {
-  local pkg=$1;
-  local chroot=$2;
+  local pkg=$1
+  local chroot=$2
 
   if [[ ("$pkg" == "lld") && $chroot =~ -s390x$ ]]; then
     false
@@ -80,7 +80,7 @@ function is_package_supported_by_chroot() {
 #
 # *: All supported combinations of package + chroot (see is_package_supported_by_chroot).
 function has_all_good_builds(){
-  local project=$1;
+  local project=$1
   local extra_packages=$2
 
   copr monitor --output-format text-row --fields state,chroot,name $project | sort -k1 -k2 -k3 > /tmp/actual.txt
@@ -95,6 +95,8 @@ function has_all_good_builds(){
   sort -k1 -k2 -k3 -o /tmp/expected.txt /tmp/expected.txt
   diff -bus /tmp/expected.txt /tmp/actual.txt
 }
+
+#region error causes
 
 # Prints a comment on a given github issue that begins with an HTML comment
 # prefix in the form: <!--error/$cause project/$project chroot/$chroot-->.
@@ -125,6 +127,7 @@ function get_error_cause_comment() {
   local chroot=$4
   local cause=$5
 
+  >&2 echo "Getting error cause comment for repo $user_repo and issue number $issue_number: project=$project chroot=$chroot cause=$cause"
   gh --repo $user_repo issue view $issue_number \
     --comments \
     --json comments \
@@ -141,6 +144,7 @@ function has_error_cause_comment() {
   local chroot=$4
   local cause=$5
 
+  >&2 echo "Checking for error cause comment for repo $user_repo and issue number $issue_number: project=$project chroot=$chroot cause=$cause"
   comment=$(get_error_cause_comment $user_repo $issue_number $project $chroot $cause)
   [[ -n "$comment" ]]
 }
@@ -152,12 +156,14 @@ function has_error_cause_comment() {
 # information to it
 # (<cause>;<package_name>;<chroot>;<build_log_url>;<path_to_context_file>). The
 # context file contains the lines before and after the error in the build log.
-function list_error_causes(){
-  local project=$1;
-  local causes_file=$2;
+function get_error_causes(){
+  local project=$1
+  local causes_file=$2
   local grep_opts="-n --context=3"
   local monitor_file=$(mktemp)
   local context_file=$(mktemp)
+
+  >&2 echo "Start getting error causes from Copr monitor..."
 
   [[ -n "$causes_file" ]] && truncate --size 0 $causes_file
 
@@ -168,7 +174,7 @@ function list_error_causes(){
 
   cat $monitor_file | jq -r '.[] | select(.state | contains("failed")) | to_entries | map(.value) | @tsv' \
   | while IFS=$'\t' read -r chroot package_name state build_log_url; do
-    # echo "state=$state package_name=$package_name chroot=$chroot build_log_url=$build_log_url";
+    >&2 echo "Found on Copr monitor: state=$state package_name=$package_name chroot=$chroot build_log_url=$build_log_url";
 
     log_file=$(mktemp)
     curl -sL $build_log_url | gunzip -c  > $log_file
@@ -179,7 +185,9 @@ function list_error_causes(){
       local cause=$1
       echo $cause
       if [[ -n "$causes_file" ]]; then
-        echo "$cause;$package_name;$chroot;$build_log_url;$context_file" >> $causes_file
+        local line="$cause;$package_name;$chroot;$build_log_url;$context_file"
+        >&2 echo "Found error cause: $line"
+        echo $line >> $causes_file
         # For the next error we need to make room an create a new context file
         context_file=$(mktemp)
       fi
@@ -216,6 +224,8 @@ function list_error_causes(){
 
     rm $log_file
   done | sort | uniq
+
+  >&2 echo "Done getting error causes from Copr monitor."
 }
 
 # Takes a file with error causes and promotes unknown build causes as their own
@@ -226,36 +236,80 @@ function list_error_causes(){
 #  network_issue;llvm;fedora-rawhide-i386;https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/llvm-snapshots-big-merge-20240105/fedora-rawhide-i386/06865034-llvm/builder-live.log.gz;/tmp/tmp.v17rnmc4rp
 #  copr_timeout;llvm;fedora-39-ppc64le;https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/llvm-snapshots-big-merge-20240105/fedora-39-ppc64le/06865030-llvm/builder-live.log.gz;/tmp/tmp.PMXc0b7uEE
 function report_build_issues() {
-  local repo=$1
-  local issue_number=$2;
-  local causes_file=$3;
-  local maintainer_handle=$4;
+  local github_repo=$1
+  local issue_num=$2
+  local causes_file_path=$3
+  local maintainer_handle=$4
   local comment_body_file=""
 
+
+  >&2 echo "Begin reporting build issues from causes file: $causes_file_path..."
   while IFS=';' read -r cause package_name chroot build_log_url context_file;
   do
     echo "$cause $package_name $chroot $build_log_url $context_file"
-    if [ "$cause" == "unknown" ]; then
-      if ! has_error_cause_comment $repo $issue_number $package_name $chroot $cause ; then
-        comment_body_file=$(mktemp)
+    # if [ "$cause" != "unknown" ]; then
+    #   continue;
+    # fi
 
-        cat <<EOF > $comment_body_file
+    if ! has_error_cause_comment $github_repo $issue_num $package_name $chroot $cause ; then
+      comment_body_file=$(mktemp)
+
+      cat <<EOF > $comment_body_file
 <!--error/$cause project/$package_name chroot/$chroot-->
-@maintainer_handle, package \`$package_name\` failed to build on \`$chroot\` for an unknown cause ([build-log]($build_log_url)):
+@$maintainer_handle, package \`$package_name\` failed to build on \`$chroot\`. We identified this cause: **\`$cause\`** (see [build-log]($build_log_url)):
 
 \`\`\`
 $(cat $context_file)
 \`\`\`
 EOF
-        gh --repo $repo issue comment $issue_number --body-file $comment_body_file
-        rm $comment_body_file
-      else
-        echo "error cause comment for project '$package_name' and '$chroot' and '$cause' already exists"
-      fi
+      >&2 echo "Creating error cause comment for repo $user_repo and issue number $issue_number: project=$project chroot=$chroot cause=$cause"
+      gh --repo $github_repo issue comment $issue_num --body-file $comment_body_file
+      gh --repo $github_repo issue edit $issue_num --add-label "error/$cause"
+      rm $comment_body_file
+    else
+      >&2 echo "Error cause comment already exists for repo $user_repo and issue number $issue_number: project=$project chroot=$chroot cause=$cause"
     fi
-  done < $causes_file
+  done < $causes_file_path
+  >&2 echo "Done reporting build issues from causes file: $causes_file_path."
 }
 
+# This function inspects causes of build errors and adds a comment to today's
+# issue. Maybe we can identify new causes for errors by inspecting the build
+# logs.
+function handle_error_causes() {
+  local github_repo=$1
+  local strategy=$2
+  local maintainer_handle=$3
+  local copr_project_today=$4
+  local causes_file=$5
+  local issue_number=`todays_issue_number $github_repo $strategy`
+  local comment_file=`mktemp`
+
+  >&2 echo "Handling error causes..."
+  >&2 echo -n "Looking for causes file: $causes_file..."
+
+  # If no error causes file was passed, process build logs to get
+  # error causes. Also ensure the error cause labels are created.
+  if [[ -z "$causes_file" || ! -f "$causes_file" ]]; then
+    >&2 echo "FOUND"
+    causes_file=`mktemp`
+    error_causes="`get_error_causes $copr_project_today $causes_file`"
+    create_labels_for_error_causes $github_repo "$error_causes"
+  else
+    >&2 echo "NOT FOUND"
+  fi
+
+  # Turn some error causes into their own comment.
+  report_build_issues \
+    $github_repo \
+    "$issue_number" \
+    "$causes_file" \
+    "$maintainer_handle"
+
+  >&2 echo "Done handling error causes."
+}
+
+#endregion
 #region labels
 
 # Iterates over the given labels and creates or edits each label in the list
@@ -266,39 +320,43 @@ function _create_labels() {
   local label_prefix=$3
   local color=$4
 
+  >&2 echo "Begin creating labels in $repo: $labels"
   for label in $labels; do
-    gh --repo $repo label create $label_prefix$label --color $color --force
+    local label_name=$label_prefix$label
+    >&2 echo "Create label: $label_name"
+    gh --repo $repo label create $label_name --color $color --force
   done
+  >&2 echo "Done creating labels in $repo..."
 }
 
 function create_labels_for_error_causes() {
   local repo=$1
-  local error_causes=$2
-  _create_labels $repo $error_causes "error/" "F76B19"
+  local error_causes="$2"
+  _create_labels $repo "$error_causes" "error/" "FBCA04"
 }
 
 function create_labels_for_archs() {
   local repo=$1
-  local archs=$2
-  _create_labels $repo $archs "arch/" "C5DEF5"
+  local archs="$2"
+  _create_labels $repo "$archs" "arch/" "C5DEF5"
 }
 
 function create_labels_for_oses() {
   local repo=$1
-  local oses=$2
-  _create_labels $repo $oses "os/" "F9D0C4"
+  local oses="$2"
+  _create_labels $repo "$oses" "os/" "F9D0C4"
 }
 
 function create_labels_for_projects() {
   local repo=$1
-  local projects=$2
-  _create_labels $repo $projects "project/" "BFDADC"
+  local projects="$2"
+  _create_labels $repo "$projects" "project/" "BFDADC"
 }
 
 function create_labels_for_strategies() {
   local repo=$1
-  local strategies=$2
-  _create_labels $repo $strategies "strategy/" "FFFFFF"
+  local strategies="$2"
+  _create_labels $repo "$strategies" "strategy/" "FFFFFF"
 }
 #endregion
 

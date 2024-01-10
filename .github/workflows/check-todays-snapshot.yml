@@ -74,35 +74,14 @@ jobs:
           source github/functions.sh
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          # This function inspects causes of build errors and adds a comment to
-          # today's issue.
-          function handle_error_causes() {
-            local causes_file=$1
-            local issue_number=`todays_issue_number ${GITHUB_REPOSITORY} ${{ matrix.name }}`
-            local comment_file=`mktemp`
-
-            echo "Maybe we can identify new causes for errors by inspecting the build logs."
-
-            # If no error causes file was passed, process build logs to get
-            # error causes. Also ensure the error cause labels are created.
-            if [[ -n "$causes_file" && ! -f "$causes_file" ]]; then
-              causes_file=`mktemp`
-              error_causes=`list_error_causes ${{ env.project_today }} $causes_file`
-              create_labels_for_error_causes ${GITHUB_REPOSITORY} $error_causes
-            fi
-
-            # Turn some error causes into their own comment.
-            report_build_issues \
-              ${GITHUB_REPOSITORY} \
-              $issue_number \
-              $causes_file \
-              ${{ matrix.maintainer_handle }}
-          }
-
           if was_broken_snapshot_detected_today ${GITHUB_REPOSITORY} ${{ matrix.name }}; then
             echo "We already filed an issue for broken snapshots today."
-            handle_error_causes
-            exit 0;
+            handle_error_causes \
+              ${GITHUB_REPOSITORY} \
+              ${{ matrix.name }} \
+              ${{ matrix.maintainer_handle }} \
+              ${{ env.project_today }}
+              exit 0;
           fi
 
           if ! copr_project_exists ${{ env.project_today }}; then
@@ -130,15 +109,15 @@ jobs:
               archs=`grep -ioP 'failed\s+[^-]+-[0-9,rawhide]+-\K[^\s]+' /tmp/diff | sort | uniq`
               projects=`grep -ioP 'failed\s+[^\s]+\s+\K[^\s]+$' /tmp/diff | sort | uniq`
               oses=`grep -ioP 'failed\s+\K.*' /tmp/diff | cut -d '-' -f 1-2 | sort | uniq`
-              error_causes=`list_error_causes ${{ env.project_today }} $causes_file`
+              error_causes=`get_error_causes ${{ env.project_today }} $causes_file`
 
               # Ensure labels for arch, project, OS, strategy and error cause
               # exist in the github project
-              create_labels_for_archs ${GITHUB_REPOSITORY} $archs
-              create_labels_for_projects ${GITHUB_REPOSITORY} $projects
-              create_labels_for_oses ${GITHUB_REPOSITORY} $oses
-              create_labels_for_strategies ${GITHUB_REPOSITORY} ${{ matrix.name }}
-              create_labels_for_error_causes ${GITHUB_REPOSITORY} $error_causes
+              create_labels_for_archs ${GITHUB_REPOSITORY} "$archs"
+              create_labels_for_projects ${GITHUB_REPOSITORY} "$projects"
+              create_labels_for_oses ${GITHUB_REPOSITORY} "$oses"
+              create_labels_for_strategies ${GITHUB_REPOSITORY} "${{ matrix.name }}"
+              create_labels_for_error_causes ${GITHUB_REPOSITORY} "$error_causes"
 
               os_labels=`for os in $oses; do echo -n " --label os/$os "; done`
               arch_labels=`for arch in $archs; do echo -n " --label arch/$arch " ; done`
@@ -152,7 +131,12 @@ jobs:
                 --title "Broken snapshot for ${{ env.today_yyyymmdd }} detected (${{ matrix.name }})" \
                 --body-file body.txt
 
-                handle_error_causes $causes_file
+                handle_error_causes \
+                  ${GITHUB_REPOSITORY} \
+                  ${{ matrix.name }} \
+                  ${{ matrix.maintainer_handle }} \
+                  ${{ env.project_today }} \
+                  $causes_file
 
               exit 1
             fi
