@@ -309,3 +309,10 @@ function install_gh_client() {
   dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
   dnf install -y gh
 }
+
+# Prefixes the old version of the given function with "_" to make it callable
+# from the overwriting function.
+function prefix_function() {
+  local function_name=$1
+  eval "_`declare -f $function_name`"
+}
