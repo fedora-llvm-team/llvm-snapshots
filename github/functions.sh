@@ -218,7 +218,7 @@ function list_error_causes(){
   done | sort | uniq
 }
 
-# Takes a file with error causes and promots unknown build causes as their own
+# Takes a file with error causes and promotes unknown build causes as their own
 # comment on the given issue.
 #
 # A causes file looks like a semicolon separated list file:
