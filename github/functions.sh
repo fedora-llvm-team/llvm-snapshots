@@ -218,7 +218,7 @@ function get_error_causes(){
 
     if [ "$got_cause" == "0" ]; then
       # Add the tail of the log to the context file because we haven't got any better information
-      tail -n 10 > $context_file
+      tail -n 10 $log_file > $context_file
       store_cause "unknown"
     fi
 
