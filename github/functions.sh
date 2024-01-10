@@ -235,7 +235,7 @@ function report_build_issues() {
   while IFS=';' read -r cause package_name chroot build_log_url context_file;
   do
     echo "$cause $package_name $chroot $build_log_url $context_file"
-    if [ "$cause" == "network_issue" ]; then
+    if [ "$cause" == "unknown" ]; then
       if ! has_error_cause_comment $repo $issue_number $package_name $chroot $cause ; then
         comment_body_file=$(mktemp)
 
