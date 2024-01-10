@@ -41,7 +41,7 @@ jobs:
 
       - name: Install Copr CLI and required tools
         run: |
-          dnf install -y copr-cli make bzip2 rpm-build
+          dnf install -y copr-cli make bzip2 rpm-build pcre2-tools
 
       - uses: actions/checkout@v3
 
