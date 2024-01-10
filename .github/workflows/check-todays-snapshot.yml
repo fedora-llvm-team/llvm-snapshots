@@ -79,7 +79,6 @@ jobs:
           function handle_error_causes() {
             local causes_file=$1
             local issue_number=`todays_issue_number ${GITHUB_REPOSITORY} ${{ matrix.name }}`
-            local error_labels=""
             local comment_file=`mktemp`
 
             echo "Maybe we can identify new causes for errors by inspecting the build logs."
