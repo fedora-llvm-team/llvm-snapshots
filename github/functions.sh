@@ -137,7 +137,8 @@ function get_error_causes(){
     --fields chroot,name,state,url_build_log $project \
     > $monitor_file
 
-  cat $monitor_file | jq -r '.[] | select(.state | contains("failed")) | to_entries | map(.value) | @tsv' \
+  for pkg in $(get_packages); do
+  cat $monitor_file | jq -r '.[] | select(.name == "'$pkg'") | select(.state == "failed") | to_entries | map(.value) | @tsv' \
   | while IFS=$'\t' read -r chroot package_name state build_log_url; do
     >&2 echo "Found on Copr monitor: state=$state package_name=$package_name chroot=$chroot build_log_url=$build_log_url";
 
@@ -188,6 +189,7 @@ function get_error_causes(){
     fi
 
     rm $log_file
+  done
   done | sort | uniq
 
   >&2 echo "Done getting error causes from Copr monitor."
