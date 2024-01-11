@@ -56,7 +56,7 @@ function get_active_build_ids(){
 
 # Prints the chroots we care about.
 function get_chroots() {
-  copr list-chroots | grep -P '^fedora-(rawhide|[0-9]+)' | tr '\n' ' '
+  copr list-chroots | grep -P '^fedora-(rawhide|[0-9]+)' | sort | tr '\n' ' '
 }
 
 # Prints the packages we care about
@@ -98,54 +98,19 @@ function has_all_good_builds(){
 
 #region error causes
 
-# Prints a comment on a given github issue that begins with an HTML comment
-# prefix in the form: <!--error/$cause project/$project chroot/$chroot-->.
-#
-# If no such comment exists, nothing is printed.
-#
-# Here's an example of what is printed.
-#
-#   {
-#     "author": {
-#       "login": "kwk"
-#     },
-#     "authorAssociation": "OWNER",
-#     "body": "<!--error_causes-->\r\nFoobar.",
-#     "createdAt": "2023-04-12T12:34:19Z",
-#     "id": "IC_123412341234",
-#     "includesCreatedEdit": true,
-#     "isMinimized": false,
-#     "minimizedReason": "",
-#     "reactionGroups": [],
-#     "url": "https://github.com/<USER>/<REPO>/issues/1#issuecomment-1505197645",
-#     "viewerDidAuthor": true
-#   }
-function get_error_cause_comment() {
-  local user_repo=$1
-  local issue_number=$2
-  local project=$3
-  local chroot=$4
-  local cause=$5
-
-  >&2 echo "Getting error cause comment for repo $user_repo and issue number $issue_number: project=$project chroot=$chroot cause=$cause"
-  gh --repo $user_repo issue view $issue_number \
-    --comments \
-    --json comments \
-    --jq '.comments[] | select(.body | startswith("<!--error/'$cause' project/'$project' chroot/'$chroot'-->"))'
-}
-
-# Checks if a comment exists on a given github issue that begins with an HTML
-# comment prefix in the form:
-#   <!--error/$cause project/$project chroot/$chroot-->.
+# Checks if the first issue comment contains a note on the chroot failing. The
+# comment looks like <!--error/$cause project/$package chroot/$chroot-->.
 function has_error_cause_comment() {
   local user_repo=$1
   local issue_number=$2
-  local project=$3
-  local chroot=$4
+  local chroot=$3
+  local package=$4
   local cause=$5
 
-  >&2 echo "Checking for error cause comment for repo $user_repo and issue number $issue_number: project=$project chroot=$chroot cause=$cause"
-  comment=$(get_error_cause_comment $user_repo $issue_number $project $chroot $cause)
+  >&2 echo "Checking for error cause comment for repo $user_repo and issue number $issue_number: chroot=$chroot"
+  comment=$(gh --repo $user_repo issue view $issue_number \
+    --json body \
+    --jq '. | select(.body | match("<!--error/'$cause' project/'$package' chroot/'$chroot'-->"))')
   [[ -n "$comment" ]]
 }
 
@@ -205,7 +170,7 @@ function get_error_causes(){
     fi
 
     # Check for dependency issues
-    if [ -n "$(grep $grep_opts 'Not all dependencies satisfied' $log_file | tee $context_file)" ]; then
+    if [ -n "$(grep $grep_opts -P '(Not all dependencies satisfied|No match for argument:)' $log_file | tee $context_file)" ]; then
       store_cause "dependency_issue"
     fi
 
@@ -228,6 +193,16 @@ function get_error_causes(){
   >&2 echo "Done getting error causes from Copr monitor."
 }
 
+function get_arch_from_chroot() {
+  local chroot=$1
+  echo $chroot | grep -ioP '[^-]+-[0-9,rawhide]+-\K[^\s]+'
+}
+
+function get_os_from_chroot() {
+  local chroot=$1
+  echo $chroot | grep -ioP '[^-]+-[0-9,rawhide]+'
+}
+
 # Takes a file with error causes and promotes unknown build causes as their own
 # comment on the given issue.
 #
@@ -242,35 +217,55 @@ function report_build_issues() {
   local maintainer_handle=$4
   local comment_body_file=""
 
-
   >&2 echo "Begin reporting build issues from causes file: $causes_file_path..."
   while IFS=';' read -r cause package_name chroot build_log_url context_file;
   do
-    echo "$cause $package_name $chroot $build_log_url $context_file"
-    # if [ "$cause" != "unknown" ]; then
-    #   continue;
-    # fi
+    >&2 echo "---------------"
+    >&2 echo "$cause $package_name $chroot $build_log_url $context_file"
 
-    if ! has_error_cause_comment $github_repo $issue_num $package_name $chroot $cause ; then
+    arch=$(get_arch_from_chroot $chroot)
+    os=$(get_os_from_chroot $chroot)
+
+    if ! has_error_cause_comment $github_repo $issue_num $chroot $package_name $cause ; then
+      # Store existing comment body in a file and continously append to that file before making it the new issue comment
       comment_body_file=$(mktemp)
+      gh --repo $github_repo issue view $issue_num --json body --jq ".body" > $comment_body_file
 
-      cat <<EOF > $comment_body_file
+
+      # Wrap "more interesting" build log snippets in a <details open></details> block
+      details_begin="<details>"
+      if [ "$cause" == "unknown" ]; then
+        details_begin="<details open>"
+      fi
+
+      cat <<EOF >> $comment_body_file
 <!--error/$cause project/$package_name chroot/$chroot-->
-@$maintainer_handle, package \`$package_name\` failed to build on \`$chroot\`. We identified this cause: **\`$cause\`** (see [build-log]($build_log_url)):
+$details_begin
+<summary>
+Failed to build <code>$package_name</code> on <code>$chroot</code>. Cause: <b><code>$cause</code></b>
+(see <a href="$build_log_url">build log</a>) [$(date --iso-8601=hours)]
+</summary>
 
 \`\`\`
 $(cat $context_file)
 \`\`\`
+
+</details>
 EOF
-      >&2 echo "Creating error cause comment for repo $user_repo and issue number $issue_number: project=$project chroot=$chroot cause=$cause"
-      gh --repo $github_repo issue comment $issue_num --body-file $comment_body_file
-      gh --repo $github_repo issue edit $issue_num --add-label "error/$cause"
-      rm $comment_body_file
+      >&2 echo "Updating issue labels and comment for issue number $issue_num in $github_repo: project=$project chroot=$chroot cause=$cause"
+      create_labels_for_archs $github_repo $arch
+      create_labels_for_oses $github_repo $os
+      create_labels_for_projects $github_repo $package_name
+      create_labels_for_error_causes $github_repo $cause
+      gh --repo $github_repo issue edit $issue_num \
+        --body-file $comment_body_file \
+        --add-label "error/$cause,project/$package_name,arch/$arch,os/$os"
     else
-      >&2 echo "Error cause comment already exists for repo $user_repo and issue number $issue_number: project=$project chroot=$chroot cause=$cause"
+      >&2 echo "An entry for the chroot already exists: chroot=$chroot"
     fi
+    >&2 echo "---------------"
   done < $causes_file_path
-  >&2 echo "Done reporting build issues from causes file: $causes_file_path."
+  >&2 echo "Done updating issue comment for issue number $issue_num in $github_repo: project=$project chroot=$chroot cause=$cause"
 }
 
 # This function inspects causes of build errors and adds a comment to today's
@@ -366,11 +361,4 @@ function install_gh_client() {
   dnf install -y 'dnf-command(config-manager)'
   dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
   dnf install -y gh
-}
-
-# Prefixes the old version of the given function with "_" to make it callable
-# from the overwriting function.
-function prefix_function() {
-  local function_name=$1
-  eval "_`declare -f $function_name`"
 }

@@ -2,10 +2,8 @@
 set +x
 
 # Prints the chroots we care about.
-prefix_function get_chroots
 function get_chroots() {
-  _get_chroots
-  echo -n " rhel-9-x86_64 "
+  copr list-chroots | grep -P '^(fedora-(rawhide|[0-9]+)|rhel-9-x86_64)' | sort |  tr '\n' ' '
 }
 
 # Prints the packages we care about
