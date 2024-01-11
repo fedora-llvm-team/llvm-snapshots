@@ -98,11 +98,16 @@ jobs:
               cat <<EOF > body.txt
           Hello @${{ matrix.maintainer_handle }},
 
-          looking at the [Fedora Copr build monitor](${{ env.monitor_url }}) for ${{ env.today_yyyymmdd }} we found at least one failed build:
+          <details>
+          <summary>looking at the <a href="${{ env.monitor_url }}">Fedora Copr build monitor</a> for ${{ env.today_yyyymmdd }} we found at least one failed build.</summary>
 
           \`\`\`diff
           $(cat /tmp/diff)
           \`\`\`
+
+          </details>
+
+          The CI system will update this very comment over time to list the first error in each chroot.
           EOF
               causes_file=`mktemp`
 

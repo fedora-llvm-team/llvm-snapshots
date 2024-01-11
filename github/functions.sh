@@ -228,6 +228,14 @@ function report_build_issues() {
     arch=$(get_arch_from_chroot $chroot)
     os=$(get_os_from_chroot $chroot)
 
+    create_labels_for_archs $github_repo $arch
+    create_labels_for_oses $github_repo $os
+    create_labels_for_projects $github_repo $package_name
+    create_labels_for_error_causes $github_repo $cause
+
+    gh --repo $github_repo issue edit $issue_num \
+        --add-label "error/$cause,project/$package_name,arch/$arch,os/$os"
+
     if ! has_error_cause_comment $github_repo $issue_num $chroot $package_name $cause ; then
       # Store existing comment body in a file and continously append to that file before making it the new issue comment
       comment_body_file=$(mktemp)
@@ -254,11 +262,8 @@ $(cat $context_file)
 
 </details>
 EOF
-      >&2 echo "Updating issue labels and comment for issue number $issue_num in $github_repo: project=$project chroot=$chroot cause=$cause"
-      create_labels_for_archs $github_repo $arch
-      create_labels_for_oses $github_repo $os
-      create_labels_for_projects $github_repo $package_name
-      create_labels_for_error_causes $github_repo $cause
+      >&2 echo "Updating comment for issue number $issue_num in $github_repo: project=$project chroot=$chroot cause=$cause"
+
       gh --repo $github_repo issue edit $issue_num \
         --body-file $comment_body_file \
         --add-label "error/$cause,project/$package_name,arch/$arch,os/$os"
