@@ -171,7 +171,7 @@ function get_error_causes(){
     fi
 
     # Check for dependency issues
-    if [ -n "$(grep $grep_opts -P '(Not all dependencies satisfied|No match for argument:)' $log_file | tee $context_file)" ]; then
+    if [ -n "$(grep $grep_opts -P '(No matching package to install:|Not all dependencies satisfied|No match for argument:)' $log_file | tee $context_file)" ]; then
       store_cause "dependency_issue"
     fi
 
