@@ -177,6 +177,9 @@ function get_error_causes(){
 
     # Check for test issues
     if [ -n "$(pcre2grep -n --before-context=2 --after-context=10 -M '(Failed Tests|Unexpectedly Passed Tests).*(\n|.)*Total Discovered Tests:' $log_file | tee $context_file)" ]; then
+
+      # Extend the context by the actual test errors
+      sed -n -e '/\(\*\)\{20\} TEST [^\*]* FAILED \*\{20\}/,/\*\{20\}/ p' $log_file >> tee -a $context_file
       store_cause "test"
     fi
 
