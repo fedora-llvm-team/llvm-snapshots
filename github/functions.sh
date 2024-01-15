@@ -125,6 +125,13 @@ function get_error_causes(){
   for pkg in $(get_packages); do
   cat $monitor_file | jq -r '.[] | select(.name == "'$pkg'") | select(.state == "failed") | to_entries | map(.value) | @tsv' \
   | while IFS=$'\t' read -r chroot package_name state build_log_url build_url; do
+    # If the build URL is empty, that means that actually the build log URL is
+    # not present.
+    if [ "$build_url" == "" ]; then
+      build_url=$build_log_url
+      build_log_url="NOTFOUND"
+    fi
+
     >&2 echo "Found on Copr monitor: Package: $package_name State: $state Chroot: $chroot Build-Log-URL: $build_log_url Build-URL: $build_url";
 
     got_cause=0
@@ -150,7 +157,7 @@ function get_error_causes(){
 
     # Treat errors with no build logs as unknown and tell user to visit the
     # build URL manually.
-    if [ "$build_url" == "" ]; then
+    if [ "$build_log_url" == "NOTFOUND" ]; then
 cat <<EOF >> $context_file
 Sorry, but this build contains no log file,
 please consult the build page to find out more.
@@ -158,7 +165,6 @@ please consult the build page to find out more.
 $build_url.
 EOF
       wrap_file_in_md_code_fence $context_file
-      build_log_url="NOTFOUND"
       store_cause "unknown"
       continue;
     fi
