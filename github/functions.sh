@@ -124,7 +124,7 @@ function get_error_causes(){
 
   for pkg in $(get_packages); do
   cat $monitor_file | jq -r '.[] | select(.name == "'$pkg'") | select(.state == "failed") | to_entries | map(.value) | @tsv' \
-  | while IFS=$'\t' read -r chroot package_name state build_log_url build_url; do
+  | while IFS=$'\t' read -r chroot package_name state build_url build_log_url; do
     # If the build URL is empty, that means that actually the build log URL is
     # not present.
     if [ "$build_url" == "" ]; then
