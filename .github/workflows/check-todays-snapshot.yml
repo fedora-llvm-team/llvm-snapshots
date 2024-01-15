@@ -1,10 +1,10 @@
 name: "Check today's snapshot"
 
 on:
-  schedule:
+  # schedule:
     # At every 60th minute.
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    - cron: "*/60 * * * *"
+    # - cron: "*/60 * * * *"
 
   workflow_dispatch: {}
 
