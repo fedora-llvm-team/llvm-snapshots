@@ -195,7 +195,12 @@ EOF
       sed -n -e '/\(\*\)\{20\} TEST [^\*]* FAILED \*\{20\}/,/\*\{20\}/ p' $log_file | tee -a $context_file
       echo '```' >> $context_file
       store_cause "test"
+
+    elif [ -n "$(sed -n -e '/RPM build errors/,/Finish:/ p' $log_file | tee $context_file)" ]; then
+      wrap_file_in_md_code_fence $context_file
+      store_cause "rpm_build_issue"
     fi
+
 
     # TODO: Feel free to add your check here (make sure to set got_cause=1)...
 
