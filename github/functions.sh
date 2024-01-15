@@ -111,6 +111,7 @@ function get_error_causes(){
   local grep_opts="-n --context=3"
   local monitor_file=$(mktemp)
   local context_file=$(mktemp)
+  local log_file=$(mktemp)
 
   >&2 echo "Start getting error causes from Copr monitor..."
 
@@ -118,23 +119,20 @@ function get_error_causes(){
 
   copr monitor \
     --output-format json \
-    --fields chroot,name,state,url_build_log $project \
+    --fields chroot,name,state,url_build_log,url_build $project \
     > $monitor_file
 
   for pkg in $(get_packages); do
   cat $monitor_file | jq -r '.[] | select(.name == "'$pkg'") | select(.state == "failed") | to_entries | map(.value) | @tsv' \
-  | while IFS=$'\t' read -r chroot package_name state build_log_url; do
-    >&2 echo "Found on Copr monitor: state=$state package_name=$package_name chroot=$chroot build_log_url=$build_log_url";
-
-    log_file=$(mktemp)
-    curl -sL $build_log_url | gunzip -c  > $log_file
+  | while IFS=$'\t' read -r chroot package_name state build_log_url build_url; do
+    >&2 echo "Found on Copr monitor: Package: $package_name State: $state Chroot: $chroot Build-Log-URL: $build_log_url Build-URL: $build_url";
 
     got_cause=0
 
     function store_cause() {
       local cause=$1
       if [[ -n "$causes_file" ]]; then
-        local line="$cause;$package_name;$chroot;$build_log_url;$context_file"
+        local line="$cause;$package_name;$chroot;$build_log_url;$build_log;$context_file"
         >&2 echo "Found error cause: $line"
         echo $line >> $causes_file
         # For the next error we need to make room an create a new context file
@@ -149,6 +147,25 @@ function get_error_causes(){
       sed -i '1s;^;```;' $context_file
       echo '```' >> $context_file
     }
+
+    # Treat errors with no build logs as unknown and tell user to visit the
+    # build URL manually.
+    if [ "$build_url" == "" ]; then
+cat <<EOF >> $context_file
+Sorry, but this build contains no log file,
+please consult the build page to find out more.
+
+$build_url.
+EOF
+      wrap_file_in_md_code_fence $context_file
+      build_log_url="NOTFOUND"
+      store_cause "unknown"
+      continue;
+    fi
+
+    curl -sL $build_log_url | gunzip -c  > $log_file
+
+
 
     # Check for timeout
     if [ -n "$(grep $grep_opts '!! Copr timeout' $log_file | tee $context_file)" ]; then
@@ -175,7 +192,7 @@ function get_error_causes(){
       echo "" >> $context_file
       echo '```' >> $context_file
       # Extend the context by the actual test errors
-      sed -n -e '/\(\*\)\{20\} TEST [^\*]* FAILED \*\{20\}/,/\*\{20\}/ p' $log_file >> tee -a $context_file
+      sed -n -e '/\(\*\)\{20\} TEST [^\*]* FAILED \*\{20\}/,/\*\{20\}/ p' $log_file | tee -a $context_file
       echo '```' >> $context_file
       store_cause "test"
     fi
@@ -251,9 +268,9 @@ function report_build_issues() {
   error_causes=""
 
   >&2 echo "Begin reporting build issues from causes file: $causes_file_path..."
-  while IFS=';' read -r cause package_name chroot build_log_url context_file;
+  while IFS=';' read -r cause package_name chroot build_log_url build_url context_file;
   do
-    >&2 echo "Cause: $cause Package: $package_name Chroot: $chroot Build-Log-URL: $build_log_url Context-File: $context_file"
+    >&2 echo "Cause: $cause Package: $package_name Chroot: $chroot Build-Log-URL: $build_log_url Build-URL: $build_url Context-File: $context_file"
 
     # Append to
     arch="$(get_arch_from_chroot $chroot)"
@@ -274,13 +291,18 @@ function report_build_issues() {
       details_begin="<details open>"
     fi
 
+    build_log_entry="(see <a href=\"$build_log_url\">build log</a>)"
+    if [ "$build_log_url" == "NOTFOUND" ]; then
+      build_log_entry="(see <a href=\"$build_url\">build</a>)"
+    fi
+
     cat <<EOF >> $comment_body_file
 <!--error/$cause project/$package_name chroot/$chroot-->
 $details_begin
 <summary>
 Failed to build <code>$package_name</code> on <code>$chroot</code>.
 Cause: <b><code>$cause</code></b>
-(see <a href="$build_log_url">build log</a>) [$(date --iso-8601=hours)]
+$build_log_entry [$(date --iso-8601=hours)]
 </summary>
 
 $(cat $context_file)
