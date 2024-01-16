@@ -2,9 +2,9 @@ name: "Check today's snapshot"
 
 on:
   # schedule:
-    # At every 60th minute.
-    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    # - cron: "*/60 * * * *"
+  #   # At every 60th minute.
+  #   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+  #   - cron: "*/60 * * * *"
 
   workflow_dispatch: {}
 
@@ -99,7 +99,7 @@ jobs:
           Hello @${{ matrix.maintainer_handle }},
 
           <details>
-          <summary>looking at the <a href="${{ env.monitor_url }}">Fedora Copr build monitor</a> for ${{ env.today_yyyymmdd }} we found at least one failed build.</summary>
+          <summary>Looking at the <a href="${{ env.monitor_url }}">Fedora Copr build monitor</a> for ${{ env.today_yyyymmdd }} we found at least one failed build.</summary>
 
           \`\`\`diff
           $(cat /tmp/diff)
@@ -107,7 +107,9 @@ jobs:
 
           </details>
 
-          The CI system will update this very comment over time to list the first error in each chroot.
+          The CI system will update this very comment over time to list the errors.
+
+          `update_marker`
           EOF
               causes_file=`mktemp`
 

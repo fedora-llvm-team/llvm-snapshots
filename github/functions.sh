@@ -119,28 +119,30 @@ function get_error_causes(){
 
   copr monitor \
     --output-format json \
-    --fields chroot,name,state,url_build_log,url_build $project \
+    --fields chroot,name,state,url_build_log,url_build,build_id $project \
     > $monitor_file
 
   for pkg in $(get_packages); do
-  cat $monitor_file | jq -r '.[] | select(.name == "'$pkg'") | select(.state == "failed") | to_entries | map(.value) | @tsv' \
-  | while IFS=$'\t' read -r chroot package_name state build_url build_log_url; do
-    # If the build URL is empty, that means that actually the build log URL is
-    # not present.
-    if [ "$build_url" == "" ]; then
-      build_url=$build_log_url
-      build_log_url="NOTFOUND"
-    fi
-
-    >&2 echo "Found on Copr monitor: Package: $package_name State: $state Chroot: $chroot Build-Log-URL: $build_log_url Build-URL: $build_url";
+  cat $monitor_file | jq -r '.[] | select(.name == "'$pkg'") | select(.state == "failed") | to_entries | map(.value | if . then . else "NOTFOUND" end) | @tsv' \
+  | while IFS=$'\t' read -r build_id chroot package_name state build_url build_log_url; do
+    >&2 cat <<EOF
+---------------
+Package:       $package_name
+State:         $state
+Chroot:        $chroot
+Build-Log-URL: $build_log_url
+Build-URL:     $build_url
+Build-ID:      $build_id
+EOF
 
     got_cause=0
 
     function store_cause() {
       local cause=$1
       if [[ -n "$causes_file" ]]; then
-        local line="$cause;$package_name;$chroot;$build_log_url;$build_log;$context_file"
-        >&2 echo "Found error cause: $line"
+        local line="$cause;$package_name;$chroot;$build_log_url;$build_url;$build_id;$context_file"
+        >&2 echo "Cause:         $cause"
+        >&2 echo "Context File:  $context_file"
         echo $line >> $causes_file
         # For the next error we need to make room an create a new context file
         context_file=$(mktemp)
@@ -151,27 +153,36 @@ function get_error_causes(){
     # Prepend context file with markdown code fence
     function wrap_file_in_md_code_fence() {
       local context_file=$1
-      sed -i '1s;^;```;' $context_file
+      sed -i '1s;^;```\n;' $context_file
       echo '```' >> $context_file
     }
 
     # Treat errors with no build logs as unknown and tell user to visit the
     # build URL manually.
     if [ "$build_log_url" == "NOTFOUND" ]; then
-cat <<EOF >> $context_file
-Sorry, but this build contains no log file,
-please consult the build page to find out more.
+      # See https://github.com/fedora-copr/log-detective-website/issues/73#issuecomment-1889042206
+      source_build_log_url="https://download.copr.fedorainfracloud.org/results/$project/srpm-builds/$(printf "%08d" $build_id)/builder-live.log.gz"
+      >&2 echo "No build log found. Falling back to scanning the SRPM build log: $source_build_log_url".
 
-$build_url.
+      source_build_log_file=$(mktemp)
+      curl -sL $source_build_log_url | gunzip -c > $source_build_log_file
+
+      cat <<EOF >> $context_file
+<h4>No build log available</h4>
+Sorry, but this build contains no build log file, please consult the <a href="$build_url">build page</a> to find out more.
+
+<h4>Errors in SRPM build log</h4>
+We've scanned the <a href="$source_build_log_url">SRPM build log</a> for <code>error:</code> (case insesitive) and here's what we've found:
+
+\`\`\`
+$(grep --context=3 -i 'error:' $source_build_log_file)
+\`\`\`
 EOF
-      wrap_file_in_md_code_fence $context_file
-      store_cause "unknown"
+      store_cause "srpm_build_issue"
       continue;
     fi
 
     curl -sL $build_log_url | gunzip -c  > $log_file
-
-
 
     # Check for timeout
     if [ -n "$(grep $grep_opts '!! Copr timeout' $log_file | tee $context_file)" ]; then
@@ -191,33 +202,58 @@ EOF
     # Check for test issues
     elif [ -n "$(pcre2grep -n --after-context=10 -M '(Failed Tests|Unexpectedly Passed Tests).*(\n|.)*Total Discovered Tests:' $log_file | tee $context_file)" ]; then
       wrap_file_in_md_code_fence $context_file
-      sed -i '1s;^;The following tests have failed:\n;' $context_file
+      sed -i '1s;^;### Failing tests\n\n;' $context_file
 
       echo "" >> $context_file
-      echo "Here are the test errors:" >> $context_file
+      echo "### Test output" >> $context_file
       echo "" >> $context_file
       echo '```' >> $context_file
       # Extend the context by the actual test errors
-      sed -n -e '/\(\*\)\{20\} TEST [^\*]* FAILED \*\{20\}/,/\*\{20\}/ p' $log_file | tee -a $context_file
+      local test_output_file=$(mktemp)
+      sed -n -e '/\(\*\)\{20\} TEST [^\*]* FAILED \*\{20\}/,/\*\{20\}/ p' $log_file > $test_output_file
+      cat $test_output_file >> $context_file
       echo '```' >> $context_file
       store_cause "test"
 
-    elif [ -n "$(sed -n -e '/RPM build errors/,/Finish:/ p' $log_file | tee $context_file)" ]; then
-      wrap_file_in_md_code_fence $context_file
-      store_cause "rpm_build_issue"
+
+    # TODO: Feel free to add your check here...
+    # elif [ -n "$(grep $grep_opts 'MY PATTERN' $log_file | tee $context_file)" ]; then
+    #   wrap_file_in_md_code_fence $context_file
+    #   store_cause "MY_ERROR"
+
     fi
 
-
-    # TODO: Feel free to add your check here (make sure to set got_cause=1)...
-
     if [ "$got_cause" == "0" ]; then
-      # Add the tail of the log to the context file because we haven't got any better information
-      tail -n 10 $log_file > $context_file
-      wrap_file_in_md_code_fence $context_file
+      cat <<EOF > $context_file
+### Build log tail
+
+Sometimes the end of the build log contains useful information.
+
+\`\`\`
+$(tail -n 10 $log_file)
+\`\`\`
+
+### RPM build errors
+
+If we have found <code>RPM build errors</code> in the log file, you'll find them here.
+
+\`\`\`
+$(sed -n -e '/RPM build errors/,/Finish:/ p' $log_file)
+\`\`\`
+
+### Errors to look into
+
+If we have found the term <code>error:</code> (case insentitive) in the build log,
+you'll find all occurrences here together with the preceding lines.
+
+\`\`\`
+$(grep --before-context=1 -i 'error:' $log_file)
+\`\`\`
+EOF
       store_cause "unknown"
     fi
 
-    rm $log_file
+    # rm $log_file
   done
   done | sort | uniq
 
@@ -234,25 +270,10 @@ function get_os_from_chroot() {
   echo $chroot | grep -ioP '[^-]+-[0-9,rawhide]+'
 }
 
-# Checks if the given comment body file contains a note on the chroot failing.
-# The comment looks like <!--error/$cause project/$package chroot/$chroot-->.
-function has_error_cause_comment() {
-  local comment_body_file=$1
-  local chroot=$2
-  local package=$3
-  local cause=$4
-  local cause_comment='<!--error/'$cause' project/'$package' chroot/'$chroot'-->'
-  local comment=""
-
-  echo $cause_comment
-  >&2 echo 'Check if comment body file has error cause comment: '$cause_comment
-  if [ -f $comment_body_file ]; then
-    comment=$(cat $comment_body_file \
-              | jq '. | select(.body | match("<!--error/'$cause' project/'$package' chroot/'$chroot'-->"))' \
-            )
-  fi
-
-  [[ -n "$comment" ]]
+# Prints the marker after a broken snapshot issue comment body when the updates
+# shall follow.
+function update_marker() {
+  echo '<!--UPDATES_FOLLOW_HERE-->'
 }
 
 # Takes a file with error causes and promotes unknown build causes as their own
@@ -269,19 +290,44 @@ function report_build_issues() {
   local maintainer_handle=$4
   local comment_body_file=$(mktemp)
 
+  # To store all important causes like "unknown"
+  local sorted_causes_file=$(mktemp)
+  grep -P '^unknown;' $causes_file_path | sort --stable --ignore-case > $sorted_causes_file
+  # To store the rest of causes
+  grep -Pv '^unknown;' $causes_file_path | sort --stable --ignore-case >> $sorted_causes_file
+
   # Store existing comment body in a file and continously append to that file
   # before making it the new issue comment.
   gh --repo $github_repo issue view $issue_num --json body --jq ".body" > $comment_body_file
+
+  # Shorten body until update marker because we're gonna re-add all errors again.
+  sed -i "/$(update_marker)/q" $comment_body_file
+
+  # For older issues where the comment marker is not there yet, we'll simply add
+  # it on purpose here.
+  echo "$(update_marker)" >> $comment_body_file
+
+  echo "<ol>" >> $comment_body_file
 
   archs=""
   oses=""
   package_names=""
   error_causes=""
+  prev_cause=""
 
   >&2 echo "Begin reporting build issues from causes file: $causes_file_path..."
-  while IFS=';' read -r cause package_name chroot build_log_url build_url context_file;
+  while IFS=';' read -r cause package_name chroot build_log_url build_url build_id context_file;
   do
-    >&2 echo "Cause: $cause Package: $package_name Chroot: $chroot Build-Log-URL: $build_log_url Build-URL: $build_url Context-File: $context_file"
+    >&2 cat <<EOF
+----------
+Cause:         $cause
+Package:       $package_name
+Chroot:        $chroot
+Build-Log-URL: $build_log_url
+Build-URL:     $build_url
+Build-ID:      $build_id
+Context-File:  $context_file"
+EOF
 
     # Append to
     arch="$(get_arch_from_chroot $chroot)"
@@ -291,15 +337,16 @@ function report_build_issues() {
     package_names="$package_names $package_name"
     error_causes="$error_causes $cause"
 
-    if has_error_cause_comment $comment_body_file $chroot $package_name $cause ; then
-      >&2 echo "Found error cause comment. Continuing."
-      continue;
-    fi
+    # if  [ "$(grep -F '<!--error/'$cause' project/'$package' chroot/'$chroot'-->' $comment_body_file)" != "" ]; then
+    #   >&2 echo "Comment body already contains entry for this cause/package/chroot combination. Continuing"
+    #   continue;
+    # fi
 
     # Wrap "more interesting" build log snippets in a <details open></details> block
     details_begin="<details>"
     if [ "$cause" == "unknown" ]; then
-      details_begin="<details open>"
+      # details_begin="<details open>"
+      details_begin="<details>"
     fi
 
     build_log_entry="(see <a href=\"$build_log_url\">build log</a>)"
@@ -307,37 +354,46 @@ function report_build_issues() {
       build_log_entry="(see <a href=\"$build_url\">build</a>)"
     fi
 
+    heading=""
+    if [ "$prev_cause" != "$cause" ]; then
+      heading="</ol><h3>$cause</h3><ol>"
+    fi
+    prev_cause=$cause
+
     cat <<EOF >> $comment_body_file
+$heading
 <!--error/$cause project/$package_name chroot/$chroot-->
+<li>
 $details_begin
 <summary>
-Failed to build <code>$package_name</code> on <code>$chroot</code>.
-Cause: <b><code>$cause</code></b>
-$build_log_entry [$(date --iso-8601=hours)]
+<code>$package_name</code> on <code>$chroot</code> $build_log_entry [$(date --iso-8601=hours)]
 </summary>
 
 $(cat $context_file)
 
 </details>
+</li>
 EOF
-  done < $causes_file_path
+  done < $sorted_causes_file
+
+  echo "</ol>" >> $comment_body_file
 
   if [ "$archs" != "" ]; then
-    create_labels_for_archs $github_repo $archs
-    create_labels_for_oses $github_repo $oses
-    create_labels_for_projects $github_repo $package_names
-    create_labels_for_error_causes $github_repo $error_causes
+    create_labels_for_archs $github_repo "$archs"
+    create_labels_for_oses $github_repo "$oses"
+    create_labels_for_projects $github_repo "$package_names"
+    create_labels_for_error_causes $github_repo "$error_causes"
 
-    os_labels=`for os in $oses; do echo -n " --label os/$os "; done`
-    arch_labels=`for arch in $archs; do echo -n " --label arch/$arch " ; done`
-    project_labels=`for project in $package_names; do echo -n " --label project/$project "; done`
-    error_labels=`for cause in $error_causes; do echo -n " --label error/$cause "; done`
+    os_labels=`for os in $oses; do echo -n " --add-label os/$os "; done`
+    arch_labels=`for arch in $archs; do echo -n " --add-label arch/$arch " ; done`
+    project_labels=`for project in $package_names; do echo -n " --add-label project/$project "; done`
+    error_labels=`for cause in $error_causes; do echo -n " --add-label error/$cause "; done`
 
     gh --repo $github_repo \
       issue edit $issue_num \
       --body-file $comment_body_file $os_labels $arch_labels $project_labels $error_labels
   fi
-  >&2 echo "Done updating issue comment for issue number $issue_num in $github_repo: project=$project chroot=$chroot cause=$cause"
+  >&2 echo "Done updating issue comment for issue number $issue_num in $github_repo"
 }
 
 # This function inspects causes of build errors and adds a comment to today's
@@ -383,17 +439,16 @@ function handle_error_causes() {
 # with the given prefix and color.
 function _create_labels() {
   local repo=$1
-  local labels=$2
+  local labels="$2"
   local label_prefix=$3
   local color=$4
 
-  >&2 echo "Begin creating labels in $repo: $labels"
-  for label in $labels; do
+  # Deduplicate labels
+  for label in $(echo $labels | tr ' ' '\n' | sort | uniq | tr '\n' ' '); do
     local label_name=$label_prefix$label
-    >&2 echo "Create label: $label_name"
     gh --repo $repo label create $label_name --color $color --force
   done
-  >&2 echo "Done creating labels in $repo..."
+
 }
 
 function create_labels_for_error_causes() {
