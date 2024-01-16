@@ -122,8 +122,7 @@ function get_error_causes(){
     --fields chroot,name,state,url_build_log,url_build,build_id $project \
     > $monitor_file
 
-  for pkg in $(get_packages); do
-  cat $monitor_file | jq -r '.[] | select(.name == "'$pkg'") | select(.state == "failed") | to_entries | map(.value | if . then . else "NOTFOUND" end) | @tsv' \
+  cat $monitor_file | jq -r '.[] | select(.state == "failed") | to_entries | map(.value | if . then . else "NOTFOUND" end) | @tsv' \
   | while IFS=$'\t' read -r build_id chroot package_name state build_url build_log_url; do
     >&2 cat <<EOF
 ---------------
@@ -253,8 +252,6 @@ EOF
       store_cause "unknown"
     fi
 
-    # rm $log_file
-  done
   done | sort | uniq
 
   >&2 echo "Done getting error causes from Copr monitor."
@@ -408,18 +405,16 @@ function handle_error_causes() {
   local issue_number=`todays_issue_number $github_repo $strategy`
   local comment_file=`mktemp`
 
-  >&2 echo "Handling error causes..."
-  >&2 echo -n "Looking for causes file: $causes_file..."
+  >&2 echo "TODAY'S ISSUE IS $issue_number"
+
+  >&2 echo "Begin handling error causes."
 
   # If no error causes file was passed, process build logs to get
   # error causes. Also ensure the error cause labels are created.
   if [[ -z "$causes_file" || ! -f "$causes_file" ]]; then
-    >&2 echo "FOUND"
     causes_file=`mktemp`
     error_causes="`get_error_causes $copr_project_today $causes_file`"
     create_labels_for_error_causes $github_repo "$error_causes"
-  else
-    >&2 echo "NOT FOUND"
   fi
 
   # Turn some error causes into their own comment.

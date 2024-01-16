@@ -12,13 +12,14 @@ jobs:
   check-todays-snapshot:
     strategy:
       matrix:
-        name: [standalone, big-merge]
+        # name: [standalone, big-merge]
+        name: [big-merge]
         include:
-          - name: standalone
-            maintainer_handle: "nikic"
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
-            copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
-            needs_llvm_snapshot_builder: true
+          # - name: standalone
+          #   maintainer_handle: "nikic"
+          #   copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
+          #   copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
+          #   needs_llvm_snapshot_builder: true
           - name: big-merge
             maintainer_handle: "kwk"
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
@@ -74,6 +75,7 @@ jobs:
           source github/functions.sh
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
+          set -x
           if was_broken_snapshot_detected_today ${GITHUB_REPOSITORY} ${{ matrix.name }}; then
             echo "We already filed an issue for broken snapshots today."
             handle_error_causes \
@@ -148,3 +150,4 @@ jobs:
               exit 1
             fi
           fi
+          set +x
