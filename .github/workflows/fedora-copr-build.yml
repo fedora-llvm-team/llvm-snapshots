@@ -12,7 +12,7 @@ jobs:
   build-on-copr:
     strategy:
       matrix:
-        name: [standalone, big-merge]
+        name: [standalone, big-merge, bootstrap]
         include:
           - name: standalone
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
@@ -26,6 +26,13 @@ jobs:
             extra_script_file: "github/functions-big-merge.sh"
             clone_url_tpl: "https://src.fedoraproject.org/forks/kkleine/rpms/PKG.git"
             clone_ref: big-merge
+            needs_llvm_snapshot_builder: false
+          - name: bootstrap
+            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD"
+            copr_target_project: "@fedora-llvm-team/llvm-snapshots-bootstrap"
+            extra_script_file: "github/functions-bootstrap.sh"
+            clone_url_tpl: "https://src.fedoraproject.org/forks/kkleine/rpms/PKG.git"
+            clone_ref: bootstrap
             needs_llvm_snapshot_builder: false
     runs-on: ubuntu-latest
     container: fedora:38

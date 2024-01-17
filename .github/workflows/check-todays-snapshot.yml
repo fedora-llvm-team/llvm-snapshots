@@ -12,7 +12,7 @@ jobs:
   check-todays-snapshot:
     strategy:
       matrix:
-        name: [standalone, big-merge]
+        name: [standalone, big-merge, bootstrap]
         include:
           - name: standalone
             maintainer_handle: "nikic"
@@ -24,6 +24,12 @@ jobs:
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/"
             extra_script_file: "github/functions-big-merge.sh"
+            needs_llvm_snapshot_builder: false
+          - name: bootstrap
+            maintainer_handle: "kwk"
+            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD"
+            copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD/monitor/"
+            extra_script_file: "github/functions-bootstrap.sh"
             needs_llvm_snapshot_builder: false
 
     runs-on: ubuntu-latest
