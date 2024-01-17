@@ -304,6 +304,8 @@ function report_build_issues() {
   # it on purpose here.
   echo "$(update_marker)" >> $comment_body_file
 
+  echo "<p><b>Last updated: $(date)</b></p>" >> $comment_body_file
+
   echo "<ol>" >> $comment_body_file
 
   archs=""
@@ -363,7 +365,7 @@ $heading
 <li>
 $details_begin
 <summary>
-<code>$package_name</code> on <code>$chroot</code> $build_log_entry [$(date --iso-8601=hours)]
+<code>$package_name</code> on <code>$chroot</code> $build_log_entry
 </summary>
 
 $(cat $context_file)
