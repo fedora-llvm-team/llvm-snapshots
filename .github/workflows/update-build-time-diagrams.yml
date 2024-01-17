@@ -75,10 +75,11 @@ jobs:
           if ${{ env.get_stats }}; then
             main/build-stats/get-build-stats.py --copr-projectname llvm-snapshots-incubator-`date '+%Y%m%d'` | tee -a gh-pages/build-stats.csv
             main/build-stats/get-build-stats.py --copr-projectname llvm-snapshots-big-merge-`date '+%Y%m%d'` | tee -a gh-pages/build-stats-big-merge.csv
-            git -C gh-pages add build-stats.csv build-stats-big-merge.csv
+            main/build-stats/get-build-stats.py --copr-projectname llvm-snapshots-bootstrap-`date '+%Y%m%d'` | tee -a gh-pages/build-stats-bootstrap.csv
+            git -C gh-pages add build-stats.csv build-stats-big-merge.csv build-stats-bootstrap.csv
           fi
           if ${{ env.create_diagrams }}; then
-            main/build-stats/create-diagrams.py --datafile gh-pages/build-stats.csv --datafile-big-merge gh-pages/build-stats-big-merge.csv
+            main/build-stats/create-diagrams.py --datafile gh-pages/build-stats.csv --datafile-big-merge gh-pages/build-stats-big-merge.csv --datafile-bootstrap gh-pages/build-stats-bootstrap.csv
             mv index.html gh-pages/index.html
             mv fig-*.html gh-pages/
             git -C gh-pages add index.html fig-*.html

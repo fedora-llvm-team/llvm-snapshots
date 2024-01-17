@@ -295,6 +295,13 @@ def main() -> None:
         default="build-stats-big-merge.csv",
         help="path to your build-stats-big-merge.csv file",
     )
+    parser.add_argument(
+        "--datafile-bootstrap",
+        dest="datafile_bootstrap",
+        type=str,
+        default="build-stats-bootstrap.csv",
+        help="path to your build-stats-bootstrap.csv file",
+    )
     args = parser.parse_args()
 
     # %%
@@ -329,7 +336,7 @@ def main() -> None:
     )
 
     # Create dataframe of llvm, clang, compiler-rt and libomp but when build in
-    # big-merge mode. The chroots are suffixed with "-big-merge" on the fly to
+    # big-merge mode. The chroots are prefixed with "big-merge-" on the fly to
     # be able to distinguish the two cases.
     df_big_merge = prepare_data(filepath=args.datafile_big_merge)
     df_big_merge["chroot"] = "big-merge-" + df_big_merge["chroot"]
@@ -337,8 +344,17 @@ def main() -> None:
     # that of the combined standalone dataframe above (see: df_combined).
     df_big_merge.build_id = df_big_merge.build_id.apply(lambda x: [x])
 
-    # Concat the two dataframes of combined standalone and big-merge
-    df_result = pd.concat([df_combined, df_big_merge])
+    # Create dataframe of llvm, clang, compiler-rt and libomp but when build in
+    # bootstrap mode. The chroots are prefixed with "bootstrap-" on the fly to
+    # be able to distinguish the two cases.
+    df_bootstrap = prepare_data(filepath=args.datafile_bootstrap)
+    df_bootstrap["chroot"] = "bootstrap-" + df_bootstrap["chroot"]
+    # Convert build_id column with int64's in it to an array of int64's to match
+    # that of the combined standalone dataframe above (see: df_combined).
+    df_bootstrap.build_id = df_bootstrap.build_id.apply(lambda x: [x])
+
+    # Concat the three dataframes of combined standalone and big-merge
+    df_result = pd.concat([df_combined, df_big_merge, df_bootstrap])
 
     fig = create_figure(df=df_result)
     filepath = "fig-combined-standalone.html"
