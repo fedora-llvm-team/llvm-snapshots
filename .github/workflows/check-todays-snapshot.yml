@@ -140,6 +140,13 @@ jobs:
                 --title "Broken snapshot for ${{ env.today_yyyymmdd }} detected (${{ matrix.name }})" \
                 --body-file body.txt
 
+              # When you create an issue with:
+              #   gh issue create
+              # the issue is not immediately found with:
+              #   gh issue list
+              # Therefore we give it a bit of time before we continue here.
+              sleep 5;
+
                 handle_error_causes \
                   ${GITHUB_REPOSITORY} \
                   ${{ matrix.name }} \
