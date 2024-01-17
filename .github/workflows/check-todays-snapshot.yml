@@ -1,10 +1,10 @@
 name: "Check today's snapshot"
 
 on:
-  # schedule:
-  #   # At every 60th minute.
-  #   # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-  #   - cron: "*/60 * * * *"
+  schedule:
+    # At every 60th minute.
+    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+    - cron: "*/60 * * * *"
 
   workflow_dispatch: {}
 
@@ -12,14 +12,13 @@ jobs:
   check-todays-snapshot:
     strategy:
       matrix:
-        # name: [standalone, big-merge]
-        name: [big-merge]
+        name: [standalone, big-merge]
         include:
-          # - name: standalone
-          #   maintainer_handle: "nikic"
-          #   copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
-          #   copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
-          #   needs_llvm_snapshot_builder: true
+          - name: standalone
+            maintainer_handle: "nikic"
+            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
+            copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
+            needs_llvm_snapshot_builder: true
           - name: big-merge
             maintainer_handle: "kwk"
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
