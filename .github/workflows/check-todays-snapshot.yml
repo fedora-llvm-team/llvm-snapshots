@@ -11,6 +11,7 @@ on:
 jobs:
   check-todays-snapshot:
     strategy:
+      fail-fast: false
       matrix:
         name: [standalone, big-merge, bootstrap]
         include:
