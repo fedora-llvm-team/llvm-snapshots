@@ -388,9 +388,12 @@ EOF
     project_labels=`for project in $package_names; do echo -n " --add-label project/$project "; done`
     error_labels=`for cause in $error_causes; do echo -n " --add-label error/$cause "; done`
 
+    cat $comment_body_file
+
     gh --repo $github_repo \
       issue edit $issue_num \
       --body-file $comment_body_file $os_labels $arch_labels $project_labels $error_labels
+
   fi
   >&2 echo "Done updating issue comment for issue number $issue_num in $github_repo"
 }

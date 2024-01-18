@@ -81,7 +81,6 @@ jobs:
           source github/functions.sh
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          set -x
           if was_broken_snapshot_detected_today ${GITHUB_REPOSITORY} ${{ matrix.name }}; then
             echo "We already filed an issue for broken snapshots today."
             handle_error_causes \
@@ -153,14 +152,13 @@ jobs:
               # Therefore we give it a bit of time before we continue here.
               sleep 5;
 
-                handle_error_causes \
-                  ${GITHUB_REPOSITORY} \
-                  ${{ matrix.name }} \
-                  ${{ matrix.maintainer_handle }} \
-                  ${{ env.project_today }} \
-                  $causes_file
+              handle_error_causes \
+                ${GITHUB_REPOSITORY} \
+                ${{ matrix.name }} \
+                ${{ matrix.maintainer_handle }} \
+                ${{ env.project_today }} \
+                $causes_file
 
               exit 1
             fi
           fi
-          set +x
