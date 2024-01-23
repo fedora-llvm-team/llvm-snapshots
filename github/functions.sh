@@ -96,6 +96,20 @@ function has_all_good_builds(){
   diff -bus /tmp/expected.txt /tmp/actual.txt
 }
 
+# Max. allowed bytes per code snippet in a broken snapshot issue comment body.
+# If we don't shorten the snippets, the comment body will be too long for a
+# github comment.
+function max_context_bytes() {
+  echo 3000
+}
+
+# Shortens a given file to at max. 3000 byte. NOTE: 3000 comes from
+# max_context_bytes().
+function shorten_file() {
+  local file_path=$1
+  truncate --size="<`max_context_bytes`" $file_path
+}
+
 #region error causes
 
 # For a given project this function prints causes for all cases of errors it can
@@ -149,9 +163,11 @@ EOF
       got_cause=1
     }
 
-    # Prepend context file with markdown code fence
+    # Surround context file with markdown code fence and shorten it
+    # appropriately.
     function wrap_file_in_md_code_fence() {
       local context_file=$1
+      shorten_file $context_file
       sed -i '1s;^;```\n;' $context_file
       echo '```' >> $context_file
     }
@@ -174,7 +190,7 @@ Sorry, but this build contains no build log file, please consult the <a href="$b
 We've scanned the <a href="$source_build_log_url">SRPM build log</a> for <code>error:</code> (case insesitive) and here's what we've found:
 
 \`\`\`
-$(grep --context=3 -i 'error:' $source_build_log_file)
+$(grep --context=3 -i 'error:' $source_build_log_file | head --bytes=`max_context_bytes`)
 \`\`\`
 EOF
       store_cause "srpm_build_issue"
@@ -210,6 +226,7 @@ EOF
       # Extend the context by the actual test errors
       local test_output_file=$(mktemp)
       sed -n -e '/\(\*\)\{20\} TEST [^\*]* FAILED \*\{20\}/,/\*\{20\}/ p' $log_file > $test_output_file
+      shorten_file $test_output_file
       cat $test_output_file >> $context_file
       echo '```' >> $context_file
       store_cause "test"
@@ -237,7 +254,7 @@ $(tail -n 10 $log_file)
 If we have found <code>RPM build errors</code> in the log file, you'll find them here.
 
 \`\`\`
-$(sed -n -e '/RPM build errors/,/Finish:/ p' $log_file)
+$(sed -n -e '/RPM build errors/,/Finish:/ p' $log_file | head --bytes=`max_context_bytes`)
 \`\`\`
 
 ### Errors to look into
@@ -246,7 +263,7 @@ If we have found the term <code>error:</code> (case insentitive) in the build lo
 you'll find all occurrences here together with the preceding lines.
 
 \`\`\`
-$(grep --before-context=1 -i 'error:' $log_file)
+$(grep --before-context=1 -i 'error:' $log_file | head --bytes=`max_context_bytes`)
 \`\`\`
 EOF
       store_cause "unknown"

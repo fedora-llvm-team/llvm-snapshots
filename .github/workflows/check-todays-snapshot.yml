@@ -115,6 +115,7 @@ jobs:
           </details>
 
           The CI system will update this very comment over time to list the errors.
+          Please note, that logs snippets will be limited to `max_context_bytes` bytes.
 
           `update_marker`
           EOF
