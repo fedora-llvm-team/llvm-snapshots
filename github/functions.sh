@@ -246,7 +246,7 @@ EOF
 Sometimes the end of the build log contains useful information.
 
 \`\`\`
-$(tail -n 10 $log_file)
+$(tail --bytes=`max_context_bytes` $log_file)
 \`\`\`
 
 ### RPM build errors
