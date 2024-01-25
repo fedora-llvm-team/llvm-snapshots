@@ -169,7 +169,7 @@ EOF
       local context_file=$1
       shorten_file $context_file
       sed -i '1s;^;```\n;' $context_file
-      echo '```' >> $context_file
+      echo -e '\n```\n' >> $context_file
     }
 
     # Treat errors with no build logs as unknown and tell user to visit the
@@ -222,13 +222,13 @@ EOF
       echo "" >> $context_file
       echo "### Test output" >> $context_file
       echo "" >> $context_file
-      echo '```' >> $context_file
+      echo -e '\n```\n' >> $context_file
       # Extend the context by the actual test errors
       local test_output_file=$(mktemp)
       sed -n -e '/\(\*\)\{20\} TEST [^\*]* FAILED \*\{20\}/,/\*\{20\}/ p' $log_file > $test_output_file
       shorten_file $test_output_file
       cat $test_output_file >> $context_file
-      echo '```' >> $context_file
+      echo -e '\n```\n' >> $context_file
       store_cause "test"
 
 
