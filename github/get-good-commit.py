@@ -26,25 +26,45 @@ def get_good_commit(
     repo = g.get_repo(project)
     sha = start_ref
 
+    print("Scanning for good commit", file=sys.stderr)
+    print("Project:   {}".format(project), file=sys.stderr)
+    print("Start Ref: {}".format(start_ref), file=sys.stderr)
+    print("Max Tries: {}".format(max_tries), file=sys.stderr)
+    print("Checks:    {}".format(ensure_checks), file=sys.stderr)
     for i in range(0, max_tries):
         commit = repo.get_commit(sha=sha)
         combined_status = commit.get_combined_status().state
+        print(
+            "{}. Combined Status for {} = {}".format(i, commit, combined_status),
+            file=sys.stderr,
+        )
         if combined_status != "success":
             # move on with first parent if combined status is not successful
             sha = commit.parents[0].sha
             continue
 
         statuses = commit.get_statuses()
-        checks = ensure_checks
+        checks = ensure_checks.copy()
         for status in statuses:
             if status.context in checks:
+                print(
+                    "  * Status: {} - {}".format(status.context, status.description),
+                    file=sys.stderr,
+                )
                 checks.remove(status.context)
         if len(checks) != 0:
-            # not all checks were found, continue with parent commit
             sha = commit.parents[0].sha
+            print(
+                "  Not all checks found. Continue with parent commit: {}".format(sha),
+                file=sys.stderr,
+            )
             continue
 
+        print("SUCCESS: First stable commit: {}".format(sha), file=sys.stderr)
         return sha
+    print(
+        "ERROR: No good commit found after {} tries".format(max_tries), file=sys.stderr
+    )
     return ""
 
 
@@ -78,7 +98,7 @@ def main():
         dest="max_tries",
         type=int,
         default="20",
-        help="how many commit to try before giving up (default: 10)",
+        help="how many commit to try before giving up (default: 20)",
     )
     parser.add_argument(
         "--ensure-checks",
