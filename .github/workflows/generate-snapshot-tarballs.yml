@@ -107,7 +107,6 @@ jobs:
             --start-ref main \
             --ensure-checks \
               clang-x86_64-debian-fast \
-              llvm-clang-x86_64-expensive-checks-debian \
             --max-tries 400 > good_commit.sha
           echo "sha=`cat good_commit.sha`" >> $GITHUB_ENV
 
