@@ -51,7 +51,7 @@ def create_figure(df: pd.DataFrame, package_name: str = None) -> go.Figure:
             "state": "State",
             "build_id": "Copr Build ID",
             "package": "LLVM subpackage",
-        }
+        },
         # text="build_time", # To show text at each location
     )
 
