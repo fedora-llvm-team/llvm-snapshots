@@ -96,18 +96,25 @@ jobs:
           # remove with hack below
           fetch-depth: 1
 
-      # - name: "determine last stable commit of llvm/llvm-project"
-      #   id: stable-commit
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: |
-      #     sha=`llvm-daily-fedora-rpms/github/get-good-commit.py --token ${{ secrets.GITHUB_TOKEN }} --project "llvm/llvm-project" --start-ref main --ensure-checks clang-x86_64-debian-fast llvm-clang-x86_64-expensive-checks-debian --max-tries 400`
-      #     echo "sha=$sha" >> $GITHUB_ENV
-
-      - name: "hack(just use main): determine last stable commit of llvm/llvm-project"
+      - name: "determine last stable commit of llvm/llvm-project"
         id: stable-commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "sha=main" >> $GITHUB_ENV
+          llvm-daily-fedora-rpms/github/get-good-commit.py \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --project "llvm/llvm-project" \
+            --start-ref main \
+            --ensure-checks \
+              clang-x86_64-debian-fast \
+              llvm-clang-x86_64-expensive-checks-debian \
+            --max-tries 400 > good_commit.sha
+          echo "sha=`cat good_commit.sha`" >> $GITHUB_ENV
+
+      # - name: "hack(just use main): determine last stable commit of llvm/llvm-project"
+      #   id: stable-commit
+      #   run: |
+      #     echo "sha=main" >> $GITHUB_ENV
 
       - name: "fetch stable revision to archive"
         run: git -C llvm-project fetch --depth=1 --no-tags origin ${{ env.sha }}
