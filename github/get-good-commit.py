@@ -27,7 +27,7 @@ def get_good_commit(
     """
     g = Github(login_or_token=token)
     repo = g.get_repo(project)
-    sha = start_ref
+    next_sha = start_ref
 
     print("Scanning for best of commit", file=sys.stderr)
     print("Project:   {}".format(project), file=sys.stderr)
@@ -39,7 +39,8 @@ def get_good_commit(
     best_commit = ""
 
     for i in range(0, max_tries):
-        commit = repo.get_commit(sha=sha)
+        commit = repo.get_commit(sha=next_sha)
+        next_sha = commit.parents[0].sha
         combined_status = commit.get_combined_status().state
         print(
             "{}. Combined status for {} = {}".format(i, commit.sha, combined_status),
@@ -48,13 +49,24 @@ def get_good_commit(
 
         # move on with first parent if combined status is not successful
         if combined_status != "success":
-            sha = commit.parents[0].sha
             continue
 
         statuses = commit.get_statuses()
         num_check_runs = len(list(statuses))
-        print("    #check runs: {}".format(num_check_runs), file=sys.stderr)
 
+        # Commit is only worth considering if it has more check runs than the
+        # best commit so far.
+        if num_check_runs <= max_check_runs:
+            print(
+                "    Ignoring commit because number of check runs ({}) is below or equal current best ({})".format(
+                    num_check_runs, max_check_runs
+                ),
+                file=sys.stderr,
+            )
+            continue
+
+        # Makes sure the required check is among the ones that have been run on
+        # the commit.
         checks = ensure_checks.copy()
         for status in statuses:
             if status.context in checks:
@@ -63,17 +75,22 @@ def get_good_commit(
                     file=sys.stderr,
                 )
                 checks.remove(status.context)
+            # Ignore other checks that ran if all of the required ones have been found
+            if len(checks) == 0:
+                break
 
-        if len(checks) == 0 and (num_check_runs > max_check_runs):
-            best_commit = sha
-            max_check_runs = num_check_runs
-            print(
-                "    New best commit: sha {} (#check runs={})".format(
-                    sha, max_check_runs
-                ),
-                file=sys.stderr,
-            )
-        sha = commit.parents[0].sha
+        if len(checks) != 0:
+            print("    Not all required checks have been run.", file=sys.stderr)
+            continue
+
+        best_commit = commit.sha
+        max_check_runs = num_check_runs
+        print(
+            "    New best commit: sha {} (#check runs={})".format(
+                commit.sha, max_check_runs
+            ),
+            file=sys.stderr,
+        )
 
     return best_commit
 
