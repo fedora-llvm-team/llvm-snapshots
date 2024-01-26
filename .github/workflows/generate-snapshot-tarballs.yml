@@ -107,7 +107,7 @@ jobs:
             --start-ref main \
             --ensure-checks \
               clang-x86_64-debian-fast \
-            --max-tries 400 > good_commit.sha
+            --max-tries 30 > good_commit.sha
           echo "sha=`cat good_commit.sha`" >> $GITHUB_ENV
 
       # - name: "hack(just use main): determine last stable commit of llvm/llvm-project"
