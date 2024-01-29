@@ -20,11 +20,11 @@ jobs:
         strategy: [standalone, big-merge, bootstrap]
         include:
           - strategy: standalone
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
+            copr_project_tpl: "llvm-snapshots-incubator-YYYYMMDD"
           - strategy: big-merge
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
+            copr_project_tpl: "llvm-snapshots-big-merge-YYYYMMDD"
           - strategy: bootstrap
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD"
+            copr_project_tpl: "llvm-snapshots-bootstrap-YYYYMMDD"
     runs-on: ubuntu-latest
     container:
       image: "${{ matrix.os }}:${{ matrix.version }}"
