@@ -78,6 +78,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: tmt-test-results-${{env.today_yyyymmdd}}-${{ matrix.os }}-${{ matrix.version }}
+          name: tmt-test-results-${{ matrix.strategy }}-${{env.today_yyyymmdd}}-${{ matrix.os }}-${{ matrix.version }}
           path: /var/tmp/**/tmt/**/output.txt
           if-no-files-found: warn
