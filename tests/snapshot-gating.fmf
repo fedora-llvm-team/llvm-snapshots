@@ -9,7 +9,7 @@
 summary: LLVM Tests for snapshot gating
 prepare:
   how: install
-  copr: "@fedora-llvm-team/llvm-snapshots-incubator-$YYYYMMDD"
+  copr: "$PROJECT_TODAY"
 adjust:
   - discover+:
       - name: redhat-rpm-config-tests

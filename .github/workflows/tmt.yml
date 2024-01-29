@@ -11,7 +11,7 @@ on:
         type: string
 
 jobs:
-  tmt:
+  run-tmt:
     strategy:
       fail-fast: false
       matrix:
@@ -66,7 +66,10 @@ jobs:
             -c distro=${{ matrix.os }}-${{ matrix.version }} \
             -c arch=x86_64 \
             -c snapshot=${{env.today_yyyymmdd}} \
-            run --all -v -e YYYYMMDD=${{env.today_yyyymmdd}} \
+            run \
+              --all \
+              -v \
+              -e PROJECT_TODAY=${{ env.project_today }}
             provision --how local -v \
             report -vvv \
             plan -n snapshot-gating
