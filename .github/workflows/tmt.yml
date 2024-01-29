@@ -45,7 +45,7 @@ jobs:
         run: |
           today=`date +%Y%m%d`
           # TODO(kwk): Determine date some other way...
-          if [ "${{ github.event_name }}" == "schedule" ]; then
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             today=${{ github.event.inputs.yyyymmdd }}
           fi
 
