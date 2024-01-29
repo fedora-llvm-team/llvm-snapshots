@@ -19,11 +19,11 @@ jobs:
         version: [38, 39, rawhide]
         strategy: [standalone, big-merge, bootstrap]
         include:
-          - name: standalone
+          - strategy: standalone
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
-          - name: big-merge
+          - strategy: big-merge
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
-          - name: bootstrap
+          - strategy: bootstrap
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD"
     runs-on: ubuntu-latest
     container:

@@ -6,6 +6,8 @@
 #   * Fedora
 #
 
+# Docs for this file format: https://tmt.readthedocs.io/en/stable/
+
 summary: LLVM Tests for snapshot gating
 prepare:
   how: install
