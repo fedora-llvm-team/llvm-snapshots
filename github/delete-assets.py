@@ -74,8 +74,8 @@ def main():
         "--project",
         dest="project",
         type=str,
-        default="kwk/llvm-daily-fedora-rpms",
-        help="github project to use (default: kwk/llvm-daily-fedora-rpms)",
+        default="fedora-llvm-team/llvm-snapshots",
+        help="github project to use (default: fedora-llvm-team/llvm-snapshots)",
     )
     parser.add_argument(
         "--release-name",

@@ -18,7 +18,7 @@ llvm_snapshot_version_patch:      0
 llvm_snapshot_yyyymmdd:           20220608
 llvm_snapshot_git_revision:       997ecb0036a56df1fe77fafb69393255aa995de2
 llvm_snapshot_git_revision_short: 997ecb0036a56d
-llvm_snapshot_source_prefix:      https://github.com/kwk/llvm-daily-fedora-rpms/releases/download/source-snapshot/
+llvm_snapshot_source_prefix:      https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/source-snapshot/
 llvm_snapshot_version_suffix:     pre20220608.g997ecb0036a56d
 llvm_snapshot_changelog_entry:    * Wed Jun 08 2022 LLVM snapshot - 15.0.0~pre20220608.g997ecb0036a56d
 ```

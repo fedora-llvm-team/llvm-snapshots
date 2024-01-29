@@ -3,14 +3,14 @@
 :sectnums:
 :experimental:
 :showtitle:
-:homepage: https://github.com/kwk/llvm-daily-fedora-rpms
+:homepage: https://github.com/fedora-llvm-team/llvm-snapshots
 
-image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/generate-snapshot-tarballs.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/generate-snapshot-tarballs.yml"]
-image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/fedora-copr-build.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/fedora-copr-build.yml"]
-image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/check-todays-snapshot.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/check-todays-snapshot.yml"]
-image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/tmt.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/tmt.yml"]
-image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/python-with-black.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/python-with-black.yml"]
-image:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/update-build-time-diagrams.yml/badge.svg[link="https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/update-build-time-diagrams.yml"]
+image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/generate-snapshot-tarballs.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/generate-snapshot-tarballs.yml"]
+image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/fedora-copr-build.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/fedora-copr-build.yml"]
+image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/check-todays-snapshot.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/check-todays-snapshot.yml"]
+image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/tmt.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/tmt.yml"]
+image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/python-with-black.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/python-with-black.yml"]
+image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-build-time-diagrams.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-build-time-diagrams.yml"]
 image:https://img.shields.io/badge/code%20style-black-000000.svg[link="https://github.com/psf/black"]
 link:https://kwk.github.io/llvm-daily-fedora-rpms/fig-llvm.html[Build time Diagrams]
 
@@ -31,10 +31,10 @@ WARNING: This page needs to be updated to reflect the latest updates.
 
 This is home for the generation of daily
 
-* link:https://github.com/kwk/llvm-daily-fedora-rpms/releases/tag/source-snapshot[LLVM source snapshots]
-** See link:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/generate-snapshot-tarballs.yml[generate-snapshot-tarballs] workflow
+* link:https://github.com/fedora-llvm-team/llvm-snapshots/releases/tag/source-snapshot[LLVM source snapshots]
+** See link:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/generate-snapshot-tarballs.yml[generate-snapshot-tarballs] workflow
 * link:https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots/monitor/[Fedora LLVM snapshot RPMs]
-** See link:https://github.com/kwk/llvm-daily-fedora-rpms/actions/workflows/fedora-copr-build.yml[fedora-copr-build] workflow
+** See link:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/fedora-copr-build.yml[fedora-copr-build] workflow
 
 == Process overview [[overview]]
 
@@ -44,7 +44,7 @@ https://src.fedoraproject.org/rpms/clang/tree/upstream-snapshot
 
 There's a github actions workflow, that automatically builds the snapshots every night from the latest upstream LLVM source:
 
-https://github.com/kwk/llvm-daily-fedora-rpms/blob/main/.github/workflows/fedora-copr-build.yml
+https://github.com/fedora-llvm-team/llvm-snapshots/blob/main/.github/workflows/fedora-copr-build.yml
 
 This workflow contains `copr` CLI calls that are needed in order to:
 
@@ -253,11 +253,11 @@ source-tarball::
 
 [[source-tarball]]Every night at 00:00 am we build a source tarball using the
 `~/llvm-project/llvm/utils/release/export.sh` script that is run by the github
-workflow defined in link:https://github.com/kwk/llvm-daily-fedora-rpms/blob/main/.github/workflows/generate-snapshot-tarballs.yml[generate-snapshot-tarballs.yml]. This is essentially just an archive of each LLVM subproject directory. Those source-tarballs are served in the link:https://github.com/kwk/llvm-daily-fedora-rpms/releases/tag/source-snapshot[source-snapshot release] and are kept for a limitied amount of days.
+workflow defined in link:https://github.com/fedora-llvm-team/llvm-snapshots/blob/main/.github/workflows/generate-snapshot-tarballs.yml[generate-snapshot-tarballs.yml]. This is essentially just an archive of each LLVM subproject directory. Those source-tarballs are served in the link:https://github.com/fedora-llvm-team/llvm-snapshots/releases/tag/source-snapshot[source-snapshot release] and are kept for a limitied amount of days.
 
 copr-builds::
 
-The Fedora Copr builds are controlled by the link:https://github.com/kwk/llvm-daily-fedora-rpms/blob/main/.github/workflows/fedora-copr-build.yml:[fedora-copr-build.yml]. This runs at 00:45am every night. This gives the `generate-snapshot-tarballs.yml` workflow enough time to finish.
+The Fedora Copr builds are controlled by the link:https://github.com/fedora-llvm-team/llvm-snapshots/blob/main/.github/workflows/fedora-copr-build.yml:[fedora-copr-build.yml]. This runs at 00:45am every night. This gives the `generate-snapshot-tarballs.yml` workflow enough time to finish.
 
 === How to update downstream patches?
 

@@ -26,4 +26,4 @@ will be published here. If you're interested in the version for a particular day
 
 ### Contributing
 
-To get involved in this, please head over to: [https://github.com/kwk/llvm-daily-fedora-rpms](https://github.com/kwk/llvm-daily-fedora-rpms).
+To get involved in this, please head over to: [https://github.com/fedora-llvm-team/llvm-snapshots](https://github.com/fedora-llvm-team/llvm-snapshots).

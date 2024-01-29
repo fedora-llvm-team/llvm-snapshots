@@ -33,7 +33,7 @@
 \
     -- Returns the URL to the snapshot releases.
     function llvm_sb_url_base()
-        return 'https://github.com/kwk/llvm-daily-fedora-rpms/releases/download/source-snapshot'
+        return 'https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/source-snapshot'
     end
 \
     -- Returns the base URL concatenated with the given filename
