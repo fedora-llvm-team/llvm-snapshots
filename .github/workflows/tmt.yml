@@ -2,7 +2,13 @@ name: "Test Management Tool"
 # See https://docs.fedoraproject.org/en-US/ci/tmt/
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      yyyymmdd:
+        description: 'YYYMMDD'
+        default: '20240124'
+        required: true
+        type: string
 
 jobs:
   tmt:
@@ -39,7 +45,9 @@ jobs:
         run: |
           today=`date +%Y%m%d`
           # TODO(kwk): Determine date some other way...
-          today="20231022"
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            today=${{ github.event.inputs.yyyymmdd }}
+          fi
 
           username=@fedora-llvm-team
           echo "username=$username" >> $GITHUB_ENV
