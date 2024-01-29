@@ -32,6 +32,7 @@ discover:
         # The following test only runs with qemu and we're executing in a github
         # action runner in a container.
         # See https://src.fedoraproject.org/tests/clang/blob/main/f/ppc64le-long-double/main.fmf#_19
+        # Probably not needed not that we have: https://src.fedoraproject.org/tests/clang/c/bb6d566ab8442d8462d693f339fc227f81b2600e
         - ppc64le-long-double
     - name: compiler-rt-tests
       how: fmf

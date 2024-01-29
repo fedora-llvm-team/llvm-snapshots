@@ -69,7 +69,7 @@ jobs:
             run \
               --all \
               -v \
-              -e PROJECT_TODAY=${{ env.project_today }}
+              -e PROJECT_TODAY=${{ env.project_today }} \
             provision --how local -v \
             report -vvv \
             plan -n snapshot-gating
