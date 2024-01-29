@@ -11,6 +11,14 @@ jobs:
       matrix:
         os: [fedora]
         version: [38, 39, rawhide]
+        strategy: [standalone, big-merge, bootstrap]
+        include:
+          - name: standalone
+            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
+          - name: big-merge
+            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
+          - name: bootstrap
+            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD"
     runs-on: ubuntu-latest
     container:
       image: "${{ matrix.os }}:${{ matrix.version }}"
@@ -36,7 +44,7 @@ jobs:
           username=@fedora-llvm-team
           echo "username=$username" >> $GITHUB_ENV
           echo "today_yyyymmdd=$today" >> $GITHUB_ENV
-          echo "project_today=$username/llvm-snapshots-incubator-$today" >> $GITHUB_ENV
+          echo "project_today=${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/" >> $GITHUB_ENV
 
       - name: "Run tmt"
         shell: bash -e {0}
