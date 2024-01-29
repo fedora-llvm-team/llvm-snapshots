@@ -59,7 +59,6 @@ jobs:
     name: generate snapshot tarballs
     runs-on: ubuntu-latest
     steps:
-
       - uses: actions/setup-python@v4
         with:
           python-version: 3.9
@@ -93,8 +92,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: true
           path: llvm-project
-          # remove with hack below
-          fetch-depth: 1
 
       - name: "determine last stable commit of llvm/llvm-project"
         id: stable-commit
@@ -110,11 +107,6 @@ jobs:
             --max-tries 30 > good_commit.sha
           echo "sha=`cat good_commit.sha`" >> $GITHUB_ENV
 
-      # - name: "hack(just use main): determine last stable commit of llvm/llvm-project"
-      #   id: stable-commit
-      #   run: |
-      #     echo "sha=main" >> $GITHUB_ENV
-
       - name: "fetch stable revision to archive"
         run: git -C llvm-project fetch --depth=1 --no-tags origin ${{ env.sha }}
 
@@ -124,7 +116,7 @@ jobs:
             --git-ref ${{ env.sha }} \
             --template '${PROJECT}-${YYYYMMDD}.src.tar.xz'
 
-      - name: "delete assets older than a 33 days and from today"
+      - name: "delete assets older than 33 days and from today"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

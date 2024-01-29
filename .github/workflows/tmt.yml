@@ -7,9 +7,10 @@ on:
 jobs:
   tmt:
     strategy:
+      fail-fast: false
       matrix:
         os: [fedora]
-        version: [37, 38, 39, rawhide]
+        version: [38, 39, rawhide]
     runs-on: ubuntu-latest
     container:
       image: "${{ matrix.os }}:${{ matrix.version }}"
