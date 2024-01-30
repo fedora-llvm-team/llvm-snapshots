@@ -8,6 +8,10 @@ on:
 
   workflow_dispatch: {}
 
+permissions:
+  # We need this in order to create or update broken snapshot issues
+  issues: write
+
 jobs:
   check-todays-snapshot:
     strategy:
