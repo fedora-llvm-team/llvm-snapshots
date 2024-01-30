@@ -37,4 +37,4 @@ runs:
             clang-x86_64-debian-fast \
           --max-tries 30 \
           --extend 4 > good_commit.sha
-        echo "good-commit=$(cat good_commit.sha)" >> $GITHUB_ENV
+        echo "good-commit=$(cat good_commit.sha)" >> $GITHUB_OUTPUT
