@@ -114,7 +114,8 @@ jobs:
             --start-ref main \
             --ensure-checks \
               clang-x86_64-debian-fast \
-            --max-tries 30 > good_commit.sha
+            --max-tries 30 \
+            --extend 4 > good_commit.sha
           echo "sha=`cat good_commit.sha`" >> $GITHUB_ENV
 
       - name: "fetch stable revision to archive"
