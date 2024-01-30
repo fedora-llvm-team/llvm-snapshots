@@ -89,6 +89,10 @@ jobs:
           fetch-depth: 1
           path: llvm-snapshots
 
+      - uses: ./llvm-snapshots/.github/actions/prepare-python
+        with:
+          checkout-path: llvm-snapshots
+
       - uses: ./llvm-snapshots/.github/actions/get-good-commit
         id: good-commit
         with:

@@ -25,10 +25,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: .github/actions/prepare-python
-      with:
-        checkout-path: ${{ inputs.checkout-path }}
-
     - name: "determine last stable commit of llvm/llvm-project"
       id: stable-commit
       shell: bash
