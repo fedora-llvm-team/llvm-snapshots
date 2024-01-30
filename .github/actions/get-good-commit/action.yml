@@ -3,6 +3,9 @@
 name: "Get good commit"
 description: "Walks back in history to find good commits"
 inputs:
+  token:
+    description: "GitHub token to use"
+    required: true
   checkout-path:
     description: "Where this project was checked out"
     required: false
@@ -29,11 +32,9 @@ runs:
     - name: "determine last stable commit of llvm/llvm-project"
       id: stable-commit
       shell: bash
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         ${{ inputs.checkout-path }}/github/get-good-commit.py \
-          --token ${{ secrets.GITHUB_TOKEN }} \
+          --token ${{ inputs.token }} \
           --project ${{ inputs.github-project }} \
           --start-ref ${{ inputs.start-ref }} \
           --ensure-checks \

@@ -92,6 +92,7 @@ jobs:
       - uses: ./llvm-snapshots/.github/actions/get-good-commit
         id: good-commit
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           checkout-path: llvm-snapshots
           github-project: llvm/llvm-project
           start-ref: main
