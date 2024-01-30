@@ -55,34 +55,28 @@ jobs:
   # the old ones from today; otherwise there would be a conflict. As a measure
   # of not storing old snapshots for too long we'll delete older ones here as
   # well.
+  delete-old-tarballs-and-todays:
+    name: delete old tarballs and todays
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/prepare-python.yml
+
+      - name: "delete assets older than 33 days and from today"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          llvm-snapshots/github/delete-assets.py \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --project ${{ github.repository }} \
+            --release-name source-snapshot \
+            --delete-older 33 \
+            --delete-today
+
   source-tarballs:
     name: generate snapshot tarballs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.9
-
-      - name: "checkout this project"
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository }}
-          ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 1
-          path: llvm-snapshots
-
-      - name: "Check for cached dependencies"
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - run: |
-          python -m pip install --upgrade pip
-          pip install -r llvm-snapshots/requirements.txt
+      - uses: ./.github/actions/prepare-python.yml
 
       - name: "checkout llvm/llvm-project"
         uses: actions/checkout@v4
@@ -115,17 +109,6 @@ jobs:
           llvm-project/llvm/utils/release/export.sh \
             --git-ref ${{ env.sha }} \
             --template '${PROJECT}-${YYYYMMDD}.src.tar.xz'
-
-      - name: "delete assets older than 33 days and from today"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          llvm-snapshots/github/delete-assets.py \
-            --token ${{ secrets.GITHUB_TOKEN }} \
-            --project ${{ github.repository }} \
-            --release-name source-snapshot \
-            --delete-older 33 \
-            --delete-today
 
       - name: >-
           upload source-snapshots and version files to the 'source-snapshot'

@@ -1,0 +1,46 @@
+# See https://docs.github.com/en/actions/creating-actions/creating-a-composite-action#creating-an-action-metadata-file
+
+name: "Prepare Python"
+description: "Checks out this repository's source code and sets up the python environment"
+inputs:
+  checkout-path:
+    description: "Where to checkout the project"
+    required: false
+    default: "llvm-snapshot"
+  checkout-ref:
+    description: "Which branch/tag/ref to checkout"
+    required: false
+    default: "main"
+  fetch-depth:
+    description: "Number of commits to fetch. 0 indicates all history for all branches and tags. Default 1."
+    required: false
+    default: 1
+runs:
+  using: "composite"
+  steps:
+    - name: "Setup python"
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.9
+
+    - name: "Checkout this project into ${{ inputs.checkout-path }}"
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository }}
+        ref: ${{ inputs.checkout-ref }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 1
+        path: ${{ inputs.checkout-path }}
+
+    - name: "Check for cached dependencies"
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: ""
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r ${{ inputs.checkout-path }}/requirements.txt
