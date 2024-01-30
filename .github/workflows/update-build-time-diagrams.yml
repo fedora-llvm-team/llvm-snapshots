@@ -42,7 +42,7 @@ jobs:
         with:
           path: main
 
-      - uses: ./.github/actions/prepare-python
+      - uses: ./main/.github/actions/prepare-python
         with:
           checkout-path: main
 
