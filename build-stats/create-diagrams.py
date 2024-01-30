@@ -55,9 +55,6 @@ def create_figure(df: pd.DataFrame, package_name: str = None) -> go.Figure:
         # text="build_time", # To show text at each location
     )
 
-    # TODO(kwk): Show hour, minute and seconds on the y-axis
-    # fig.update_yaxes(tickformat='%H:%M:%S')
-
     # Print annotations for the overall max build duration
     # TODO(would be nice to have this just per chroot maybe?)
     # for cr in df_llvm['chroot'].unique():
