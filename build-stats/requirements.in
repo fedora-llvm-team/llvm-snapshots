@@ -1,8 +1,0 @@
-# Convert this file into a requirements.txt file by running:
-#
-# pip install pip-tools
-# pip-compile --rebuild --header --verbose
-pandas
-plotly==5.18.0
-copr
-copr-cli

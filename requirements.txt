@@ -12,33 +12,75 @@ cffi==1.15.1
     #   pynacl
 charset-normalizer==3.0.1
     # via requests
+copr==1.130
+    # via
+    #   -r requirements.txt.in
+    #   copr-cli
+copr-cli==1.110
+    # via -r requirements.txt.in
 cryptography==41.0.6
     # via pyjwt
 deprecated==1.2.13
     # via pygithub
+filelock==3.13.1
+    # via copr
+humanize==4.9.0
+    # via copr-cli
 idna==3.4
     # via requests
+jinja2==3.1.3
+    # via copr-cli
+markupsafe==2.1.4
+    # via jinja2
+munch==4.0.0
+    # via copr
+numpy==1.26.3
+    # via pandas
+packaging==23.2
+    # via plotly
+pandas==2.2.0
+    # via -r requirements.txt.in
+plotly==5.18.0
+    # via -r requirements.txt.in
 pycparser==2.21
     # via cffi
 pygithub==2.1.1
     # via -r requirements.txt.in
 pyjwt[crypto]==2.6.0
-    # via
-    #   pygithub
-    #   pyjwt
+    # via pygithub
 pynacl==1.5.0
     # via pygithub
 python-dateutil==2.8.2
-    # via pygithub
+    # via
+    #   pandas
+    #   pygithub
+pytz==2023.4
+    # via pandas
 requests==2.31.0
-    # via pygithub
+    # via
+    #   copr
+    #   pygithub
+    #   requests-toolbelt
+requests-toolbelt==1.0.0
+    # via copr
+simplejson==3.19.2
+    # via copr-cli
 six==1.16.0
-    # via python-dateutil
+    # via
+    #   copr
+    #   python-dateutil
+tenacity==8.2.3
+    # via plotly
 typing-extensions==4.8.0
     # via pygithub
+tzdata==2023.4
+    # via pandas
 urllib3==1.26.18
     # via
     #   pygithub
     #   requests
 wrapt==1.14.1
     # via deprecated
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools
