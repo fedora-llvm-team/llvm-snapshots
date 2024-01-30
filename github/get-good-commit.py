@@ -50,8 +50,8 @@ def get_good_commit(
             break
         if j > 0:
             print(
-                "Extending search radius because we haven't found a good commit yet: {}".format(
-                    extend
+                "Extending search radius because we haven't found a good commit yet: {}/{}".format(
+                    j + 1, extend
                 ),
                 file=sys.stderr,
             )
