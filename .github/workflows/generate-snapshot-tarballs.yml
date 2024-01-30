@@ -12,15 +12,15 @@ name: "Generate LLVM snapshot tarballs"
 #   current date (YYYYMMDD) and go ahead and download the LLVM component of
 #   choice, i.e.:
 #
-#   https://github.com/{owner}/llvm-daily-fedora-rpms/releases/download/source-snapshot/clang-tools-extra-20210417.src.tar.xz
+#   https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/source-snapshot/clang-tools-extra-20210417.src.tar.xz
 #
 #   Notice the absence of the LLVM version. To get it, a packager can download
 #
-#   https://github.com/{owner}/llvm-daily-fedora-rpms/releases/download/source-snapshot/llvm-release-20210417.txt
+#   https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/source-snapshot/llvm-release-20210417.txt
 #
 #   To get the git revision standalone:
 #
-#   https://github.com/{owner}/llvm-daily-fedora-rpms/releases/download/source-snapshot/llvm-git-revision-20210417.txt
+#   https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/source-snapshot/llvm-git-revision-20210417.txt
 #
 #   The subtle benefit of this naming convention is that you don't need to know
 #   the LLVM version before downloading the source tarball. I mean, how could
@@ -70,7 +70,7 @@ jobs:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
-          path: llvm-daily-fedora-rpms
+          path: llvm-snapshots
 
       - name: "Check for cached dependencies"
         uses: actions/cache@v4
@@ -82,7 +82,7 @@ jobs:
 
       - run: |
           python -m pip install --upgrade pip
-          pip install -r llvm-daily-fedora-rpms/requirements.txt
+          pip install -r llvm-snapshots/requirements.txt
 
       - name: "checkout llvm/llvm-project"
         uses: actions/checkout@v4
@@ -98,7 +98,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          llvm-daily-fedora-rpms/github/get-good-commit.py \
+          llvm-snapshots/github/get-good-commit.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --project "llvm/llvm-project" \
             --start-ref main \
@@ -120,7 +120,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          llvm-daily-fedora-rpms/github/delete-assets.py \
+          llvm-snapshots/github/delete-assets.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --project ${{ github.repository }} \
             --release-name source-snapshot \
@@ -133,7 +133,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          llvm-daily-fedora-rpms/github/upload-source-snapshots.py \
+          llvm-snapshots/github/upload-source-snapshots.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --project ${{ github.repository }} \
             --release-name source-snapshot \

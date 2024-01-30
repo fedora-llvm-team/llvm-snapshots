@@ -16,7 +16,7 @@ srpm_build_deps:
 specfile_path: llvm-snapshot-builder/llvm-snapshot-builder.spec
 
 # Name of the github repository
-upstream_package_name: llvm-daily-fedora-rpms
+upstream_package_name: llvm-snapshots
 # URL of the upstream git project
 upstream_project_url: https://github.com/fedora-llvm-team/llvm-snapshots
 # Downstream (Fedora) RPM package name
