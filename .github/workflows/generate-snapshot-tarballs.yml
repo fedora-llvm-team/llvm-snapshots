@@ -59,13 +59,17 @@ jobs:
     name: delete old tarballs and todays
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - uses: ./.github/actions/prepare-python.yml
 
       - name: "delete assets older than 33 days and from today"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          llvm-snapshots/github/delete-assets.py \
+          ./github/delete-assets.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --project ${{ github.repository }} \
             --release-name source-snapshot \
@@ -76,7 +80,14 @@ jobs:
     name: generate snapshot tarballs
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          path: llvm-snapshots
+
       - uses: ./.github/actions/prepare-python.yml
+        with:
+          checkout-path: llvm-snapshots
 
       - name: "checkout llvm/llvm-project"
         uses: actions/checkout@v4

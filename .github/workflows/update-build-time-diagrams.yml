@@ -32,6 +32,10 @@ jobs:
           mkdir -p ~/.config
           printf "$COPR_CONFIG_FILE" > ~/.config/copr
 
+      - uses: actions/checkout@v4
+        with:
+          path: main
+
       - uses: ./.github/actions/prepare-python.yml
         with:
           checkout-path: main
