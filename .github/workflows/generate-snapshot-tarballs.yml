@@ -64,13 +64,13 @@ jobs:
           fetch-depth: 1
           path: llvm-snapshots
 
-      - uses: ./llvm-snapshots/.github/actions/prepare-python.yml
+      - uses: ./.github/actions/prepare-python.yml
 
       - name: "delete assets older than 33 days and from today"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ./llvm-snapshots/.github/delete-assets.py \
+          ./.github/delete-assets.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --project ${{ github.repository }} \
             --release-name source-snapshot \
