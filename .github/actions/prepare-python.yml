@@ -1,8 +1,7 @@
 # See https://docs.github.com/en/actions/creating-actions/creating-a-composite-action#creating-an-action-metadata-file
 
 name: "Prepare Python"
-author: "Konrad Kleine"
-description: "Checks out this repos source code and sets up the python environment"
+description: "Checks out this repository's source code and sets up the python environment"
 inputs:
   checkout-path:
     description: "Where to checkout the project"
