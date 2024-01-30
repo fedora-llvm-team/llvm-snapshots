@@ -50,8 +50,8 @@ on:
     - cron:  '0 0 * * *'
 
 permissions:
-  packages: write
-  actions: write
+  # For release assets to be deletable we need this permission
+  contents: write
 
 jobs:
 
