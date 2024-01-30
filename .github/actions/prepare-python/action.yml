@@ -6,7 +6,7 @@ inputs:
   checkout-path:
     description: "Where this project was checked out"
     required: false
-    default: "llvm-snapshots"
+    default: "."
 runs:
   using: "composite"
   steps:
