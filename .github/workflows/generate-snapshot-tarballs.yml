@@ -59,12 +59,12 @@ jobs:
     name: generate snapshot tarballs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.9
 
       - name: "checkout this project"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ github.repository }}
           ref: main
@@ -73,7 +73,7 @@ jobs:
           path: llvm-daily-fedora-rpms
 
       - name: "Check for cached dependencies"
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -85,7 +85,7 @@ jobs:
           pip install -r llvm-daily-fedora-rpms/requirements.txt
 
       - name: "checkout llvm/llvm-project"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: llvm/llvm-project
           ref: main

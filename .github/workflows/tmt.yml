@@ -38,7 +38,7 @@ jobs:
           dnf copr enable -y psss/tmt
           dnf install -y tmt-all
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: "Variables and functions"
         shell: bash -e {0}
@@ -76,7 +76,7 @@ jobs:
 
       - name: Archive tmt output.txt files
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tmt-test-results-${{ matrix.strategy }}-${{env.today_yyyymmdd}}-${{ matrix.os }}-${{ matrix.version }}
           path: /var/tmp/**/tmt/**/output.txt

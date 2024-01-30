@@ -49,7 +49,7 @@ jobs:
         run: |
           dnf install -y copr-cli diffutils pcre2-tools jq
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: "Variables and functions"
         shell: bash -e {0}
