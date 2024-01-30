@@ -49,6 +49,10 @@ on:
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
     - cron:  '0 0 * * *'
 
+permissions:
+  packages: write
+  actions: write
+
 jobs:
 
   # In order to re-build source snapshots and upload them, we must first delete
