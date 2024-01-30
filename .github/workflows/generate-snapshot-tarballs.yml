@@ -60,7 +60,7 @@ jobs:
   # of not storing old snapshots for too long we'll delete older ones here as
   # well.
   delete-old-tarballs-and-todays:
-    name: "delete old tarballs and today's"
+    name: "Delete old and today's tarballs"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,9 +80,8 @@ jobs:
             --delete-older 33 \
             --delete-today
 
-  source-tarballs:
-    needs: delete-old-tarballs-and-todays
-    name: generate snapshot tarballs
+  generate-source-tarballs:
+    name: Generate snapshot tarballs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -90,9 +89,12 @@ jobs:
           fetch-depth: 1
           path: llvm-snapshots
 
-      - uses: ./llvm-snapshots/.github/actions/prepare-python
+      - uses: ./llvm-snapshots/.github/actions/get-good-commit
+        id: good-commit
         with:
           checkout-path: llvm-snapshots
+          github-project: llvm/llvm-project
+          start-ref: main
 
       - name: "checkout llvm/llvm-project"
         uses: actions/checkout@v4
@@ -103,29 +105,25 @@ jobs:
           submodules: true
           path: llvm-project
 
-      - name: "determine last stable commit of llvm/llvm-project"
-        id: stable-commit
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          llvm-snapshots/github/get-good-commit.py \
-            --token ${{ secrets.GITHUB_TOKEN }} \
-            --project "llvm/llvm-project" \
-            --start-ref main \
-            --ensure-checks \
-              clang-x86_64-debian-fast \
-            --max-tries 30 \
-            --extend 4 > good_commit.sha
-          echo "sha=`cat good_commit.sha`" >> $GITHUB_ENV
-
       - name: "fetch stable revision to archive"
-        run: git -C llvm-project fetch --depth=1 --no-tags origin ${{ env.sha }}
+        run: git -C llvm-project fetch --depth=1 --no-tags origin ${{ steps.good-commit.outputs.sha }}
 
       - name: "create source-snapshot tarballs"
         run: |
           llvm-project/llvm/utils/release/export.sh \
-            --git-ref ${{ env.sha }} \
+            --git-ref ${{ steps.good-commit.outputs.sha }} \
             --template '${PROJECT}-${YYYYMMDD}.src.tar.xz'
+
+  upload-source-tarballs:
+    needs: generate-source-tarballs
+    name: Upload source tarballs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/prepare-python
 
       - name: >-
           upload source-snapshots and version files to the 'source-snapshot'

@@ -1,0 +1,43 @@
+# See https://docs.github.com/en/actions/creating-actions/creating-a-composite-action#creating-an-action-metadata-file
+
+name: "Get good commit"
+description: "Walks back in history to find good commits"
+inputs:
+  checkout-path:
+    description: "Where this project was checked out"
+    required: false
+    default: "."
+  github-project:
+    description: "GitHub project to search"
+    required: false
+    default: "llvm/llvm-project"
+  start-ref:
+    description: "Git reference (commit sha, tag, branch) where to start"
+    required: false
+    default: "main"
+outputs:
+  good-commit:
+    description: "The commit we found that is good"
+    value: ${{ steps.stable-commit.outputs.sha }}
+runs:
+  using: "composite"
+  steps:
+    - uses: .github/actions/prepare-python
+      with:
+        checkout-path: ${{ inputs.checkout-path }}
+
+    - name: "determine last stable commit of llvm/llvm-project"
+      id: stable-commit
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        ${{ inputs.checkout-path }}/github/get-good-commit.py \
+          --token ${{ secrets.GITHUB_TOKEN }} \
+          --project ${{ inputs.github-project }} \
+          --start-ref ${{ inputs.start-ref }} \
+          --ensure-checks \
+            clang-x86_64-debian-fast \
+          --max-tries 30 \
+          --extend 4 > good_commit.sha
+        echo "sha=`cat good_commit.sha`" >> $GITHUB_ENV
