@@ -119,17 +119,6 @@ jobs:
             --git-ref ${{ steps.good-commit.outputs.sha }} \
             --template '${PROJECT}-${YYYYMMDD}.src.tar.xz'
 
-  upload-source-tarballs:
-    needs: generate-source-tarballs
-    name: Upload source tarballs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - uses: ./.github/actions/prepare-python
-
       - name: >-
           upload source-snapshots and version files to the 'source-snapshot'
           pre-release of ${{ github.repository }}
