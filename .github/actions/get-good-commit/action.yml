@@ -21,7 +21,7 @@ inputs:
 outputs:
   good-commit:
     description: "The commit we found that is good"
-    value: ${{ steps.stable-commit.outputs.sha }}
+    value: ${{ steps.stable-commit.outputs.good-commit }}
 runs:
   using: "composite"
   steps:
@@ -37,4 +37,4 @@ runs:
             clang-x86_64-debian-fast \
           --max-tries 30 \
           --extend 4 > good_commit.sha
-        echo "sha=`cat good_commit.sha`" >> $GITHUB_ENV
+        echo "good-commit=$(cat good_commit.sha)" >> $GITHUB_ENV
