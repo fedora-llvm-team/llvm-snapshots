@@ -62,9 +62,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          path: llvm-snapshots
 
-      - uses: ./.github/actions/prepare-python.yml
+      - uses: ./.github/actions/prepare-python
 
       - name: "delete assets older than 33 days and from today"
         env:
@@ -86,7 +85,7 @@ jobs:
           fetch-depth: 1
           path: llvm-snapshots
 
-      - uses: ./llvm-snapshots/.github/actions/prepare-python.yml
+      - uses: ./llvm-snapshots/.github/actions/prepare-python
         with:
           checkout-path: llvm-snapshots
 

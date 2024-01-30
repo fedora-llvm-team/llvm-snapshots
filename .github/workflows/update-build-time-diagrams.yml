@@ -36,7 +36,7 @@ jobs:
         with:
           path: main
 
-      - uses: ./.github/actions/prepare-python.yml
+      - uses: ./.github/actions/prepare-python
         with:
           checkout-path: main
 
