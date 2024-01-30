@@ -32,34 +32,15 @@ jobs:
           mkdir -p ~/.config
           printf "$COPR_CONFIG_FILE" > ~/.config/copr
 
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/prepare-python.yml
         with:
-          python-version: '3.10'
-
-      - name: Checkout main branch
-        uses: actions/checkout@v4
-        with:
-          ref: 'main'
-          path: 'main'
+          checkout-path: main
 
       - name: Checkout gh-pages branch
         uses: actions/checkout@v4
         with:
           ref: 'gh-pages'
           path: 'gh-pages'
-
-      - name: "Check for cached dependencies"
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r main/build-stats/requirements.txt
 
       - name: Setup git config
         run: |
