@@ -19,6 +19,12 @@ on:
           required: false
           type: boolean
 
+permissions:
+  # This should allow the workflow to create github pages
+  pages: write
+  # This should allow the workflow to create a new commit in the gh-branch
+  contents: write
+
 jobs:
   update-build-time-diagrams:
     runs-on: ubuntu-latest
