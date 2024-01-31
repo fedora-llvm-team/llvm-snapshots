@@ -41,7 +41,7 @@ jobs:
   - fedora-all
   - epel-8
   - epel-9
-  tmt_plan: plans
+  tmt_plan: llvm-snapshot-builder/plans
 
 # This job updates the Copr project at:
 # https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshot-builder/
