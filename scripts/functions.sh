@@ -1,4 +1,4 @@
-set +x
+set -x
 
 # Prints the year month and day combination for today
 function yyyymmdd() {
@@ -463,6 +463,7 @@ function _create_labels() {
   # Deduplicate labels
   for label in $(echo $labels | tr ' ' '\n' | sort | uniq | tr '\n' ' '); do
     local label_name=$label_prefix$label
+    >&2 echo "Creating label: repo=$repo name=$label_name color=$color"
     gh --repo $repo label create $label_name --color $color --force
   done
 

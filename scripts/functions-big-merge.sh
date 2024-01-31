@@ -1,5 +1,5 @@
 # This file contains overwrite for the functions in functions.sh
-set +x
+set -x
 
 # Prints the chroots we care about.
 function get_chroots() {
