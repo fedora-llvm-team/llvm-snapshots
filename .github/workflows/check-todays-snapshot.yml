@@ -28,13 +28,13 @@ jobs:
             maintainer_handle: "kwk"
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/"
-            extra_script_file: "github/functions-big-merge.sh"
+            extra_script_file: "scripts/functions-big-merge.sh"
             needs_llvm_snapshot_builder: false
           - name: bootstrap
             maintainer_handle: "kwk"
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD"
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD/monitor/"
-            extra_script_file: "github/functions-bootstrap.sh"
+            extra_script_file: "scripts/functions-bootstrap.sh"
             needs_llvm_snapshot_builder: false
 
     runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
       - name: "Variables and functions"
         shell: bash -e {0}
         run: |
-          source github/functions.sh
+          source scripts/functions.sh
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           today=`date +%Y%m%d`
@@ -72,7 +72,7 @@ jobs:
       - name: "Install GitHub’s official command line tool: gh"
         shell: bash -e {0}
         run: |
-          source github/functions.sh
+          source scripts/functions.sh
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           install_gh_client
@@ -82,7 +82,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          source github/functions.sh
+          source scripts/functions.sh
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           if was_broken_snapshot_detected_today ${GITHUB_REPOSITORY} ${{ matrix.name }}; then

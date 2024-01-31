@@ -29,7 +29,7 @@ runs:
       id: stable-commit
       shell: bash
       run: |
-        ${{ inputs.checkout-path }}/github/get-good-commit.py \
+        ${{ inputs.checkout-path }}/scripts/get-good-commit.py \
           --token ${{ inputs.token }} \
           --project ${{ inputs.github-project }} \
           --start-ref ${{ inputs.start-ref }} \

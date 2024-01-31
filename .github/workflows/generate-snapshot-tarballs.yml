@@ -73,7 +73,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ./github/delete-assets.py \
+          ./scripts/delete-assets.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --project ${{ github.repository }} \
             --release-name source-snapshot \
@@ -125,7 +125,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          llvm-snapshots/github/upload-source-snapshots.py \
+          llvm-snapshots/scripts/upload-source-snapshots.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --project ${{ github.repository }} \
             --release-name source-snapshot \
