@@ -80,20 +80,7 @@ jobs:
           source scripts/functions.sh
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          # Check if yesterday's project exists and all builds succeeded
-          yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`
-          if [[ "$yesterdays_project_exists" == "true" ]]; then
-            if [ "${{ matrix.needs_llvm_snapshot_builder }}" == "true" ]; then
-              extra_packages=llvm-snapshot-builder
-            fi
-            if ! has_all_good_builds ${{env.project_yesterday}} $extra_packages; then
-              yesterdays_project_exists=false
-            fi
-          fi
-
           echo "todays_project_exists=`project_exists ${{ env.project_today }}`" >> $GITHUB_ENV
-          echo "yesterdays_project_exists=$yesterdays_project_exists" >> $GITHUB_ENV
-          echo "target_project_exists=`project_exists ${{ env.project_target }}`" >> $GITHUB_ENV
 
       - name: "Canceling active builds (if any) in today's Copr project before recreating it: ${{ env.project_today }}"
         if: ${{ env.todays_project_exists == 'true' }}
@@ -206,23 +193,10 @@ jobs:
             done
           done
 
-      - name: "Delete target Copr project at ${{ env.project_target }} before forking to it"
-        if: ${{ env.yesterdays_project_exists == 'true' && env.target_project_exists == 'true' }}
-        run: |
-          copr delete "${{ env.project_target }}"
-          # Give Copr some time to process the deletion, to avoid race conditions with forking.
-          # TODO: Keep and eye on https://github.com/fedora-copr/copr/issues/2698 if there's a better way to handle this.
-          sleep 1m
-
-      - name: "Fork Copr project from ${{ env.project_yesterday }} to ${{ env.project_target }}"
-        if: ${{ env.yesterdays_project_exists == 'true' }}
-        run: |
-          copr fork --confirm ${{ env.project_yesterday }} ${{ env.project_target }}
-          copr modify --delete-after-days -1 --unlisted-on-hp off ${{ env.project_target }}
-
-      - name: "Regenerate repos for target project ${{ env.project_target }}"
-        # If yesterday's project didn't exist, we haven't forked and so we don't
-        # need to regenerate the repos.
-        if: ${{ env.yesterdays_project_exists == 'true' }}
-        run: |
-          copr regenerate-repos ${{ env.project_target }}
+      - uses: ./.github/actions/promote-snapshot
+        if: success()
+        with:
+          project-source: ${{ env.project_yesterday }}
+          project-target: ${{ env.project_yesterday }}
+          source-project-needs-llvm-snapshot-builder: ${{ matrix.needs_llvm_snapshot_builder }}
+          copr-config: ${{ secrets.COPR_CONFIG }}

@@ -1,0 +1,86 @@
+# See https://docs.github.com/en/actions/creating-actions/creating-a-composite-action#creating-an-action-metadata-file
+
+name: "Promote snapshot"
+description: "Promote snapshot from source to target"
+inputs:
+  checkout-path:
+    description: "Where this project was checked out"
+    required: false
+    default: "."
+  project-source:
+    description: The copr source project to be promoted
+    required: true
+  project-target:
+    description: The copr target project that the source project will be promoted to
+    required: true
+  source-project-needs-llvm-snapshot-builder:
+    description: Whether the source project needs the llvm-snapshot-builder package.
+    required: true
+  copr-config:
+    description: "The secret copr configuration found here https://copr.fedorainfracloud.org/api/"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Copr config file
+      shell: bash -e {0}
+      env:
+        # You need to have those secrets in your repo.
+        # See also: https://copr.fedorainfracloud.org/api/.
+        COPR_CONFIG_FILE: ${{ secrets.copr-config }}
+      run: |
+        mkdir -p ~/.config
+        printf "$COPR_CONFIG_FILE" > ~/.config/copr
+    - name: Install Copr CLI and required tools
+      shell: bash -e {0}
+      run: |
+        dnf install -y copr-cli make bzip2 rpm-build pcre2-tools jq
+    - uses: actions/checkout@v4
+    - name: "Check if source project exists and all builds succeeded"
+      shell: bash -e {0}
+      run: |
+        source ${{ inputs.checkout-path }}/scripts/functions.sh
+        # Check if source project exists and all builds succeeded
+        if [ ! copr_project_exists ${{ inputs.project_source }} ]; then
+          >&2 echo "The source project ${{ inputs.project_source }} does not exist. Aborting promotion."
+          exit 111;
+        fi
+
+        if [ ${{ inputs.source_project_needs_llvm_snapshot_builder }} ]; then
+          extra_packages=llvm-snapshot-builder
+        fi
+
+        if [ ! has_all_good_builds ${{inputs.project_source}} $extra_packages ]; then
+          >&2 echo "The source project ${{ inputs.project_source }} contains broken builds. Aborting promotion."
+          exit 222;
+        fi
+
+    - name: "Delete target Copr project at ${{ inputs.project_target }} (if it exists) before forking to it"
+      if: success()
+      shell: bash -e {0}
+      run: |
+        if [ ! copr_project_exists ${{ inputs.project_target }} ]; then
+          >&2 echo "The target project ${{ inputs.project_source }} does not exist yet. No need to delete it."
+          exit 0
+        fi
+
+        copr delete "${{ inputs.project_target }}"
+        # Give Copr some time to process the deletion, to avoid race conditions with forking.
+        # TODO: Keep and eye on https://github.com/fedora-copr/copr/issues/2698 if there's a better way to handle this.
+        # TODO(kwk): The issue above is closed. We should add try without the sleep sometime.
+        sleep 1m
+
+    - name: "Fork Copr project from ${{ inputs.project_source }} to ${{ inputs.project_target }}"
+      if: success()
+      shell: bash -e {0}
+      run: |
+        copr fork --confirm ${{ inputs.project_source }} ${{ inputs.project_target }}
+        # Ensure the target project is not hidden from the Homepage and ensure
+        # it won't be automatically deleted like the incubator projects.
+        copr modify --delete-after-days -1 --unlisted-on-hp off ${{ inputs.project_target }}
+
+    - name: "Regenerate repositories for target project ${{ inputs.project_target }}"
+      if: success()
+      shell: bash -e {0}
+      run: |
+        copr regenerate-repos ${{ inputs.project_target }}
