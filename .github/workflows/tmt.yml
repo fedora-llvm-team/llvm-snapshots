@@ -15,12 +15,25 @@ permissions:
   actions: write
 
 jobs:
+  get-os-versions-job:
+    runs-on: ubuntu-latest
+    outputs:
+      os-versions: ${{ steps.get-os-versions-step.outputs.os_versions }}
+    steps:
+      - id: get-os-versions-step
+        run: |
+          sudo apt-get install jq curl
+          os_versions=`curl -sL https://copr.fedorainfracloud.org/api_3/mock-chroots/list | jq -rc '[. | keys[] | select(.|match("fedora-[0-9]+|rawhide")) | sub("^fedora-"; "") | sub("-.*$";"")] | unique'`
+          # Get OS versions comma separated with properly quoted rawhide
+          >&2 echo "$os_versions"
+          echo "os_versions=$os_versions" >> $GITHUB_OUTPUT
   run-tmt:
+    needs: get-os-versions-job
     strategy:
       fail-fast: false
       matrix:
         os: [fedora]
-        version: [38, 39, rawhide]
+        version: ${{ fromJSON(needs.get-os-versions-job.outputs.os-versions) }}
         strategy: [standalone, big-merge, bootstrap]
         include:
           - strategy: standalone
