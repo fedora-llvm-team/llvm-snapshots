@@ -1,0 +1,24 @@
+# See https://docs.github.com/en/actions/creating-actions/creating-a-composite-action#creating-an-action-metadata-file
+
+name: "Setup copr"
+description: "Installs Copr CLI and required tools"
+inputs:
+  copr-config:
+    description: "The secret copr configuration found here https://copr.fedorainfracloud.org/api/"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Copr config file
+      shell: bash -e {0}
+      env:
+        # You need to have those secrets in your repo.
+        # See also: https://copr.fedorainfracloud.org/api/.
+        COPR_CONFIG_FILE: ${{ secrets.copr-config }}
+      run: |
+        mkdir -p ~/.config
+        printf "$COPR_CONFIG_FILE" > ~/.config/copr
+    - name: Install Copr CLI and required tools
+      shell: bash -e {0}
+      run: |
+        dnf install -y copr-cli make bzip2 rpm-build pcre2-tools jq

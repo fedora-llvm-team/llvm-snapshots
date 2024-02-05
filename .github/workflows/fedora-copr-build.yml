@@ -38,20 +38,11 @@ jobs:
     runs-on: ubuntu-latest
     container: fedora:38
     steps:
-      - name: Setup Copr config file
-        env:
-          # You need to have those secrets in your repo.
-          # See also: https://copr.fedorainfracloud.org/api/.
-          COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
-        run: |
-          mkdir -p ~/.config
-          printf "$COPR_CONFIG_FILE" > ~/.config/copr
-
-      - name: Install Copr CLI and required tools
-        run: |
-          dnf install -y copr-cli make bzip2 rpm-build pcre2-tools jq
-
       - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-copr-cli
+        with:
+          copr-config: ${{ secrets.COPR_CONFIG }}
 
       - name: "Variables and functions"
         shell: bash -e {0}
