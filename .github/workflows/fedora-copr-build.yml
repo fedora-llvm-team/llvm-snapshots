@@ -188,6 +188,6 @@ jobs:
         if: success()
         with:
           project-source: ${{ env.project_yesterday }}
-          project-target: ${{ env.project_yesterday }}
+          project-target: ${{ env.project_target }}
           source-project-needs-llvm-snapshot-builder: ${{ matrix.needs_llvm_snapshot_builder }}
           copr-config: ${{ secrets.COPR_CONFIG }}
