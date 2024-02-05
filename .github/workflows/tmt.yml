@@ -22,7 +22,6 @@ jobs:
     steps:
       - id: get-os-versions-step
         run: |
-          sudo apt-get install jq curl
           os_versions=`curl -sL https://copr.fedorainfracloud.org/api_3/mock-chroots/list | jq -rc '[. | keys[] | select(.|match("fedora-[0-9]+|rawhide")) | sub("^fedora-"; "") | sub("-.*$";"")] | unique'`
           # Get OS versions comma separated with properly quoted rawhide
           >&2 echo "$os_versions"
