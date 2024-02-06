@@ -18,7 +18,7 @@ copr==1.130
     #   copr-cli
 copr-cli==1.110
     # via -r requirements.txt.in
-cryptography==41.0.6
+cryptography==42.0.0
     # via pyjwt
 deprecated==1.2.13
     # via pygithub
