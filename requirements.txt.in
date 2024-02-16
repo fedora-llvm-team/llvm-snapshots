@@ -5,6 +5,6 @@
 
 PyGithub==2.2.0
 pandas
-plotly==5.18.0
+plotly==5.19.0
 copr
 copr-cli
