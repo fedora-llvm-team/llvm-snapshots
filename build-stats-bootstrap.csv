@@ -33,3 +33,4 @@ date,package,chroot,build_time,state,build_id,timestamp
 2024/02/18,llvm,fedora-39-x86_64,224,failed,7030551,1708297881
 2024/02/19,llvm,fedora-39-x86_64,328,failed,7032570,1708384289
 2024/02/20,llvm,fedora-39-x86_64,268,failed,7036816,1708470680
+2024/02/21,llvm,fedora-39-x86_64,305,failed,7041146,1708557192
