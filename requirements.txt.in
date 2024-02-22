@@ -8,3 +8,4 @@ pandas
 plotly==5.19.0
 copr
 copr-cli
+tft-cli==0.0.16
