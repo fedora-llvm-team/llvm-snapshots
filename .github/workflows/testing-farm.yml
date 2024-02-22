@@ -1,0 +1,148 @@
+name: "Run tests on testing-farm"
+
+on:
+  workflow_dispatch:
+    inputs:
+      yyyymmdd:
+        description: 'YYYMMDD (e.g. 20240220)'
+        default: 'today'
+        required: true
+        type: string
+      os-version:
+        description: 'OS version (e.g. fedora-rawhide-x86_64)'
+        default: 'all'
+        required: true
+        type: string
+      strategy:
+        description: 'Build strategy'
+        default: 'big-merge'
+        required: true
+        type: choice
+        options:
+          - big-merge
+          - standalone
+          - bootstrap
+      force-test:
+        description: 'Force re-running test if it already ran'
+        default: 'all'
+        required: true
+        type: string
+
+permissions:
+  # Allow to store artifacts
+  actions: write
+
+jobs:
+  get-os-details-job:
+    runs-on: ubuntu-latest
+    outputs:
+      os-versions: ${{ steps.get-os-versions-step.outputs.os_versions }}
+    steps:
+      - id: get-os-versions-step
+        run: |
+          # Get OS-versions and filter them
+          os_versions=`curl -sL https://copr.fedorainfracloud.org/api_3/mock-chroots/list | jq -rcM '[. | keys[] | select(.|match("(fedora-[0-9]+|rawhide)|rhel-(9|[0-9]{2,})-")) ']`
+
+          # Adapt if we have a custom workflow input
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.os-version }}" != "all" ]]; then
+            os_versions="[\"${{ github.event.inputs.os-version }}\"]"
+          fi
+
+          echo "os_versions=$os_versions" >> $GITHUB_OUTPUT
+
+  run-testing-farm:
+    needs: get-os-details-job
+    strategy:
+      fail-fast: false
+      matrix:
+        os-version: ${{ fromJSON(needs.get-os-details-job.outputs.os-versions) }}
+        strategy: [standalone, big-merge, bootstrap]
+        include:
+          - strategy: standalone
+            copr_project_tpl: "llvm-snapshots-incubator-YYYYMMDD"
+          - strategy: big-merge
+            copr_project_tpl: "llvm-snapshots-big-merge-YYYYMMDD"
+          - strategy: bootstrap
+            copr_project_tpl: "llvm-snapshots-bootstrap-YYYYMMDD"
+    runs-on: ubuntu-latest
+    # See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes
+    timeout-minutes: 360
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/prepare-python
+
+      - name: "Variables and functions"
+        shell: bash -e {0}
+        run: |
+          yyyymmdd=`date +%Y%m%d`
+          # TODO(kwk): Determine date some other way...
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.yyyymmdd }}" != "today" ]]; then
+            yyyymmdd=${{ github.event.inputs.yyyymmdd }}
+          fi
+
+          username=@fedora-llvm-team
+          echo "username=$username" >> $GITHUB_ENV
+          echo "yyyymmdd=$yyyymmdd" >> $GITHUB_ENV
+          echo "copr_project=${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$yyyymmdd/" >> $GITHUB_ENV
+
+          # Create the artifact file that we use to identify if the test already
+          # ran
+          artifact_name=testing-farm-${{ matrix.os-version }}-${{env.yyyymmdd}}
+          echo "artifact_name=$artifact_name" >> $GITHUB_ENV
+          touch /tmp/$artifact_name
+          artifact_exists=0
+          ./scripts/workflow-artifact-exists.py \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --project ${{ github.repository }} \
+            --workflow-name ${{ github.workflow }} \
+            --artifact-name $artifact_name \
+          && artifact_exists=1
+
+          echo "artifact_exists=$artifact_exists" >> $GITHUB_ENV
+
+
+      - name: Create artifact for this testing-farm run if not already done
+        if: ${{ env.artifact_exists != 1 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{env.artifact_name}}
+          path: /tmp/${{env.artifact_name}}
+          if-no-files-found: warn
+
+      - name: "Run testing-farm"
+        if: ${{ env.artifact_exists != 1 }}
+        shell: bash -e {0}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TESTING_FARM_API_TOKEN_PUBLIC_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_PUBLIC_RANCH }}
+          TESTING_FARM_API_TOKEN_REDHAT_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_REDHAT_RANCH }}
+          # TODO(kwk): Add token for testing farm
+        run: |
+          # Pick the right API key depending on the OS and architecture
+          # RHEL and some architectures can only be tested internally.
+
+          echo $os_version | grep -P '(x86_64|aarch64)$' > /dev/null \
+            && export TESTING_FARM_API_TOKEN=${{ env.TESTING_FARM_API_TOKEN_PUBLIC_RANCH }}
+
+          echo $os_version | grep -P '(^rhel|(ppc64le|s390x|i386)$)' > /dev/null \
+            && export TESTING_FARM_API_TOKEN=${{ env.TESTING_FARM_API_TOKEN_REDHAT_RANCH }}
+
+          name=`echo $os_version | grep -oP "^[^-]+"`
+          arch=`echo $os_version | grep -oP "[^-]+$"`
+          version=`echo $os_version | grep -oP "^[^-]+-\K[^-]+"`
+
+          testing-farm \
+            request \
+              --compose ${name^}-${version} \
+              --git-url https://github.com/fedora-llvm-team/llvm-snapshots \
+              --arch $arch \
+              --plan /tests/snapshot-gating \
+              --environment COPR_PROJECT=${{ env.copr_project }} \
+              --context distro=${name}-${version} \
+              --context arch=${arch} \
+              --context snapshot=${{env.yyyymmdd}}
+
+          # Don't be fooled, we currently need the repetition of arch and alike
+          # in the --context variables.
