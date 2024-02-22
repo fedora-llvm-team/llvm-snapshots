@@ -90,7 +90,7 @@ jobs:
 
           # Create the artifact file that we use to identify if the test already
           # ran
-          artifact_name=testing-farm-${{ matrix.os-version }}-${{env.yyyymmdd}}
+          artifact_name=testing-farm-${{ matrix.os-version }}-$yyyymmdd
           echo "artifact_name=$artifact_name" >> $GITHUB_ENV
           touch /tmp/$artifact_name
           skip=0
@@ -132,15 +132,19 @@ jobs:
           # Pick the right API key depending on the OS and architecture
           # RHEL and some architectures can only be tested internally.
 
-          echo $os_version | grep -P '(x86_64|aarch64)$' > /dev/null \
+          echo ${{ matrix.os-version }} | grep -P '(x86_64|aarch64)$' > /dev/null \
             && export TESTING_FARM_API_TOKEN=${{ env.TESTING_FARM_API_TOKEN_PUBLIC_RANCH }}
 
-          echo $os_version | grep -P '(^rhel|(ppc64le|s390x|i386)$)' > /dev/null \
+          echo ${{ matrix.os-version }} | grep -P '(^rhel|(ppc64le|s390x|i386)$)' > /dev/null \
             && export TESTING_FARM_API_TOKEN=${{ env.TESTING_FARM_API_TOKEN_REDHAT_RANCH }}
 
-          name=`echo $os_version | grep -oP "^[^-]+"`
-          arch=`echo $os_version | grep -oP "[^-]+$"`
-          version=`echo $os_version | grep -oP "^[^-]+-\K[^-]+"`
+          name=`echo ${{ matrix.os-version }} | grep -oP "^[^-]+"`
+          arch=`echo ${{ matrix.os-version }} | grep -oP "[^-]+$"`
+          version=`echo ${{ matrix.os-version }} | grep -oP "^[^-]+-\K[^-]+"`
+
+          >&2 echo "name    = $name"
+          >&2 echo "arch    = $arch"
+          >&2 echo "version = $version"
 
           testing-farm \
             request \
