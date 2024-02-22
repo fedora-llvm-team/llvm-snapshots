@@ -100,6 +100,10 @@ jobs:
             --artifact-name $artifact_name \
           && artifact_exists=1
 
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && ${{ github.event.inputs.force-test }} ]]; then
+            artifact_exists=0
+          fi
+
           echo "artifact_exists=$artifact_exists" >> $GITHUB_ENV
 
 
