@@ -1,4 +1,4 @@
-name: "Run tests on testing-farm"
+name: "testing-farm"
 
 on:
   workflow_dispatch:
