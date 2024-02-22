@@ -23,10 +23,10 @@ on:
           - standalone
           - bootstrap
       force-test:
-        description: 'Force re-running test if it already ran'
-        default: 'all'
+        description: 'Force re-running test if it already ra  n'
+        default: false
         required: true
-        type: string
+        type: boolean
 
 permissions:
   # Allow to store artifacts
