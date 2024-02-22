@@ -15,10 +15,11 @@ on:
         type: string
       strategy:
         description: 'Build strategy'
-        default: 'big-merge'
+        default: 'all'
         required: true
         type: choice
         options:
+          - all
           - big-merge
           - standalone
           - bootstrap
@@ -92,23 +93,27 @@ jobs:
           artifact_name=testing-farm-${{ matrix.os-version }}-${{env.yyyymmdd}}
           echo "artifact_name=$artifact_name" >> $GITHUB_ENV
           touch /tmp/$artifact_name
-          artifact_exists=0
+          skip=0
           ./scripts/workflow-artifact-exists.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --project ${{ github.repository }} \
             --workflow-name ${{ github.workflow }} \
             --artifact-name $artifact_name \
-          && artifact_exists=1
+          && skip=1
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && ${{ github.event.inputs.force-test }} ]]; then
-            artifact_exists=0
+            skip=0
           fi
 
-          echo "artifact_exists=$artifact_exists" >> $GITHUB_ENV
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.strategy}}" != "all" ]]; then
+            echo "${{ matrix.strategy }}" | grep "${{ github.event.inputs.strategy}}" > /dev/null || skip=1
+          fi
+
+          echo "skip=$skip" >> $GITHUB_ENV
 
 
       - name: Create artifact for this testing-farm run if not already done
-        if: ${{ env.artifact_exists != 1 }}
+        if: ${{ env.skip == 0 }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{env.artifact_name}}
@@ -116,7 +121,7 @@ jobs:
           if-no-files-found: warn
 
       - name: "Run testing-farm"
-        if: ${{ env.artifact_exists != 1 }}
+        if: ${{ env.skip == 0 }}
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
