@@ -53,5 +53,11 @@ discover:
       url: https://src.fedoraproject.org/tests/lld.git
       ref: main
       filter: "tag:-spoils-installation & tag:-not-in-default"
+
+      # TODO(kwk): In case we want to import a test and ignore its result for
+      # experimentation reasons using
+      # https://tmt.readthedocs.io/en/stable/spec/tests.html#result, we should
+      # see https://github.com/teemtee/tmt/discussions/2430 and
+      # https://github.com/teemtee/tmt/issues/1843
 execute:
     how: tmt
