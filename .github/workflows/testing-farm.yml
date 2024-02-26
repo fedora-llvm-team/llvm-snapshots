@@ -123,7 +123,7 @@ jobs:
 
 
       - name: Create artifact for this testing-farm run if not already done
-        if: ${{env.skip}} == 0 || "${{env.dont_create_artifact}}" != "1"
+        if: ${{env.skip}} == 0 && "${{env.dont_create_artifact}}" != "1"
         uses: actions/upload-artifact@v4
         with:
           name: ${{env.artifact_name}}
