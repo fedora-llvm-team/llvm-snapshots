@@ -120,10 +120,6 @@ jobs:
             skip=0
           fi
 
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.strategy}}" != "all" ]]; then
-            echo "${{ matrix.strategy }}" | grep "${{ github.event.inputs.strategy}}" > /dev/null || skip=1
-          fi
-
           echo "skip=$skip" >> $GITHUB_ENV
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && ${{ github.event.inputs.dry-run }} ]]; then
