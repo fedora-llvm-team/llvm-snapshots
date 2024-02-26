@@ -43,6 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       os-versions: ${{ steps.get-os-versions-step.outputs.os_versions }}
+      strategies: ${{ steps.get-os-versions-step.outputs.strategies }}
     steps:
       - id: get-os-versions-step
         run: |
@@ -53,8 +54,16 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.os-version }}" != "all" ]]; then
             os_versions="[\"${{ github.event.inputs.os-version }}\"]"
           fi
-
           echo "os_versions=$os_versions" >> $GITHUB_OUTPUT
+
+          # Convert strategies from bash array to json
+          strategies=(big-merge standalone bootstrap)
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.strategy }}" != "all" ]]; then
+            strategies=(${{ github.event.inputs.strategy }})
+          fi
+          strategies_json=`jq -c -n '$ARGS.positional' --args "${strategies[@]}"`
+          echo "strategies=$strategies_json" >> $GITHUB_OUTPUT
+
 
   run-testing-farm:
     needs: get-os-details-job
@@ -63,7 +72,7 @@ jobs:
       fail-fast: false
       matrix:
         os-version: ${{ fromJSON(needs.get-os-details-job.outputs.os-versions) }}
-        strategy: [standalone, big-merge, bootstrap]
+        strategy: ${{ fromJSON(needs.get-os-details-job.outputs.strategies) }}
         include:
           - strategy: standalone
             copr_project_tpl: "llvm-snapshots-incubator-YYYYMMDD"
