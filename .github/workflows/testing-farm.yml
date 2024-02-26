@@ -42,9 +42,9 @@ jobs:
   prepare-next-job-matrix:
     runs-on: ubuntu-latest
     outputs:
-      os-versions: ${{ steps.prepare-json-step.outputs.os_versions }}
+      os-versions: ${{ steps.prepare-json-step.outputs.os-versions }}
       strategies: ${{ steps.prepare-json-step.outputs.strategies }}
-      strategy-details: ${{ steps.prepare-json-step.outputs.strategy_details }}
+      strategy-details: ${{ steps.prepare-json-step.outputs.strategy-details }}
     steps:
       - id: prepare-json-step
         run: |
@@ -55,7 +55,10 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.os-version }}" != "all" ]]; then
             os_versions="[\"${{ github.event.inputs.os-version }}\"]"
           fi
-          echo "os_versions=$os_versions" >> $GITHUB_OUTPUT
+          echo "os-versions=$os_versions" >> $GITHUB_OUTPUT
+
+          echo "OS versions:           $os_versions"
+
           echo "::endgroup::"
 
           echo "::group::Strategies"
@@ -68,6 +71,10 @@ jobs:
           # Convert strategies from bash array to json
           strategies_json=`jq -c -n '$ARGS.positional' --args "${strategies[@]}"`
           echo "strategies=$strategies_json" >> $GITHUB_OUTPUT
+
+          echo "Strategies:            $strategies"
+          echo "Strategies JSON:       $strategies_json"
+
           echo "::endgroup::"
 
           echo "::group::Strategy details"
@@ -83,6 +90,8 @@ jobs:
             strategy_details["${{ github.event.inputs.strategy }}"]=$tmp_copr_project_tpl
           fi
 
+          echo "Strategy Details:      ${strategy_details[@]}"
+
           # Transform associative bash array into JSON we can consume in the next job
           strategy_details_json=()
           for key in ${!strategy_details[@]}
@@ -90,7 +99,8 @@ jobs:
             strategy_details_json+=("{'strategy': '${key}', 'copr_project_tpl': '${strategy_details[${key}]}'}")
           done
           strategy_details_json=`jq -c -n '$ARGS.positional' --args "${strategy_details_json[@]}"`
-          echo "strategy_details=$strategy_details_json" >> $GITHUB_OUTPUT
+          echo "strategy-details=$strategy_details_json" >> $GITHUB_OUTPUT
+          echo "Strategy Details JSON: $strategy_details_json"
           echo "::endgroup::"
 
   run-testing-farm:
@@ -153,8 +163,8 @@ jobs:
         if: ${{env.skip}} == 0 && "${{env.dont_create_artifact}}" != "1"
         uses: actions/upload-artifact@v4
         with:
-          name: ${{env.artifact_name}}
-          path: /tmp/${{env.artifact_name}}
+          name: $artifact_name
+          path: /tmp/$artifact_name
           if-no-files-found: warn
 
       - name: "Run testing-farm"
@@ -194,10 +204,10 @@ jobs:
               --git-url https://github.com/fedora-llvm-team/llvm-snapshots \
               --arch $arch \
               --plan /tests/snapshot-gating \
-              --environment COPR_PROJECT=${{ env.copr_project }} \
+              --environment COPR_PROJECT=$copr_project \
               --context distro=${name}-${version} \
               --context arch=${arch} $dry_run_option \
-              --context snapshot=${{env.yyyymmdd}}
+              --context snapshot=$yyyymmdd
 
           # Don't be fooled, we currently need the repetition of arch and alike
           # in the --context variables.
