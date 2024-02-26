@@ -96,7 +96,7 @@ jobs:
 
           # Create the artifact file that we use to identify if the test already
           # ran
-          artifact_name=testing-farm-${{ matrix.os-version }}-$yyyymmdd
+          artifact_name=testing-farm-${{ matrix.os-version }}-${{ matrix.strategy }} -$yyyymmdd
           echo "artifact_name=$artifact_name" >> $GITHUB_ENV
           touch /tmp/$artifact_name
           skip=0
