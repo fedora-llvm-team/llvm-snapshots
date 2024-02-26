@@ -28,6 +28,11 @@ on:
         default: false
         required: true
         type: boolean
+      dry-run:
+        description: 'Do not submit request to testing-farm, just print it'
+        default: true
+        required: true
+        type: boolean
 
 permissions:
   # Allow to store artifacts
@@ -111,9 +116,13 @@ jobs:
 
           echo "skip=$skip" >> $GITHUB_ENV
 
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && ${{ github.event.inputs.dry-run }} ]]; then
+            echo "dont_create_artifact=1" >> $GITHUB_ENV
+          fi
+
 
       - name: Create artifact for this testing-farm run if not already done
-        if: ${{ env.skip == 0 }}
+        if: ${{env.skip}} == 0 || "${{env.dont_create_artifact}}" != "1"
         uses: actions/upload-artifact@v4
         with:
           name: ${{env.artifact_name}}
@@ -146,6 +155,11 @@ jobs:
           >&2 echo "arch    = $arch"
           >&2 echo "version = $version"
 
+          dry_run_option=
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && ${{ github.event.inputs.dry-run }} ]]; then
+            dry_run_option=--dry-run
+          fi
+
           testing-farm \
             request \
               --compose ${name^}-${version} \
@@ -154,7 +168,7 @@ jobs:
               --plan /tests/snapshot-gating \
               --environment COPR_PROJECT=${{ env.copr_project }} \
               --context distro=${name}-${version} \
-              --context arch=${arch} \
+              --context arch=${arch} $dry_run_option \
               --context snapshot=${{env.yyyymmdd}}
 
           # Don't be fooled, we currently need the repetition of arch and alike
