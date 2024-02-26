@@ -24,7 +24,7 @@ on:
           - standalone
           - bootstrap
       force-test:
-        description: 'Force re-running test if it already ra  n'
+        description: 'Force re-running test if it already ran'
         default: false
         required: true
         type: boolean
