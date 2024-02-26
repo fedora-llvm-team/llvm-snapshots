@@ -39,15 +39,16 @@ permissions:
   actions: write
 
 jobs:
-  get-os-details-job:
+  prepare-next-job-matrix:
     runs-on: ubuntu-latest
     outputs:
-      os-versions: ${{ steps.get-os-versions-step.outputs.os_versions }}
-      strategies: ${{ steps.get-os-versions-step.outputs.strategies }}
+      os-versions: ${{ steps.prepare-json-step.outputs.os_versions }}
+      strategies: ${{ steps.prepare-json-step.outputs.strategies }}
+      strategy-details: ${{ steps.prepare-json-step.outputs.strategy_details }}
     steps:
-      - id: get-os-versions-step
+      - id: prepare-json-step
         run: |
-          # Get OS-versions and filter them
+          echo "::group::OS version"
           os_versions=`curl -sL https://copr.fedorainfracloud.org/api_3/mock-chroots/list | jq -rcM '[. | keys[] | select(.|match("(fedora-[0-9]+|rawhide)|rhel-(9|[0-9]{2,})-")) ']`
 
           # Adapt if we have a custom workflow input
@@ -55,31 +56,52 @@ jobs:
             os_versions="[\"${{ github.event.inputs.os-version }}\"]"
           fi
           echo "os_versions=$os_versions" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
 
-          # Convert strategies from bash array to json
+          echo "::group::Strategies"
           strategies=(big-merge standalone bootstrap)
+
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.strategy }}" != "all" ]]; then
             strategies=(${{ github.event.inputs.strategy }})
           fi
+
+          # Convert strategies from bash array to json
           strategies_json=`jq -c -n '$ARGS.positional' --args "${strategies[@]}"`
           echo "strategies=$strategies_json" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
 
+          echo "::group::Strategy details"
+          declare -A strategy_details
+          strategy_details["standalone"]="llvm-snapshots-incubator-YYYYMMDD"
+          strategy_details["big-merge"]="llvm-snapshots-big-merge-YYYYMMDD"
+          strategy_details["bootstrap"]="llvm-snapshots-bootstrap-YYYYMMDD"
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.strategy }}" != "all" ]]; then
+            tmp_copr_project_tpl=${strategy_details[${{ github.event.inputs.strategy }}]}
+            unset strategy_details
+            declare -A strategy_details
+            strategy_details["${{ github.event.inputs.strategy }}"]=$tmp_copr_project_tpl
+          fi
+
+          # Transform associative bash array into JSON we can consume in the next job
+          strategy_details_json=()
+          for key in ${!strategy_details[@]}
+          do
+            strategy_details_json+=("{'strategy': '${key}', 'copr_project_tpl': '${strategy_details[${key}]}'}")
+          done
+          strategy_details_json=`jq -c -n '$ARGS.positional' --args "${strategy_details_json[@]}"`
+          echo "strategy_details=$strategy_details_json" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
 
   run-testing-farm:
-    needs: get-os-details-job
+    needs: prepare-next-job-matrix
     name: run
     strategy:
       fail-fast: false
       matrix:
-        os-version: ${{ fromJSON(needs.get-os-details-job.outputs.os-versions) }}
-        strategy: ${{ fromJSON(needs.get-os-details-job.outputs.strategies) }}
-        include:
-          - strategy: standalone
-            copr_project_tpl: "llvm-snapshots-incubator-YYYYMMDD"
-          - strategy: big-merge
-            copr_project_tpl: "llvm-snapshots-big-merge-YYYYMMDD"
-          - strategy: bootstrap
-            copr_project_tpl: "llvm-snapshots-bootstrap-YYYYMMDD"
+        os-version: ${{ fromJSON(needs.prepare-next-job-matrix.outputs.os-versions) }}
+        strategy: ${{ fromJSON(needs.prepare-next-job-matrix.outputs.strategies) }}
+        include: ${{ fromJSON(needs.prepare-next-job-matrix.outputs.strategy-details) }}
     runs-on: ubuntu-latest
     # See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes
     timeout-minutes: 360
