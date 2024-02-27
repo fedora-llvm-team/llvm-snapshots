@@ -196,6 +196,7 @@ jobs:
           echo "arch    = $arch"
           echo "version = $version"
           echo "ranch   = $ranch"
+          echo "dry_run = $dry_run"
           echo "::endgroup::"
 
           [[ "$dry_run" == "1" ]] && dry_run_option=--dry-run
@@ -203,7 +204,7 @@ jobs:
           echo "::group::testing-farm request"
           testing-farm \
             request \
-              --compose ${name^}-${version} \
+              --compose ${name^}-${version^} \
               --git-url https://github.com/fedora-llvm-team/llvm-snapshots \
               --arch $arch \
               --plan /tests/snapshot-gating \
