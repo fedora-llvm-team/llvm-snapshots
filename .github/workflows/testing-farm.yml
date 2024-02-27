@@ -93,14 +93,14 @@ jobs:
           echo "Strategy Details:      ${strategy_details[@]}"
 
           # Transform associative bash array into JSON we can consume in the next job
-          strategy_details_json=()
+          strategy_details_json="["
           for key in ${!strategy_details[@]}
           do
-            strategy_details_json+=("{'strategy': '${key}', 'copr_project_tpl': '${strategy_details[${key}]}'}")
+            strategy_details_json+="{'strategy': '${key}', 'copr_project_tpl': '${strategy_details[${key}]}'},"
           done
-          strategy_details_json=`jq -c -n '$ARGS.positional' --args "${strategy_details_json[@]}"`
-          echo "strategy-details=$strategy_details_json" >> $GITHUB_OUTPUT
+          strategy_details_json+="]"
           echo "Strategy Details JSON: $strategy_details_json"
+          echo "strategy-details=$strategy_details_json" >> $GITHUB_OUTPUT
           echo "::endgroup::"
 
   run-testing-farm:
