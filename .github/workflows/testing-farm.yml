@@ -52,7 +52,7 @@ jobs:
           os_versions=`curl -sL https://copr.fedorainfracloud.org/api_3/mock-chroots/list | jq -rcM '[. | keys[] | select(.|match("(fedora-[0-9]+|rawhide)|rhel-(9|[0-9]{2,})-")) ']`
 
           # Adapt if we have a custom workflow input
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.os-version }}" != "all" ]]; then
+          if [[ "${{ github.event.inputs.os-version }}" != "all" ]]; then
             os_versions="[\"${{ github.event.inputs.os-version }}\"]"
           fi
           echo "os-versions=$os_versions" >> $GITHUB_OUTPUT
@@ -64,7 +64,7 @@ jobs:
           echo "::group::Strategies"
           strategies=(big-merge standalone bootstrap)
 
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.strategy }}" != "all" ]]; then
+          if [[ "${{ github.event.inputs.strategy }}" != "all" ]]; then
             strategies=(${{ github.event.inputs.strategy }})
           fi
 
@@ -83,7 +83,7 @@ jobs:
           strategy_details["big-merge"]="llvm-snapshots-big-merge-YYYYMMDD"
           strategy_details["bootstrap"]="llvm-snapshots-bootstrap-YYYYMMDD"
 
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.strategy }}" != "all" ]]; then
+          if [[ "${{ github.event.inputs.strategy }}" != "all" ]]; then
             tmp_copr_project_tpl=${strategy_details[${{ github.event.inputs.strategy }}]}
             unset strategy_details
             declare -A strategy_details
@@ -126,7 +126,7 @@ jobs:
         run: |
           yyyymmdd=`date +%Y%m%d`
           # TODO(kwk): Determine date some other way...
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.yyyymmdd }}" != "today" ]]; then
+          if [[ "${{ github.event.inputs.yyyymmdd }}" != "today" ]]; then
             yyyymmdd=${{ github.event.inputs.yyyymmdd }}
           fi
 
@@ -148,16 +148,12 @@ jobs:
             --artifact-name $artifact_name \
           && skip=1
 
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && ${{ github.event.inputs.force-test }} ]]; then
-            skip=0
-          fi
+          [[ ${{ github.event.inputs.force-test }} ]] && skip=0
 
           echo "skip=$skip" >> $GITHUB_ENV
 
-          dry_run=0
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && ${{ github.event.inputs.dry-run }} ]]; then
-            dry_run=1
-          fi
+          [[ ${{ github.event.inputs.dry-run }} ]] && dry_run=1 || dry_run=0
+
           echo "dry_run=$dry_run" >> $GITHUB_ENV
 
 
