@@ -156,7 +156,7 @@ jobs:
 
           dry_run=0
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && ${{ github.event.inputs.dry-run }} ]]; then
-            echo "dry_run=1" >> $GITHUB_ENV
+            dry_run=1
           fi
           echo "dry_run=$dry_run" >> $GITHUB_ENV
 
@@ -165,8 +165,8 @@ jobs:
         if: github.env.skip == 0 && github.env.dry_run != 1
         uses: actions/upload-artifact@v4
         with:
-          name: $artifact_name
-          path: /tmp/$artifact_name
+          name: ${{ github.env.artifact_name }}
+          path: /tmp/${{ github.env.artifact_name }}
           if-no-files-found: warn
 
       - name: "Run testing-farm"
