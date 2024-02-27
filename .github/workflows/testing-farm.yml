@@ -1,6 +1,34 @@
 name: "testing-farm"
 
 on:
+  workflow_call:
+    inputs:
+      yyyymmdd:
+        description: 'YYYMMDD (e.g. 20240220)'
+        default: 'today'
+        required: true
+        type: string
+      os-version:
+        description: 'OS version (e.g. fedora-rawhide-x86_64)'
+        default: 'all'
+        required: true
+        type: string
+      strategy:
+        description: 'Build strategy'
+        default: 'all'
+        required: true
+        type: string
+      force-test:
+        description: 'Force re-running test if it already ran'
+        default: false
+        required: true
+        type: boolean
+      dry-run:
+        description: 'Do not submit request to testing-farm, just print it'
+        default: true
+        required: true
+        type: boolean
+
   workflow_dispatch:
     inputs:
       yyyymmdd:
