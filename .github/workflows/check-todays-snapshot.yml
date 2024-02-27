@@ -38,7 +38,7 @@ jobs:
             needs_llvm_snapshot_builder: false
 
     runs-on: ubuntu-latest
-    container: fedora:38
+    container: fedora:39
     steps:
       - name: Setup Copr config file
         env:
