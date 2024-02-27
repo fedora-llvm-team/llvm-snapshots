@@ -181,21 +181,21 @@ jobs:
           # Pick the right API key depending on the OS and architecture
           # RHEL and some architectures can only be tested internally.
 
-          echo ${{ matrix.os-version }} | grep -P '(x86_64|aarch64)$' > /dev/null \
-            && (ranch=public; export TESTING_FARM_API_TOKEN=${{ env.TESTING_FARM_API_TOKEN_PUBLIC_RANCH }})
+          echo ${{ matrix.os-version }} | grep -P '(x86_64|aarch64)$' > /dev/null && ranch=public
+          echo ${{ matrix.os-version }} | grep -P '(^rhel|(ppc64le|s390x|i386)$)' > /dev/null && ranch=redhat
 
-          echo ${{ matrix.os-version }} | grep -P '(^rhel|(ppc64le|s390x|i386)$)' > /dev/null \
-            && (ranch=redhat; export TESTING_FARM_API_TOKEN=${{ env.TESTING_FARM_API_TOKEN_REDHAT_RANCH }})
+          [[ "$ranch" == "public" ]] && export TESTING_FARM_API_TOKEN=${{ env.TESTING_FARM_API_TOKEN_PUBLIC_RANCH }}
+          [[ "$ranch" == "redhat" ]] && export TESTING_FARM_API_TOKEN=${{ env.TESTING_FARM_API_TOKEN_REDHAT_RANCH }}
 
           name=`echo ${{ matrix.os-version }} | grep -oP "^[^-]+"`
           arch=`echo ${{ matrix.os-version }} | grep -oP "[^-]+$"`
           version=`echo ${{ matrix.os-version }} | grep -oP "^[^-]+-\K[^-]+"`
 
           echo "::group::Pre testing-farm info"
-          >&2 echo "name    = $name"
-          >&2 echo "arch    = $arch"
-          >&2 echo "version = $version"
-          >&2 echo "ranch   = $ranch"
+          echo "name    = $name"
+          echo "arch    = $arch"
+          echo "version = $version"
+          echo "ranch   = $ranch"
           echo "::endgroup::"
 
           [[ "$dry_run" == "1" ]] && dry_run_option=--dry-run
