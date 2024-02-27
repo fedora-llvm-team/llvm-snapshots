@@ -184,17 +184,16 @@ jobs:
 
           echo "dry_run=$dry_run" >> $GITHUB_ENV
 
-
       - name: Create artifact for this testing-farm run if not already done
-        if: github.env.skip == 0 && github.env.dry_run != 1
+        if: env.skip == 0 && env.dry_run != 1
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.env.artifact_name }}
-          path: /tmp/${{ github.env.artifact_name }}
+          name: ${{ env.artifact_name }}
+          path: /tmp/${{ env.artifact_name }}
           if-no-files-found: warn
 
       - name: "Run testing-farm"
-        if: github.env.skip == 0
+        if: env.skip == 0
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
