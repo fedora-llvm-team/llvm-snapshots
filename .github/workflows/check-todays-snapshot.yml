@@ -9,7 +9,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  # We need this in order to create or update broken snapshot issues
+  # We need this in order to create or update snapshot issues
   issues: write
 
 jobs:
@@ -21,21 +21,24 @@ jobs:
         include:
           - name: standalone
             maintainer_handle: "tuliom"
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
+            copr_ownername: "@fedora-llvm-team"
+            copr_project_tpl: "llvm-snapshots-incubator-YYYYMMDD"
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
-            needs_llvm_snapshot_builder: true
+            packages: "llvm-snapshot-builder python-lit llvm clang lld compiler-rt libomp"
           - name: big-merge
             maintainer_handle: "kwk"
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
+            copr_ownername: "@fedora-llvm-team"
+            copr_project_tpl: "llvm-snapshots-big-merge-YYYYMMDD"
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/"
-            extra_script_file: "scripts/functions-big-merge.sh"
-            needs_llvm_snapshot_builder: false
+            chroot_pattern: '^(fedora-(rawhide|[0-9]+)|rhel-9-)'
+            packages: "llvm"
           - name: bootstrap
             maintainer_handle: "kwk"
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD"
+            copr_ownername: "@fedora-llvm-team"
+            copr_project_tpl: "llvm-snapshots-bootstrap-YYYYMMDD"
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD/monitor/"
-            extra_script_file: "scripts/functions-bootstrap.sh"
-            needs_llvm_snapshot_builder: false
+            chroot_pattern: 'fedora-39-x86_64'
+            packages: "llvm"
 
     runs-on: ubuntu-latest
     container: fedora:39
@@ -55,115 +58,22 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: "Variables and functions"
-        shell: bash -e {0}
-        run: |
-          source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
-
-          today=`date +%Y%m%d`
-
-          username=@fedora-llvm-team
-          echo "username=$username" >> $GITHUB_ENV
-          echo "today_yyyymmdd=$today" >> $GITHUB_ENV
-          echo "project_today=${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/" >> $GITHUB_ENV
-          echo "monitor_url=${{ matrix.copr_monitor_tpl }}" | sed "s/YYYYMMDD/$today/" >> $GITHUB_ENV
-
-      - name: "Install GitHub’s official command line tool: gh"
-        shell: bash -e {0}
-        run: |
-          source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
-
-          install_gh_client
-
-      - name: "Check for good builds"
+      - name: "Check todays builds"
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+          extra_args=""
 
-          if was_broken_snapshot_detected_today ${GITHUB_REPOSITORY} ${{ matrix.name }}; then
-            echo "We already filed an issue for broken snapshots today."
-            handle_error_causes \
-              ${GITHUB_REPOSITORY} \
-              ${{ matrix.name }} \
-              ${{ matrix.maintainer_handle }} \
-              ${{ env.project_today }}
-              exit 0;
+          if [[ ! -z "${{ matrix.chroot_pattern }}" ]]; then
+            extra_args="${extra_args} --chroot-pattern ${{matrix.chroot_pattern}}"
           fi
 
-          if ! copr_project_exists ${{ env.project_today }}; then
-            echo "The copr project ${{ env.project_today }} does not exist (yet)."
-            exit 0;
-          fi
-
-          if [ "${{ matrix.needs_llvm_snapshot_builder }}" == "true" ]; then
-            extra_packages=llvm-snapshot-builder
-          fi
-
-          if ! has_all_good_builds ${{ env.project_today }} $extra_packages > /tmp/diff; then
-            if grep -i "failed" /tmp/diff; then
-              cat <<EOF > body.txt
-          Hello @${{ matrix.maintainer_handle }},
-
-          <details>
-          <summary>Looking at the <a href="${{ env.monitor_url }}">Fedora Copr build monitor</a> for ${{ env.today_yyyymmdd }} we found at least one failed build.</summary>
-
-          \`\`\`diff
-          $(cat /tmp/diff)
-          \`\`\`
-
-          </details>
-
-          The CI system will update this very comment over time to list the errors.
-          Please note, that logs snippets will be limited to `max_context_bytes` bytes.
-
-          `update_marker`
-          EOF
-              causes_file=`mktemp`
-
-              archs=`grep -ioP 'failed\s+[^-]+-[0-9,rawhide]+-\K[^\s]+' /tmp/diff | sort | uniq`
-              projects=`grep -ioP 'failed\s+[^\s]+\s+\K[^\s]+$' /tmp/diff | sort | uniq`
-              oses=`grep -ioP 'failed\s+\K.*' /tmp/diff | cut -d '-' -f 1-2 | sort | uniq`
-              error_causes=`get_error_causes ${{ env.project_today }} $causes_file`
-
-              # Ensure labels for arch, project, OS, strategy and error cause
-              # exist in the github project
-              create_labels_for_archs ${GITHUB_REPOSITORY} "$archs"
-              create_labels_for_projects ${GITHUB_REPOSITORY} "$projects"
-              create_labels_for_oses ${GITHUB_REPOSITORY} "$oses"
-              create_labels_for_strategies ${GITHUB_REPOSITORY} "${{ matrix.name }}"
-              create_labels_for_error_causes ${GITHUB_REPOSITORY} "$error_causes"
-
-              os_labels=`for os in $oses; do echo -n " --label os/$os "; done`
-              arch_labels=`for arch in $archs; do echo -n " --label arch/$arch " ; done`
-              project_labels=`for project in $projects; do echo -n " --label project/$project "; done`
-              error_labels=`for cause in $error_causes; do echo -n " --label error/$cause "; done`
-              strategy_labels=" --label strategy/${{ matrix.name }} "
-
-              gh --repo ${GITHUB_REPOSITORY} issue create \
-                --label broken_snapshot_detected $strategy_labels $os_labels $arch_labels $project_labels $error_labels \
-                --assignee ${{ matrix.maintainer_handle }} \
-                --title "Broken snapshot for ${{ env.today_yyyymmdd }} detected (${{ matrix.name }})" \
-                --body-file body.txt
-
-              # When you create an issue with:
-              #   gh issue create
-              # the issue is not immediately found with:
-              #   gh issue list
-              # Therefore we give it a bit of time before we continue here.
-              sleep 5;
-
-              handle_error_causes \
-                ${GITHUB_REPOSITORY} \
-                ${{ matrix.name }} \
-                ${{ matrix.maintainer_handle }} \
-                ${{ env.project_today }} \
-                $causes_file
-
-              exit 1
-            fi
-          fi
+          python3 snapshot_manager/main.py check ${extra_args}\
+            --github_repo ${GITHUB_REPOSITORY} \
+            --github_token_env ${GITHUB_TOKEN} \
+            --maintainer-handle ${{matrix.maintainer_handle}} \
+            --packages ${{matrix.packages}} \
+            --build-strategy ${{matrix.name}} \
+            --copr-project-tpl ${{matrix.copr_project_tpl}} \
+            --copr-monitor-tpl ${{matrix.copr_monitor_tpl}}

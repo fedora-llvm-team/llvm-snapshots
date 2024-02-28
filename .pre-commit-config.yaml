@@ -8,7 +8,7 @@ repos:
   -   id: end-of-file-fixer
   -   id: check-yaml
   -   id: check-added-large-files
-      args: ['--maxkb=1000']
+      args: ['--maxkb=3000']
 
 # Disabled until https://github.com/teemtee/tmt/issues/2651 is fixed
 # See https://tmt.readthedocs.io/en/latest/guide.html#checking-data-validity
@@ -20,7 +20,7 @@ repos:
 # See https://black.readthedocs.io/en/stable/integrations/source_version_control.html
 # Using this mirror lets us use mypyc-compiled black, which is about 2x faster
 - repo: https://github.com/psf/black-pre-commit-mirror
-  rev: 23.10.1
+  rev: 24.2.0
   hooks:
     - id: black
       # It is recommended to specify the latest version of Python
