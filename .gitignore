@@ -1,3 +1,4 @@
 buildroot/
 llvm-snapshot-builder*.tar.bz2
 *.rpm
+.coverage

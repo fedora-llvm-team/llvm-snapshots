@@ -140,3 +140,14 @@ copr-build-%:
 		--chroots $(chroot) \
 		--packagenames $(package) \
 		--timeout "108000"
+
+.PHONY:
+test-snapshot-manager:
+	cd snapshot_manager \
+	&& python3 \
+		-m coverage run \
+		-m unittest \
+		   discover -v \
+		   --durations 0 \
+		   --top-level-directory $(PWD)/snapshot_manager \
+		   ./tests
