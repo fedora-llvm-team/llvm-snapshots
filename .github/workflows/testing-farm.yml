@@ -28,6 +28,15 @@ on:
         default: true
         required: true
         type: boolean
+    # secrets:
+    #   # TODO(kwk): Rename this because of this error:
+    #   # secret name `GITHUB_TOKEN` within `workflow_call` can not be used since it would collide with system reserved name
+    #   GITHUB_TOKEN:
+    #     required: true
+    #   TESTING_FARM_API_TOKEN_PUBLIC_RANCH:
+    #     required: true
+    #   TESTING_FARM_API_TOKEN_REDHAT_RANCH:
+    #     required: true
 
   workflow_dispatch:
     inputs:
