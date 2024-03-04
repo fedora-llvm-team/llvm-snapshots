@@ -20,7 +20,7 @@ jobs:
         name: [standalone, big-merge, bootstrap]
         include:
           - name: standalone
-            maintainer_handle: "tstellar"
+            maintainer_handle: "tuliom"
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
             needs_llvm_snapshot_builder: true
