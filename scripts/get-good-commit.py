@@ -60,9 +60,7 @@ def get_good_commit(
             next_sha = commit.parents[0].sha
             combined_status = commit.get_combined_status().state
             print(
-                "{}. Combined status for {} = {}".format(
-                    i, commit.sha, combined_status
-                ),
+                f"{i}. Combined status for {commit.sha} = {combined_status} (author.date={commit.commit.author.date}, commiter.date={commit.commit.comitter.date})",
                 file=sys.stderr,
             )
 
