@@ -33,8 +33,7 @@ runs:
           --token ${{ inputs.token }} \
           --project ${{ inputs.github-project }} \
           --start-ref ${{ inputs.start-ref }} \
-          --ensure-checks \
+          --required-checks \
             clang-x86_64-debian-fast \
-          --max-tries 30 \
-          --extend 4 > good_commit.sha
+          --max-tries 30 > good_commit.sha
         echo "good-commit=$(cat good_commit.sha)" >> $GITHUB_OUTPUT

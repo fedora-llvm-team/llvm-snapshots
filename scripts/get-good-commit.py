@@ -3,6 +3,7 @@
 import argparse
 import sys
 from github import Github
+import logging
 
 
 def get_good_commit(
@@ -10,108 +11,57 @@ def get_good_commit(
     project: str,
     start_ref: str,
     max_tries: int,
-    ensure_checks: list[str],
-    extend: int = 1,
+    required_checks: list[str],
 ) -> str:
     """
     Takes a github project and walks up the chain of commits beginning with
-    `start_ref`. From there it checks the combined status of `max_tries` parent
-    commits. All the checks in `ensure_checks` must have run for the commit to
-    be considered the best of the `max_tries` commits. If among the `max_tries`
-    commits there are multiples commits that have a successful combined status,
-    the one is picked that passes all tests from `ensure_checks` and has the
-    most overall checks run.
-
-    See also: https://docs.github.com/en/rest/reference/repos#get-the-combined-status-for-a-specific-reference
+    `start_ref`. All the checks in `required_checks` must have run for the commit to
+    be considered the best of the `max_tries` commits.
 
     :param str token: to be used for github token authentication
     :param str project: the github project to work with
     :param str start_ref: the git ref to check first (can be a SHA, a branch name, or a tag name)
     :param int max_tries: the number of parents that the algorithm tries before giving up and returning an empty string
-    :param list[str] ensure_checks: the list of checks that must exist for a commit to be classified as "good"
-    :param int extend: how many times we extend the max_tries (if we don't have a good commit yet) before we give up
+    :param list[str] required_checks: the list of checks that must exist for a commit to be classified as "good"
     """
     g = Github(login_or_token=token)
     repo = g.get_repo(project)
     next_sha = start_ref
+    logging.basicConfig(level=logging.INFO)
+    logging.info(
+        f"""
+Scanning for best of commit
+Project:         {project}
+Start ref:       {start_ref}
+Max tries:       {max_tries}
+Required checks: {required_checks}
+"""
+    )
 
-    print("Scanning for best of commit", file=sys.stderr)
-    print("Project:   {}".format(project), file=sys.stderr)
-    print("Start ref: {}".format(start_ref), file=sys.stderr)
-    print("Max tries: {}".format(max_tries), file=sys.stderr)
-    print("Checks:    {}".format(ensure_checks), file=sys.stderr)
-    print("Extend:    {}".format(extend), file=sys.stderr)
+    required_checks = set((check, "success") for check in required_checks)
+    for i in range(0, max_tries):
+        commit = repo.get_commit(sha=next_sha)
+        commit_url = f"https://github.com/{project}/commit/{commit.sha}"
+        next_sha = commit.parents[0].sha
 
-    max_check_runs = 0
-    best_commit = ""
-
-    for j in range(0, extend):
-        if best_commit != "":
-            break
-        if j > 0:
-            print(
-                "Extending search radius because we haven't found a good commit yet: {}/{}".format(
-                    j + 1, extend
-                ),
-                file=sys.stderr,
+        logging.info(
+            f"{i}. Checking commit {commit_url} (Date: {commit.commit.committer.date}, Combined status: {commit.get_combined_status().state})"
+        )
+        # Makes sure the required checks are among the ones that have been run
+        # on the commit.
+        actual_checks = set(
+            (status.context, status.state) for status in commit.get_statuses()
+        )
+        if not required_checks.issubset(actual_checks):
+            logging.warning(
+                f"- Ignoring commit because of missing or failed check(s): {required_checks - actual_checks}"
             )
-        for i in range(0, max_tries):
-            commit = repo.get_commit(sha=next_sha)
-            next_sha = commit.parents[0].sha
-            combined_status = commit.get_combined_status().state
-            print(
-                f"{i}. Combined status for {commit.sha} = {combined_status} (author.date={commit.commit.author.date}, commiter.date={commit.commit.committer.date})",
-                file=sys.stderr,
-            )
+            continue
 
-            # move on with first parent if combined status is not successful
-            if combined_status != "success":
-                continue
+        logging.info(f"Found good commit: {commit_url}")
+        return commit.sha
 
-            statuses = commit.get_statuses()
-            num_check_runs = len(list(statuses))
-
-            # Commit is only worth considering if it has more check runs than the
-            # best commit so far.
-            if num_check_runs <= max_check_runs:
-                print(
-                    "    Ignoring commit because number of check runs ({}) is below or equal current best ({})".format(
-                        num_check_runs, max_check_runs
-                    ),
-                    file=sys.stderr,
-                )
-                continue
-
-            # Makes sure the required check is among the ones that have been run on
-            # the commit.
-            checks = ensure_checks.copy()
-            for status in statuses:
-                if status.context in checks:
-                    print(
-                        "    * Status: {} - {}".format(
-                            status.context, status.description
-                        ),
-                        file=sys.stderr,
-                    )
-                    checks.remove(status.context)
-                # Ignore other checks that ran if all of the required ones have been found
-                if len(checks) == 0:
-                    break
-
-            if len(checks) != 0:
-                print("    Not all required checks have been run.", file=sys.stderr)
-                continue
-
-            best_commit = commit.sha
-            max_check_runs = num_check_runs
-            print(
-                "    New best commit: sha {} (#check runs={})".format(
-                    commit.sha, max_check_runs
-                ),
-                file=sys.stderr,
-            )
-
-    return best_commit
+    return ""
 
 
 def main():
@@ -147,15 +97,8 @@ def main():
         help="how many commit to try before giving up (default: 20)",
     )
     parser.add_argument(
-        "--extend",
-        dest="extend",
-        type=int,
-        default="1",
-        help="how many times we extend the max-tries (default: 1)",
-    )
-    parser.add_argument(
-        "--ensure-checks",
-        dest="ensure_checks",
+        "--required-checks",
+        dest="required_checks",
         metavar="CHECK",
         nargs="+",
         default=["clang-x86_64-debian-fast"],
@@ -168,9 +111,8 @@ def main():
         token=args.token,
         project=args.project,
         start_ref=args.start_ref,
-        ensure_checks=args.ensure_checks,
+        required_checks=args.required_checks,
         max_tries=args.max_tries,
-        extend=args.extend,
     )
     if sha == "":
         sys.exit(-1)
