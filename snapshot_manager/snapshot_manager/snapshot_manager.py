@@ -111,3 +111,5 @@ class SnapshotManager:
         ):
             logging.info(f"Adding label: {label}")
             issue.add_to_labels(label)
+
+        logging.info(f"Updated today's issue: {issue.html_url}")
