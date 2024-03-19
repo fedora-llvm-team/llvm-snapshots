@@ -71,8 +71,8 @@ jobs:
           fi
 
           python3 snapshot_manager/main.py check ${extra_args}\
-            --github_repo ${GITHUB_REPOSITORY} \
-            --github_token_env ${GITHUB_TOKEN} \
+            --github-repo ${GITHUB_REPOSITORY} \
+            --github-token-env GITHUB_TOKEN \
             --maintainer-handle ${{matrix.maintainer_handle}} \
             --packages ${{matrix.packages}} \
             --build-strategy ${{matrix.name}} \
