@@ -10,5 +10,5 @@ copr-cli
 tft-cli==0.0.16
 regex==2023.12.25
 munch==4.0.0
-copr==1.130
+copr==1.131
 requests==2.31.0
