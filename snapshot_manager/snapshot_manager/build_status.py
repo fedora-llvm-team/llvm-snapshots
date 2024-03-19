@@ -444,7 +444,9 @@ def markdown_build_status_matrix(
                 )
             else:
                 cols.append(init_state)
+        # fmt: off
         table += f"|{c}|{" | ".join(cols)}|\n"
+        # fmt: on
 
     if add_legend:
         table += "<details><summary>Build status legend</summary><ul>"
