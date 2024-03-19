@@ -29,7 +29,7 @@ class SnapshotManager:
         states = [state.augment_with_error() for state in states]
 
         issue, _ = self.github.create_or_get_todays_github_issue(
-            maintainer_handle=self.config.maintainer_handle, creator="kwk"
+            maintainer_handle=self.config.maintainer_handle
         )
         comment_body = issue.body
 
