@@ -62,7 +62,9 @@ class GithubClient:
         query = f"is:issue repo:{github_repo} author:{creator} label:strategy/{strategy} {self.config.yyyymmdd} in:title"
         issues = self.github.search_issues(query)
         if issues is not None and issues.totalCount > 0:
+            logging.info(f"Found today's issue: {issues[0].html_url}")
             return issues[0]
+        logging.info("Found no issue for today")
         return None
 
     def create_or_get_todays_github_issue(
