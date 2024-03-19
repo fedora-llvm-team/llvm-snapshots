@@ -26,7 +26,7 @@ copr==1.130
     # via
     #   -r requirements.txt.in
     #   copr-cli
-copr-cli==1.110
+copr-cli==1.111
     # via -r requirements.txt.in
 cryptography==42.0.4
     # via pyjwt
