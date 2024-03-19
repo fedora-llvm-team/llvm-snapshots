@@ -177,6 +177,14 @@ jobs:
           source scripts/functions.sh
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
+          if [ "${{ matrix.needs_llvm_snapshot_builder }}" == "true" ]; then
+            # Modify srpm chroot to know about llvm-snapshot-builder and about the --with=snapshot_build option
+            copr edit-chroot \
+              --repos "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/srpm-builds/" \
+              --rpmbuild-with "snapshot_build" \
+              --packages "llvm-snapshot-builder" \
+              ${{ env.project_today }}/srpm-builds
+          fi
           for chroot in ${{ env.chroots }}; do
             if [ "${{ matrix.needs_llvm_snapshot_builder }}" == "true" ]; then
               # Modify chroot to know about compat package repo and about the --with=snapshot_build option
