@@ -82,6 +82,7 @@ class GithubClient:
 
         strategy = self.config.build_strategy
         repo = self.gh_repo
+        logging.info("Creating issue for today")
         issue = repo.create_issue(
             assignee=maintainer_handle,
             title=f"Snapshot build for {self.config.yyyymmdd} ({strategy})",
