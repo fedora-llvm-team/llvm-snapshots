@@ -93,7 +93,7 @@ six==1.16.0
     #   python-dateutil
 tenacity==8.2.3
     # via plotly
-tft-cli==0.0.16
+tft-cli==0.0.17
     # via -r requirements.txt.in
 typer[all]==0.7.0
     # via tft-cli
