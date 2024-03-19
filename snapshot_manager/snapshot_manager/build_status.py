@@ -82,9 +82,7 @@ class ErrorCause(enum.StrEnum):
         return list(map(lambda c: c.value, cls))
 
 
-# TODO(kwk) once it works, add the kw_only argument
-# @dataclasses.dataclass(kw_only=True, order=True)
-@dataclasses.dataclass(order=True)
+@dataclasses.dataclass(kw_only=True, order=True)
 class BuildState:
     """An error describes what and why some package failed to build in a particular chroot."""
 

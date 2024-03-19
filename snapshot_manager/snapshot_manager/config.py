@@ -6,9 +6,7 @@ import datetime
 import dataclasses
 
 
-# TODO(kwk) once it works, add the kw_only argument
-# @dataclasses.dataclass(kw_only=True)
-@dataclasses.dataclass()
+@dataclasses.dataclass(kw_only=True)
 class Config:
     chroot_pattern: str = r"^fedora-(rawhide|[0-9]+)"
     """Regular expression to select chroots from all chroots currently supported on Copr."""

@@ -41,7 +41,6 @@ jobs:
             packages: "llvm"
 
     runs-on: ubuntu-latest
-    container: fedora:39
     steps:
       - name: Setup Copr config file
         env:
@@ -54,7 +53,7 @@ jobs:
 
       - name: Install Copr CLI
         run: |
-          dnf install -y copr-cli diffutils pcre2-tools jq
+          sudo apt-get install -y lsb-release diffutils pcre2-utils jq
 
       - uses: actions/checkout@v4
 
