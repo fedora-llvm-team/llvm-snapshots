@@ -32,13 +32,13 @@ jobs:
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/"
             chroot_pattern: '^(fedora-(rawhide|[0-9]+)|rhel-9-)'
             packages: "llvm"
-          - name: bootstrap
-            maintainer_handle: "kwk"
-            copr_ownername: "@fedora-llvm-team"
-            copr_project_tpl: "llvm-snapshots-bootstrap-YYYYMMDD"
-            copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD/monitor/"
-            chroot_pattern: 'fedora-39-x86_64'
-            packages: "llvm"
+          # - name: bootstrap
+          #   maintainer_handle: "kwk"
+          #   copr_ownername: "@fedora-llvm-team"
+          #   copr_project_tpl: "llvm-snapshots-bootstrap-YYYYMMDD"
+          #   copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD/monitor/"
+          #   chroot_pattern: 'fedora-39-x86_64'
+          #   packages: "llvm"
 
     runs-on: ubuntu-latest
     steps:
