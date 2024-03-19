@@ -26,7 +26,7 @@ copr==1.130
     # via
     #   -r requirements.txt.in
     #   copr-cli
-copr-cli==1.110
+copr-cli==1.111
     # via -r requirements.txt.in
 cryptography==42.0.4
     # via pyjwt
@@ -63,7 +63,9 @@ pygithub==2.2.0
 pygments==2.17.2
     # via rich
 pyjwt[crypto]==2.6.0
-    # via pygithub
+    # via
+    #   pygithub
+    #   pyjwt
 pynacl==1.5.0
     # via pygithub
 python-dateutil==2.8.2
@@ -96,7 +98,9 @@ tenacity==8.2.3
 tft-cli==0.0.16
     # via -r requirements.txt.in
 typer[all]==0.7.0
-    # via tft-cli
+    # via
+    #   tft-cli
+    #   typer
 typing-extensions==4.8.0
     # via pygithub
 tzdata==2023.4
