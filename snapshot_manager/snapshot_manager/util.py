@@ -6,6 +6,7 @@ import logging
 import pathlib
 import shlex
 import subprocess
+import os
 
 import requests
 
@@ -156,3 +157,13 @@ def shorten_text(text: str, max_length: int = 3000) -> str:
         max_length (int, optional): Max. number of bytes to shorten to. Defaults to 3000.
     """
     return text[:max_length]
+
+
+def golden_file_path(basename: str, extension: str = ".golden.txt") -> pathlib.Path:
+    path = os.path.join(
+        pathlib.Path(__file__).parent.parent.absolute(),
+        "tests",
+        "test_logs",
+        f"{basename}{extension}",
+    )
+    return pathlib.Path(path)

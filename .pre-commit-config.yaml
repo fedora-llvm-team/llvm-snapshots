@@ -9,6 +9,9 @@ repos:
   -   id: check-yaml
   -   id: check-added-large-files
       args: ['--maxkb=3000']
+  -   id: check-docstring-first
+  -   id: name-tests-test
+  -   id: requirements-txt-fixer
 
 # Disabled until https://github.com/teemtee/tmt/issues/2651 is fixed
 # See https://tmt.readthedocs.io/en/latest/guide.html#checking-data-validity
@@ -28,3 +31,6 @@ repos:
       # pre-commit's default_language_version, see
       # https://pre-commit.com/#top_level-default_language_version
       language_version: python3.12
+      force-exclude: "^snapshot_manager/tests/test_logs/"
+
+exclude: "^snapshot_manager/tests/test_logs/"

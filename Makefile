@@ -143,11 +143,6 @@ copr-build-%:
 
 .PHONY:
 test-snapshot-manager:
-	cd snapshot_manager \
-	&& python3 \
-		-m coverage run \
-		-m unittest \
-		   discover -v \
-		   --durations 0 \
-		   --top-level-directory $(PWD)/snapshot_manager \
-		   ./tests
+	# pytest --doctest-modules
+	coverage run -m pytest
+	coverage report -m

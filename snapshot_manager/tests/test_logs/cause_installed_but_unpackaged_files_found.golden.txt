@@ -1,0 +1,20 @@
+
+```
+RPM build errors:
+    Installed (but unpackaged) file(s) found:
+   /usr/lib/debug/usr/lib64/libomptarget.rtl.s390x.so.19.0pre20240320.gf5f3d5d6534f0a-19.0.0~pre20240320.gf5f3d5d6534f0a-1.fc38.s390x.debug
+   /usr/lib64/libomptarget.rtl.s390x.so
+   /usr/lib64/libomptarget.rtl.s390x.so.19.0pre20240320.gf5f3d5d6534f0a
+Finish: rpmbuild libomp-19.0.0~pre20240320.gf5f3d5d6534f0a-1.fc38.src.rpm
+Finish: build phase for libomp-19.0.0~pre20240320.gf5f3d5d6534f0a-1.fc38.src.rpm
+INFO: chroot_scan: 3 files copied to /var/lib/copr-rpmbuild/results/chroot_scan
+INFO: /var/lib/mock/fedora-38-s390x-1710918950.355366/root/var/log/dnf.log
+/var/lib/mock/fedora-38-s390x-1710918950.355366/root/var/log/dnf.librepo.log
+/var/lib/mock/fedora-38-s390x-1710918950.355366/root/var/log/dnf.rpm.log
+ERROR: Exception(/var/lib/copr-rpmbuild/results/libomp-19.0.0~pre20240320.gf5f3d5d6534f0a-1.fc38.src.rpm) Config(fedora-38-s390x) 2 minutes 50 seconds
+INFO: Results and/or logs in: /var/lib/copr-rpmbuild/results
+INFO: Cleaning up build root ('cleanup_on_failure=True')
+Start: clean chroot
+INFO: unmounting tmpfs.
+Finish
+```

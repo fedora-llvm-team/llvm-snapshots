@@ -7,6 +7,7 @@ import enum
 import logging
 import pathlib
 import re
+import os
 
 import regex
 
@@ -75,6 +76,7 @@ class ErrorCause(enum.StrEnum):
     ISSUE_DEPENDENCY = "dependency_issue"
     ISSUE_TEST = "test"
     ISSUE_DOWNSTREAM_PATCH_APPLICATION = "downstream_patch_application"
+    ISSUE_INSTALLED_BUT_UNPACKAGED_FILES_FOUND = "installed_but_unpackaged_files_found"
     ISSUE_UNKNOWN = "unknown"
 
     @classmethod
@@ -247,11 +249,31 @@ for <code>error:</code> (case insesitive) and here's what we've found:
 
 
 def get_cause_from_build_log(
-    srpm_build_file=str | pathlib.Path,
-    build_log_file: str | pathlib.Path = None,
+    build_log_file: str | pathlib.Path,
+    write_golden_file: bool = False,
 ) -> tuple[ErrorCause, str]:
+    """Analyzes the given build log for recognizable error patterns and categorized the overall error.
+
+    The function returns a tuple of the error pattern and the error context.
+    An error context is a string that has some markup to be rendered inside a github issue.
+
+    If write_to_golden_file is True, the error context is written to a golden file.
+    This allows us to create large test result files upon a change to the analysis.
+
+    Args:
+        build_log_file (str | pathlib.Path): The build log file to analyze
+        write_golden_file (bool, optional): If True, error context is written to a golden file. Defaults to False.
+
+    Returns:
+        tuple[ErrorCause, str]: The tuple of identied error pattern and the error context.
+    """
     cause = ErrorCause.ISSUE_UNKNOWN
     ctx = ""
+
+    def handle_golden_file(cause: ErrorCause, ctx: str):
+        if write_golden_file:
+            util.golden_file_path(basename=f"cause_{str(cause)}").write_text(ctx)
+        return (cause, ctx)
 
     logging.info(f"Determine error cause for: {build_log_file}")
 
@@ -261,7 +283,7 @@ def get_cause_from_build_log(
     logging.info(" Checking for copr timeout...")
     ret, ctx, err = util.grep_file(pattern=r"!! Copr timeout", filepath=build_log_file)
     if ret == 0:
-        return (
+        return handle_golden_file(
             ErrorCause.ISSUE_COPR_TIMEOUT,
             util.fenced_code_block(ctx),
         )
@@ -272,7 +294,7 @@ def get_cause_from_build_log(
         filepath=build_log_file,
     )
     if ret == 0:
-        return (
+        return handle_golden_file(
             ErrorCause.ISSUE_NETWORK,
             util.fenced_code_block(ctx),
         )
@@ -286,7 +308,7 @@ def get_cause_from_build_log(
         extra_args="-P",
     )
     if ret == 0:
-        return (
+        return handle_golden_file(
             ErrorCause.ISSUE_DOWNSTREAM_PATCH_APPLICATION,
             util.fenced_code_block(ctx),
         )
@@ -298,38 +320,50 @@ def get_cause_from_build_log(
         filepath=build_log_file,
     )
     if ret == 0:
-        return (
+        return handle_golden_file(
             ErrorCause.ISSUE_DEPENDENCY,
             util.fenced_code_block(ctx),
         )
 
     logging.info(" Checking for test issues...")
     ret, ctx, _ = util.grep_file(
-        pattern="(Failed Tests|Unexpectedly Passed Tests).*(\n|.)*Total Discovered Tests:",
-        extra_args="-M -n",
-        grep_bin="pcre2grep",
-        lines_after=10,
+        pattern=r"(?s)\*{20} TEST .*?\n--\n.*?\n--\n",
+        filepath=build_log_file,
+        extra_args="-Pzo",
+        case_insensitive=False,
+    )
+    if ret == 0:
+        test_details = ""
+        for failing_test in ctx.split("\x00"):
+            if not failing_test:
+                continue
+            test_name = "n/a"
+            lines = failing_test.splitlines()
+            if len(lines) > 0:
+                test_name = lines[0].replace("********************", "").strip()
+            test_details += f"""
+<details><summary>{test_name}</summary>
+``````
+{util.shorten_text(failing_test)}
+``````
+</details>
+"""
+        ctx = f"<details open><summary><h3>Failing tests</h3></summary>{test_details}</details>"
+        return handle_golden_file(ErrorCause.ISSUE_TEST, ctx)
+
+    logging.info(" Checking for installed but unackaged files...")
+    ret, ctx, _ = util.grep_file(
+        pattern=r"(?s)RPM build errors:\n    Installed \(but unpackaged\) file\(s\) found:.*Finish",
+        extra_args="-Pzo",
         filepath=build_log_file,
     )
     if ret == 0:
-        cause = ErrorCause.ISSUE_TEST
-        _, stdout, _ = util._run_cmd(
-            cmd=rf"sed '/\(\*\)\{{20\}} TEST [^\*]* FAILED \*\{{20\}}/,/\*\{{20\}}/ p' {build_log_file}"
+        # Remove trailing binary zero
+        ctx = ctx.rstrip("\x00")
+        return handle_golden_file(
+            ErrorCause.ISSUE_INSTALLED_BUT_UNPACKAGED_FILES_FOUND,
+            util.fenced_code_block(ctx),
         )
-        ctx = f"""
-### Failing tests
-
-```
-{ctx}
-```
-
-### Test output
-
-```
-{util.shorten_text(stdout)}
-```
-"""
-        return (cause, ctx)
 
     # TODO: Feel free to add your check here...
 
@@ -372,7 +406,7 @@ you'll find all occurrences here together with the preceding lines.
 {util.shorten_text(errors_to_look_into)}
 ```
 """
-    return (cause, ctx)
+    return handle_golden_file(cause, ctx)
 
 
 BuildStateList = list[BuildState]

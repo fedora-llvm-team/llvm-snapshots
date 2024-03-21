@@ -2,12 +2,12 @@
 
 import uuid
 
-import tests.test_base as test_base
+import tests.base_test as base_test
 import snapshot_manager.copr_util as copr_util
 import snapshot_manager.config as config
 
 
-class TestCopr(test_base.TestBase):
+class TestCopr(base_test.TestBase):
     def test_project_exists(self):
         """Test if copr project exists."""
         self.assertTrue(
@@ -63,4 +63,4 @@ def load_tests(loader, tests, ignore):
 
 
 if __name__ == "__main__":
-    test_base.run_tests()
+    base_test.run_tests()

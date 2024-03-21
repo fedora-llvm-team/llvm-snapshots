@@ -1,0 +1,50 @@
+
+### Build log tail
+
+Sometimes the end of the build log contains useful information.
+
+```
+ERROR: Exception(/var/lib/copr-rpmbuild/results/llvm-19.0.0~pre20240222.gd17eade22ab9a6-1.fc41.src.rpm) Config(fedora-rawhide-x86_64) 70 minutes 7 seconds
+INFO: Results and/or logs in: /var/lib/copr-rpmbuild/results
+INFO: Cleaning up build root ('cleanup_on_failure=True')
+Start: clean chroot
+INFO: unmounting tmpfs.
+Finish: clean chroot
+ERROR: Command failed: 
+ # /usr/bin/systemd-nspawn -q -M b4d70a36ac5d427d981d509ae869c488 -D /var/lib/mock/fedora-rawhide-x86_64-1708566228.210033/root -a -u mockbuild --capability=cap_ipc_lock --rlimit=RLIMIT_NOFILE=10240 --capability=cap_ipc_lock --bind=/tmp/mock-resolv.jdo0dr4s:/etc/resolv.conf --bind=/dev/btrfs-control --bind=/dev/mapper/control --bind=/dev/fuse --bind=/dev/loop-control --bind=/dev/loop0 --bind=/dev/loop1 --bind=/dev/loop2 --bind=/dev/loop3 --bind=/dev/loop4 --bind=/dev/loop5 --bind=/dev/loop6 --bind=/dev/loop7 --bind=/dev/loop8 --bind=/dev/loop9 --bind=/dev/loop10 --bind=/dev/loop11 --console=pipe --setenv=TERM=vt100 --setenv=SHELL=/bin/bash --setenv=HOME=/builddir --setenv=HOSTNAME=mock --setenv=PATH=/usr/bin:/bin:/usr/sbin:/sbin '--setenv=PROMPT_COMMAND=printf "\033]0;<mock-chroot>\007"' '--setenv=PS1=<mock-chroot> \s-\v\$ ' --setenv=LANG=C.UTF-8 --resolv-conf=off bash --login -c '/usr/bin/rpmbuild -bb  --target x86_64 --nodeps /builddir/build/originals/llvm.spec'
+
+Copr build error: Build failed
+
+```
+
+### RPM build errors
+
+If we have found <code>RPM build errors</code> in the log file, you'll find them here.
+
+```
+
+```
+
+### Errors to look into
+
+If we have found the term <code>error:</code> (case insentitive) in the build log,
+you'll find all occurrences here together with the preceding lines.
+
+```
+Feb 22 02:00:59 [2640/3735] cd /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/redhat-linux-build/docs && /usr/bin/cmake -E env /usr/bin/sphinx-build-3 -b man -d /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/redhat-linux-build/docs/_doctrees-dsymutil-man -q -t builder-man -D version=19 -D release=19.0.0pre20240222.gd17eade22ab9a6 /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/docs /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/redhat-linux-build/docs/man
+Feb 22 02:00:59 /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/docs/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack.md:396: ERROR: Unexpected indentation.
+--
+Feb 22 02:00:59 /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/docs/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack.md:398: WARNING: Inline interpreted text or phrase reference start-string without end-string.
+Feb 22 02:00:59 /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/docs/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack.md:408: ERROR: Unexpected indentation.
+--
+Feb 22 02:00:59 /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/docs/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack.md:432: WARNING: Inline interpreted text or phrase reference start-string without end-string.
+Feb 22 02:00:59 /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/docs/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack.md:441: ERROR: Unexpected indentation.
+--
+Feb 22 02:00:59 /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/docs/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack.md:447: WARNING: Inline interpreted text or phrase reference start-string without end-string.
+Feb 22 02:00:59 /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/docs/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack.md:476: ERROR: Unexpected indentation.
+--
+Feb 22 02:00:59 /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/docs/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack.md:478: WARNING: Inline interpreted text or phrase reference start-string without end-string.
+Feb 22 02:00:59 /builddir/build/BUILD/llvm-project-19.0.0.src/llvm/docs/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack/AMDGPUDwarfExtensionAllowLocationDescriptionOnTheDwarfExpressionStack.md:488: ERROR: Unexpected indentation.
+--
+Feb 22 02:00:59 /builddir/build
+```

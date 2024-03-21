@@ -2,11 +2,11 @@
 
 import datetime
 
-import tests.test_base as test_base
+import tests.base_test as base_test
 import snapshot_manager.config as config
 
 
-class TestConfig(test_base.TestBase):
+class TestConfig(base_test.TestBase):
     def test_yyyymmdd(self):
         self.assertEqual(
             "20240227",
@@ -31,4 +31,4 @@ def load_tests(loader, tests, ignore):
 
 
 if __name__ == "__main__":
-    test_base.run_tests()
+    base_test.run_tests()

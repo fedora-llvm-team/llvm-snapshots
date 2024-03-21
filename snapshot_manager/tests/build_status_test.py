@@ -1,10 +1,91 @@
 """ Tests for build_status """
 
+import tests.base_test as base_test
+
 import snapshot_manager.build_status as build_status
-import tests.test_base as test_base
+import snapshot_manager.util as util
 
 
-class TestError(test_base.TestBase):
+class TestErrorCauseAndBuildStatus(base_test.TestBase):
+    def test_get_cause_from_build_log(self):
+        from snapshot_manager.build_status import ErrorCause
+
+        """Get cause from build log"""
+
+        causes = [e.value for e in ErrorCause]
+
+        # TODO(kwk): Find good example log files for these two error causes
+        # (existing ones have timed out and were already deleted)
+        causes.remove(ErrorCause.ISSUE_NETWORK)
+        causes.remove(ErrorCause.ISSUE_SRPM_BUILD)
+
+        for expectedCause in causes:
+            with self.subTest(expectedCause=expectedCause):
+                actualCause, actualCtx = build_status.get_cause_from_build_log(
+                    build_log_file=self.abspath(
+                        f"test_logs/cause_{expectedCause}.log.gz"
+                    ),
+                    write_golden_file=False,  # TODO(kwk): Turn this on when the format has changed.
+                )
+                self.assertEqual(expectedCause, actualCause)
+
+                # Read in expected cause
+                expectedCtxFile = util.golden_file_path(
+                    basename=f"cause_{str(expectedCause)}"
+                )
+
+                self.assertEqual(actualCtx, expectedCtxFile.read_text())
+
+    def test_markdown_build_matrix(self):
+        """Creates and then updates a build matrix"""
+        all_copr_states = build_status.CoprBuildStatus.all_states()
+        packages = ["stupefy", "alohomora"]
+        chroots = ["fedora-rawhide-x86_64", "fedora-40-ppc64le"]
+
+        self.maxDiff = None
+
+        # Let's say these are the actual builds currently in the copr project.
+        # Only three should show up in the matrix.
+        s1 = build_status.BuildState(
+            package_name="not-in-list", chroot=chroots[0], build_id=11
+        )
+        s2 = build_status.BuildState(
+            package_name="stupefy",
+            chroot="fedora-rawhide-x86_64",
+            copr_build_state=build_status.CoprBuildStatus.IMPORTING,
+            build_id=22,
+        )
+        s3 = build_status.BuildState(
+            package_name="stupefy",
+            chroot="fedora-40-ppc64le",
+            copr_build_state=build_status.CoprBuildStatus.SUCCEEDED,
+            build_id=33,
+        )
+        s4 = build_status.BuildState(
+            package_name="alohomora",
+            chroot="fedora-rawhide-x86_64",
+            copr_build_state=build_status.CoprBuildStatus.FAILED,
+            build_id=44,
+        )
+
+        build_states = [s1, s2, s3, s4]
+
+        matrix = build_status.markdown_build_status_matrix(
+            chroots=chroots,
+            packages=packages,
+            add_legend=True,
+            build_states=build_states,
+        )
+        expected_result = f"""<details open><summary>Build Matrix</summary>
+
+| |stupefy|alohomora|
+|:---|:---:|:---:|
+|fedora-rawhide-x86_64|[{build_status.CoprBuildStatus.IMPORTING.toIcon()}](https://copr.fedorainfracloud.org/coprs/build/22) | [{build_status.CoprBuildStatus.FAILED.toIcon()}](https://copr.fedorainfracloud.org/coprs/build/44)|
+|fedora-40-ppc64le|[{build_status.CoprBuildStatus.SUCCEEDED.toIcon()}](https://copr.fedorainfracloud.org/coprs/build/33) | :grey_question:|
+<details><summary>Build status legend</summary><ul><li>:o: : canceled</li><li>:x: : failed</li><li>:ballot_box_with_check: : forked</li><li>:inbox_tray: : importing</li><li>:soon: : pending</li><li>:running: : running</li><li>:no_entry_sign: : skipped</li><li>:star: : starting</li><li>:white_check_mark: : succeeded</li><li>:hourglass: : waiting</li><li>:grey_question: : unknown</li></ul></details>
+</details>"""
+        self.assertEqual(expected_result, matrix)
+
     def test_render_as_markdown(self):
         """Test HTML string representation of a BuildState"""
         state = build_status.BuildState(
@@ -30,7 +111,7 @@ This is the context for the error
         self.assertEqual(expected, state.render_as_markdown())
 
 
-class TestErrorList(test_base.TestBase):
+class TestErrorList(base_test.TestBase):
     def test_sort(self):
         """Test sorting of errors in an array works as expected"""
         # fmt: off
@@ -139,4 +220,4 @@ def load_tests(loader, tests, ignore):
 
 
 if __name__ == "__main__":
-    test_base.run_tests()
+    base_test.run_tests()

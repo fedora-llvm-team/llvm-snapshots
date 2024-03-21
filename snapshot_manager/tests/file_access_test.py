@@ -1,12 +1,12 @@
 """ Tests for file_access """
 
-import tests.test_base as test_base
+import tests.base_test as base_test
 
 import snapshot_manager.file_access as file_access
 import snapshot_manager.build_status as build_status
 
 
-class TestFileAccess(test_base.TestBase):
+class TestFileAccess(base_test.TestBase):
     pass
 
 
@@ -24,4 +24,4 @@ def load_tests(loader, tests, ignore):
 
 
 if __name__ == "__main__":
-    test_base.run_tests()
+    base_test.run_tests()

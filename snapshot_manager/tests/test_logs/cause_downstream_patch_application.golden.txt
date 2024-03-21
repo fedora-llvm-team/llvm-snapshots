@@ -1,0 +1,12 @@
+
+```
++ /usr/bin/patch -p2 -s --fuzz=0 --no-backup-if-mismatch -f
++ /usr/lib/rpm/rpmuncompress /builddir/build/SOURCES/0001-Restore-fopenmp-implicit-rpath-disabled-by-default.patch
++ /usr/bin/patch -p2 -s --fuzz=0 --no-backup-if-mismatch -f
+1 out of 2 hunks FAILED -- saving rejects to file lib/Driver/ToolChains/CommonArgs.cpp.rej
+
+RPM build errors:
+error: Bad exit status from /var/tmp/rpm-tmp.SvY4nr (%prep)
+    Bad exit status from /var/tmp/rpm-tmp.SvY4nr (%prep)
+
+```

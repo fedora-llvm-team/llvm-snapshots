@@ -1,0 +1,12 @@
+
+```
+No matching package to install: 'clang >= 19'
+Not all dependencies satisfied
+No matching package to install: 'clang >= 19'
+Not all dependencies satisfied
+No matching package to install: 'clang >= 19'
+Not all dependencies satisfied
+No matching package to install: 'clang >= 19'
+Not all dependencies satisfied
+
+```

@@ -1,13 +1,11 @@
 """ Tests for snapshot_manager """
 
-import github.Label
-
-import tests.test_base as test_base
+import tests.base_test as base_test
 import snapshot_manager.snapshot_manager as snapshot_manager
 import snapshot_manager.build_status as build_status
 
 
-class TestSnapshotManager(test_base.TestBase):
+class TestSnapshotManager(base_test.TestBase):
     # def test_check_todays_builds(self):
     #     cfg = self.config
     #     cfg.copr_ownername = "@fedora-llvm-team"
@@ -35,4 +33,4 @@ def load_tests(loader, tests, ignore):
 
 
 if __name__ == "__main__":
-    test_base.run_tests()
+    base_test.run_tests()
