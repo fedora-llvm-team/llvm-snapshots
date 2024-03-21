@@ -20,7 +20,7 @@ runs:
       shell: bash
       run: |
         python -m pip install --upgrade pip
-        pip install pytest
+        pip install pytest coverage
 
     - name: "Install python dependencies for project"
       shell: bash
