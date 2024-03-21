@@ -13,13 +13,18 @@ jobs:
       - uses: psf/black@stable
         with:
             options: "--check --diff --verbose --color --force-exclude '^snapshot_manager/tests/test_logs/'"
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-python
       - name: Run pytest with coverage
         shell: bash -e {0}
         run: |
           coverage run -m pytest
           coverage report -m
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2.2.3
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: fedora-llvm-team/llvm-snapshots
+          format: python
+          file: .coverage
