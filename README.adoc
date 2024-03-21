@@ -13,6 +13,7 @@ image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/pytho
 image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-build-time-diagrams.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-build-time-diagrams.yml"]
 image:https://img.shields.io/badge/code%20style-black-000000.svg[link="https://github.com/psf/black"]
 link:https://fedora-llvm-team.github.io/llvm-snapshots/fig-llvm.html[Build time Diagrams]
+image:https://coveralls.io/repos/github/fedora-llvm-team/llvm-snapshots/badge.svg[link="https://coveralls.io/github/fedora-llvm-team/llvm-snapshots"]
 
 == Tips on contributing
 
