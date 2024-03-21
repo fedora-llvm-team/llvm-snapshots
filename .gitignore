@@ -2,4 +2,5 @@ buildroot/
 llvm-snapshot-builder*.tar.bz2
 *.rpm
 .coverage
+.vscode
 __pycache__/

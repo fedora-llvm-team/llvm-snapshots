@@ -1,0 +1,20 @@
+name: "Check python code format and tests"
+
+# See https://black.readthedocs.io/en/stable/integrations/github_actions.html
+
+on: [push, pull_request]
+
+jobs:
+  check-python-with-black:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-python
+      - uses: psf/black@stable
+        with:
+            options: "--check --diff --verbose --color --force-exclude '^snapshot_manager/tests/test_logs/'"
+      - name: Run pytest with coverage
+        shell: bash -e {0}
+        run: |
+          coverage run -m pytest
+          coverage report -m
