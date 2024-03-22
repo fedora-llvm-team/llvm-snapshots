@@ -63,6 +63,8 @@ jobs:
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TESTING_FARM_API_TOKEN_PUBLIC_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_PUBLIC_RANCH }}
+          TESTING_FARM_API_TOKEN_REDHAT_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_REDHAT_RANCH }}
         run: |
           extra_args=""
 

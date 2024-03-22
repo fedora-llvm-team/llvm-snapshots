@@ -7,8 +7,10 @@ import pathlib
 import shlex
 import subprocess
 import os
+import re
 
 import requests
+import regex
 
 import snapshot_manager.file_access as file_access
 import snapshot_manager.build_status as build_status
@@ -167,3 +169,175 @@ def golden_file_path(basename: str, extension: str = ".golden.txt") -> pathlib.P
         f"{basename}{extension}",
     )
     return pathlib.Path(path)
+
+
+def expect_chroot(chroot: str) -> None:
+    """Raises an exception if passes string is not a chroot
+
+    Args:
+        chroot (str): Any chroot string
+
+    Raises:
+        ValueError: if chroot argument is not a chroot string
+
+    Examples:
+
+    >>> expect_chroot("fedora-rawhide-x86_64")
+
+    >>> expect_chroot("fedora-rawhide-")
+    Traceback (most recent call last):
+      ...
+    ValueError: invalid chroot fedora-rawhide-
+    """
+    if not re.search(pattern=r"^[^-]+-[^-]+-[^-]+$", string=chroot):
+        raise ValueError(f"invalid chroot {chroot}")
+
+
+def chroot_name(chroot: str) -> str:
+    """Get the name part of a chroot string
+
+    Args:
+        chroot (str): A string like "fedora-rawhide-x86_64
+
+    Returns:
+        str: The Name part of the chroot string.
+
+    Examples:
+
+    >>> chroot_name(chroot="fedora-rawhide-x86_64")
+    'fedora'
+
+    >>> chroot_name(chroot="fedora-40-ppc64le")
+    'fedora'
+
+    >>> chroot_name(chroot="fedora-rawhide-NEWARCH")
+    'fedora'
+
+    >>> chroot_name(chroot="rhel-9-x86_64")
+    'rhel'
+    """
+    expect_chroot(chroot)
+    match = re.search(pattern=r"^[^-]+", string=chroot)
+    return str(match[0])
+
+
+def chroot_version(chroot: str) -> str:
+    """Get the version part of a chroot string
+
+    Args:
+        chroot (str): A string like "fedora-rawhide-x86_64
+
+    Returns:
+        str: The Name part of the chroot string.
+
+    Examples:
+
+    >>> chroot_version(chroot="fedora-rawhide-x86_64")
+    'rawhide'
+
+    >>> chroot_version(chroot="fedora-40-ppc64le")
+    '40'
+
+    >>> chroot_version(chroot="fedora-rawhide-NEWARCH")
+    'rawhide'
+
+    >>> chroot_version(chroot="rhel-9-x86_64")
+    '9'
+    """
+    expect_chroot(chroot)
+    match = re.search(pattern=r"(-)([^-]+)(-)", string=chroot)
+    return str(match.groups()[1])
+
+
+def chroot_os(chroot: str) -> str:
+    """Get the os part of a chroot string
+
+    Args:
+        chroot (str): A string like "fedora-rawhide-x86_64
+
+    Raises:
+        ValueError: if chroot argument is not a chroot string
+
+    Returns:
+        str: The OS part of the chroot string.
+
+    Examples:
+
+    >>> chroot_os(chroot="fedora-rawhide-x86_64")
+    'fedora-rawhide'
+
+    >>> chroot_os(chroot="fedora-40-ppc64le")
+    'fedora-40'
+
+    >>> chroot_os(chroot="fedora-rawhide-NEWARCH")
+    'fedora-rawhide'
+    """
+    expect_chroot(chroot)
+    match = re.search(pattern=r"[^-]+-[0-9,rawhide]+", string=chroot)
+    return str(match[0])
+
+
+def pick_testing_farm_ranch(chroot: str) -> str:
+    """Depending on the chroot, we decide if we build in the public or redhat testing ranch
+
+    Args:
+        chroot (str): chroot to use for determination of ranch
+
+    Returns:
+        str: "public", "private" or None
+
+    Examples:
+
+    >>> pick_testing_farm_ranch("fedora-rawhide-x86_64")
+    'public'
+
+    >>> pick_testing_farm_ranch("fedora-40-aarch64")
+    'public'
+
+    >>> pick_testing_farm_ranch("rhel-9-x86_64")
+    'redhat'
+
+    >>> pick_testing_farm_ranch("fedora-rawhide-s390x")
+    'redhat'
+
+    >>> pick_testing_farm_ranch("fedora-rawhide-ppc64le")
+    'redhat'
+
+    >>> pick_testing_farm_ranch("fedora-rawhide-i386")
+    'redhat'
+    """
+    expect_chroot(chroot)
+    ranch = None
+    if re.search(r"(x86_64|aarch64)$", chroot):
+        ranch = "public"
+    if re.search(r"(^rhel|(ppc64le|s390x|i386)$)", chroot):
+        ranch = "redhat"
+    return ranch
+
+
+def chroot_arch(chroot: str) -> str:
+    """Get architecture part of a chroot string
+
+    Args:
+        chroot (str): A string like "fedora-rawhide-x86_64
+
+    Raises:
+        ValueError: if chroot argument is not a chroot string
+
+    Returns:
+        str: The architecture part of the chroot string.
+
+    Example:
+
+    >>> chroot_arch(chroot="fedora-rawhide-x86_64")
+    'x86_64'
+
+    >>> chroot_arch(chroot="fedora-40-ppc64le")
+    'ppc64le'
+
+    >>> chroot_arch(chroot="fedora-rawhide-NEWARCH")
+    'NEWARCH'
+    """
+    expect_chroot(chroot)
+    match = regex.search(pattern=r"[^-]+-[^-]+-\K[^\s]+", string=chroot)
+    return str(match[0])

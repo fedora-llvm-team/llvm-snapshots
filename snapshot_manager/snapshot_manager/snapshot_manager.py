@@ -4,11 +4,13 @@ SnapshotManager
 
 import datetime
 import logging
+import os
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.copr_util as copr_util
 import snapshot_manager.github_util as github_util
 import snapshot_manager.config as config
+import snapshot_manager.util as util
 
 
 class SnapshotManager:
@@ -169,7 +171,33 @@ class SnapshotManager:
                 logging.info(f"Kicking off new tests for chroot {chroot}.")
                 all_tests_succeeded = False
                 issue.add_to_labels(f"in_testing/{chroot}")
-                # TODO(kwk): Add testing-farm code here.
+                # TODO(kwk): Add testing-farm code here, something like this:
+                # TODO(kwk): Decide how if we want to wait for test results (probably not) and if not how we can check for the results later.
+                ranch = util.pick_testing_farm_ranch(chroot)
+                logging.info(f"Using testing-farm ranch: {ranch}")
+                if ranch == "public":
+                    os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
+                        "TESTING_FARM_API_TOKEN_PUBLIC_RANCH"
+                    )
+                if ranch == "redhat":
+                    os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
+                        "TESTING_FARM_API_TOKEN_REDHAT_RANCH"
+                    )
+                cmd = f"""testing-farm \
+                    request \
+                    --compose {util.chroot_os(chroot).upper()} \
+                    --git-url {self.config.test_repo_url} \
+                    --arch {util.chroot_arch(chroot)} \
+                    --plan /tests/snapshot-gating \
+                    --environment COPR_PROJECT={self.config.copr_project} \
+                    --context distro={util.chroot_os(chroot)} \
+                    --context arch=${util.chroot_arch(chroot)} \
+                    --user-webpage{issue.html_url} \
+                    --no-wait \
+                    --dry-run \
+                    --context snapshot={self.config.yyyymmdd}"""
+                exit_code, stdout, stderr = util._run_cmd(cmd, timeout_secs=None)
+                # if exit_code == 0:
 
         logging.info("Checking if issue can be closed")
         building_is_done = num_builds_to_succeed == 0
