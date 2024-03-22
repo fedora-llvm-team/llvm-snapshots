@@ -20,6 +20,15 @@ class SnapshotManager:
 
     def check_todays_builds(self):
         """This method is driven from the config settings"""
+        issue, _ = self.github.create_or_get_todays_github_issue(
+            maintainer_handle=self.config.maintainer_handle
+        )
+        if issue.state == "closed":
+            logging.info(
+                f"Issue {issue.html_url} was already closed. Not doing anything."
+            )
+            return
+
         logging.info("Get build states from copr")
         states = self.copr.get_build_states_from_copr_monitor(
             copr_ownername=self.config.copr_ownername,
@@ -28,9 +37,6 @@ class SnapshotManager:
         logging.info("Augment the states with information from the build logs")
         states = [state.augment_with_error() for state in states]
 
-        issue, _ = self.github.create_or_get_todays_github_issue(
-            maintainer_handle=self.config.maintainer_handle
-        )
         comment_body = issue.body
 
         logging.info(
@@ -121,10 +127,7 @@ class SnapshotManager:
             states=states,
         )
         if all_good:
-            msg = f"""Congratulations @{self.config.maintainer_handle}!
-All required packages have been successfully built in all required chroots.
-We'll close this issue for you now as completed.
-"""
+            msg = f"@{self.config.maintainer_handle}, all required packages have been successfully built in all required chroots. We'll close this issue for you now as completed. Congratulations!"
             logging.info(msg)
             issue.create_comment(body=msg)
             issue.edit(state="closed", state_reason="completed")
