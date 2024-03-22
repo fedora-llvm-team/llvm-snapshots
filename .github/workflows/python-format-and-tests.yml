@@ -28,4 +28,4 @@ jobs:
         uses: coverallsapp/github-action@v2.2.3
         with:
           format: python
-          file: coverage-report/.coverage
+          file: .coverage

@@ -112,4 +112,18 @@ class SnapshotManager:
             logging.info(f"Adding label: {label}")
             issue.add_to_labels(label)
 
+        logging.info("Checking if issue can be closed")
+        all_good = self.copr.has_all_good_builds(
+            copr_ownername=self.config.copr_ownername,
+            copr_projectname=self.config.copr_projectname,
+            required_chroots=self.copr.get_copr_chroots(),
+            required_packages=self.config.packages,
+            states=states,
+        )
+        if all_good:
+            logging.info(
+                "All required packages have been successfully built in all required chroots. We can can close this issue now."
+            )
+            issue.edit(state="closed", state_reason="completed")
+
         logging.info(f"Updated today's issue: {issue.html_url}")

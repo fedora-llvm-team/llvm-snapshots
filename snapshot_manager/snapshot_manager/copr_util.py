@@ -165,6 +165,7 @@ class CoprClient:
         copr_projectname: str,
         required_packages: list[str],
         required_chroots: list[str],
+        states: build_status.BuildStateList | None = None,
     ) -> bool:
         """Returns True if the given packages have been built in all chroots in the copr project; otherwise False is returned.
 
@@ -173,9 +174,7 @@ class CoprClient:
             copr_projectname (str): Copr project name
             required_packages (list[str]): List of required package names.
             required_chroots (list[str]): List of required chroot names.
-
-        Raises:
-            ValueError if copr_ownername/copr_projectname doesn't exist in copr
+            states (BuildStateList | None): List of states to use if already gathered before. If None, we will get the states for you.
 
         Returns:
             bool: True if the given copr project has successful/forked builds for all the required projects and chroots that we care about.
@@ -183,8 +182,7 @@ class CoprClient:
         Example: Check with a not existing copr project
 
         >>> CoprClient().has_all_good_builds(copr_ownername="non-existing-owner", copr_projectname="non-existing-project", required_packages=[], required_chroots=[])
-        Traceback (most recent call last):
-        ValueError: copr project non-existing-owner/non-existing-project does not exist
+        False
         """
         logging.info(
             f"Checking for all good builds in {copr_ownername}/{copr_projectname}..."
@@ -193,13 +191,15 @@ class CoprClient:
         if not self.project_exists(
             copr_ownername=copr_ownername, copr_projectname=copr_projectname
         ):
-            raise ValueError(
+            logging.warning(
                 f"copr project {copr_ownername}/{copr_projectname} does not exist"
             )
+            return False
 
-        states = self.get_build_states_from_copr_monitor(
-            copr_ownername=copr_ownername, copr_projectname=copr_projectname
-        )
+        if states is None:
+            states = self.get_build_states_from_copr_monitor(
+                copr_ownername=copr_ownername, copr_projectname=copr_projectname
+            )
 
         # Lists of (package,chroot) tuples
         expected: list[tuple[str, str]] = []
