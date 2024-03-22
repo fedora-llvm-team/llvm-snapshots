@@ -115,7 +115,29 @@ class BuildState:
 
     @property
     def success(self) -> bool:
-        return self.copr_build_state.success
+        """Returns True if the underlying copr build state is "succeeded" or "forked".
+
+        Examples:
+
+        >>> BuildState(copr_build_state="succeeded").success
+        True
+
+        >>> BuildState(copr_build_state="forked").success
+        True
+
+        >>> BuildState(copr_build_state=CoprBuildStatus.SUCCEEDED).success
+        True
+
+        >>> BuildState(copr_build_state=CoprBuildStatus.FORKED).success
+        True
+
+        >>> BuildState(copr_build_state="waiting").success
+        False
+
+        >>> BuildState(copr_build_state=CoprBuildStatus.IMPORTING).success
+        False
+        """
+        return CoprBuildStatus(str(self.copr_build_state)).success
 
     @property
     def os(self):
