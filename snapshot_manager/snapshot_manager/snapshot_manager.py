@@ -121,9 +121,12 @@ class SnapshotManager:
             states=states,
         )
         if all_good:
-            logging.info(
-                "All required packages have been successfully built in all required chroots. We can can close this issue now."
-            )
+            msg = f"""Congratulations @{self.config.maintainer_handle}!
+All required packages have been successfully built in all required chroots.
+We'll close this issue for you now as completed.
+"""
+            logging.info(msg)
+            issue.create_comment(body=msg)
             issue.edit(state="closed", state_reason="completed")
 
         logging.info(f"Updated today's issue: {issue.html_url}")
