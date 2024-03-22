@@ -56,6 +56,9 @@ class Config:
     )
     """URL to the Copr monitor page. We'll use this in the issue comment's body, not for querying Copr."""
 
+    test_repo_url: str = "https://github.com/fedora-llvm-team/llvm-snapshots"
+    """TBD"""
+
     @property
     def copr_projectname(self) -> str:
         """Takes the copr_project_tpl and replaces the YYYYMMDD placeholder (if any) with a date.
@@ -70,6 +73,11 @@ class Config:
         'begin-NODATE-end'
         """
         return self.copr_project_tpl.replace("YYYYMMDD", self.yyyymmdd)
+
+    @property
+    def copr_project(self) -> str:
+        """Returns the owner/project string for the current date."""
+        return f"{self.config.copr_ownername}/{self.config.copr_projectname}"
 
     @property
     def copr_monitor_url(self) -> str:

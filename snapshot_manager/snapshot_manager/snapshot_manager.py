@@ -4,11 +4,13 @@ SnapshotManager
 
 import datetime
 import logging
+import os
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.copr_util as copr_util
 import snapshot_manager.github_util as github_util
 import snapshot_manager.config as config
+import snapshot_manager.util as util
 
 
 class SnapshotManager:
@@ -28,6 +30,8 @@ class SnapshotManager:
                 f"Issue {issue.html_url} was already closed. Not doing anything."
             )
             return
+
+        all_chroots = self.copr.get_copr_chroots()
 
         logging.info("Get build states from copr")
         states = self.copr.get_build_states_from_copr_monitor(
@@ -50,7 +54,7 @@ class SnapshotManager:
 
         logging.info("Add a build matrix")
         comment_body += build_status.markdown_build_status_matrix(
-            chroots=self.copr.get_copr_chroots(),
+            chroots=all_chroots,
             packages=self.config.packages,
             build_states=states,
         )
@@ -88,6 +92,9 @@ class SnapshotManager:
         self.github.create_labels_for_projects(project_labels)
         self.github.create_labels_for_archs(arch_labels)
         self.github.create_labels_for_strategies(strategy_labels)
+        self.github.create_labels_for_in_testing(all_chroots)
+        self.github.create_labels_for_tested_on(all_chroots)
+        self.github.create_labels_for_failed_on(all_chroots)
 
         # Remove old labels from issue if they no longer apply. This is greate
         # for restarted builds for example to make all builds green and be able
@@ -118,18 +125,90 @@ class SnapshotManager:
             logging.info(f"Adding label: {label}")
             issue.add_to_labels(label)
 
+        # TODO(kwk): Once only tested_on/<CHROOT> labels are assigned to the
+        # issue we can turn this to True.
+        num_builds_to_succeed = len(
+            all_chroots
+        )  # The wording is misleading this is the number of chroots that need successful builds
+        num_tests_to_run = len(all_chroots)
+        all_tests_succeeded = True
+        labels_on_issue = [label.name for label in issue.labels]
+
+        for chroot in all_chroots:
+            logging.info(f"Check if all builds in chroot {chroot} have succeeded")
+            builds_succeeded = self.copr.has_all_good_builds(
+                copr_ownername=self.config.copr_ownername,
+                copr_projectname=self.config.copr_projectname,
+                required_chroots=[chroot],
+                required_packages=self.config.packages,
+                states=states,
+            )
+
+            if not builds_succeeded:
+                all_tests_succeeded = False
+                continue
+
+            num_builds_to_succeed -= 1
+
+            logging.info(f"All builds in chroot {chroot} have succeeded!")
+            if f"in_testing/{chroot}" in labels_on_issue:
+                logging.info(
+                    f"Chroot {chroot} is currently in testing! Not kicking off new tests."
+                )
+                all_tests_succeeded = False
+            elif f"tested_on/{chroot}" in labels_on_issue:
+                logging.info(
+                    f"Chroot {chroot} has passed tests testing! Not kicking off new tests."
+                )
+                num_tests_to_run -= 1
+            elif f"failed_on/{chroot}" in labels_on_issue:
+                logging.info(
+                    f"Chroot {chroot} has unsuccessful tests! Not kicking off new tests."
+                )
+                num_tests_to_run -= 1
+                all_tests_succeeded = False
+            else:
+                logging.info(f"Kicking off new tests for chroot {chroot}.")
+                all_tests_succeeded = False
+                issue.add_to_labels(f"in_testing/{chroot}")
+                # TODO(kwk): Add testing-farm code here, something like this:
+                # TODO(kwk): Decide how if we want to wait for test results (probably not) and if not how we can check for the results later.
+                ranch = util.pick_testing_farm_ranch(chroot)
+                logging.info(f"Using testing-farm ranch: {ranch}")
+                if ranch == "public":
+                    os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
+                        "TESTING_FARM_API_TOKEN_PUBLIC_RANCH"
+                    )
+                if ranch == "redhat":
+                    os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
+                        "TESTING_FARM_API_TOKEN_REDHAT_RANCH"
+                    )
+                cmd = f"""testing-farm \
+                    request \
+                    --compose {util.chroot_os(chroot).upper()} \
+                    --git-url {self.config.test_repo_url} \
+                    --arch {util.chroot_arch(chroot)} \
+                    --plan /tests/snapshot-gating \
+                    --environment COPR_PROJECT={self.config.copr_project} \
+                    --context distro={util.chroot_os(chroot)} \
+                    --context arch=${util.chroot_arch(chroot)} \
+                    --user-webpage{issue.html_url} \
+                    --no-wait \
+                    --dry-run \
+                    --context snapshot={self.config.yyyymmdd}"""
+                exit_code, stdout, stderr = util._run_cmd(cmd, timeout_secs=None)
+                # if exit_code == 0:
+
         logging.info("Checking if issue can be closed")
-        all_good = self.copr.has_all_good_builds(
-            copr_ownername=self.config.copr_ownername,
-            copr_projectname=self.config.copr_projectname,
-            required_chroots=self.copr.get_copr_chroots(),
-            required_packages=self.config.packages,
-            states=states,
-        )
-        if all_good:
+        building_is_done = num_builds_to_succeed == 0
+        testing_is_done = num_tests_to_run == 0 and all_tests_succeeded
+
+        if building_is_done and testing_is_done:
             msg = f"@{self.config.maintainer_handle}, all required packages have been successfully built in all required chroots. We'll close this issue for you now as completed. Congratulations!"
             logging.info(msg)
             issue.create_comment(body=msg)
             issue.edit(state="closed", state_reason="completed")
+        else:
+            logging.info("Cannot close issue yet.")
 
         logging.info(f"Updated today's issue: {issue.html_url}")
