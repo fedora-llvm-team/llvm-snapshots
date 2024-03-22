@@ -182,8 +182,7 @@ class CoprClient:
         Example: Check with a not existing copr project
 
         >>> CoprClient().has_all_good_builds(copr_ownername="non-existing-owner", copr_projectname="non-existing-project", required_packages=[], required_chroots=[])
-        Traceback (most recent call last):
-        ValueError: copr project non-existing-owner/non-existing-project does not exist
+        False
         """
         logging.info(
             f"Checking for all good builds in {copr_ownername}/{copr_projectname}..."
@@ -192,7 +191,7 @@ class CoprClient:
         if not self.project_exists(
             copr_ownername=copr_ownername, copr_projectname=copr_projectname
         ):
-            logging.warn(
+            logging.warning(
                 f"copr project {copr_ownername}/{copr_projectname} does not exist"
             )
             return False
