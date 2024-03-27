@@ -233,7 +233,7 @@ class CoprClient:
         Returns:
             bool: True if package is supported by chroot; otherwise False
         """
-        return not (package == "lld" and re.match(pattern=r".*-s390x$", string=chroot))
+        return True
 
     def get_build_states_from_copr_monitor(
         self,
