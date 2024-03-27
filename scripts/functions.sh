@@ -69,11 +69,7 @@ function is_package_supported_by_chroot() {
   local pkg=$1
   local chroot=$2
 
-  if [[ ("$pkg" == "lld") && $chroot =~ -s390x$ ]]; then
-    false
-  else
-    true
-  fi
+  true
 }
 
 # Returns 0 if all packages on all* chroots have successful builds.
