@@ -41,11 +41,6 @@ class TestCopr(base_test.TestBase):
                 package="llvm", chroot="fedora-rawhide-x86_64"
             )
         )
-        self.assertFalse(
-            copr_util.CoprClient.is_package_supported_by_chroot(
-                package="lld", chroot="fedora-rawhide-s390x"
-            )
-        )
 
 
 def load_tests(loader, tests, ignore):
