@@ -2,12 +2,14 @@
 util
 """
 
+import enum
 import logging
 import pathlib
 import shlex
 import subprocess
 import os
 import re
+import string
 
 import requests
 import regex
@@ -87,10 +89,10 @@ def grep_file(
         extra_args = ""
 
     cmd = f"{grep_bin} {" ".join(opts)} {extra_args} '{pattern}' {filepath}"
-    return _run_cmd(cmd)
+    return run_cmd(cmd)
 
 
-def _run_cmd(cmd: str, timeout_secs: int = 5) -> tuple[int, str, str]:
+def run_cmd(cmd: str, timeout_secs: int = 5) -> tuple[int, str, str]:
     """Runs the given command and returns the output (stdout and stderr) if any.
 
     Args:
@@ -98,6 +100,14 @@ def _run_cmd(cmd: str, timeout_secs: int = 5) -> tuple[int, str, str]:
 
     Returns:
         tuple[int, str, str]: The command exit code and it's stdout and sterr
+
+    Example:
+
+    >>> exit_code, stdout, _ = run_cmd(cmd="echo 'hello'")
+    >>> exit_code
+    0
+    >>> stdout
+    'hello\\n'
     """
 
     proc = subprocess.run(shlex.split(cmd), timeout=timeout_secs, capture_output=True)
@@ -141,7 +151,7 @@ def gunzip(f: tuple[str, pathlib.Path]) -> pathlib.Path:
     """Unzip log file on the fly if we need to"""
     if str(f).endswith(".gz"):
         unzipped_file = str(f).removesuffix(".gz")
-        retcode, stdout, stderr = _run_cmd(cmd=f"gunzip -kf {f}")
+        retcode, stdout, stderr = run_cmd(cmd=f"gunzip -kf {f}")
         if retcode != 0:
             raise Exception(f"Failed to gunzip build log '{f}': {stderr}")
         f = unzipped_file
@@ -171,7 +181,7 @@ def golden_file_path(basename: str, extension: str = ".golden.txt") -> pathlib.P
     return pathlib.Path(path)
 
 
-def expect_chroot(chroot: str) -> None:
+def expect_chroot(chroot: str) -> str:
     """Raises an exception if passes string is not a chroot
 
     Args:
@@ -183,6 +193,7 @@ def expect_chroot(chroot: str) -> None:
     Examples:
 
     >>> expect_chroot("fedora-rawhide-x86_64")
+    'fedora-rawhide-x86_64'
 
     >>> expect_chroot("fedora-rawhide-")
     Traceback (most recent call last):
@@ -191,6 +202,7 @@ def expect_chroot(chroot: str) -> None:
     """
     if not re.search(pattern=r"^[^-]+-[^-]+-[^-]+$", string=chroot):
         raise ValueError(f"invalid chroot {chroot}")
+    return chroot
 
 
 def chroot_name(chroot: str) -> str:
@@ -275,44 +287,6 @@ def chroot_os(chroot: str) -> str:
     expect_chroot(chroot)
     match = re.search(pattern=r"[^-]+-[0-9,rawhide]+", string=chroot)
     return str(match[0])
-
-
-def pick_testing_farm_ranch(chroot: str) -> str:
-    """Depending on the chroot, we decide if we build in the public or redhat testing ranch
-
-    Args:
-        chroot (str): chroot to use for determination of ranch
-
-    Returns:
-        str: "public", "private" or None
-
-    Examples:
-
-    >>> pick_testing_farm_ranch("fedora-rawhide-x86_64")
-    'public'
-
-    >>> pick_testing_farm_ranch("fedora-40-aarch64")
-    'public'
-
-    >>> pick_testing_farm_ranch("rhel-9-x86_64")
-    'redhat'
-
-    >>> pick_testing_farm_ranch("fedora-rawhide-s390x")
-    'redhat'
-
-    >>> pick_testing_farm_ranch("fedora-rawhide-ppc64le")
-    'redhat'
-
-    >>> pick_testing_farm_ranch("fedora-rawhide-i386")
-    'redhat'
-    """
-    expect_chroot(chroot)
-    ranch = None
-    if re.search(r"(x86_64|aarch64)$", chroot):
-        ranch = "public"
-    if re.search(r"(^rhel|(ppc64le|s390x|i386)$)", chroot):
-        ranch = "redhat"
-    return ranch
 
 
 def chroot_arch(chroot: str) -> str:

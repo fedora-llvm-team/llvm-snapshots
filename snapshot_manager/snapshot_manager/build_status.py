@@ -6,12 +6,7 @@ import dataclasses
 import enum
 import logging
 import pathlib
-import re
-import os
 
-import regex
-
-import snapshot_manager.build_status as build_status
 import snapshot_manager.util as util
 
 
@@ -346,8 +341,8 @@ def get_cause_from_build_log(
     # TODO: Feel free to add your check here...
 
     logging.info(" Default to unknown cause...")
-    _, tail, _ = util._run_cmd(cmd=f"tail {build_log_file}")
-    _, rpm_build_errors, _ = util._run_cmd(
+    _, tail, _ = util.run_cmd(cmd=f"tail {build_log_file}")
+    _, rpm_build_errors, _ = util.run_cmd(
         cmd=rf"sed -n -e '/RPM build errors/,/Finish:/' p {build_log_file}"
     )
     _, errors_to_look_into, _ = util.grep_file(
