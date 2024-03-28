@@ -273,7 +273,6 @@ class SnapshotManager:
             --context distro={util.chroot_os(chroot)} \
             --context arch=${util.chroot_arch(chroot)} \
             --no-wait \
-            --dry-run \
             --context snapshot={self.config.yyyymmdd}"""
         exit_code, stdout, stderr = util.run_cmd(cmd, timeout_secs=None)
         if exit_code == 0:
