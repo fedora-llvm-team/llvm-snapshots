@@ -249,7 +249,6 @@ class SnapshotManager:
             str: Request ID
         """
         logging.info(f"Kicking off new tests for chroot {chroot}.")
-        all_tests_succeeded = False
 
         # TODO(kwk): Add testing-farm code here, something like this:
         # TODO(kwk): Decide how if we want to wait for test results (probably not) and if not how we can check for the results later.
