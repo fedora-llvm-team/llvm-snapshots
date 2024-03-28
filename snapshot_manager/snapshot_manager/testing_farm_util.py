@@ -229,7 +229,7 @@ def parse_for_watch_result(string: str) -> tuple[TestingFarmWatchResult, str]:
     ... LTk1ZmUtNTY3Y2M5ZDYyYWQ0CuKdjCB0ZXN0cyBlcnJvcgpOb25lCg=='''
     >>> import base64
     >>> s = base64.b64decode(s).decode()
-    >>> get_testing_farm_watch_result(s)
+    >>> parse_for_watch_result(s)
     (<TestingFarmWatchResult.TESTS_ERROR: 'tests error'>, 'http://artifacts.osci.redhat.com/testing-farm/271a79e8-fc9a-4e1d-95fe-567cc9d62ad4')
     """
     string = clean_testing_farm_output(string)

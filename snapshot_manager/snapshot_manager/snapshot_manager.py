@@ -209,7 +209,7 @@ class SnapshotManager:
 
     def watch_testing_farm_request(
         self, request_id: str
-    ) -> tuple[util.TestingFarmWatchResult, str]:
+    ) -> tuple[tf.TestingFarmWatchResult, str]:
         request_id = tf.sanitize_request_id(request_id=request_id)
         cmd = f"testing-farm watch --no-wait --id {request_id}"
         exit_code, stdout, stderr = util.run_cmd(cmd=cmd)
