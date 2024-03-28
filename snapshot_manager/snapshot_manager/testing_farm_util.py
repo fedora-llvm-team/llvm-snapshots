@@ -254,10 +254,81 @@ def chroot_request_ids_to_html_comment(data: dict) -> str:
 
     Example:
 
-    >>> chroot_request_ids_to_html_comment({"foo": "bar"})
-    '<!--TESTING_FARM:foo/bar-->'
+    >>> chroot_request_ids_to_html_comment({"foo": "bar", "hello": "world", "abra": "kadabra"})
+    '<!--TESTING_FARM:foo/bar--><!--TESTING_FARM:hello/world--><!--TESTING_FARM:abra/kadabra-->'
     """
     res: list[str] = []
     for key in data.keys():
         res.append(f"<!--TESTING_FARM:{key}/{data[key]}-->")
     return "".join(res)
+
+
+def watch_testing_farm_request(request_id: str) -> tuple[TestingFarmWatchResult, str]:
+    request_id = sanitize_request_id(request_id=request_id)
+    cmd = f"testing-farm watch --no-wait --id {request_id}"
+    exit_code, stdout, stderr = util.run_cmd(cmd=cmd)
+    if exit_code != 0:
+        raise SystemError(
+            f"failed to watch 'testing-farm request': {cmd}\n\nstdout: {stdout}\n\nstderr: {stderr}"
+        )
+
+    watch_result, artifacts_url = parse_for_watch_result(stdout)
+    if watch_result is None:
+        raise SystemError(
+            f"failed to watch 'testing-farm request': {cmd}\n\nstdout: {stdout}\n\nstderr: {stderr}"
+        )
+    return (watch_result, artifacts_url)
+
+
+def make_testing_farm_request(chroot: str) -> str:
+    """Runs a "testing-farm request" command and returns the request ID.
+
+    The request is made without waiting for the result.
+    It is the responsibility of the caller of this function to run "testing-farm watch --id <REQUEST_ID>",
+    where "<REQUEST_ID>" is the result of this function.
+
+    Depending on the chroot, we'll automatically select the proper testing-farm ranch for you.
+    For this to work you'll have to set the
+    TESTING_FARM_API_TOKEN_PUBLIC_RANCH and
+    TESTING_FARM_API_TOKEN_REDHAT_RANCH
+    environment variables. We'll then use one of them to set the TESTING_FARM_API_TOKEN
+    environment variable for the actual call to testing-farm.
+
+    Args:
+        chroot (str): The chroot that you want to run tests for.
+
+    Raises:
+        SystemError: When the testing-farm request failed
+
+    Returns:
+        str: Request ID
+    """
+    logging.info(f"Kicking off new tests for chroot {chroot}.")
+
+    ranch = select_ranch(chroot)
+    logging.info(f"Using testing-farm ranch: {ranch}")
+    if ranch == "public":
+        os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
+            "TESTING_FARM_API_TOKEN_PUBLIC_RANCH"
+        )
+    if ranch == "redhat":
+        os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
+            "TESTING_FARM_API_TOKEN_REDHAT_RANCH"
+        )
+    cmd = f"""testing-farm \
+        request \
+        --compose Fedora-latest \
+        --git-url {self.config.test_repo_url} \
+        --arch {util.chroot_arch(chroot)} \
+        --plan /tests/snapshot-gating \
+        --environment COPR_PROJECT={self.config.copr_projectname} \
+        --context distro={util.chroot_os(chroot)} \
+        --context arch=${util.chroot_arch(chroot)} \
+        --no-wait \
+        --context snapshot={self.config.yyyymmdd}"""
+    exit_code, stdout, stderr = util.run_cmd(cmd, timeout_secs=None)
+    if exit_code == 0:
+        return parse_output_for_request_id(stdout)
+    raise SystemError(
+        f"failed to run 'testing-farm request': {cmd}\n\nstdout: {stdout}\n\nstderr: {stderr}"
+    )

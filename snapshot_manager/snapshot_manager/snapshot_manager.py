@@ -157,7 +157,7 @@ class SnapshotManager:
                 )
                 if chroot in testing_farm_requests:
                     request_id = testing_farm_requests[chroot]
-                    watch_result, artifacts_url = self.watch_testing_farm_request(
+                    watch_result, artifacts_url = tf.watch_testing_farm_request(
                         request_id=request_id
                     )
                     if watch_result in [
@@ -180,7 +180,7 @@ class SnapshotManager:
                 )
             else:
                 logging.info(f"chroot {chroot} has no tests associated yet.")
-                request_id = self.make_testing_farm_request(chroot=chroot)
+                request_id = tf.make_testing_farm_request(chroot=chroot)
                 testing_farm_requests[chroot] = request_id
                 issue.add_to_labels(f"in_testing/{chroot}")
 
@@ -206,76 +206,3 @@ class SnapshotManager:
             logging.info("Cannot close issue yet.")
 
         logging.info(f"Updated today's issue: {issue.html_url}")
-
-    def watch_testing_farm_request(
-        self, request_id: str
-    ) -> tuple[tf.TestingFarmWatchResult, str]:
-        request_id = tf.sanitize_request_id(request_id=request_id)
-        cmd = f"testing-farm watch --no-wait --id {request_id}"
-        exit_code, stdout, stderr = util.run_cmd(cmd=cmd)
-        if exit_code != 0:
-            raise SystemError(
-                f"failed to watch 'testing-farm request': {cmd}\n\nstdout: {stdout}\n\nstderr: {stderr}"
-            )
-
-        watch_result, artifacts_url = tf.parse_for_watch_result(stdout)
-        if watch_result is None:
-            raise SystemError(
-                f"failed to watch 'testing-farm request': {cmd}\n\nstdout: {stdout}\n\nstderr: {stderr}"
-            )
-        return (watch_result, artifacts_url)
-
-    def make_testing_farm_request(self, chroot: str) -> str:
-        """Runs a "testing-farm request" command and returns the request ID.
-
-        The request is made without waiting for the result.
-        It is the responsibility of the caller of this function to run "testing-farm watch --id <REQUEST_ID>",
-        where "<REQUEST_ID>" is the result of this function.
-
-        Depending on the chroot, we'll automatically select the proper testing-farm ranch for you.
-        For this to work you'll have to set the
-        TESTING_FARM_API_TOKEN_PUBLIC_RANCH and
-        TESTING_FARM_API_TOKEN_REDHAT_RANCH
-        environment variables. We'll then use one of them to set the TESTING_FARM_API_TOKEN
-        environment variable for the actual call to testing-farm.
-
-        Args:
-            chroot (str): The chroot that you want to run tests for.
-
-        Raises:
-            SystemError: When the testing-farm request failed
-
-        Returns:
-            str: Request ID
-        """
-        logging.info(f"Kicking off new tests for chroot {chroot}.")
-
-        # TODO(kwk): Add testing-farm code here, something like this:
-        # TODO(kwk): Decide how if we want to wait for test results (probably not) and if not how we can check for the results later.
-        ranch = tf.select_ranch(chroot)
-        logging.info(f"Using testing-farm ranch: {ranch}")
-        if ranch == "public":
-            os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
-                "TESTING_FARM_API_TOKEN_PUBLIC_RANCH"
-            )
-        if ranch == "redhat":
-            os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
-                "TESTING_FARM_API_TOKEN_REDHAT_RANCH"
-            )
-        cmd = f"""testing-farm \
-            request \
-            --compose Fedora-latest \
-            --git-url {self.config.test_repo_url} \
-            --arch {util.chroot_arch(chroot)} \
-            --plan /tests/snapshot-gating \
-            --environment COPR_PROJECT={self.config.copr_projectname} \
-            --context distro={util.chroot_os(chroot)} \
-            --context arch=${util.chroot_arch(chroot)} \
-            --no-wait \
-            --context snapshot={self.config.yyyymmdd}"""
-        exit_code, stdout, stderr = util.run_cmd(cmd, timeout_secs=None)
-        if exit_code == 0:
-            return tf.parse_output_for_request_id(stdout)
-        raise SystemError(
-            f"failed to run 'testing-farm request': {cmd}\n\nstdout: {stdout}\n\nstderr: {stderr}"
-        )

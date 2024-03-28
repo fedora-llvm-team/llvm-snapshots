@@ -119,7 +119,12 @@ remove the aforementioned labels.
         return (issue, True)
 
     def _create_labels(
-        self, prefix: str, color: str, labels: list[str] = [], force: bool = True
+        self,
+        prefix: str,
+        color: str,
+        labels: list[str] = [],
+        force: bool = True,
+        issue: github.Issue.Issue | None = None,
     ):
         """Iterates over the given labels and creates or edits each label in the list
         with the given prefix and color."""
