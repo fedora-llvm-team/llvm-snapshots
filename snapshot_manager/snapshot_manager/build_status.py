@@ -6,12 +6,7 @@ import dataclasses
 import enum
 import logging
 import pathlib
-import re
-import os
 
-import regex
-
-import snapshot_manager.build_status as build_status
 import snapshot_manager.util as util
 
 
@@ -141,55 +136,11 @@ class BuildState:
 
     @property
     def os(self):
-        """Get the os part of a chroot string
-
-        Args:
-            chroot (str): A string like "fedora-rawhide-x86_64
-
-        Returns:
-            str: The OS part of the chroot string.
-
-        Examples:
-
-        >>> BuildState(chroot="fedora-rawhide-x86_64").os
-        'fedora-rawhide'
-
-        >>> BuildState(chroot="fedora-40-ppc64le").os
-        'fedora-40'
-
-        >>> BuildState(chroot="fedora-rawhide-NEWARCH").os
-        'fedora-rawhide'
-        """
-        match = re.search(pattern=r"[^-]+-[0-9,rawhide]+", string=self.chroot)
-        if match:
-            return str(match[0])
-        return ""
+        return util.chroot_os(self.chroot)
 
     @property
     def arch(self):
-        """Get architecture part of a chroot string
-
-        Args:
-            chroot (str): A string like "fedora-rawhide-x86_64
-
-        Returns:
-            str: The architecture part of the chroot string.
-
-        Example:
-
-        >>> BuildState(chroot="fedora-rawhide-x86_64").arch
-        'x86_64'
-
-        >>> BuildState(chroot="fedora-40-ppc64le").arch
-        'ppc64le'
-
-        >>> BuildState(chroot="fedora-rawhide-NEWARCH").arch
-        'NEWARCH'
-        """
-        match = regex.search(pattern=r"[^-]+-[^-]+-\K[^\s]+", string=self.chroot)
-        if match:
-            return str(match[0])
-        return ""
+        return util.chroot_arch(self.chroot)
 
     @property
     def source_build_url(self) -> str:
@@ -390,8 +341,8 @@ def get_cause_from_build_log(
     # TODO: Feel free to add your check here...
 
     logging.info(" Default to unknown cause...")
-    _, tail, _ = util._run_cmd(cmd=f"tail {build_log_file}")
-    _, rpm_build_errors, _ = util._run_cmd(
+    _, tail, _ = util.run_cmd(cmd=f"tail {build_log_file}")
+    _, rpm_build_errors, _ = util.run_cmd(
         cmd=rf"sed -n -e '/RPM build errors/,/Finish:/' p {build_log_file}"
     )
     _, errors_to_look_into, _ = util.grep_file(

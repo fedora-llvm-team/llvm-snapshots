@@ -1,5 +1,5 @@
 """
-copr
+copr_util
 """
 
 import logging

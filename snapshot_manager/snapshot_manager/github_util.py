@@ -1,5 +1,5 @@
 """
-github
+github_util
 """
 
 import datetime
@@ -176,3 +176,18 @@ remove the aforementioned labels.
 
     def create_labels_for_archs(self, labels: list[str], **kw_args):
         self._create_labels(labels=labels, prefix="arch/", color="C5DEF5", *kw_args)
+
+    def create_labels_for_in_testing(self, labels: list[str], **kw_args):
+        self._create_labels(
+            labels=labels, prefix="in_testing/", color="C2E0C6", *kw_args
+        )
+
+    def create_labels_for_tested_on(self, labels: list[str], **kw_args):
+        self._create_labels(
+            labels=labels, prefix="tested_on/", color="0E8A16", *kw_args
+        )
+
+    def create_labels_for_failed_on(self, labels: list[str], **kw_args):
+        self._create_labels(
+            labels=labels, prefix="failed_on/", color="D93F0B", *kw_args
+        )

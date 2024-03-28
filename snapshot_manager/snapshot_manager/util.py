@@ -2,13 +2,17 @@
 util
 """
 
+import enum
 import logging
 import pathlib
 import shlex
 import subprocess
 import os
+import re
+import string
 
 import requests
+import regex
 
 import snapshot_manager.file_access as file_access
 import snapshot_manager.build_status as build_status
@@ -85,10 +89,10 @@ def grep_file(
         extra_args = ""
 
     cmd = f"{grep_bin} {" ".join(opts)} {extra_args} '{pattern}' {filepath}"
-    return _run_cmd(cmd)
+    return run_cmd(cmd)
 
 
-def _run_cmd(cmd: str, timeout_secs: int = 5) -> tuple[int, str, str]:
+def run_cmd(cmd: str, timeout_secs: int = 5) -> tuple[int, str, str]:
     """Runs the given command and returns the output (stdout and stderr) if any.
 
     Args:
@@ -96,6 +100,14 @@ def _run_cmd(cmd: str, timeout_secs: int = 5) -> tuple[int, str, str]:
 
     Returns:
         tuple[int, str, str]: The command exit code and it's stdout and sterr
+
+    Example:
+
+    >>> exit_code, stdout, _ = run_cmd(cmd="echo 'hello'")
+    >>> exit_code
+    0
+    >>> stdout
+    'hello\\n'
     """
 
     proc = subprocess.run(shlex.split(cmd), timeout=timeout_secs, capture_output=True)
@@ -139,7 +151,7 @@ def gunzip(f: tuple[str, pathlib.Path]) -> pathlib.Path:
     """Unzip log file on the fly if we need to"""
     if str(f).endswith(".gz"):
         unzipped_file = str(f).removesuffix(".gz")
-        retcode, stdout, stderr = _run_cmd(cmd=f"gunzip -kf {f}")
+        retcode, stdout, stderr = run_cmd(cmd=f"gunzip -kf {f}")
         if retcode != 0:
             raise Exception(f"Failed to gunzip build log '{f}': {stderr}")
         f = unzipped_file
@@ -167,3 +179,139 @@ def golden_file_path(basename: str, extension: str = ".golden.txt") -> pathlib.P
         f"{basename}{extension}",
     )
     return pathlib.Path(path)
+
+
+def expect_chroot(chroot: str) -> str:
+    """Raises an exception if passes string is not a chroot
+
+    Args:
+        chroot (str): Any chroot string
+
+    Raises:
+        ValueError: if chroot argument is not a chroot string
+
+    Examples:
+
+    >>> expect_chroot("fedora-rawhide-x86_64")
+    'fedora-rawhide-x86_64'
+
+    >>> expect_chroot("fedora-rawhide-")
+    Traceback (most recent call last):
+      ...
+    ValueError: invalid chroot fedora-rawhide-
+    """
+    if not re.search(pattern=r"^[^-]+-[^-]+-[^-]+$", string=chroot):
+        raise ValueError(f"invalid chroot {chroot}")
+    return chroot
+
+
+def chroot_name(chroot: str) -> str:
+    """Get the name part of a chroot string
+
+    Args:
+        chroot (str): A string like "fedora-rawhide-x86_64
+
+    Returns:
+        str: The Name part of the chroot string.
+
+    Examples:
+
+    >>> chroot_name(chroot="fedora-rawhide-x86_64")
+    'fedora'
+
+    >>> chroot_name(chroot="fedora-40-ppc64le")
+    'fedora'
+
+    >>> chroot_name(chroot="fedora-rawhide-NEWARCH")
+    'fedora'
+
+    >>> chroot_name(chroot="rhel-9-x86_64")
+    'rhel'
+    """
+    expect_chroot(chroot)
+    match = re.search(pattern=r"^[^-]+", string=chroot)
+    return str(match[0])
+
+
+def chroot_version(chroot: str) -> str:
+    """Get the version part of a chroot string
+
+    Args:
+        chroot (str): A string like "fedora-rawhide-x86_64
+
+    Returns:
+        str: The Name part of the chroot string.
+
+    Examples:
+
+    >>> chroot_version(chroot="fedora-rawhide-x86_64")
+    'rawhide'
+
+    >>> chroot_version(chroot="fedora-40-ppc64le")
+    '40'
+
+    >>> chroot_version(chroot="fedora-rawhide-NEWARCH")
+    'rawhide'
+
+    >>> chroot_version(chroot="rhel-9-x86_64")
+    '9'
+    """
+    expect_chroot(chroot)
+    match = re.search(pattern=r"(-)([^-]+)(-)", string=chroot)
+    return str(match.groups()[1])
+
+
+def chroot_os(chroot: str) -> str:
+    """Get the os part of a chroot string
+
+    Args:
+        chroot (str): A string like "fedora-rawhide-x86_64
+
+    Raises:
+        ValueError: if chroot argument is not a chroot string
+
+    Returns:
+        str: The OS part of the chroot string.
+
+    Examples:
+
+    >>> chroot_os(chroot="fedora-rawhide-x86_64")
+    'fedora-rawhide'
+
+    >>> chroot_os(chroot="fedora-40-ppc64le")
+    'fedora-40'
+
+    >>> chroot_os(chroot="fedora-rawhide-NEWARCH")
+    'fedora-rawhide'
+    """
+    expect_chroot(chroot)
+    match = re.search(pattern=r"[^-]+-[0-9,rawhide]+", string=chroot)
+    return str(match[0])
+
+
+def chroot_arch(chroot: str) -> str:
+    """Get architecture part of a chroot string
+
+    Args:
+        chroot (str): A string like "fedora-rawhide-x86_64
+
+    Raises:
+        ValueError: if chroot argument is not a chroot string
+
+    Returns:
+        str: The architecture part of the chroot string.
+
+    Example:
+
+    >>> chroot_arch(chroot="fedora-rawhide-x86_64")
+    'x86_64'
+
+    >>> chroot_arch(chroot="fedora-40-ppc64le")
+    'ppc64le'
+
+    >>> chroot_arch(chroot="fedora-rawhide-NEWARCH")
+    'NEWARCH'
+    """
+    expect_chroot(chroot)
+    match = regex.search(pattern=r"[^-]+-[^-]+-\K[^\s]+", string=chroot)
+    return str(match[0])
