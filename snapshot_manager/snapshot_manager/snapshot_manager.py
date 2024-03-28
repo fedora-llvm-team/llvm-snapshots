@@ -265,7 +265,7 @@ class SnapshotManager:
             )
         cmd = f"""testing-farm \
             request \
-            --compose {util.chroot_os(chroot).capitalize()} \
+            --compose Fedora-latest \
             --git-url {self.config.test_repo_url} \
             --arch {util.chroot_arch(chroot)} \
             --plan /tests/snapshot-gating \
