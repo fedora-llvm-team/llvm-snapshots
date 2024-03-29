@@ -9,10 +9,11 @@ class TestSnapshotManager(base_test.TestBase):
     # def test_check_todays_builds(self):
     #     cfg = self.config
     #     cfg.copr_ownername = "@fedora-llvm-team"
-    #     cfg.copr_project_tpl = "llvm-snapshots-incubator-20240306"
+    #     cfg.copr_project_tpl = "llvm-snapshots-incubator-20240328"
     #     cfg.strategy = "standalone"
     #     cfg.maintainer_handle = "kwk"
-    #     self.config.github_repo = "fedora-llvm-team/llvm-snapshots-test"
+    #     cfg.creator_handle = "kwk"
+    #     cfg.github_repo = "fedora-llvm-team/llvm-snapshots-test"
     #     mgr = snapshot_manager.SnapshotManager(config=cfg)
     #     mgr.check_todays_builds()
     pass

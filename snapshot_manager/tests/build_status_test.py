@@ -80,8 +80,8 @@ class TestErrorCauseAndBuildStatus(base_test.TestBase):
 
 | |stupefy|alohomora|
 |:---|:---:|:---:|
-|fedora-rawhide-x86_64|[{build_status.CoprBuildStatus.IMPORTING.toIcon()}](https://copr.fedorainfracloud.org/coprs/build/22) | [{build_status.CoprBuildStatus.FAILED.toIcon()}](https://copr.fedorainfracloud.org/coprs/build/44)|
-|fedora-40-ppc64le|[{build_status.CoprBuildStatus.SUCCEEDED.toIcon()}](https://copr.fedorainfracloud.org/coprs/build/33) | :grey_question:|
+|fedora-rawhide-x86_64|[{build_status.CoprBuildStatus.IMPORTING.to_icon()}](https://copr.fedorainfracloud.org/coprs/build/22) | [{build_status.CoprBuildStatus.FAILED.to_icon()}](https://copr.fedorainfracloud.org/coprs/build/44)|
+|fedora-40-ppc64le|[{build_status.CoprBuildStatus.SUCCEEDED.to_icon()}](https://copr.fedorainfracloud.org/coprs/build/33) | :grey_question:|
 <details><summary>Build status legend</summary><ul><li>:o: : canceled</li><li>:x: : failed</li><li>:ballot_box_with_check: : forked</li><li>:inbox_tray: : importing</li><li>:soon: : pending</li><li>:running: : running</li><li>:no_entry_sign: : skipped</li><li>:star: : starting</li><li>:white_check_mark: : succeeded</li><li>:hourglass: : waiting</li><li>:grey_question: : unknown</li></ul></details>
 </details>"""
         self.assertEqual(expected_result, matrix)

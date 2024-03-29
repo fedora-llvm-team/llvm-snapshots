@@ -10,6 +10,7 @@ import github
 import github.GithubException
 import github.Issue
 import github.Repository
+import github.PaginatedList
 
 import snapshot_manager.config as config
 import snapshot_manager.build_status as build_status
@@ -25,10 +26,14 @@ class GithubClient:
         if github_token is None:
             github_token = os.getenv(self.config.github_token_env)
         self.github = github.Github(login_or_token=github_token)
+        self.__label_cache = None
+        self.__repo_cache = None
 
     @property
     def gh_repo(self) -> github.Repository.Repository:
-        return self.github.get_repo(self.config.github_repo)
+        if self.__repo_cache is None:
+            self.__repo_cache = self.github.get_repo(self.config.github_repo)
+        return self.__repo_cache
 
     def get_todays_github_issue(
         self,
@@ -67,27 +72,10 @@ class GithubClient:
         logging.info("Found no issue for today")
         return None
 
-    def create_or_get_todays_github_issue(
-        self,
-        maintainer_handle: str,
-        creator: str = "github-actions[bot]",
-    ) -> tuple[github.Issue.Issue, bool]:
-        issue = self.get_todays_github_issue(
-            strategy=self.config.build_strategy,
-            creator=creator,
-            github_repo=self.config.github_repo,
-        )
-        if issue is not None:
-            return (issue, False)
-
-        strategy = self.config.build_strategy
-        repo = self.gh_repo
-        logging.info("Creating issue for today")
-        issue = repo.create_issue(
-            assignee=maintainer_handle,
-            title=f"Snapshot build for {self.config.yyyymmdd} ({strategy})",
-            body=f"""
-Hello @{maintainer_handle}!
+    @property
+    def initial_comment(self) -> str:
+        return f"""
+Hello @{self.config.maintainer_handle}!
 
 <p>
 This issue exists to let you know that we are about to monitor the builds
@@ -112,26 +100,73 @@ remove the aforementioned labels.
 {self.config.update_marker}
 
 <p><b>Last updated: {datetime.datetime.now().isoformat()}</b></p>
-""",
+"""
+
+    def create_or_get_todays_github_issue(
+        self,
+        maintainer_handle: str,
+        creator: str = "github-actions[bot]",
+    ) -> tuple[github.Issue.Issue, bool]:
+        issue = self.get_todays_github_issue(
+            strategy=self.config.build_strategy,
+            creator=creator,
+            github_repo=self.config.github_repo,
+        )
+        if issue is not None:
+            return (issue, False)
+
+        strategy = self.config.build_strategy
+        repo = self.gh_repo
+        logging.info("Creating issue for today")
+        issue = repo.create_issue(
+            assignee=maintainer_handle,
+            title=f"Snapshot build for {self.config.yyyymmdd} ({strategy})",
+            body=self.initial_comment,
         )
         self.create_labels_for_strategies(labels=[strategy])
         issue.add_to_labels(f"strategy/{strategy}")
         return (issue, True)
+
+    @property
+    def label_cache(self, refresh: bool = False) -> github.PaginatedList.PaginatedList:
+        """Will query the labels of a github repo only once and return it afterwards.
+
+        Args:
+            refresh (bool, optional): The cache will be emptied. Defaults to False.
+
+        Returns:
+            github.PaginatedList.PaginatedList: An enumerable list of github.Label.Label objects
+        """
+        if self.__label_cache is None or refresh:
+            self.__label_cache = self.gh_repo.get_labels()
+        return self.__label_cache
+
+    def is_label_in_cache(self, name: str, color: str) -> bool:
+        """Returns True if the label exists in the cache.
+
+        Args:
+            name (str): Name of the label to look for
+            color (str): Color string of the label to look for
+
+        Returns:
+            bool: True if the label is in the cache
+        """
+        for label in self.label_cache:
+            if label.name == name and label.color == color:
+                return True
+        return False
 
     def _create_labels(
         self,
         prefix: str,
         color: str,
         labels: list[str] = [],
-        force: bool = True,
-        issue: github.Issue.Issue | None = None,
     ):
         """Iterates over the given labels and creates or edits each label in the list
         with the given prefix and color."""
         if labels is None or len(labels) == 0:
             return
 
-        repo = self.gh_repo
         labels = set(labels)
         labels = list(labels)
         labels.sort()
@@ -139,16 +174,17 @@ remove the aforementioned labels.
             labelname = label
             if not labelname.startswith(prefix):
                 labelname = f"{prefix}{label}"
+            if self.is_label_in_cache(name=labelname, color=color):
+                continue
             logging.info(
                 f"Creating label: repo={self.config.github_repo} name={labelname} color={color}",
             )
             try:
-                repo.create_label(color=color, name=labelname)
+                self.gh_repo.create_label(color=color, name=labelname)
             except:
-                if force:
-                    l = repo.get_label(name=labelname).edit(
-                        name=labelname, color=color, description=""
-                    )
+                self.gh_repo.get_label(name=labelname).edit(
+                    name=labelname, color=color, description=""
+                )
 
     def _get_labels_on_issue(self, issue: github.Issue.Issue, prefix: str) -> list[str]:
         return [
@@ -184,7 +220,7 @@ remove the aforementioned labels.
 
     def create_labels_for_in_testing(self, labels: list[str], **kw_args):
         self._create_labels(
-            labels=labels, prefix="in_testing/", color="C2E0C6", *kw_args
+            labels=labels, prefix="in_testing/", color="FEF2C0", *kw_args
         )
 
     def create_labels_for_tested_on(self, labels: list[str], **kw_args):

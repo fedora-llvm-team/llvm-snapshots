@@ -33,7 +33,7 @@ class CoprBuildStatus(enum.StrEnum):
     def success(self) -> bool:
         return self.value in {self.SUCCEEDED, self.FORKED}
 
-    def toIcon(self) -> str:
+    def to_icon(self) -> str:
         """Get a github markdown icon for the given build status
 
         See https://gist.github.com/rxaviers/7360908 for a list of possible icons."""
@@ -173,7 +173,7 @@ class BuildState:
     def augment_with_error(self) -> "BuildState":
         """Inspects the build status and if it is an error it will get and scan the logs"""
         if self.copr_build_state != CoprBuildStatus.FAILED:
-            logging.info(
+            logging.debug(
                 f"package {self.chroot}/{self.package_name} didn't fail no need to look for errors"
             )
             return self
@@ -181,7 +181,7 @@ class BuildState:
         # Treat errors with no build logs as unknown and tell user to visit the
         # build URL manually.
         if not self.url_build_log:
-            logging.warning(
+            logging.debug(
                 f"No build log found for package {self.chroot}/{self.package_name}. Falling back to scanning the SRPM build log: {self.source_build_url}"
             )
             _, match, _ = util.grep_url(
@@ -208,14 +208,14 @@ for <code>error:</code> (case insesitive) and here's what we've found:
             return self
 
         # Now analyze the build log but store it in a file first
-        logging.info(f"Reading build log: {self.url_build_log}")
+        logging.debug(f"Reading build log: {self.url_build_log}")
         build_log_file = util.read_url_response_into_file(url=self.url_build_log)
 
         self.err_cause, self.err_ctx = get_cause_from_build_log(
             build_log_file=build_log_file
         )
 
-        logging.info(f"Remove temporary log file: {build_log_file}")
+        logging.debug(f"Remove temporary log file: {build_log_file}")
         build_log_file.unlink()
 
         return self
@@ -243,7 +243,7 @@ def get_cause_from_build_log(
     cause = ErrorCause.ISSUE_UNKNOWN
     ctx = ""
 
-    def handle_golden_file(cause: ErrorCause, ctx: str):
+    def handle_golden_file(cause: ErrorCause, ctx: str) -> tuple[ErrorCause, str]:
         if write_golden_file:
             util.golden_file_path(basename=f"cause_{str(cause)}").write_text(ctx)
         return (cause, ctx)
@@ -447,7 +447,7 @@ def markdown_build_status_matrix(
             state = lookup_state(states=build_states, package=p, chroot=c)
             if state is not None:
                 cols.append(
-                    f"[{CoprBuildStatus(state.copr_build_state).toIcon()}]({state.build_page_url})"
+                    f"[{CoprBuildStatus(state.copr_build_state).to_icon()}]({state.build_page_url})"
                 )
             else:
                 cols.append(init_state)
@@ -460,7 +460,7 @@ def markdown_build_status_matrix(
         states = [state for state in CoprBuildStatus]
         states.sort()
         for state in states:
-            table += f"<li>{CoprBuildStatus(state).toIcon()} : {state}</li>"
+            table += f"<li>{CoprBuildStatus(state).to_icon()} : {state}</li>"
         table += f"<li>:grey_question: : unknown</li>"
         table += "</ul></details>\n"
 

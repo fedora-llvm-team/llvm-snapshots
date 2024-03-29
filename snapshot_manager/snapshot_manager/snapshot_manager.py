@@ -4,10 +4,6 @@ SnapshotManager
 
 import datetime
 import logging
-import os
-import re
-
-import github.Issue
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.copr_util as copr_util
@@ -27,7 +23,8 @@ class SnapshotManager:
     def check_todays_builds(self):
         """This method is driven from the config settings"""
         issue, _ = self.github.create_or_get_todays_github_issue(
-            maintainer_handle=self.config.maintainer_handle
+            maintainer_handle=self.config.maintainer_handle,
+            creator=self.config.creator_handle,
         )
         if issue.state == "closed":
             logging.info(
@@ -51,18 +48,13 @@ class SnapshotManager:
             "Extract and sanitize testing-farm information out of the last comment body."
         )
         testing_farm_requests = tf.parse_comment_for_request_ids(comment_body)
+        logging.info(testing_farm_requests)
 
-        logging.info(
-            "Shorten the issue body comment to the update marker so that we can append to it"
-        )
-        comment_body = comment_body[: comment_body.find(self.config.update_marker)]
-        comment_body += self.config.update_marker
-        comment_body += (
-            f"<p><b>Last Updated: {datetime.datetime.now().isoformat()}</b></p>"
-        )
+        logging.info("Rebuild the issue body comment so that we can append to it")
+        comment_body = self.github.initial_comment
 
         logging.info("Add a build matrix")
-        comment_body += build_status.markdown_build_status_matrix(
+        build_status_matrix = build_status.markdown_build_status_matrix(
             chroots=all_chroots,
             packages=self.config.packages,
             build_states=states,
@@ -70,7 +62,7 @@ class SnapshotManager:
 
         logging.info("Append ordered list of errors to the issue's body comment")
         errors = build_status.list_only_errors(states=states)
-        comment_body += build_status.render_as_markdown(errors)
+        errors_as_markdown = build_status.render_as_markdown(errors)
 
         logging.info(f"Update the issue comment body")
         # See https://github.com/fedora-llvm-team/llvm-snapshots/issues/205#issuecomment-1902057639
@@ -80,7 +72,6 @@ class SnapshotManager:
             logging.info(
                 f"Github only allows {max_length} characters on a comment body and we have reached {len(comment_body)} characters."
             )
-        issue.edit(body=comment_body)
 
         logging.info("Gather labels based on the errors we've found")
         error_labels = list({f"error/{err.err_cause}" for err in errors})
@@ -137,6 +128,12 @@ class SnapshotManager:
         labels_on_issue = [label.name for label in issue.labels]
 
         for chroot in all_chroots:
+            if not tf.is_chroot_supported(chroot):
+                # see https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_supported_architectures
+                logging.debug(
+                    f"Ignoring chroot {chroot} because testing-farm doesn't support it."
+                )
+                continue
             logging.info(f"Check if all builds in chroot {chroot} have succeeded")
             builds_succeeded = self.copr.has_all_good_builds(
                 copr_ownername=self.config.copr_ownername,
@@ -151,51 +148,61 @@ class SnapshotManager:
 
             logging.info(f"All builds in chroot {chroot} have succeeded!")
 
-            if f"in_testing/{chroot}" in labels_on_issue:
-                logging.info(
-                    f"Chroot {chroot} is currently in testing! Not kicking off new tests."
+            # Check for current status of testing-farm request
+            if chroot in testing_farm_requests:
+                request_id = testing_farm_requests[chroot]
+                watch_result, artifacts_url = tf.watch_testing_farm_request(
+                    request_id=request_id
                 )
-                if chroot in testing_farm_requests:
-                    request_id = testing_farm_requests[chroot]
-                    watch_result, artifacts_url = tf.watch_testing_farm_request(
-                        request_id=request_id
+                if artifacts_url is not None:
+                    build_status_matrix = build_status_matrix.replace(
+                        chroot,
+                        f'{chroot}<br />(<a href="{artifacts_url}">{watch_result.to_icon()} {watch_result}</a>)',
                     )
-                    if watch_result in [
-                        tf.TestingFarmWatchResult.TESTS_ERROR,
-                        tf.TestingFarmWatchResult.TESTS_FAILED,
-                    ]:
-                        issue.remove_from_labels(f"in_testing/{chroot}")
-                        issue.add_to_labels(f"failed_on/{chroot}")
-                    elif watch_result == tf.TestingFarmWatchResult.TESTS_PASSED:
-                        issue.remove_from_labels(f"in_testing/{chroot}")
-                        issue.add_to_labels(f"tested_on/{chroot}")
-
-            elif f"tested_on/{chroot}" in labels_on_issue:
                 logging.info(
-                    f"Chroot {chroot} has passed tests testing! Not kicking off new tests."
+                    f"Chroot {chroot} testing-farm watch result: {watch_result} (URL: {artifacts_url})"
                 )
-            elif f"failed_on/{chroot}" in labels_on_issue:
-                logging.info(
-                    f"Chroot {chroot} has unsuccessful tests! Not kicking off new tests."
-                )
+                if watch_result in [
+                    tf.TestingFarmWatchResult.TESTS_ERROR,
+                    tf.TestingFarmWatchResult.TESTS_FAILED,
+                ]:
+                    if f"in_testing/{chroot}" in labels_on_issue:
+                        issue.remove_from_labels(f"in_testing/{chroot}")
+                    if f"tested_on/{chroot}" in labels_on_issue:
+                        issue.remove_from_labels(f"tested_on/{chroot}")
+                    issue.add_to_labels(f"failed_on/{chroot}")
+                elif watch_result == tf.TestingFarmWatchResult.TESTS_PASSED:
+                    if f"in_testing/{chroot}" in labels_on_issue:
+                        issue.remove_from_labels(f"in_testing/{chroot}")
+                    if f"failed_on/{chroot}" in labels_on_issue:
+                        issue.remove_from_labels(f"failed_on/{chroot}")
+                    issue.add_to_labels(f"tested_on/{chroot}")
             else:
-                logging.info(f"chroot {chroot} has no tests associated yet.")
-                request_id = tf.make_testing_farm_request(chroot=chroot)
+                logging.info(f"Starting tests for chroot {chroot}")
+                request_id = tf.make_testing_farm_request(
+                    chroot=chroot, config=self.config
+                )
+                logging.info(f"Request ID: {request_id}")
                 testing_farm_requests[chroot] = request_id
                 issue.add_to_labels(f"in_testing/{chroot}")
 
-        logging.info("Appending testing farm requests to the comment body.")
-        comment_body += "\n\n" + tf.chroot_request_ids_to_html_comment(
-            testing_farm_requests
+        requests = tf.chroot_request_ids_to_html_comment(testing_farm_requests)
+        logging.info(f"Appending testing farm requests to the comment body: {requests}")
+        comment_body += (
+            f"{build_status_matrix}\n\n{errors_as_markdown}\n\n{requests}\n\n"
         )
         issue.edit(body=comment_body)
 
         logging.info("Checking if issue can be closed")
-        issue.update()
+        # issue.update()
         tested_chroot_labels = [
             label.name for label in issue.labels if label.name.startswith("tested_on/")
         ]
-        required_chroot_abels = ["tested_on/{chroot}" for chroot in all_chroots]
+        required_chroot_abels = [
+            "tested_on/{chroot}"
+            for chroot in all_chroots
+            if tf.is_chroot_supported(chroot)
+        ]
         if set(tested_chroot_labels) == set(required_chroot_abels):
             msg = f"@{self.config.maintainer_handle}, all required packages have been successfully built and tested on all required chroots. We'll close this issue for you now as completed. Congratulations!"
             logging.info(msg)

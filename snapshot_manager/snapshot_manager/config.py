@@ -45,6 +45,9 @@ class Config:
     maintainer_handle: str = "kwk"
     """The GitHub maintainer handle without the @ sign"""
 
+    creator_handle: str = "github-actions[bot]"
+    """The Github user that is expected to have created the daily issue (TODO(kwk): Improve documentation)"""
+
     copr_ownername: str = "@fedora-llvm-team"
     """The Copr owner name of the project to work with"""
 

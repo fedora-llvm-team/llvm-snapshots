@@ -7,10 +7,14 @@ import logging
 import re
 import string
 import uuid
+import os
+import json
+import re
 
 import regex
 
 import snapshot_manager.util as util
+import snapshot_manager.config as config
 
 
 @enum.unique
@@ -31,6 +35,25 @@ class TestingFarmWatchResult(enum.StrEnum):
     TESTS_FAILED = "tests failed"  # Successfully built.
     TESTS_ERROR = "tests error"  # Build has been forked from another build.
     TESTS_UNKNOWN = "tests unknown"  # This package was skipped, see the reason for each chroot separately.
+
+    def to_icon(self) -> str:
+        """Get a github markdown icon for the given testing-farm watch result.
+
+        See https://gist.github.com/rxaviers/7360908 for a list of possible icons."""
+        if self == self.REQUEST_WAITING_TO_BE_QUEUED:
+            return ":hourglass:"
+        if self == self.REQUEST_QUEUED:
+            return ":inbox_tray:"
+        if self == self.REQUEST_RUNNING:
+            return ":running:"
+        if self == self.TESTS_PASSED:
+            return ":white_check_mark:"
+        if self == self.TESTS_FAILED:
+            return ":x:"
+        if self == self.TESTS_ERROR:
+            return ":x:"
+        if self == self.TESTS_UNKNOWN:
+            return ":grey_question:"
 
     @classmethod
     def all_watch_results(cls) -> list["TestingFarmWatchResult"]:
@@ -133,10 +156,9 @@ def parse_comment_for_request_ids(comment_body: str) -> dict:
         try:
             chroot = util.expect_chroot(ci[0]).strip()
             request_id = sanitize_request_id(ci[1]).strip()
+            testing_farm_requests[chroot] = request_id
         except ValueError as e:
             logging.info(f"ignoring: {ci[0]} and {ci[1]} {str(e)}")
-        else:
-            testing_farm_requests[chroot] = request_id
     return testing_farm_requests
 
 
@@ -266,12 +288,8 @@ def chroot_request_ids_to_html_comment(data: dict) -> str:
 def watch_testing_farm_request(request_id: str) -> tuple[TestingFarmWatchResult, str]:
     request_id = sanitize_request_id(request_id=request_id)
     cmd = f"testing-farm watch --no-wait --id {request_id}"
-    exit_code, stdout, stderr = util.run_cmd(cmd=cmd)
-    if exit_code != 0:
-        raise SystemError(
-            f"failed to watch 'testing-farm request': {cmd}\n\nstdout: {stdout}\n\nstderr: {stderr}"
-        )
-
+    # We ignore the exit code because in case of a test error, 1 is the exit code
+    _, stdout, stderr = util.run_cmd(cmd=cmd)
     watch_result, artifacts_url = parse_for_watch_result(stdout)
     if watch_result is None:
         raise SystemError(
@@ -280,7 +298,52 @@ def watch_testing_farm_request(request_id: str) -> tuple[TestingFarmWatchResult,
     return (watch_result, artifacts_url)
 
 
-def make_testing_farm_request(chroot: str) -> str:
+def is_arch_supported(arch: str, ranch: str) -> bool:
+    """Returns True if the architecture is supported by testing-farm.
+
+    See https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_supported_architectures
+
+    Args:
+        arch (str): Architecture string (e.g. "x86_64")
+        ranch (str): "public" or "redhat"
+
+    Raises:
+        ValueError: if the ranch is not "public" or "redhat"
+
+    Returns:
+        bool: if the architecture is supported on the given ranch
+
+    Examples:
+
+    >>> is_arch_supported("i386", "public")
+    False
+
+    >>> is_arch_supported("i386", "redhat")
+    False
+
+    >>> is_arch_supported("x86_64", "public")
+    True
+    """
+    if arch == "i386":
+        return False
+    if ranch == "public":
+        if not arch in ("x86_64", "aarch64"):
+            return False
+    elif ranch == "redhat":
+        if not arch in ("x86_64", "aarch64", "ppc64le", "s390x"):
+            return False
+    else:
+        raise ValueError(f"unknown ranch: {ranch}")
+    return True
+
+
+def is_chroot_supported(chroot: str, ranch: str | None = None) -> bool:
+    if ranch is None:
+        ranch = select_ranch(chroot=chroot)
+    return is_arch_supported(arch=util.chroot_arch(chroot), ranch=ranch)
+
+
+def make_testing_farm_request(config: config.Config, chroot: str) -> str:
     """Runs a "testing-farm request" command and returns the request ID.
 
     The request is made without waiting for the result.
@@ -306,29 +369,94 @@ def make_testing_farm_request(chroot: str) -> str:
     logging.info(f"Kicking off new tests for chroot {chroot}.")
 
     ranch = select_ranch(chroot)
+
+    if not is_chroot_supported(chroot=chroot, ranch=ranch):
+        raise ValueError(
+            f"Chroot {chroot} has an unsupported architecture on ranch {ranch}"
+        )
+
     logging.info(f"Using testing-farm ranch: {ranch}")
     if ranch == "public":
         os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
-            "TESTING_FARM_API_TOKEN_PUBLIC_RANCH"
+            "TESTING_FARM_API_TOKEN_PUBLIC_RANCH", "MISSING_ENV"
         )
     if ranch == "redhat":
         os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
-            "TESTING_FARM_API_TOKEN_REDHAT_RANCH"
+            "TESTING_FARM_API_TOKEN_REDHAT_RANCH", "MISSING_ENV"
         )
     cmd = f"""testing-farm \
         request \
-        --compose Fedora-latest \
-        --git-url {self.config.test_repo_url} \
+        --compose {get_compose(ranch)} \
+        --git-url {config.test_repo_url} \
         --arch {util.chroot_arch(chroot)} \
         --plan /tests/snapshot-gating \
-        --environment COPR_PROJECT={self.config.copr_projectname} \
+        --environment COPR_PROJECT={config.copr_projectname} \
         --context distro={util.chroot_os(chroot)} \
-        --context arch=${util.chroot_arch(chroot)} \
+        --context arch={util.chroot_arch(chroot)} \
         --no-wait \
-        --context snapshot={self.config.yyyymmdd}"""
+        --context snapshot={config.yyyymmdd}"""
     exit_code, stdout, stderr = util.run_cmd(cmd, timeout_secs=None)
     if exit_code == 0:
         return parse_output_for_request_id(stdout)
     raise SystemError(
         f"failed to run 'testing-farm request': {cmd}\n\nstdout: {stdout}\n\nstderr: {stderr}"
     )
+
+
+def get_compose(ranch: str) -> str:
+    """Returns the N-1 Fedora version supported on the given ranch.
+
+    When N is the latest Fedora version, we use the N-1 version to be safe.
+    If there's no N-1, we return the latest Fedora version N.
+
+    Args:
+        ranch (str): "public" or "redhat"
+
+    Raises:
+        ValueError: if the ranch isn't "public" or "redhat"
+
+    Returns:
+        str: The preferred compose for the given ranch
+
+    Examples:
+
+    >>> get_compose("public")
+    'Fedora-39'
+    >>> get_compose("public")
+    'Fedora-39'
+
+    >>> get_compose("redhat")
+    'Fedora-39'
+    """
+
+    def get_composes(url: str) -> list[str]:
+        logging.info(f"Parsing URL for composes: {url}")
+        file = util.read_url_response_into_file(url)
+        res = json.loads(file.read_text())
+        composes = [
+            compose["name"]
+            for compose in res["composes"]
+            if re.match(pattern="^Fedora-[0-9]+$", string=compose["name"])
+        ]
+        composes.sort(reverse=True)
+        return composes
+
+    composes = []
+    if ranch == "redhat":
+        if not hasattr(get_compose, "composes_cache_redhat"):
+            get_compose.composes_cache_redhat = get_composes(
+                url="https://api.testing-farm.io/v0.1/composes/redhat"
+            )
+        composes = get_compose.composes_cache_redhat
+    elif ranch == "public":
+        if not hasattr(get_compose, "composes_cache_public"):
+            get_compose.composes_cache_public = get_composes(
+                url="https://api.testing-farm.io/v0.1/composes/public"
+            )
+        composes = get_compose.composes_cache_public
+    else:
+        raise ValueError(f"unknown ranch: {ranch}")
+
+    if len(composes) >= 2:
+        return composes[1]
+    return composes[0]

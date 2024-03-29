@@ -111,9 +111,15 @@ def run_cmd(cmd: str, timeout_secs: int = 5) -> tuple[int, str, str]:
     """
 
     proc = subprocess.run(shlex.split(cmd), timeout=timeout_secs, capture_output=True)
-    logging.info(f"exit code: {proc.returncode} for cmd: {cmd}")
+    stdout = proc.stdout.decode()
+    stderr = proc.stderr.decode()
+    exit_code = proc.returncode
+    if exit_code != 0:
+        logging.info(
+            f"exit code: {proc.returncode} for cmd: {cmd}\n\nstdout={stdout}\n\nstderr={stderr}"
+        )
 
-    return proc.returncode, proc.stdout.decode(), proc.stderr.decode()
+    return exit_code, stdout, stderr
 
 
 def read_url_response_into_file(url: str) -> pathlib.Path:
