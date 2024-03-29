@@ -389,7 +389,7 @@ def make_testing_farm_request(
         )
     cmd = f"""testing-farm \
         request \
-        --compose {get_compose(ranch)} \
+        --compose {util.chroot_os(chroot).capitalize()} \
         --git-url {config.test_repo_url} \
         --arch {util.chroot_arch(chroot)} \
         --plan /tests/snapshot-gating \
