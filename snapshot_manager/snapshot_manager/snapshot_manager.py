@@ -180,7 +180,9 @@ class SnapshotManager:
             else:
                 logging.info(f"Starting tests for chroot {chroot}")
                 request_id = tf.make_testing_farm_request(
-                    chroot=chroot, config=self.config
+                    chroot=chroot,
+                    config=self.config,
+                    issue=issue,
                 )
                 logging.info(f"Request ID: {request_id}")
                 testing_farm_requests[chroot] = request_id

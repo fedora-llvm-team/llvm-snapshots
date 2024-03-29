@@ -33,4 +33,4 @@ repos:
       language_version: python3.12
       force-exclude: "^snapshot_manager/tests/test_logs/"
 
-exclude: "^snapshot_manager/tests/test_logs/"
+exclude: "^(snapshot_manager/tests/test_logs/|media)"

@@ -12,6 +12,7 @@ import json
 import re
 
 import regex
+import github.Issue
 
 import snapshot_manager.util as util
 import snapshot_manager.config as config
@@ -343,7 +344,9 @@ def is_chroot_supported(chroot: str, ranch: str | None = None) -> bool:
     return is_arch_supported(arch=util.chroot_arch(chroot), ranch=ranch)
 
 
-def make_testing_farm_request(config: config.Config, chroot: str) -> str:
+def make_testing_farm_request(
+    config: config.Config, issue: github.Issue.Issue, chroot: str
+) -> str:
     """Runs a "testing-farm request" command and returns the request ID.
 
     The request is made without waiting for the result.
@@ -394,6 +397,9 @@ def make_testing_farm_request(config: config.Config, chroot: str) -> str:
         --context distro={util.chroot_os(chroot)} \
         --context arch={util.chroot_arch(chroot)} \
         --no-wait \
+        --user-webpage={issue.html_url} \
+        --user-webpage-name=f"GitHub Issue: {issue.title}" \
+        --user-webpage-icon="https://github.com/fedora-llvm-team/llvm-snapshots/blob/main/media/github-mark.png?raw=true" \
         --context snapshot={config.yyyymmdd}"""
     exit_code, stdout, stderr = util.run_cmd(cmd, timeout_secs=None)
     if exit_code == 0:
