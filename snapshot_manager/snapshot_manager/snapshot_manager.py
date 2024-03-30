@@ -124,6 +124,8 @@ class SnapshotManager:
 
         labels_on_issue = [label.name for label in issue.labels]
 
+        failed_test_cases: tf.FailedTestCaseList = []
+
         for chroot in all_chroots:
             if not tf.is_chroot_supported(chroot):
                 # see https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_supported_architectures
@@ -144,8 +146,6 @@ class SnapshotManager:
                 continue
 
             logging.info(f"All builds in chroot {chroot} have succeeded!")
-
-            failed_test_cases: tf.FailedTestCaseList = []
 
             testing_farm_comment = None
             for comment in issue.get_comments():
