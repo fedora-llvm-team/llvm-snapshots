@@ -10,9 +10,11 @@ import uuid
 import os
 import json
 import re
+import dataclasses
 
 import regex
 import github.Issue
+import xml.etree.ElementTree as ET
 
 import snapshot_manager.util as util
 import snapshot_manager.config as config
@@ -63,15 +65,39 @@ class TestingFarmWatchResult(enum.StrEnum):
     @property
     def is_complete(self) -> bool:
         """Returns True if the watch result indicates that the testing-farm
-        request has been completed. The outcome doesn't matter.
+        request has been completed.
+
+        Examples:
+
+        >>> TestingFarmWatchResult("tests failed").is_complete
+        True
+
+        >>> TestingFarmWatchResult("request is queued").is_complete
+        False
         """
-        if self.value in [
-            self.REQUEST_WAITING_TO_BE_QUEUED,
-            self.REQUEST_QUEUED,
-            self.REQUEST_RUNNING,
-        ]:
-            return False
-        return True
+        return self.value in [
+            self.TESTS_PASSED,
+            self.TESTS_FAILED,
+            self.TESTS_ERROR,
+        ]
+
+    @property
+    def is_error(self) -> bool:
+        """Returns True if the watch result indicates that the testing-farm
+        request has an error.
+
+        Examples:
+
+        >>> TestingFarmWatchResult("tests failed").is_complete
+        True
+
+        >>> TestingFarmWatchResult("request is queued").is_complete
+        False
+        """
+        return self.value in [
+            self.TESTS_FAILED,
+            self.TESTS_ERROR,
+        ]
 
     @property
     def expect_artifacts_url(self) -> bool:
@@ -80,8 +106,25 @@ class TestingFarmWatchResult(enum.StrEnum):
             return False
         return True
 
-    def is_watch_result(self, string: str) -> bool:
-        return string in self.all_watch_results()
+    @classmethod
+    def is_watch_result(cls, string: str) -> bool:
+        """_summary_
+
+        Args:
+            string (str): _description_
+
+        Returns:
+            bool: _description_
+
+        Examples:
+
+        >>> TestingFarmWatchResult.is_watch_result('foo')
+        False
+
+        >>> TestingFarmWatchResult.is_watch_result('tests failed')
+        True
+        """
+        return string in cls.all_watch_results()
 
 
 def select_ranch(chroot: str) -> str:
@@ -278,11 +321,11 @@ def chroot_request_ids_to_html_comment(data: dict) -> str:
     Example:
 
     >>> chroot_request_ids_to_html_comment({"foo": "bar", "hello": "world", "abra": "kadabra"})
-    '<!--TESTING_FARM:foo/bar--><!--TESTING_FARM:hello/world--><!--TESTING_FARM:abra/kadabra-->'
+    '<!--TESTING_FARM:foo/bar-->\\n<!--TESTING_FARM:hello/world-->\\n<!--TESTING_FARM:abra/kadabra-->\\n'
     """
     res: list[str] = []
     for key in data.keys():
-        res.append(f"<!--TESTING_FARM:{key}/{data[key]}-->")
+        res.append(f"<!--TESTING_FARM:{key}/{data[key]}-->\n")
     return "".join(res)
 
 
@@ -389,7 +432,7 @@ def make_testing_farm_request(
         )
     cmd = f"""testing-farm \
         request \
-        --compose {util.chroot_os(chroot).capitalize()} \
+        --compose {get_compose(chroot=chroot)} \
         --git-url {config.test_repo_url} \
         --arch {util.chroot_arch(chroot)} \
         --plan /tests/snapshot-gating \
@@ -409,60 +452,127 @@ def make_testing_farm_request(
     )
 
 
-def get_compose(ranch: str) -> str:
-    """Returns the N-1 Fedora version supported on the given ranch.
+def get_compose(chroot: str) -> str:
+    util.expect_chroot(chroot)
+    if util.chroot_version(chroot) == "rawhide":
+        return "Fedora-Rawhide"
+    return util.chroot_os(chroot).capitalize()
 
-    When N is the latest Fedora version, we use the N-1 version to be safe.
-    If there's no N-1, we return the latest Fedora version N.
 
-    Args:
-        ranch (str): "public" or "redhat"
+@dataclasses.dataclass(kw_only=True, unsafe_hash=True, frozen=False)
+class FailedTestCase:
+    test_name: str
+    request_id: str
+    chroot: str
+    log_output_url: str
+    log_output: str = None
+    artifacts_url: str
 
-    Raises:
-        ValueError: if the ranch isn't "public" or "redhat"
+    def __post_init__(self):
+        log_file = util.read_url_response_into_file(self.log_output_url)
+        self.log_output = log_file.read_text()
 
-    Returns:
-        str: The preferred compose for the given ranch
+    def render_as_markdown(self) -> str:
+        return f"""
+<details>
+<summary>
+<code>{self.test_name}</code> on <code>{self.chroot}</code> (see <a href="{self.artifacts_url}">testing-farm artifacts</a>)
+</summary>
+
+```
+{self.log_output}
+```
+
+</details>
+"""
+
+
+FailedTestCaseList = list[FailedTestCase]
+
+
+def render_as_markdown(test_cases: FailedTestCaseList) -> str:
+    if len(test_cases) == 0:
+        return ""
+    res = "<h2>Failed testing-farm test cases</h2>"
+    for test_case in test_cases:
+        res += test_case.render_as_markdown()
+    return res
+
+
+def results_html_comment() -> str:
+    return "<!--TESTING_FARM_RESULTS-->"
+
+
+def url_inside_redhat(url: str) -> bool:
+    """Returns True if the url is only accessible from within the Red Hat VPN.
 
     Examples:
 
-    >>> get_compose("public")
-    'Fedora-39'
-    >>> get_compose("public")
-    'Fedora-39'
+    >>> url_inside_redhat("https://artifacts.dev.testing-farm.io/ebadbef5-aca9-455f-b458-c245f928ca7d")
+    False
 
-    >>> get_compose("redhat")
-    'Fedora-39'
+    >>> url_inside_redhat("http://artifacts.osci.redhat.com/testing-farm/8cd428b8-4ea7-43f4-b405-bda8dc93839f/results.xml")
+    True
     """
+    return "artifacts.osci.redhat.com" in url
 
-    def get_composes(url: str) -> list[str]:
-        logging.info(f"Parsing URL for composes: {url}")
-        file = util.read_url_response_into_file(url)
-        res = json.loads(file.read_text())
-        composes = [
-            compose["name"]
-            for compose in res["composes"]
-            if re.match(pattern="^Fedora-[0-9]+$", string=compose["name"])
-        ]
-        composes.sort(reverse=True)
-        return composes
 
-    composes = []
-    if ranch == "redhat":
-        if not hasattr(get_compose, "composes_cache_redhat"):
-            get_compose.composes_cache_redhat = get_composes(
-                url="https://api.testing-farm.io/v0.1/composes/redhat"
-            )
-        composes = get_compose.composes_cache_redhat
-    elif ranch == "public":
-        if not hasattr(get_compose, "composes_cache_public"):
-            get_compose.composes_cache_public = get_composes(
-                url="https://api.testing-farm.io/v0.1/composes/public"
-            )
-        composes = get_compose.composes_cache_public
-    else:
-        raise ValueError(f"unknown ranch: {ranch}")
+def fetch_failed_test_cases(request_id: str, artifacts_url: str) -> FailedTestCaseList:
+    """Returns a list of publically accessible failed test cases.
 
-    if len(composes) >= 2:
-        return composes[1]
-    return composes[0]
+    Args:
+        request_id (str): the testing-farm request ID
+        artifacts_url (str): this will be attached to each test case in order to be able to create a link back to testing-farm
+
+    Example:
+
+    # >>> fetch_failed_test_cases(request_id="1f25b0df-71f1-4a13-a4b8-c066f6f5f116", artifacts_url="")
+    """
+    request_id = sanitize_request_id(request_id)
+    res: FailedTestCaseList = []
+
+    logging.info(f"Fetching failed test cases for request ID {request_id}")
+
+    # Get xunit url from results file
+    result_url = f"https://api.testing-farm.io/v0.1/requests/{request_id}"
+    result_file = util.read_url_response_into_file(result_url)
+    result_json = json.loads(result_file.read_text())
+    if "result" not in result_json:
+        raise KeyError("failed to find 'result' key in JSON result response")
+    if "xunit_url" not in result_json["result"]:
+        raise KeyError("failed to find 'xunit_url' key in result dict response")
+    xuinit_url = result_json["result"]["xunit_url"]
+
+    # Get xunit file to log all testcases that have errors
+    if url_inside_redhat(xuinit_url):
+        logging.info(
+            f"Not getting xunit file from testing-farm results inside redhat: {xuinit_url}"
+        )
+        return res
+    xunit_file = util.read_url_response_into_file(xuinit_url)
+
+    tree = ET.parse(xunit_file)
+    root = tree.getroot()
+    # see https://docs.python.org/3/library/xml.etree.elementtree.html#example
+    failed_testcases = root.findall('./testsuite/testcase[@result="failed"]')
+
+    for failed_testcase in failed_testcases:
+        distro = failed_testcase.find(
+            './properties/property[@name="baseosci.distro"]'
+        ).get("value")
+        arch = failed_testcase.find('./properties/property[@name="baseosci.arch"]').get(
+            "value"
+        )
+
+        log_output_url = failed_testcase.find('./logs/log[@name="testout.log"]').get(
+            "href"
+        )
+        tc = FailedTestCase(
+            test_name=failed_testcase.get("name"),
+            log_output_url=log_output_url,
+            request_id=request_id,
+            chroot=f"{distro.lower()}-{arch}",
+            artifacts_url=artifacts_url,
+        )
+        res.append(tc)
+    return res

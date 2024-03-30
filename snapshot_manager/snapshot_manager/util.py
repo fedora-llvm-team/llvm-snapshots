@@ -131,7 +131,7 @@ def read_url_response_into_file(url: str) -> pathlib.Path:
     Returns:
         pathlib.Path: Path object of the temporary file to which the GET response was written to.
     """
-    logging.debug(f"Getting URL {url}")
+    logging.info(f"Getting URL {url}")
     response = requests.get(url)
     return file_access.write_to_temp_file(response.content)
 

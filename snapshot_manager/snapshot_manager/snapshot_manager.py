@@ -50,9 +50,6 @@ class SnapshotManager:
         testing_farm_requests = tf.parse_comment_for_request_ids(comment_body)
         logging.info(testing_farm_requests)
 
-        logging.info("Rebuild the issue body comment so that we can append to it")
-        comment_body = self.github.initial_comment
-
         logging.info("Add a build matrix")
         build_status_matrix = build_status.markdown_build_status_matrix(
             chroots=all_chroots,
@@ -64,14 +61,14 @@ class SnapshotManager:
         errors = build_status.list_only_errors(states=states)
         errors_as_markdown = build_status.render_as_markdown(errors)
 
-        logging.info(f"Update the issue comment body")
-        # See https://github.com/fedora-llvm-team/llvm-snapshots/issues/205#issuecomment-1902057639
-        max_length = 65536
-        logging.info(f"Checking for maximum length of comment body: {max_length}")
-        if len(comment_body) >= max_length:
-            logging.info(
-                f"Github only allows {max_length} characters on a comment body and we have reached {len(comment_body)} characters."
-            )
+        # logging.info(f"Update the issue comment body")
+        # # See https://github.com/fedora-llvm-team/llvm-snapshots/issues/205#issuecomment-1902057639
+        # max_length = 65536
+        # logging.info(f"Checking for maximum length of comment body: {max_length}")
+        # if len(comment_body) >= max_length:
+        #     logging.info(
+        #         f"Github only allows {max_length} characters on a comment body and we have reached {len(comment_body)} characters."
+        #     )
 
         logging.info("Gather labels based on the errors we've found")
         error_labels = list({f"error/{err.err_cause}" for err in errors})
@@ -148,17 +145,36 @@ class SnapshotManager:
 
             logging.info(f"All builds in chroot {chroot} have succeeded!")
 
+            failed_test_cases: tf.FailedTestCaseList = []
+
+            testing_farm_comment = None
+            for comment in issue.get_comments():
+                if tf.results_html_comment() in comment.body:
+                    testing_farm_comment = comment
+
             # Check for current status of testing-farm request
             if chroot in testing_farm_requests:
                 request_id = testing_farm_requests[chroot]
                 watch_result, artifacts_url = tf.watch_testing_farm_request(
                     request_id=request_id
                 )
+
                 if artifacts_url is not None:
+                    vpn = ""
+                    if tf.select_ranch(chroot) == "redhat":
+                        vpn = " :lock: "
                     build_status_matrix = build_status_matrix.replace(
                         chroot,
-                        f'{chroot}<br />(<a href="{artifacts_url}">{watch_result.to_icon()} {watch_result}</a>)',
+                        f'{chroot}<br /><a href="{artifacts_url}">{watch_result.to_icon()} {watch_result}{vpn}</a>',
                     )
+
+                if watch_result.is_error:
+                    failed_test_cases.extend(
+                        tf.fetch_failed_test_cases(
+                            request_id=request_id, artifacts_url=artifacts_url
+                        )
+                    )
+
                 logging.info(
                     f"Chroot {chroot} testing-farm watch result: {watch_result} (URL: {artifacts_url})"
                 )
@@ -188,11 +204,36 @@ class SnapshotManager:
                 testing_farm_requests[chroot] = request_id
                 issue.add_to_labels(f"in_testing/{chroot}")
 
-        requests = tf.chroot_request_ids_to_html_comment(testing_farm_requests)
-        logging.info(f"Appending testing farm requests to the comment body: {requests}")
-        comment_body += (
-            f"{build_status_matrix}\n\n{errors_as_markdown}\n\n{requests}\n\n"
-        )
+            if len(failed_test_cases) > 0:
+                testing_farm_comment_body = f"""
+{tf.results_html_comment()}
+
+<h1>Test results are in!</h1>
+
+<p><b>Last updated: {datetime.datetime.now().isoformat()}</b></p>
+
+Some (if not all) results from testing-farm are in. This comment will be updated over time and is detached from the main issue comment because we want to preserve the logs entirely and not shorten them.
+
+> [!NOTE]
+> Please be aware that testing-farm the artifact links a valid for no longer than 90 days. That is why we persists the log outputs here.
+
+> [!WARNING]
+> This list is not extensive if test have been run in the Red Hat internal testing-farm ranch and failed. For those, take a look in the "chroot" column of the build matrix above and look for failed tests that show a :lock: symbol.
+
+{tf.render_as_markdown(failed_test_cases)}
+"""
+                if testing_farm_comment is None:
+                    issue.create_comment(body=testing_farm_comment_body)
+                else:
+                    testing_farm_comment.edit(body=testing_farm_comment_body)
+
+        logging.info("Reconstructing issue comment body")
+        comment_body = f"""
+{self.github.initial_comment}
+{build_status_matrix}
+{errors_as_markdown}
+{tf.chroot_request_ids_to_html_comment(testing_farm_requests)}
+"""
         issue.edit(body=comment_body)
 
         logging.info("Checking if issue can be closed")
