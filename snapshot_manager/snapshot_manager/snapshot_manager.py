@@ -208,7 +208,7 @@ class SnapshotManager:
                 testing_farm_comment_body = f"""
 {tf.results_html_comment()}
 
-<h1>Test results are in!</h1>
+<h1><img src="https://github.com/fedora-llvm-team/llvm-snapshots/blob/main/media/tft-logo.png?raw=true" width="42" /> Testing-farm results are in!</h1>
 
 <p><b>Last updated: {datetime.datetime.now().isoformat()}</b></p>
 
