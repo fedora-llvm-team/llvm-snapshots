@@ -167,6 +167,11 @@ class SnapshotManager:
                         chroot,
                         f'{chroot}<br /><a href="{artifacts_url}">{watch_result.to_icon()} {watch_result}{vpn}</a>',
                     )
+                else:
+                    build_status_matrix = build_status_matrix.replace(
+                        chroot,
+                        f"{chroot}<br />{watch_result.to_icon()} {watch_result}",
+                    )
 
                 if watch_result.is_error:
                     failed_test_cases.extend(

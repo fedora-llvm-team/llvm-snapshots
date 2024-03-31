@@ -38,6 +38,7 @@ class TestingFarmWatchResult(enum.StrEnum):
     TESTS_FAILED = "tests failed"  # Successfully built.
     TESTS_ERROR = "tests error"  # Build has been forked from another build.
     TESTS_UNKNOWN = "tests unknown"  # This package was skipped, see the reason for each chroot separately.
+    PIPELINE_ERROR = "pipeline error"
 
     def to_icon(self) -> str:
         """Get a github markdown icon for the given testing-farm watch result.
@@ -57,6 +58,8 @@ class TestingFarmWatchResult(enum.StrEnum):
             return ":x:"
         if self == self.TESTS_UNKNOWN:
             return ":grey_question:"
+        if self == self.PIPELINE_ERROR:
+            return ":warning:"
 
     @classmethod
     def all_watch_results(cls) -> list["TestingFarmWatchResult"]:
@@ -102,7 +105,11 @@ class TestingFarmWatchResult(enum.StrEnum):
     @property
     def expect_artifacts_url(self) -> bool:
         """Returns True if for the watch result we can expect and artifacts URL in the watch output."""
-        if self.value in [self.REQUEST_WAITING_TO_BE_QUEUED, self.REQUEST_QUEUED]:
+        if self.value in [
+            self.REQUEST_WAITING_TO_BE_QUEUED,
+            self.REQUEST_QUEUED,
+            self.PIPELINE_ERROR,
+        ]:
             return False
         return True
 
@@ -288,7 +295,7 @@ def parse_for_watch_result(string: str) -> tuple[TestingFarmWatchResult, str]:
     Returns:
         tuple[str, TestingFarmWatchResult]: _description_
 
-    Example:
+    Examples:
     >>> s='''8J+UjiBhcGkgaHR0cHM6Ly9hcGkuZGV2LnRlc3RpbmctZmFybS5pby92MC4xL3JlcXVlc3RzLzI3
     ... MWE3OWU4LWZjOWEtNGUxZC05NWZlLTU2N2NjOWQ2MmFkNArwn5qiIGFydGlmYWN0cyBodHRwOi8v
     ... YXJ0aWZhY3RzLm9zY2kucmVkaGF0LmNvbS90ZXN0aW5nLWZhcm0vMjcxYTc5ZTgtZmM5YS00ZTFk
@@ -297,6 +304,13 @@ def parse_for_watch_result(string: str) -> tuple[TestingFarmWatchResult, str]:
     >>> s = base64.b64decode(s).decode()
     >>> parse_for_watch_result(s)
     (<TestingFarmWatchResult.TESTS_ERROR: 'tests error'>, 'http://artifacts.osci.redhat.com/testing-farm/271a79e8-fc9a-4e1d-95fe-567cc9d62ad4')
+    >>> s='''8J+UjiBhcGkgaHR0cHM6Ly9hcGkuZGV2LnRlc3RpbmctZmFybS5pby92MC4xL3JlcXVlc3RzLzcy
+    ... ZWZiYWZjLTdkYjktNGUwNS04NTZjLTg3MzExNGE5MjQzNQrwn5ObIHBpcGVsaW5lIGVycm9yCkd1
+    ... ZXN0IGNvdWxkbid0IGJlIHByb3Zpc2lvbmVkOiBBcnRlbWlzIHJlc291cmNlIGVuZGVkIGluICdl
+    ... cnJvcicgc3RhdGUKCg=='''
+    >>> s = base64.b64decode(s).decode()
+    >>> parse_for_watch_result(s)
+    (<TestingFarmWatchResult.PIPELINE_ERROR: 'pipeline error'>, None)
     """
     string = clean_testing_farm_output(string)
     for watch_result in TestingFarmWatchResult.all_watch_results():
