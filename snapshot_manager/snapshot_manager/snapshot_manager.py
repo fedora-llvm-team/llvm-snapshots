@@ -187,17 +187,37 @@ class SnapshotManager:
                     tf.TestingFarmWatchResult.TESTS_ERROR,
                     tf.TestingFarmWatchResult.TESTS_FAILED,
                 ]:
-                    if f"in_testing/{chroot}" in labels_on_issue:
-                        issue.remove_from_labels(f"in_testing/{chroot}")
-                    if f"tested_on/{chroot}" in labels_on_issue:
-                        issue.remove_from_labels(f"tested_on/{chroot}")
-                    issue.add_to_labels(f"failed_on/{chroot}")
+                    if (
+                        f"{self.config.label_prefix_in_testing}{chroot}"
+                        in labels_on_issue
+                    ):
+                        issue.remove_from_labels(
+                            f"{self.config.label_prefix_in_testing}{chroot}"
+                        )
+                    if (
+                        f"{self.config.label_prefix_tested_on}{chroot}"
+                        in labels_on_issue
+                    ):
+                        issue.remove_from_labels(
+                            f"{self.config.label_prefix_tested_on}{chroot}"
+                        )
+                    issue.add_to_labels(f"{self.config.label_prefix_failed_on}{chroot}")
                 elif watch_result == tf.TestingFarmWatchResult.TESTS_PASSED:
-                    if f"in_testing/{chroot}" in labels_on_issue:
-                        issue.remove_from_labels(f"in_testing/{chroot}")
-                    if f"failed_on/{chroot}" in labels_on_issue:
-                        issue.remove_from_labels(f"failed_on/{chroot}")
-                    issue.add_to_labels(f"tested_on/{chroot}")
+                    if (
+                        f"{self.config.label_prefix_in_testing}{chroot}"
+                        in labels_on_issue
+                    ):
+                        issue.remove_from_labels(
+                            f"{self.config.label_prefix_in_testing}{chroot}"
+                        )
+                    if (
+                        f"{self.config.label_prefix_failed_on}{chroot}"
+                        in labels_on_issue
+                    ):
+                        issue.remove_from_labels(
+                            f"{self.config.label_prefix_failed_on}{chroot}"
+                        )
+                    issue.add_to_labels(f"{self.config.label_prefix_tested_on}{chroot}")
             else:
                 logging.info(f"Starting tests for chroot {chroot}")
                 request_id = tf.make_testing_farm_request(
@@ -207,7 +227,7 @@ class SnapshotManager:
                 )
                 logging.info(f"Request ID: {request_id}")
                 testing_farm_requests[chroot] = request_id
-                issue.add_to_labels(f"in_testing/{chroot}")
+                issue.add_to_labels(f"{self.config.label_prefix_in_testing}{chroot}")
 
             if len(failed_test_cases) > 0:
                 testing_farm_comment_body = f"""
@@ -244,10 +264,12 @@ Some (if not all) results from testing-farm are in. This comment will be updated
         logging.info("Checking if issue can be closed")
         # issue.update()
         tested_chroot_labels = [
-            label.name for label in issue.labels if label.name.startswith("tested_on/")
+            label.name
+            for label in issue.labels
+            if label.name.startswith("{self.config.label_prefix_tested_on}")
         ]
         required_chroot_abels = [
-            "tested_on/{chroot}"
+            "{self.config.label_prefix_tested_on}{chroot}"
             for chroot in all_chroots
             if tf.is_chroot_supported(chroot)
         ]

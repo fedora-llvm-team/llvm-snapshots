@@ -62,6 +62,10 @@ class Config:
     test_repo_url: str = "https://github.com/fedora-llvm-team/llvm-snapshots"
     """TBD"""
 
+    label_prefix_in_testing: str = "in_testing/"
+    label_prefix_tested_on: str = "tested_on/"
+    label_prefix_failed_on: str = "failed_on/"
+
     @property
     def copr_projectname(self) -> str:
         """Takes the copr_project_tpl and replaces the YYYYMMDD placeholder (if any) with a date.

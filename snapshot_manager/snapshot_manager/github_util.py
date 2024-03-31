@@ -220,15 +220,24 @@ remove the aforementioned labels.
 
     def create_labels_for_in_testing(self, labels: list[str], **kw_args):
         self._create_labels(
-            labels=labels, prefix="in_testing/", color="FEF2C0", *kw_args
+            labels=labels,
+            prefix=self.config.label_prefix_in_testing,
+            color="FEF2C0",
+            *kw_args,
         )
 
     def create_labels_for_tested_on(self, labels: list[str], **kw_args):
         self._create_labels(
-            labels=labels, prefix="tested_on/", color="0E8A16", *kw_args
+            labels=labels,
+            prefix=self.config.label_prefix_tested_on,
+            color="0E8A16",
+            *kw_args,
         )
 
     def create_labels_for_failed_on(self, labels: list[str], **kw_args):
         self._create_labels(
-            labels=labels, prefix="failed_on/", color="D93F0B", *kw_args
+            labels=labels,
+            prefix=self.config.label_prefix_failed_on,
+            color="D93F0B",
+            *kw_args,
         )
