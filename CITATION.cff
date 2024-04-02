@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Kleine"
+  given-names: "Konrad"
+- family-names: "Stellard"
+  given-names: "Tom"
+- family-names: "Popov"
+  given-names: "Nikita"
+- family-names: "Magno Quites Machado Filho"
+  given-names: "Tulio"
+- family-names: "Bäder"
+  given-names: "Timm"
+title: "LLVM Snapshots"
+version: 2.0.0
+date-released: 2024-04-01
+url: "https://github.com/fedora-llvm-team/llvm-snapshots"
