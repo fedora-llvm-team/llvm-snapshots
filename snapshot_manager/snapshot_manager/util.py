@@ -147,7 +147,7 @@ def gunzip(f: tuple[str, pathlib.Path]) -> pathlib.Path:
     return pathlib.Path(str(f))
 
 
-def shorten_text(text: str, max_length: int = 1500) -> str:
+def shorten_text(text: str, max_length: int = 3000) -> str:
     """Truncates the given text to at most max_length.
 
     If we don't shorten log snippets, the github comment body will
