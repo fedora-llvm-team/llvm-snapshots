@@ -222,9 +222,6 @@ for <code>error:</code> (case insesitive) and here's what we've found:
             build_log_file=build_log_file
         )
 
-        logging.debug(f"Remove temporary log file: {build_log_file}")
-        build_log_file.unlink()
-
         return self
 
 
