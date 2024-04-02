@@ -9,14 +9,16 @@ import typing
 
 
 @typing.overload
-def write_to_temp_file(content: bytes) -> pathlib.Path: ...
+def write_to_temp_file(content: bytes, **kw_args) -> pathlib.Path: ...
 
 
 @typing.overload
-def write_to_temp_file(text: str) -> pathlib.Path: ...
+def write_to_temp_file(text: str, **kw_args) -> pathlib.Path: ...
 
 
-def write_to_temp_file(content: str | bytes) -> pathlib.Path:
+def write_to_temp_file(
+    content: str | bytes, prefix: str = "snapshot-builder-"
+) -> pathlib.Path:
     """Creates a named temporary file that isn't deleted and writes content to it.
 
     Args:
@@ -41,7 +43,9 @@ def write_to_temp_file(content: str | bytes) -> pathlib.Path:
     Traceback (most recent call last):
     ValueError: unsupported content type to write to temporary file
     """
-    with tempfile.NamedTemporaryFile(delete_on_close=False, delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        delete_on_close=False, delete=False, prefix=prefix
+    ) as f:
         logging.debug(f"Created temporary file: {f.name}")
         p = pathlib.Path(f.name)
         if isinstance(content, str):

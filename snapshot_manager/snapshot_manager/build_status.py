@@ -184,8 +184,12 @@ class BuildState:
             logging.debug(
                 f"No build log found for package {self.chroot}/{self.package_name}. Falling back to scanning the SRPM build log: {self.source_build_url}"
             )
-            _, match, _ = util.grep_url(
+            file = util.read_url_response_into_file(
                 url=self.source_build_url,
+                prefix=f"{self.package_name}-{self.chroot}-source-build-log",
+            )
+            _, match, _ = util.grep_file(
+                filepath=file,
                 pattern=r"error:",
                 lines_after=3,
                 lines_before=3,
@@ -209,14 +213,14 @@ for <code>error:</code> (case insesitive) and here's what we've found:
 
         # Now analyze the build log but store it in a file first
         logging.debug(f"Reading build log: {self.url_build_log}")
-        build_log_file = util.read_url_response_into_file(url=self.url_build_log)
+        build_log_file = util.read_url_response_into_file(
+            url=self.url_build_log,
+            prefix=f"{self.package_name}-{self.chroot}-source-log",
+        )
 
         self.err_cause, self.err_ctx = get_cause_from_build_log(
             build_log_file=build_log_file
         )
-
-        logging.debug(f"Remove temporary log file: {build_log_file}")
-        build_log_file.unlink()
 
         return self
 

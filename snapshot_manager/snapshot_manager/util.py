@@ -122,7 +122,7 @@ def run_cmd(cmd: str, timeout_secs: int = 5) -> tuple[int, str, str]:
     return exit_code, stdout, stderr
 
 
-def read_url_response_into_file(url: str) -> pathlib.Path:
+def read_url_response_into_file(url: str, **kw_args) -> pathlib.Path:
     """Fetch the given URL and store it in a temporary file whose name is returned.
 
     Args:
@@ -133,24 +133,7 @@ def read_url_response_into_file(url: str) -> pathlib.Path:
     """
     logging.info(f"Getting URL {url}")
     response = requests.get(url)
-    return file_access.write_to_temp_file(response.content)
-
-
-def grep_url(url, **kw_args) -> tuple[int, str, str]:
-    """GETs the given url and passes all other parameters on to grep_file
-
-    See grep_file for knowing what arguments are accepted for kw_args.
-
-    Args:
-        url (_type_): URL to get
-
-    Returns:
-        tuple[int, str, str]: return code, stdout, stderr
-    """
-    file = read_url_response_into_file(url=url)
-    res = grep_file(filepath=file, **kw_args)
-    file.unlink(f"Removing temporary file: {file}")
-    return res
+    return file_access.write_to_temp_file(response.content, **kw_args)
 
 
 def gunzip(f: tuple[str, pathlib.Path]) -> pathlib.Path:
@@ -164,7 +147,7 @@ def gunzip(f: tuple[str, pathlib.Path]) -> pathlib.Path:
     return pathlib.Path(str(f))
 
 
-def shorten_text(text: str, max_length: int = 1500) -> str:
+def shorten_text(text: str, max_length: int = 3000) -> str:
     """Truncates the given text to at most max_length.
 
     If we don't shorten log snippets, the github comment body will
