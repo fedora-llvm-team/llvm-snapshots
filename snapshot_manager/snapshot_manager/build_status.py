@@ -466,6 +466,7 @@ def markdown_build_status_matrix(
         for state in states:
             table += f"<li>{CoprBuildStatus(state).to_icon()} : {state}</li>"
         table += f"<li>:grey_question: : unknown</li>"
+        table += f"<li>:warning: : pipeline error (only relevant to testing-farm)</li>"
         table += "</ul></details>\n"
 
     table += "</details>"
