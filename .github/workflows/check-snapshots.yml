@@ -1,4 +1,4 @@
-name: "Check today's snapshot"
+name: "Check snapshots of the last days"
 
 on:
   schedule:
@@ -13,10 +13,11 @@ permissions:
   issues: write
 
 jobs:
-  check-todays-snapshot:
+  check-snapshot:
     strategy:
       fail-fast: false
       matrix:
+        today_minus_n_days: [0, 1, 2]
         name: [standalone, big-merge]
         include:
           - name: standalone
@@ -40,6 +41,7 @@ jobs:
           #   chroot_pattern: 'fedora-39-x86_64'
           #   packages: "llvm"
 
+
     runs-on: ubuntu-latest
     steps:
       - name: Setup Copr config file
@@ -59,7 +61,7 @@ jobs:
 
       - uses: ./.github/actions/prepare-python
 
-      - name: "Check todays builds"
+      - name: "Check day (today minus ${{matrix.today_minus_n_days}} days)"
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -72,6 +74,8 @@ jobs:
             extra_args="${extra_args} --chroot-pattern ${{matrix.chroot_pattern}}"
           fi
 
+          yyyymmdd=`date --date='${{matrix.today_minus_n_days}} days ago' +%Y%m%d`
+
           python3 snapshot_manager/main.py check ${extra_args}\
             --github-repo ${GITHUB_REPOSITORY} \
             --github-token-env GITHUB_TOKEN \
@@ -79,4 +83,5 @@ jobs:
             --packages ${{matrix.packages}} \
             --build-strategy ${{matrix.name}} \
             --copr-project-tpl ${{matrix.copr_project_tpl}} \
-            --copr-monitor-tpl ${{matrix.copr_monitor_tpl}}
+            --copr-monitor-tpl ${{matrix.copr_monitor_tpl}} \
+            --yyyymmdd $yyyymmdd

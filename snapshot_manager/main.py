@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+import datetime
 
 import snapshot_manager.config as config
 import snapshot_manager.snapshot_manager as snapshot_manager
@@ -128,6 +129,14 @@ def main():
         # help=config.Config.copr_monitor_tpl.__doc__
     )
 
+    subparser_check.add_argument(
+        "--yyyymmdd",
+        type=lambda s: datetime.datetime.strptime(s, "%Y%m%d"),
+        dest="datetime",
+        default=datetime.datetime.now().strftime("%Y%m%d"),
+        help="Default day for which to check",
+    )
+
     # if args.config_file:
     #     config = configparser.ConfigParser()
     #     config.read(args.config_file)
@@ -138,6 +147,7 @@ def main():
 
     args = mainparser.parse_args()
 
+    cfg.datetime = args.datetime
     cfg.packages = args.packages
     cfg.chroot_pattern = args.chroot_pattern
     cfg.build_strategy = args.build_strategy
