@@ -44,12 +44,6 @@ class SnapshotManager:
 
         comment_body = issue.body
 
-        logging.info(
-            "Extract and sanitize testing-farm information out of the last comment body."
-        )
-        testing_farm_requests = tf.parse_comment_for_request_ids(comment_body)
-        logging.info(testing_farm_requests)
-
         logging.info("Add a build matrix")
         build_status_matrix = build_status.markdown_build_status_matrix(
             chroots=all_chroots,
@@ -60,6 +54,35 @@ class SnapshotManager:
         logging.info("Append ordered list of errors to the issue's body comment")
         errors = build_status.list_only_errors(states=states)
         errors_as_markdown = build_status.render_as_markdown(errors)
+
+        logging.info(
+            "Extract and sanitize testing-farm information out of the last comment body."
+        )
+        testing_farm_requests = tf.parse_comment_for_request_ids(comment_body)
+        logging.info(testing_farm_requests)
+
+        # It can be that we have old testing-farm request IDs in the issue comment.
+        # But if a package was re-build and failed, the old request ID for that chroot is invalid.
+        # To compensate for this scenario that we saw on April 1st 2024 btw., we're gonna
+        # delete any request ID that has non-successful build states.
+        labels_on_issue = [label.name for label in issue.labels]
+        for error in errors:
+            if error.chroot in testing_farm_requests:
+                logging.info(
+                    f"Invalidating testing farm request ID {testing_farm_requests[chroot]} for chroot {error.chroot} that is no longer in sync"
+                )
+                remove_labels = [
+                    f"{self.config.label_prefix_failed_on}{chroot}",
+                    f"{self.config.label_prefix_in_testing}{chroot}",
+                    f"{self.config.label_prefix_tested_on}{chroot}",
+                ]
+                for label in remove_labels:
+                    if label in labels_on_issue:
+                        logging.info(
+                            f"Invalidating label {label}, aka removing it from the issue"
+                        )
+                        issue.remove_from_labels(label=label)
+                del testing_farm_requests[chroot]
 
         # logging.info(f"Update the issue comment body")
         # # See https://github.com/fedora-llvm-team/llvm-snapshots/issues/205#issuecomment-1902057639
