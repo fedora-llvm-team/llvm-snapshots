@@ -171,7 +171,7 @@ def golden_file_path(basename: str, extension: str = ".golden.txt") -> pathlib.P
 
 
 def expect_chroot(chroot: str) -> str:
-    """Raises an exception if passes string is not a chroot
+    """Raises an exception if given string is not a chroot
 
     Args:
         chroot (str): Any chroot string

@@ -81,7 +81,7 @@ class ErrorCause(enum.StrEnum):
 
 @dataclasses.dataclass(kw_only=True, order=True)
 class BuildState:
-    """An error describes what and why some package failed to build in a particular chroot."""
+    """A BuildState holds information about a package build on Copr in a particular chroot."""
 
     err_cause: ErrorCause = None
     package_name: str = ""

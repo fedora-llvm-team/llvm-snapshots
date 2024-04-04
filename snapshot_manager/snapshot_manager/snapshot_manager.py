@@ -58,7 +58,7 @@ class SnapshotManager:
         logging.info(
             "Extract and sanitize testing-farm information out of the last comment body."
         )
-        testing_farm_requests = tf.parse_comment_for_request_ids(comment_body)
+        testing_farm_requests = tf.TestingFarmRequest.parse(comment_body)
         logging.info(testing_farm_requests)
 
         # It can be that we have old testing-farm request IDs in the issue comment.
@@ -243,10 +243,15 @@ class SnapshotManager:
                     issue.add_to_labels(f"{self.config.label_prefix_tested_on}{chroot}")
             else:
                 logging.info(f"Starting tests for chroot {chroot}")
-                request_id = tf.make_testing_farm_request(
+                # Gather build IDs associated with this chroot and attach them to our request
+                copr_build_ids = [
+                    state.build_id for state in states if state.chroot == chroot
+                ]
+                request_id = tf.TestingFarmRequest.make(
                     chroot=chroot,
                     config=self.config,
                     issue=issue,
+                    copr_build_ids=copr_build_ids,
                 )
                 logging.info(f"Request ID: {request_id}")
                 testing_farm_requests[chroot] = request_id
@@ -280,7 +285,7 @@ Some (if not all) results from testing-farm are in. This comment will be updated
 {self.github.initial_comment}
 {build_status_matrix}
 {errors_as_markdown}
-{tf.chroot_request_ids_to_html_comment(testing_farm_requests)}
+{tf.TestingFarmRequest.dict_to_html_comment(testing_farm_requests)}
 """
         issue.edit(body=comment_body)
 
