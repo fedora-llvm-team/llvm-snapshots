@@ -144,6 +144,14 @@ class SnapshotManager:
                 state.build_id for state in states if state.chroot == chroot
             ]
 
+            def flip_test_label(issue: github.Issue.Issue, new_label: str | None):
+                all_states = [in_testing, tested_on, failed_on]
+                labels_to_be_removed = all_states
+                if new_label is not None:
+                    labels_to_be_removed = [set(all_states).difference(new_label)]
+                self.github.remove_labels_safe(issue, labels_to_be_removed)
+                issue.add_to_labels(new_label)
+
             # Check if we need to invalidate a recovered testing-farm requests.
             # Background: It can be that we have old testing-farm request IDs in the issue comment.
             # But if a package was re-build and failed, the old request ID for that chroot is invalid.
@@ -155,7 +163,7 @@ class SnapshotManager:
                     logging.info(
                         "The recovered testing-farm request no longer applies because build IDs have changed"
                     )
-                    self.github.remove_labels_safe([in_testing, failed_on, tested_on])
+                    flip_test_label(issue, None)
                     del testing_farm_requests[chroot]
 
             tf.TestingFarmRequest(chroot=chroot)
@@ -168,13 +176,6 @@ class SnapshotManager:
                 required_packages=self.config.packages,
                 states=states,
             )
-
-            def flip_test_label(issue: github.Issue.Issue, new_label: str):
-                all_states = [in_testing, tested_on, failed_on]
-                self.github.remove_labels_safe(
-                    issue, [set(all_states).difference(new_label)]
-                )
-                issue.add_to_labels(new_label)
 
             if not builds_succeeded:
                 continue
