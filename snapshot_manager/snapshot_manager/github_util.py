@@ -9,6 +9,7 @@ import logging
 import github
 import github.GithubException
 import github.Issue
+import github.IssueComment
 import github.Repository
 import github.PaginatedList
 
@@ -241,3 +242,37 @@ remove the aforementioned labels.
             color="D93F0B",
             *kw_args,
         )
+
+    def get_comment(
+        self, issue: github.Issue.Issue, marker: str
+    ) -> github.IssueComment.IssueComment:
+        for comment in issue.get_comments():
+            if marker in comment.body:
+                return comment
+        return None
+
+    def create_or_update_comment(
+        self, issue: github.Issue.Issue, marker: str, comment_body: str
+    ) -> github.IssueComment.IssueComment:
+        comment = self.get_comment(issue=issue, marker=marker)
+        if comment is None:
+            return issue.create_comment(body=comment_body)
+        comment.edit(body=comment_body)
+        return comment
+
+    def remove_labels_safe(
+        self, issue: github.Issue.Issue, label_names_to_be_removed: list[str]
+    ):
+        """Removes all of the given labels from the issue.
+
+        Args:
+            issue (github.Issue.Issue): The issue from which to remove the labels
+            label_names_to_be_removed (list[str]): A list of label names that shall be removed if they exist on the issue.
+        """
+        current_label_names = [label.name for label in issue.get_labels()]
+        label_names_to_be_removed = set(current_label_names).intersection(
+            label_names_to_be_removed
+        )
+        for label in label_names_to_be_removed:
+            logging.info(f"Removing label '{label}' from issue: {issue.title}")
+            issue.remove_from_labels(label)

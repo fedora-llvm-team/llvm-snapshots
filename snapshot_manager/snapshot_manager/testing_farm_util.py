@@ -11,6 +11,7 @@ import os
 import json
 import re
 import dataclasses
+import datetime
 from typing import ClassVar
 
 import regex
@@ -386,9 +387,12 @@ class TestingFarmRequest:
             log_output_url = failed_testcase.find(
                 './logs/log[@name="testout.log"]'
             ).get("href")
+
+            log_file = util.read_url_response_into_file(log_output_url)
             tc = FailedTestCase(
                 test_name=failed_testcase.get("name"),
                 log_output_url=log_output_url,
+                log_output=log_file.read_text(),
                 request_id=self.request_id,
                 chroot=f"{distro.lower()}-{arch}",
                 artifacts_url=artifacts_url,
@@ -568,6 +572,20 @@ class TestingFarmWatchResult(enum.StrEnum):
         return (None, None)
 
 
+def render_html(
+    request: TestingFarmRequest,
+    watch_result: TestingFarmWatchResult,
+    artifacts_url: str | None,
+) -> str:
+    title = f"{watch_result.to_icon()} {watch_result}"
+    if artifacts_url is None:
+        return title
+    vpn = ""
+    if TestingFarmRequest.select_ranch(request.chroot) == "redhat":
+        vpn = " :lock: "
+    return f'<a href="{artifacts_url}">{title}{vpn}</a>'
+
+
 def sanitize_request_id(request_id: str) -> uuid.UUID:
     """Sanitizes a testing-farm request ID by ensuring that it matches a pattern.
 
@@ -610,7 +628,7 @@ def clean_testing_farm_output(mystring: str) -> str:
     return "".join(filter(lambda x: x in string.printable, mystring))
 
 
-@dataclasses.dataclass(kw_only=True, unsafe_hash=True, frozen=False)
+@dataclasses.dataclass(kw_only=True, unsafe_hash=True, frozen=True)
 class FailedTestCase:
     """The FailedTestCase class represents a test from the testing-farm artifacts page"""
 
@@ -620,10 +638,6 @@ class FailedTestCase:
     log_output_url: str
     log_output: str = None
     artifacts_url: str
-
-    def __post_init__(self):
-        log_file = util.read_url_response_into_file(self.log_output_url)
-        self.log_output = log_file.read_text()
 
     def render_as_markdown(self) -> str:
         return f"""
@@ -640,13 +654,29 @@ class FailedTestCase:
 """
 
     @classmethod
-    def render_as_markdown(cls, test_cases: list["FailedTestCase"]) -> str:
+    def render_list_as_markdown(cls, test_cases: list["FailedTestCase"]) -> str:
         if len(test_cases) == 0:
             return ""
-        res = "<h2>Failed testing-farm test cases</h2>"
-        for test_case in test_cases:
-            res += test_case.render_as_markdown()
-        return res
+
+        return f"""
+{results_html_comment()}
+
+<h1><img src="https://github.com/fedora-llvm-team/llvm-snapshots/blob/main/media/tft-logo.png?raw=true" width="42" /> Testing-farm results are in!</h1>
+
+<p><b>Last updated: {datetime.datetime.now().isoformat()}</b></p>
+
+Some (if not all) results from testing-farm are in. This comment will be updated over time and is detached from the main issue comment because we want to preserve the logs entirely and not shorten them.
+
+> [!NOTE]
+> Please be aware that the testing-farm artifact links a valid for no longer than 90 days. That is why we persists the log outputs here.
+
+> [!WARNING]
+> This list is not extensive if test have been run in the Red Hat internal testing-farm ranch and failed. For those, take a look in the "chroot" column of the build matrix above and look for failed tests that show a :lock: symbol.
+
+<h2>Failed testing-farm test cases</h2>
+
+{"".join([ test_case.render_as_markdown for test_case in test_cases ])}
+"""
 
 
 def results_html_comment() -> str:

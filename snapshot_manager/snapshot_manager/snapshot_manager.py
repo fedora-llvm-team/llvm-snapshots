@@ -4,6 +4,7 @@ SnapshotManager
 
 import datetime
 import logging
+import github.Issue
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.copr_util as copr_util
@@ -53,36 +54,12 @@ class SnapshotManager:
 
         logging.info("Append ordered list of errors to the issue's body comment")
         errors = build_status.list_only_errors(states=states)
-        errors_as_markdown = build_status.render_as_markdown(errors)
 
         logging.info(
             "Extract and sanitize testing-farm information out of the last comment body."
         )
         testing_farm_requests = tf.TestingFarmRequest.parse(comment_body)
         logging.info(testing_farm_requests)
-
-        # It can be that we have old testing-farm request IDs in the issue comment.
-        # But if a package was re-build and failed, the old request ID for that chroot is invalid.
-        # To compensate for this scenario that we saw on April 1st 2024 btw., we're gonna
-        # delete any request ID that has non-successful build states.
-        labels_on_issue = [label.name for label in issue.labels]
-        for error in errors:
-            if error.chroot in testing_farm_requests:
-                logging.info(
-                    f"Invalidating testing farm request ID {testing_farm_requests[chroot]} for chroot {error.chroot} that is no longer in sync"
-                )
-                remove_labels = [
-                    f"{self.config.label_prefix_failed_on}{chroot}",
-                    f"{self.config.label_prefix_in_testing}{chroot}",
-                    f"{self.config.label_prefix_tested_on}{chroot}",
-                ]
-                for label in remove_labels:
-                    if label in labels_on_issue:
-                        logging.info(
-                            f"Invalidating label {label}, aka removing it from the issue"
-                        )
-                        issue.remove_from_labels(label=label)
-                del testing_farm_requests[chroot]
 
         # logging.info(f"Update the issue comment body")
         # # See https://github.com/fedora-llvm-team/llvm-snapshots/issues/205#issuecomment-1902057639
@@ -147,15 +124,42 @@ class SnapshotManager:
 
         labels_on_issue = [label.name for label in issue.labels]
 
-        failed_test_cases: tf.FailedTestCaseList = []
+        failed_test_cases: list[tf.FailedTestCase] = []
 
         for chroot in all_chroots:
+            # Define some label names
+            in_testing = f"{self.config.label_prefix_in_testing}{chroot}"
+            tested_on = f"{self.config.label_prefix_tested_on}{chroot}"
+            failed_on = f"{self.config.label_prefix_tested_on}{chroot}"
+
             if not tf.is_chroot_supported(chroot):
                 # see https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_supported_architectures
                 logging.debug(
                     f"Ignoring chroot {chroot} because testing-farm doesn't support it."
                 )
                 continue
+
+            # Gather build IDs associated with this chroot.
+            current_copr_build_ids = [
+                state.build_id for state in states if state.chroot == chroot
+            ]
+
+            # Check if we need to invalidate a recovered testing-farm requests.
+            # Background: It can be that we have old testing-farm request IDs in the issue comment.
+            # But if a package was re-build and failed, the old request ID for that chroot is invalid.
+            # To compensate for this scenario that we saw on April 1st 2024 btw., we're gonna
+            # delete any request that has a different set of Copr build IDs associated with it.
+            if chroot in testing_farm_requests:
+                recovered_request = testing_farm_requests[chroot]
+                if set(recovered_request.copr_build_ids) != set(current_copr_build_ids):
+                    logging.info(
+                        "The recovered testing-farm request no longer applies because build IDs have changed"
+                    )
+                    self.github.remove_labels_safe([in_testing, failed_on, tested_on])
+                    del testing_farm_requests[chroot]
+
+            tf.TestingFarmRequest(chroot=chroot)
+
             logging.info(f"Check if all builds in chroot {chroot} have succeeded")
             builds_succeeded = self.copr.has_all_good_builds(
                 copr_ownername=self.config.copr_ownername,
@@ -165,126 +169,69 @@ class SnapshotManager:
                 states=states,
             )
 
+            def flip_test_label(issue: github.Issue.Issue, new_label: str):
+                all_states = [in_testing, tested_on, failed_on]
+                self.github.remove_labels_safe(
+                    issue, [set(all_states).difference(new_label)]
+                )
+                issue.add_to_labels(new_label)
+
             if not builds_succeeded:
                 continue
 
             logging.info(f"All builds in chroot {chroot} have succeeded!")
 
-            testing_farm_comment = None
-            for comment in issue.get_comments():
-                if tf.results_html_comment() in comment.body:
-                    testing_farm_comment = comment
-
             # Check for current status of testing-farm request
             if chroot in testing_farm_requests:
-                request_id = testing_farm_requests[chroot]
-                watch_result, artifacts_url = tf.watch_testing_farm_request(
-                    request_id=request_id
+                request = testing_farm_requests[chroot]
+                watch_result, artifacts_url = request.watch()
+
+                html = tf.render_html(request, watch_result, artifacts_url)
+                build_status_matrix = build_status_matrix.replace(
+                    chroot,
+                    f"{chroot}<br />{html}",
                 )
 
-                if artifacts_url is not None:
-                    vpn = ""
-                    if tf.select_ranch(chroot) == "redhat":
-                        vpn = " :lock: "
-                    build_status_matrix = build_status_matrix.replace(
-                        chroot,
-                        f'{chroot}<br /><a href="{artifacts_url}">{watch_result.to_icon()} {watch_result}{vpn}</a>',
-                    )
-                else:
-                    build_status_matrix = build_status_matrix.replace(
-                        chroot,
-                        f"{chroot}<br />{watch_result.to_icon()} {watch_result}",
-                    )
-
+                # Fetch all failed tests for this request
                 if watch_result.is_error:
                     failed_test_cases.extend(
-                        tf.fetch_failed_test_cases(
-                            request_id=request_id, artifacts_url=artifacts_url
-                        )
+                        request.fetch_failed_test_cases(artifacts_url=artifacts_url)
                     )
 
                 logging.info(
                     f"Chroot {chroot} testing-farm watch result: {watch_result} (URL: {artifacts_url})"
                 )
-                if watch_result in [
-                    tf.TestingFarmWatchResult.TESTS_ERROR,
-                    tf.TestingFarmWatchResult.TESTS_FAILED,
-                ]:
-                    if (
-                        f"{self.config.label_prefix_in_testing}{chroot}"
-                        in labels_on_issue
-                    ):
-                        issue.remove_from_labels(
-                            f"{self.config.label_prefix_in_testing}{chroot}"
-                        )
-                    if (
-                        f"{self.config.label_prefix_tested_on}{chroot}"
-                        in labels_on_issue
-                    ):
-                        issue.remove_from_labels(
-                            f"{self.config.label_prefix_tested_on}{chroot}"
-                        )
-                    issue.add_to_labels(f"{self.config.label_prefix_failed_on}{chroot}")
+
+                if watch_result.is_error:
+                    flip_test_label(issue, failed_on)
                 elif watch_result == tf.TestingFarmWatchResult.TESTS_PASSED:
-                    if (
-                        f"{self.config.label_prefix_in_testing}{chroot}"
-                        in labels_on_issue
-                    ):
-                        issue.remove_from_labels(
-                            f"{self.config.label_prefix_in_testing}{chroot}"
-                        )
-                    if (
-                        f"{self.config.label_prefix_failed_on}{chroot}"
-                        in labels_on_issue
-                    ):
-                        issue.remove_from_labels(
-                            f"{self.config.label_prefix_failed_on}{chroot}"
-                        )
-                    issue.add_to_labels(f"{self.config.label_prefix_tested_on}{chroot}")
+                    flip_test_label(issue, tested_on)
             else:
                 logging.info(f"Starting tests for chroot {chroot}")
-                # Gather build IDs associated with this chroot and attach them to our request
-                copr_build_ids = [
-                    state.build_id for state in states if state.chroot == chroot
-                ]
                 request_id = tf.TestingFarmRequest.make(
                     chroot=chroot,
                     config=self.config,
                     issue=issue,
-                    copr_build_ids=copr_build_ids,
+                    copr_build_ids=current_copr_build_ids,
                 )
                 logging.info(f"Request ID: {request_id}")
                 testing_farm_requests[chroot] = request_id
-                issue.add_to_labels(f"{self.config.label_prefix_in_testing}{chroot}")
+                flip_test_label(issue, in_testing)
 
             if len(failed_test_cases) > 0:
-                testing_farm_comment_body = f"""
-{tf.results_html_comment()}
-
-<h1><img src="https://github.com/fedora-llvm-team/llvm-snapshots/blob/main/media/tft-logo.png?raw=true" width="42" /> Testing-farm results are in!</h1>
-
-<p><b>Last updated: {datetime.datetime.now().isoformat()}</b></p>
-
-Some (if not all) results from testing-farm are in. This comment will be updated over time and is detached from the main issue comment because we want to preserve the logs entirely and not shorten them.
-
-> [!NOTE]
-> Please be aware that the testing-farm artifact links a valid for no longer than 90 days. That is why we persists the log outputs here.
-
-> [!WARNING]
-> This list is not extensive if test have been run in the Red Hat internal testing-farm ranch and failed. For those, take a look in the "chroot" column of the build matrix above and look for failed tests that show a :lock: symbol.
-
-{tf.render_as_markdown(failed_test_cases)}
-"""
-                if testing_farm_comment is None:
-                    issue.create_comment(body=testing_farm_comment_body)
-                else:
-                    testing_farm_comment.edit(body=testing_farm_comment_body)
+                self.github.create_or_update_comment(
+                    issue=issue,
+                    marker=tf.results_html_comment(),
+                    comment_body=tf.FailedTestCase.render_list_as_markdown(
+                        failed_test_cases
+                    ),
+                )
 
         logging.info("Reconstructing issue comment body")
         comment_body = f"""
 {self.github.initial_comment}
 {build_status_matrix}
-{errors_as_markdown}
+{build_status.render_as_markdown(errors)}
 {tf.TestingFarmRequest.dict_to_html_comment(testing_farm_requests)}
 """
         issue.edit(body=comment_body)
