@@ -111,18 +111,16 @@ class SnapshotManager:
             issue.remove_from_labels(label=label)
 
         # Labels must be added or removed manually in order to not remove manually added labels :/
-        for label in (
+        labels_to_add = (
             error_labels
             + project_labels
             + os_labels
             + arch_labels
             + strategy_labels
             + other_labels
-        ):
-            logging.info(f"Adding label: {label}")
-            issue.add_to_labels(label)
-
-        labels_on_issue = [label.name for label in issue.labels]
+        )
+        logging.info(f"Adding label: {labels_to_add}")
+        issue.add_to_labels(labels_to_add)
 
         failed_test_cases: list[tf.FailedTestCase] = []
 
