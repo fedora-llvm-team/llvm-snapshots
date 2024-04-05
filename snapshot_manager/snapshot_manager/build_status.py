@@ -320,9 +320,11 @@ def get_cause_from_build_log(
                 test_name = lines[0].replace("********************", "").strip()
             test_details += f"""
 <details><summary>{test_name}</summary>
+
 ``````
 {util.shorten_text(failing_test)}
 ``````
+
 </details>
 """
         ctx = f"<details open><summary><h3>Failing tests</h3></summary>{test_details}</details>"
