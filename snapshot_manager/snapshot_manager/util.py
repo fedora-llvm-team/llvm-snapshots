@@ -115,7 +115,7 @@ def run_cmd(cmd: str, timeout_secs: int = 5) -> tuple[int, str, str]:
     stderr = proc.stderr.decode()
     exit_code = proc.returncode
     if exit_code != 0:
-        logging.info(
+        logging.debug(
             f"exit code: {proc.returncode} for cmd: {cmd}\n\nstdout={stdout}\n\nstderr={stderr}"
         )
 

@@ -107,14 +107,15 @@ class TestingFarmRequest:
         >>> keys
         dict_keys(['fedora-rawhide-x86_64', 'fedora-39-x86_64', 'fedora-40-x86_64'])
         >>> requests['fedora-rawhide-x86_64']
-        TestingFarmRequest(request_id=UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-rawhide-x86_64', copr_build_ids=['1', '2', '3'])
+        TestingFarmRequest(request_id=UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-rawhide-x86_64', copr_build_ids=[1, 2, 3])
         >>> requests['fedora-39-x86_64']
-        TestingFarmRequest(request_id=UUID('22222222-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-39-x86_64', copr_build_ids=['5', '6', '7'])
+        TestingFarmRequest(request_id=UUID('22222222-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-39-x86_64', copr_build_ids=[5, 6, 7])
         >>> requests['fedora-40-x86_64']
-        TestingFarmRequest(request_id=UUID('33333333-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-40-x86_64', copr_build_ids=['12', '13', '14'])
+        TestingFarmRequest(request_id=UUID('33333333-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-40-x86_64', copr_build_ids=[12, 13, 14])
         """
         matches = re.findall(r"<!--TESTING_FARM:([^/]+)/([^/]+)/([^/]+)-->", string)
         if not matches:
+            logging.info("No testing-farm requests found to recover.")
             return None
 
         res: dict[str, TestingFarmRequest] = {}
@@ -124,12 +125,14 @@ class TestingFarmRequest:
                 tfr = TestingFarmRequest(
                     chroot=chroot,
                     request_id=sanitize_request_id(str(match[1])),
-                    copr_build_ids=[item.strip() for item in match[2].split(",")],
+                    copr_build_ids=[int(item.strip()) for item in match[2].split(",")],
                 )
                 res[chroot] = tfr
                 logging.info(f"ADDED testing-farm request: {tfr}")
             except ValueError as e:
                 logging.info(f"ignoring: {match} : {str(e)}")
+
+        logging.info(f"Recovered testing-farm-requests: {res}")
         return res
 
     @classmethod
@@ -166,7 +169,7 @@ class TestingFarmRequest:
 
         ranch = cls.select_ranch(chroot)
 
-        if not cls._is_chroot_supported(chroot=chroot, ranch=ranch):
+        if not cls.is_chroot_supported(chroot=chroot, ranch=ranch):
             raise ValueError(
                 f"Chroot {chroot} has an unsupported architecture on ranch {ranch}"
             )
@@ -586,11 +589,11 @@ def render_html(
     return f'<a href="{artifacts_url}">{title}{vpn}</a>'
 
 
-def sanitize_request_id(request_id: str) -> uuid.UUID:
-    """Sanitizes a testing-farm request ID by ensuring that it matches a pattern.
+def sanitize_request_id(request_id: str | uuid.UUID) -> uuid.UUID:
+    """Sanitizes a testing-farm request ID by ensuring that it is a UUID.
 
     Args:
-        request_id (str): A testing-farm request ID
+        request_id (str | uuid.UUID): A testing-farm request ID
 
     Raises:
         ValueError: if the given string is not in the right format
@@ -603,11 +606,17 @@ def sanitize_request_id(request_id: str) -> uuid.UUID:
     >>> sanitize_request_id(request_id="271a79e8-fc9a-4e1d-95fe-567cc9d62ad4")
     UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad4')
 
+    >>> import uuid
+    >>> sanitize_request_id(uuid.UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad5'))
+    UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad5')
+
     >>> sanitize_request_id(request_id="; cat /etc/passwd")
     Traceback (most recent call last):
      ...
     ValueError: string is not a valid testing-farm request ID: badly formed hexadecimal UUID string
     """
+    if isinstance(request_id, uuid.UUID):
+        return request_id
     res: uuid.UUID = None
     try:
         res = uuid.UUID(request_id)
@@ -675,7 +684,7 @@ Some (if not all) results from testing-farm are in. This comment will be updated
 
 <h2>Failed testing-farm test cases</h2>
 
-{"".join([ test_case.render_as_markdown for test_case in test_cases ])}
+{"".join([ test_case.render_as_markdown() for test_case in test_cases ])}
 """
 
 

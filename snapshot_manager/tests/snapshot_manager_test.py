@@ -11,8 +11,8 @@ class TestSnapshotManager(base_test.TestBase):
     def test_check_todays_builds(self):
         # cfg = self.config
         # cfg.copr_ownername = "@fedora-llvm-team"
-        # cfg.copr_project_tpl = "llvm-snapshots-incubator-20240329"
-        # cfg.datetime = datetime.date(year=2024, month=3, day=29)
+        # cfg.copr_project_tpl = "llvm-snapshots-incubator-20240405"
+        # cfg.datetime = datetime.date(year=2024, month=4, day=5)
         # cfg.strategy = "standalone"
         # cfg.maintainer_handle = "kwk"
         # cfg.creator_handle = "kwk"

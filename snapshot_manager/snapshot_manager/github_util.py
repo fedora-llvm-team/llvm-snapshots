@@ -100,8 +100,12 @@ remove the aforementioned labels.
 
 {self.config.update_marker}
 
-<p><b>Last updated: {datetime.datetime.now().isoformat()}</b></p>
+{self.last_updated_html()}
 """
+
+    @classmethod
+    def last_updated_html(cls) -> str:
+        return f"<p><b>Last updated: {datetime.datetime.now().isoformat()}</b></p>"
 
     def create_or_get_todays_github_issue(
         self,
@@ -269,10 +273,10 @@ remove the aforementioned labels.
             issue (github.Issue.Issue): The issue from which to remove the labels
             label_names_to_be_removed (list[str]): A list of label names that shall be removed if they exist on the issue.
         """
-        current_label_names = [label.name for label in issue.get_labels()]
-        label_names_to_be_removed = set(current_label_names).intersection(
-            label_names_to_be_removed
-        )
-        for label in label_names_to_be_removed:
+        current_set = {label.name for label in issue.get_labels()}
+
+        remove_set = set(label_names_to_be_removed)
+        intersection = current_set.intersection(remove_set)
+        for label in intersection:
             logging.info(f"Removing label '{label}' from issue: {issue.title}")
             issue.remove_from_labels(label)

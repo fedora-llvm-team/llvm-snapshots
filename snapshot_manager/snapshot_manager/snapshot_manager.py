@@ -27,11 +27,11 @@ class SnapshotManager:
             maintainer_handle=self.config.maintainer_handle,
             creator=self.config.creator_handle,
         )
-        if issue.state == "closed":
-            logging.info(
-                f"Issue {issue.html_url} was already closed. Not doing anything."
-            )
-            return
+        # if issue.state == "closed":
+        #     logging.info(
+        #         f"Issue {issue.html_url} was already closed. Not doing anything."
+        #     )
+        #     return
 
         all_chroots = self.copr.get_copr_chroots()
 
@@ -52,14 +52,13 @@ class SnapshotManager:
             build_states=states,
         )
 
-        logging.info("Append ordered list of errors to the issue's body comment")
+        logging.info("Get ordered list of errors to the issue's body comment")
         errors = build_status.list_only_errors(states=states)
 
-        logging.info(
-            "Extract and sanitize testing-farm information out of the last comment body."
-        )
-        testing_farm_requests = tf.TestingFarmRequest.parse(comment_body)
-        logging.info(testing_farm_requests)
+        logging.info("Recover testing-farm requests")
+        requests = tf.TestingFarmRequest.parse(comment_body)
+        if requests is None:
+            requests = dict()
 
         # logging.info(f"Update the issue comment body")
         # # See https://github.com/fedora-llvm-team/llvm-snapshots/issues/205#issuecomment-1902057639
@@ -70,6 +69,160 @@ class SnapshotManager:
         #         f"Github only allows {max_length} characters on a comment body and we have reached {len(comment_body)} characters."
         #     )
 
+        self.handle_labels(issue=issue, all_chroots=all_chroots, errors=errors)
+
+        failed_test_cases: list[tf.FailedTestCase] = []
+
+        for chroot in all_chroots:
+            # Create or update a comment for each chroot that has errors and render
+            errors_for_this_chroot = [
+                error for error in errors if error.chroot == chroot
+            ]
+            if errors_for_this_chroot is not None and len(errors_for_this_chroot) > 0:
+                comment = self.github.create_or_update_comment(
+                    issue=issue,
+                    marker=f"<!--ERRORS_FOR_CHROOT/{chroot}-->",
+                    comment_body=f"""
+<h2>Errors found in {chroot}</h2>
+{self.github.last_updated_html()}
+{build_status.render_as_markdown(errors_for_this_chroot)}
+""",
+                )
+                build_status_matrix = build_status_matrix.replace(
+                    chroot,
+                    f'{chroot}<br /> :x: <a href="{comment.html_url}">Copr build(s) failed</a>',
+                )
+
+        for chroot in all_chroots:
+            # Check if we can ignore the chroot because it is not supported by testing-farm
+            if not tf.TestingFarmRequest.is_chroot_supported(chroot):
+                # see https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_supported_architectures
+                logging.debug(
+                    f"Ignoring chroot {chroot} because testing-farm doesn't support it."
+                )
+                continue
+
+            in_testing = f"{self.config.label_prefix_in_testing}{chroot}"
+            tested_on = f"{self.config.label_prefix_tested_on}{chroot}"
+            failed_on = f"{self.config.label_prefix_tested_on}{chroot}"
+
+            # Gather build IDs associated with this chroot.
+            # We'll attach them a new testing-farm request, and for a recovered
+            # request we'll check if they still match the current ones.
+            current_copr_build_ids = [
+                state.build_id for state in states if state.chroot == chroot
+            ]
+
+            # Check if we need to invalidate a recovered testing-farm requests.
+            # Background: It can be that we have old testing-farm request IDs in the issue comment.
+            # But if a package was re-build and failed, the old request ID for that chroot is invalid.
+            # To compensate for this scenario that we saw on April 1st 2024 btw., we're gonna
+            # delete any request that has a different set of Copr build IDs associated with it.
+            if chroot in requests:
+                recovered_request = requests[chroot]
+                if set(recovered_request.copr_build_ids) != set(current_copr_build_ids):
+                    logging.info(
+                        f"Recovered request ({recovered_request.request_id}) invalid (build IDs changed):\\nRecovered: {recovered_request.copr_build_ids}\\nCurrent: {current_copr_build_ids}"
+                    )
+                    self.flip_test_label(issue=issue, chroot=chroot, new_label=None)
+                    del requests[chroot]
+
+            logging.info(f"Check if all builds in chroot {chroot} have succeeded")
+            builds_succeeded = self.copr.has_all_good_builds(
+                copr_ownername=self.config.copr_ownername,
+                copr_projectname=self.config.copr_projectname,
+                required_chroots=[chroot],
+                required_packages=self.config.packages,
+                states=states,
+            )
+
+            if not builds_succeeded:
+                continue
+
+            logging.info(f"All builds in chroot {chroot} have succeeded!")
+
+            # Check for current status of testing-farm request
+            if chroot in requests:
+                request = requests[chroot]
+                watch_result, artifacts_url = request.watch()
+
+                html = tf.render_html(request, watch_result, artifacts_url)
+                build_status_matrix = build_status_matrix.replace(
+                    chroot,
+                    f"{chroot}<br />{html}",
+                )
+
+                logging.info(
+                    f"Chroot {chroot} testing-farm watch result: {watch_result} (URL: {artifacts_url})"
+                )
+
+                if watch_result.is_error:
+                    # Fetch all failed test cases for this request
+                    failed_test_cases.extend(
+                        request.fetch_failed_test_cases(artifacts_url=artifacts_url)
+                    )
+                    self.flip_test_label(issue, chroot, failed_on)
+                elif watch_result == tf.TestingFarmWatchResult.TESTS_PASSED:
+                    self.flip_test_label(issue, chroot, tested_on)
+            else:
+                logging.info(f"Starting tests for chroot {chroot}")
+                request = tf.TestingFarmRequest.make(
+                    chroot=chroot,
+                    config=self.config,
+                    issue=issue,
+                    copr_build_ids=current_copr_build_ids,
+                )
+                logging.info(f"Request ID: {request.request_id}")
+                requests[chroot] = request
+                self.flip_test_label(issue, chroot, in_testing)
+
+            # Create or update a comment for testing-farm results display
+            if len(failed_test_cases) > 0:
+                self.github.create_or_update_comment(
+                    issue=issue,
+                    marker=tf.results_html_comment(),
+                    comment_body=tf.FailedTestCase.render_list_as_markdown(
+                        failed_test_cases
+                    ),
+                )
+
+        logging.info("Constructing issue comment body")
+        comment_body = f"""
+{self.github.initial_comment}
+{build_status_matrix}
+{tf.TestingFarmRequest.dict_to_html_comment(requests)}
+"""
+        issue.edit(body=comment_body)
+
+        logging.info("Checking if issue can be closed")
+        # issue.update()
+        tested_chroot_labels = [
+            label.name
+            for label in issue.labels
+            if label.name.startswith("{self.config.label_prefix_tested_on}")
+        ]
+        required_chroot_abels = [
+            "{self.config.label_prefix_tested_on}{chroot}"
+            for chroot in all_chroots
+            if tf.TestingFarmRequest.is_chroot_supported(chroot)
+        ]
+        if set(tested_chroot_labels) == set(required_chroot_abels):
+            msg = f"@{self.config.maintainer_handle}, all required packages have been successfully built and tested on all required chroots. We'll close this issue for you now as completed. Congratulations!"
+            logging.info(msg)
+            issue.create_comment(body=msg)
+            issue.edit(state="closed", state_reason="completed")
+            # TODO(kwk): Promotion of issue goes here.
+        else:
+            logging.info("Cannot close issue yet.")
+
+        logging.info(f"Updated today's issue: {issue.html_url}")
+
+    def handle_labels(
+        self,
+        issue: github.Issue.Issue,
+        all_chroots: list[str],
+        errors: build_status.BuildStateList,
+    ):
         logging.info("Gather labels based on the errors we've found")
         error_labels = list({f"error/{err.err_cause}" for err in errors})
         project_labels = list({f"project/{err.package_name}" for err in errors})
@@ -93,7 +246,7 @@ class SnapshotManager:
         self.github.create_labels_for_tested_on(all_chroots)
         self.github.create_labels_for_failed_on(all_chroots)
 
-        # Remove old labels from issue if they no longer apply. This is greate
+        # Remove old labels from issue if they no longer apply. This is great
         # for restarted builds for example to make all builds green and be able
         # to promote this snapshot.
 
@@ -120,140 +273,33 @@ class SnapshotManager:
             + other_labels
         )
         logging.info(f"Adding label: {labels_to_add}")
-        issue.add_to_labels(labels_to_add)
+        issue.add_to_labels(*labels_to_add)
 
-        failed_test_cases: list[tf.FailedTestCase] = []
+    def flip_test_label(
+        self, issue: github.Issue.Issue, chroot: str, new_label: str | None
+    ):
+        """Let's you change the label on an issue for a specific chroot.
 
-        for chroot in all_chroots:
-            # Define some label names
-            in_testing = f"{self.config.label_prefix_in_testing}{chroot}"
-            tested_on = f"{self.config.label_prefix_tested_on}{chroot}"
-            failed_on = f"{self.config.label_prefix_tested_on}{chroot}"
+         If `new_label` is `None`, then all test labels will be removed.
 
-            if not tf.is_chroot_supported(chroot):
-                # see https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_supported_architectures
-                logging.debug(
-                    f"Ignoring chroot {chroot} because testing-farm doesn't support it."
-                )
-                continue
+        Args:
+            issue (github.Issue.Issue): The issue to modify
+            chroot (str): The chroot for which you want to flip the test label
+            new_label (str | None): The new label or `None`.
+        """
+        in_testing = f"{self.config.label_prefix_in_testing}{chroot}"
+        tested_on = f"{self.config.label_prefix_tested_on}{chroot}"
+        failed_on = f"{self.config.label_prefix_tested_on}{chroot}"
 
-            # Gather build IDs associated with this chroot.
-            current_copr_build_ids = [
-                state.build_id for state in states if state.chroot == chroot
-            ]
+        all_states = [in_testing, tested_on, failed_on]
+        labels_to_be_removed = all_states
 
-            def flip_test_label(issue: github.Issue.Issue, new_label: str | None):
-                all_states = [in_testing, tested_on, failed_on]
-                labels_to_be_removed = all_states
-                if new_label is not None:
-                    labels_to_be_removed = [set(all_states).difference(new_label)]
-                self.github.remove_labels_safe(issue, labels_to_be_removed)
-                issue.add_to_labels(new_label)
+        if new_label is not None:
+            labels_to_be_removed = list(set(all_states).difference(set([new_label])))
+        self.github.remove_labels_safe(issue, labels_to_be_removed)
 
-            # Check if we need to invalidate a recovered testing-farm requests.
-            # Background: It can be that we have old testing-farm request IDs in the issue comment.
-            # But if a package was re-build and failed, the old request ID for that chroot is invalid.
-            # To compensate for this scenario that we saw on April 1st 2024 btw., we're gonna
-            # delete any request that has a different set of Copr build IDs associated with it.
-            if chroot in testing_farm_requests:
-                recovered_request = testing_farm_requests[chroot]
-                if set(recovered_request.copr_build_ids) != set(current_copr_build_ids):
-                    logging.info(
-                        "The recovered testing-farm request no longer applies because build IDs have changed"
-                    )
-                    flip_test_label(issue, None)
-                    del testing_farm_requests[chroot]
-
-            tf.TestingFarmRequest(chroot=chroot)
-
-            logging.info(f"Check if all builds in chroot {chroot} have succeeded")
-            builds_succeeded = self.copr.has_all_good_builds(
-                copr_ownername=self.config.copr_ownername,
-                copr_projectname=self.config.copr_projectname,
-                required_chroots=[chroot],
-                required_packages=self.config.packages,
-                states=states,
-            )
-
-            if not builds_succeeded:
-                continue
-
-            logging.info(f"All builds in chroot {chroot} have succeeded!")
-
-            # Check for current status of testing-farm request
-            if chroot in testing_farm_requests:
-                request = testing_farm_requests[chroot]
-                watch_result, artifacts_url = request.watch()
-
-                html = tf.render_html(request, watch_result, artifacts_url)
-                build_status_matrix = build_status_matrix.replace(
-                    chroot,
-                    f"{chroot}<br />{html}",
-                )
-
-                # Fetch all failed tests for this request
-                if watch_result.is_error:
-                    failed_test_cases.extend(
-                        request.fetch_failed_test_cases(artifacts_url=artifacts_url)
-                    )
-
-                logging.info(
-                    f"Chroot {chroot} testing-farm watch result: {watch_result} (URL: {artifacts_url})"
-                )
-
-                if watch_result.is_error:
-                    flip_test_label(issue, failed_on)
-                elif watch_result == tf.TestingFarmWatchResult.TESTS_PASSED:
-                    flip_test_label(issue, tested_on)
-            else:
-                logging.info(f"Starting tests for chroot {chroot}")
-                request_id = tf.TestingFarmRequest.make(
-                    chroot=chroot,
-                    config=self.config,
-                    issue=issue,
-                    copr_build_ids=current_copr_build_ids,
-                )
-                logging.info(f"Request ID: {request_id}")
-                testing_farm_requests[chroot] = request_id
-                flip_test_label(issue, in_testing)
-
-            if len(failed_test_cases) > 0:
-                self.github.create_or_update_comment(
-                    issue=issue,
-                    marker=tf.results_html_comment(),
-                    comment_body=tf.FailedTestCase.render_list_as_markdown(
-                        failed_test_cases
-                    ),
-                )
-
-        logging.info("Reconstructing issue comment body")
-        comment_body = f"""
-{self.github.initial_comment}
-{build_status_matrix}
-{build_status.render_as_markdown(errors)}
-{tf.TestingFarmRequest.dict_to_html_comment(testing_farm_requests)}
-"""
-        issue.edit(body=comment_body)
-
-        logging.info("Checking if issue can be closed")
-        # issue.update()
-        tested_chroot_labels = [
-            label.name
-            for label in issue.labels
-            if label.name.startswith("{self.config.label_prefix_tested_on}")
-        ]
-        required_chroot_abels = [
-            "{self.config.label_prefix_tested_on}{chroot}"
-            for chroot in all_chroots
-            if tf.is_chroot_supported(chroot)
-        ]
-        if set(tested_chroot_labels) == set(required_chroot_abels):
-            msg = f"@{self.config.maintainer_handle}, all required packages have been successfully built and tested on all required chroots. We'll close this issue for you now as completed. Congratulations!"
-            logging.info(msg)
-            issue.create_comment(body=msg)
-            issue.edit(state="closed", state_reason="completed")
-            # TODO(kwk): Promotion of issue goes here.
-        else:
-            logging.info("Cannot close issue yet.")
-
-        logging.info(f"Updated today's issue: {issue.html_url}")
+        # Check if new_label is already set
+        if new_label is not None and new_label not in [
+            label.name for label in issue.labels
+        ]:
+            issue.add_to_labels(new_label)
