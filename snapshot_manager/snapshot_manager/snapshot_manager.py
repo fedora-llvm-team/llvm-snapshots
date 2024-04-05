@@ -79,12 +79,12 @@ class SnapshotManager:
                 error for error in errors if error.chroot == chroot
             ]
             if errors_for_this_chroot is not None and len(errors_for_this_chroot) > 0:
+                marker = f"<!--ERRORS_FOR_CHROOT/{chroot}-->"
                 comment = self.github.create_or_update_comment(
                     issue=issue,
-                    marker=f"<!--ERRORS_FOR_CHROOT/{chroot}-->",
-                    comment_body=f"""
-<h2>Errors found in {chroot}</h2>
-{self.github.last_updated_html()}
+                    marker=marker,
+                    comment_body=f"""{marker}
+<h3>Errors found in {chroot}</h3>
 {build_status.render_as_markdown(errors_for_this_chroot)}
 """,
                 )
