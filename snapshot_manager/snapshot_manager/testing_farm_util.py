@@ -680,7 +680,7 @@ Some (if not all) results from testing-farm are in. This comment will be updated
 > Please be aware that the testing-farm artifact links a valid for no longer than 90 days. That is why we persists the log outputs here.
 
 > [!WARNING]
-> This list is not extensive if test have been run in the Red Hat internal testing-farm ranch and failed. For those, take a look in the "chroot" column of the build matrix above and look for failed tests that show a :lock: symbol.
+> This list is not extensive if tests have been run in the Red Hat internal testing-farm ranch and failed. For those, take a look in the "chroot" column of the build matrix above and look for failed tests that show a :lock: symbol.
 
 <h2>Failed testing-farm test cases</h2>
 
