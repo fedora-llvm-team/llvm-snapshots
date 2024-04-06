@@ -311,6 +311,7 @@ def get_cause_from_build_log(
     )
     if ret == 0:
         test_details = ""
+        new_ctx = ""
         for failing_test in ctx.split("\x00"):
             if not failing_test:
                 continue
@@ -318,7 +319,7 @@ def get_cause_from_build_log(
             lines = failing_test.splitlines()
             if len(lines) > 0:
                 test_name = lines[0].replace("********************", "").strip()
-            test_details += f"""
+            new_ctx += f"""
 <details><summary>{test_name}</summary>
 
 ``````
@@ -327,8 +328,7 @@ def get_cause_from_build_log(
 
 </details>
 """
-        ctx = f"<details open><summary><h3>Failing tests</h3></summary>{test_details}</details>"
-        return handle_golden_file(ErrorCause.ISSUE_TEST, ctx)
+        return handle_golden_file(ErrorCause.ISSUE_TEST, new_ctx)
 
     logging.info(" Checking for installed but unackaged files...")
     ret, ctx, _ = util.grep_file(
@@ -415,16 +415,16 @@ def render_as_markdown(states: BuildStateList) -> str:
     """
     states.sort()
     last_cause = None
-    html = ""
+    html = "<ul>"
     for state in states:
         if state.err_cause != last_cause:
             if last_cause is not None:
-                html += "</ol></details>"
-            html += f"\n\n<details open><summary><h2>{state.err_cause}</h2></summary>\n\n<ol>"
+                html += "</ol></li>"
+            html += f"<li><b>{state.err_cause}</b><ol>"
         html += f"<li>{state.render_as_markdown()}</li>"
         last_cause = state.err_cause
     if html != "":
-        html += "</ol></details>"
+        html += "<ol></li></ul>"
     return html
 
 

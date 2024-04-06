@@ -1,4 +1,4 @@
-<details open><summary><h3>Failing tests</h3></summary>
+
 <details><summary>TEST 'lld :: MachO/U-dynamic-lookup.s' FAILED</summary>
 
 ``````
@@ -7834,5 +7834,4 @@ RUN: at line 9: ld64.lld -arch x86_64 -platform_version macos 11.0 11.0 -syslibr
 Fatal glibc error: malloc.c:2593 (sysmalloc): assertion failed: (old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_en
 ``````
 
-</details>
 </details>

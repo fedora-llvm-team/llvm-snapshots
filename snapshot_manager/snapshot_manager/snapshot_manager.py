@@ -75,6 +75,7 @@ class SnapshotManager:
 
         for chroot in all_chroots:
             # Create or update a comment for each chroot that has errors and render
+            # TODO(kwk): Delete, hide, those comments if there are no more errors to render in this chroot
             errors_for_this_chroot = [
                 error for error in errors if error.chroot == chroot
             ]
@@ -84,7 +85,7 @@ class SnapshotManager:
                     issue=issue,
                     marker=marker,
                     comment_body=f"""{marker}
-<h3>Errors found in {chroot}</h3>
+<h3>Errors found in Copr builds on <code>{chroot}</code></h3>
 {build_status.render_as_markdown(errors_for_this_chroot)}
 """,
                 )
@@ -92,6 +93,9 @@ class SnapshotManager:
                     chroot,
                     f'{chroot}<br /> :x: <a href="{comment.html_url}">Copr build(s) failed</a>',
                 )
+            else:
+                # TODO(kwk): Delete, hide, those comments if there are no more errors to render in this chroot
+                pass
 
         for chroot in all_chroots:
             # Check if we can ignore the chroot because it is not supported by testing-farm
