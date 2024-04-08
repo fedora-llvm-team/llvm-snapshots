@@ -43,6 +43,38 @@ class TestGithub(base_test.TestBase):
         )
         self.assertIsNone(issue)
 
+    def test_flip_test_label(self):
+        gh = github_util.GithubClient(config=self.config)
+        issue = gh.gh_repo.get_issue(46)
+        self.assertIsNotNone(issue)
+
+        # Remove all labels
+        for label in issue.get_labels():
+            issue.remove_from_labels(label)
+        self.assertEqual(issue.get_labels().totalCount, 0)
+
+        # Ensure those labels that we need for our test exist
+        chroot = "fedora-rawhide-x86_64"
+        all_chroots = [chroot]
+        gh.create_labels_for_in_testing(all_chroots)
+
+        in_testing = gh.label_in_testing(chroot=chroot)
+        failed_on = gh.label_failed_on(chroot=chroot)
+        tested_on = gh.label_tested_on(chroot=chroot)
+
+        all_test_states = [in_testing, failed_on, tested_on]
+        for test_state in all_test_states:
+            gh.flip_test_label(issue, chroot, test_state)
+            self.assertEqual(issue.get_labels().totalCount, 1)
+            self.assertEqual(issue.get_labels()[0].name, test_state)
+
+        # in_testing = f"{self.config.label_prefix_in_testing}{chroot}"
+        # tested_on = f"{self.config.label_prefix_tested_on}{chroot}"
+        # failed_on = f"{self.config.label_prefix_tested_on}{chroot}"
+
+        # mgr.flip_test_label(issue=issue, chroot=chroot, new_label=in_testing)
+        pass
+
 
 def load_tests(loader, tests, ignore):
     """We want unittest to pick up all of our doctests

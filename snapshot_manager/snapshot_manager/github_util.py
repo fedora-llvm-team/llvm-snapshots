@@ -15,6 +15,7 @@ import github.Issue
 import github.IssueComment
 import github.Repository
 import github.PaginatedList
+import github.Label
 
 import snapshot_manager.config as config
 import snapshot_manager.build_status as build_status
@@ -174,20 +175,21 @@ remove the aforementioned labels.
                 return True
         return False
 
-    def _create_labels(
+    def create_labels(
         self,
         prefix: str,
         color: str,
         labels: list[str] = [],
-    ):
+    ) -> list[github.Label.Label]:
         """Iterates over the given labels and creates or edits each label in the list
         with the given prefix and color."""
         if labels is None or len(labels) == 0:
-            return
+            return None
 
         labels = set(labels)
         labels = list(labels)
         labels.sort()
+        res = []
         for label in labels:
             labelname = label
             if not labelname.startswith(prefix):
@@ -198,62 +200,91 @@ remove the aforementioned labels.
                 f"Creating label: repo={self.config.github_repo} name={labelname} color={color}",
             )
             try:
-                self.gh_repo.create_label(color=color, name=labelname)
+                res.append(self.gh_repo.create_label(color=color, name=labelname))
             except:
                 self.gh_repo.get_label(name=labelname).edit(
                     name=labelname, color=color, description=""
                 )
+        return res
 
-    def _get_labels_on_issue(self, issue: github.Issue.Issue, prefix: str) -> list[str]:
+    def get_label_names_on_issue(
+        self, issue: github.Issue.Issue, prefix: str
+    ) -> list[str]:
         return [
             label.name for label in issue.get_labels() if label.name.startswith(prefix)
         ]
 
-    def get_error_labels_on_issue(self, issue: github.Issue.Issue) -> list[str]:
-        return self._get_labels_on_issue(issue, prefix="error/")
+    def get_error_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
+        return self.get_label_names_on_issue(issue, prefix="error/")
 
-    def get_os_labels_on_issue(self, issue: github.Issue.Issue) -> list[str]:
-        return self._get_labels_on_issue(issue, prefix="os/")
+    def get_os_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
+        return self.get_label_names_on_issue(issue, prefix="os/")
 
-    def get_arch_labels_on_issue(self, issue: github.Issue.Issue) -> list[str]:
-        return self._get_labels_on_issue(issue, prefix="arch/")
+    def get_arch_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
+        return self.get_label_names_on_issue(issue, prefix="arch/")
 
-    def get_project_labels_on_issue(self, issue: github.Issue.Issue) -> list[str]:
-        return self._get_labels_on_issue(issue, prefix="project/")
+    def get_project_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
+        return self.get_label_names_on_issue(issue, prefix="project/")
 
-    def create_labels_for_error_causes(self, labels: list[str], **kw_args):
-        self._create_labels(labels=labels, prefix="error/", color="FBCA04", **kw_args)
+    def create_labels_for_error_causes(
+        self, labels: list[str], **kw_args
+    ) -> list[github.Label.Label]:
+        return self.create_labels(
+            labels=labels, prefix="error/", color="FBCA04", **kw_args
+        )
 
-    def create_labels_for_oses(self, labels: list[str], **kw_args):
-        self._create_labels(labels=labels, prefix="os/", color="F9D0C4", **kw_args)
+    def create_labels_for_oses(
+        self, labels: list[str], **kw_args
+    ) -> list[github.Label.Label]:
+        return self.create_labels(
+            labels=labels, prefix="os/", color="F9D0C4", **kw_args
+        )
 
-    def create_labels_for_projects(self, labels: list[str], **kw_args):
-        self._create_labels(labels=labels, prefix="project/", color="BFDADC", **kw_args)
+    def create_labels_for_projects(
+        self, labels: list[str], **kw_args
+    ) -> list[github.Label.Label]:
+        return self.create_labels(
+            labels=labels, prefix="project/", color="BFDADC", **kw_args
+        )
 
-    def create_labels_for_strategies(self, labels: list[str], **kw_args):
-        self._create_labels(labels=labels, prefix="strategy/", color="FFFFFF", *kw_args)
+    def create_labels_for_strategies(
+        self, labels: list[str], **kw_args
+    ) -> list[github.Label.Label]:
+        return self.create_labels(
+            labels=labels, prefix="strategy/", color="FFFFFF", *kw_args
+        )
 
-    def create_labels_for_archs(self, labels: list[str], **kw_args):
-        self._create_labels(labels=labels, prefix="arch/", color="C5DEF5", *kw_args)
+    def create_labels_for_archs(
+        self, labels: list[str], **kw_args
+    ) -> list[github.Label.Label]:
+        return self.create_labels(
+            labels=labels, prefix="arch/", color="C5DEF5", *kw_args
+        )
 
-    def create_labels_for_in_testing(self, labels: list[str], **kw_args):
-        self._create_labels(
+    def create_labels_for_in_testing(
+        self, labels: list[str], **kw_args
+    ) -> list[github.Label.Label]:
+        return self.create_labels(
             labels=labels,
             prefix=self.config.label_prefix_in_testing,
             color="FEF2C0",
             *kw_args,
         )
 
-    def create_labels_for_tested_on(self, labels: list[str], **kw_args):
-        self._create_labels(
+    def create_labels_for_tested_on(
+        self, labels: list[str], **kw_args
+    ) -> list[github.Label.Label]:
+        return self.create_labels(
             labels=labels,
             prefix=self.config.label_prefix_tested_on,
             color="0E8A16",
             *kw_args,
         )
 
-    def create_labels_for_failed_on(self, labels: list[str], **kw_args):
-        self._create_labels(
+    def create_labels_for_failed_on(
+        self, labels: list[str], **kw_args
+    ) -> list[github.Label.Label]:
+        return self.create_labels(
             labels=labels,
             prefix=self.config.label_prefix_failed_on,
             color="D93F0B",
@@ -325,7 +356,6 @@ remove the aforementioned labels.
         Returns:
             bool: True if the comment was minimized
         """
-        from pprint import pprint
 
         node_id = ""
         if isinstance(object, github.IssueComment.IssueComment):
@@ -348,3 +378,87 @@ remove the aforementioned labels.
                 "data.minimizeComment.minimizedComment.isMinimized", res, default=False
             )
         )
+
+    @typing.overload
+    def clear_labels(self, issue: github.Issue.Issue) -> bool: ...
+
+    @typing.overload
+    def clear_labels(self, node_id: str) -> bool: ...
+
+    def clear_labels(
+        self,
+        object: str | github.Issue.Issue,
+    ) -> bool:
+        """Clears all labels from the given issue.
+
+        In order to get a `node_id` from a REST issue, use `issue.raw_data['node_id']`.
+
+        Args:
+            node_id (str|github.Issue.Issue): An issues's `node_id` or a `github.Issue.Issue` object.
+
+        Returns:
+            bool: True if the comment was minimized
+        """
+        node_id = ""
+        if isinstance(object, github.Issue.Issue):
+            node_id = object.raw_data["node_id"]
+        elif isinstance(object, str):
+            node_id = object
+        else:
+            raise ValueError(f"invalid issue object passed: {object}")
+
+        res = self.gql.run_from_file(
+            variables={
+                "id": node_id,
+            },
+            filename=self.abspath("graphql/clear_labels.gql"),
+        )
+
+        return (
+            fnc.get(
+                "data.clearLabelsFromLabelable.labelable.totalCount",
+                res,
+                default=-1,
+            )
+            == 0
+        )
+
+    def label_in_testing(self, chroot: str) -> str:
+        return f"{self.config.label_prefix_in_testing}{chroot}"
+
+    def label_failed_on(self, chroot: str) -> str:
+        return f"{self.config.label_prefix_failed_on}{chroot}"
+
+    def label_tested_on(self, chroot: str) -> str:
+        return f"{self.config.label_prefix_tested_on}{chroot}"
+
+    def flip_test_label(
+        self, issue: github.Issue.Issue, chroot: str, new_label: str | None
+    ):
+        """Let's you change the label on an issue for a specific chroot.
+
+         If `new_label` is `None`, then all test labels will be removed.
+
+        Args:
+            issue (github.Issue.Issue): The issue to modify
+            chroot (str): The chroot for which you want to flip the test label
+            new_label (str | None): The new label or `None`.
+        """
+        in_testing = self.label_in_testing(chroot)
+        tested_on = self.label_tested_on(chroot)
+        failed_on = self.label_failed_on(chroot)
+
+        all_states = [in_testing, tested_on, failed_on]
+        existing_test_labels = [
+            label.name for label in issue.get_labels() if label.name in all_states
+        ]
+
+        new_label_already_present = False
+        for label in existing_test_labels:
+            if label != new_label:
+                issue.remove_from_labels(label)
+            else:
+                new_label_already_present = True
+
+        if not new_label_already_present:
+            issue.add_to_labels(new_label)

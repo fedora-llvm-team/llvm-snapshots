@@ -132,7 +132,9 @@ class SnapshotManager:
                     logging.info(
                         f"Recovered request ({recovered_request.request_id}) invalid (build IDs changed):\\nRecovered: {recovered_request.copr_build_ids}\\nCurrent: {current_copr_build_ids}"
                     )
-                    self.flip_test_label(issue=issue, chroot=chroot, new_label=None)
+                    self.github.flip_test_label(
+                        issue=issue, chroot=chroot, new_label=None
+                    )
                     del requests[chroot]
 
             logging.info(f"Check if all builds in chroot {chroot} have succeeded")
@@ -169,9 +171,9 @@ class SnapshotManager:
                     failed_test_cases.extend(
                         request.fetch_failed_test_cases(artifacts_url=artifacts_url)
                     )
-                    self.flip_test_label(issue, chroot, failed_on)
+                    self.github.flip_test_label(issue, chroot, failed_on)
                 elif watch_result == tf.TestingFarmWatchResult.TESTS_PASSED:
-                    self.flip_test_label(issue, chroot, tested_on)
+                    self.github.flip_test_label(issue, chroot, tested_on)
             else:
                 logging.info(f"Starting tests for chroot {chroot}")
                 request = tf.TestingFarmRequest.make(
@@ -182,7 +184,7 @@ class SnapshotManager:
                 )
                 logging.info(f"Request ID: {request.request_id}")
                 requests[chroot] = request
-                self.flip_test_label(issue, chroot, in_testing)
+                self.github.flip_test_label(issue, chroot, in_testing)
 
             # Create or update a comment for testing-farm results display
             if len(failed_test_cases) > 0:
@@ -242,7 +244,7 @@ class SnapshotManager:
             other_labels.append("broken_snapshot_detected")
 
         logging.info("Create labels")
-        self.github._create_labels(
+        self.github.create_labels(
             labels=["broken_snapshot_detected"], color="F46696", prefix=""
         )
         self.github.create_labels_for_error_causes(error_labels)
@@ -259,9 +261,9 @@ class SnapshotManager:
         # to promote this snapshot.
 
         labels_to_be_removed: list[str] = []
-        old_error_labels = self.github.get_error_labels_on_issue(issue=issue)
-        old_project_labels = self.github.get_project_labels_on_issue(issue=issue)
-        old_arch_labels = self.github.get_arch_labels_on_issue(issue=issue)
+        old_error_labels = self.github.get_error_label_names_on_issue(issue=issue)
+        old_project_labels = self.github.get_project_label_names_on_issue(issue=issue)
+        old_arch_labels = self.github.get_arch_label_names_on_issue(issue=issue)
 
         labels_to_be_removed.extend(set(old_error_labels) - set(error_labels))
         labels_to_be_removed.extend(set(old_project_labels) - set(project_labels))
@@ -282,32 +284,3 @@ class SnapshotManager:
         )
         logging.info(f"Adding label: {labels_to_add}")
         issue.add_to_labels(*labels_to_add)
-
-    def flip_test_label(
-        self, issue: github.Issue.Issue, chroot: str, new_label: str | None
-    ):
-        """Let's you change the label on an issue for a specific chroot.
-
-         If `new_label` is `None`, then all test labels will be removed.
-
-        Args:
-            issue (github.Issue.Issue): The issue to modify
-            chroot (str): The chroot for which you want to flip the test label
-            new_label (str | None): The new label or `None`.
-        """
-        in_testing = f"{self.config.label_prefix_in_testing}{chroot}"
-        tested_on = f"{self.config.label_prefix_tested_on}{chroot}"
-        failed_on = f"{self.config.label_prefix_tested_on}{chroot}"
-
-        all_states = [in_testing, tested_on, failed_on]
-        labels_to_be_removed = all_states
-
-        if new_label is not None:
-            labels_to_be_removed = list(set(all_states).difference(set([new_label])))
-        self.github.remove_labels_safe(issue, labels_to_be_removed)
-
-        # Check if new_label is already set
-        if new_label is not None and new_label not in [
-            label.name for label in issue.labels
-        ]:
-            issue.add_to_labels(new_label)
