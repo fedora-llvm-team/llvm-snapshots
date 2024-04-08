@@ -4,14 +4,17 @@ SnapshotManager
 
 import datetime
 import logging
+import os
+
 import github.Issue
 
 import snapshot_manager.build_status as build_status
-import snapshot_manager.copr_util as copr_util
-import snapshot_manager.github_util as github_util
 import snapshot_manager.config as config
-import snapshot_manager.util as util
+import snapshot_manager.copr_util as copr_util
+import snapshot_manager.github_graphql as ghgql
+import snapshot_manager.github_util as github_util
 import snapshot_manager.testing_farm_util as tf
+import snapshot_manager.util as util
 
 
 class SnapshotManager:
@@ -75,12 +78,11 @@ class SnapshotManager:
 
         for chroot in all_chroots:
             # Create or update a comment for each chroot that has errors and render
-            # TODO(kwk): Delete, hide, those comments if there are no more errors to render in this chroot
             errors_for_this_chroot = [
                 error for error in errors if error.chroot == chroot
             ]
+            marker = f"<!--ERRORS_FOR_CHROOT/{chroot}-->"
             if errors_for_this_chroot is not None and len(errors_for_this_chroot) > 0:
-                marker = f"<!--ERRORS_FOR_CHROOT/{chroot}-->"
                 comment = self.github.create_or_update_comment(
                     issue=issue,
                     marker=marker,
@@ -94,8 +96,10 @@ class SnapshotManager:
                     f'{chroot}<br /> :x: <a href="{comment.html_url}">Copr build(s) failed</a>',
                 )
             else:
-                # TODO(kwk): Delete, hide, those comments if there are no more errors to render in this chroot
-                pass
+                # Hide any outdated comments
+                comment = self.github.get_comment(issue=issue, marker=marker)
+                if comment is not None:
+                    self.github.minimize_comment_as_outdated(comment)
 
         for chroot in all_chroots:
             # Check if we can ignore the chroot because it is not supported by testing-farm

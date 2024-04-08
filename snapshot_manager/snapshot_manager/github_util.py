@@ -5,6 +5,9 @@ github_util
 import datetime
 import os
 import logging
+import fnc
+import typing
+import pathlib
 
 import github
 import github.GithubException
@@ -15,9 +18,12 @@ import github.PaginatedList
 
 import snapshot_manager.config as config
 import snapshot_manager.build_status as build_status
+import snapshot_manager.github_graphql as github_graphql
 
 
 class GithubClient:
+    dirname = pathlib.Path(os.path.dirname(__file__))
+
     def __init__(self, config: config.Config, github_token: str = None, **kwargs):
         """
         Keyword Arguments:
@@ -27,8 +33,15 @@ class GithubClient:
         if github_token is None:
             github_token = os.getenv(self.config.github_token_env)
         self.github = github.Github(login_or_token=github_token)
+        self.gql = github_graphql.GithubGraphQL(
+            token=os.getenv(self.config.github_token_env), raise_on_error=True
+        )
         self.__label_cache = None
         self.__repo_cache = None
+
+    @classmethod
+    def abspath(cls, p: tuple[str, pathlib.Path]) -> pathlib.Path:
+        return cls.dirname.joinpath(p)
 
     @property
     def gh_repo(self) -> github.Repository.Repository:
@@ -250,6 +263,15 @@ remove the aforementioned labels.
     def get_comment(
         self, issue: github.Issue.Issue, marker: str
     ) -> github.IssueComment.IssueComment:
+        """Walks through all comments associated with the `issue` and returns the first one that has the `marker` in its body.
+
+        Args:
+            issue (github.Issue.Issue): The github issue to look for
+            marker (str): The text to look for in the comment's body. (e.g. `"<!--MY MARKER-->"`)
+
+        Returns:
+            github.IssueComment.IssueComment: The comment containing the marker or `None`.
+        """
         for comment in issue.get_comments():
             if marker in comment.body:
                 return comment
@@ -280,3 +302,49 @@ remove the aforementioned labels.
         for label in intersection:
             logging.info(f"Removing label '{label}' from issue: {issue.title}")
             issue.remove_from_labels(label)
+
+    @typing.overload
+    def minimize_comment_as_outdated(
+        self, comment: github.IssueComment.IssueComment
+    ) -> bool: ...
+
+    @typing.overload
+    def minimize_comment_as_outdated(self, node_id: str) -> bool: ...
+
+    def minimize_comment_as_outdated(
+        self,
+        object: str | github.IssueComment.IssueComment,
+    ) -> bool:
+        """Minimizes a comment with the given `node_id` and the reason `OUTDATED`.
+
+        In order to get a `node_id` from a REST comment, use `comment.raw_data['node_id']`.
+
+        Args:
+            node_id (str): A comment's `node_id`.
+
+        Returns:
+            bool: True if the comment was minimized
+        """
+        from pprint import pprint
+
+        node_id = ""
+        if isinstance(object, github.IssueComment.IssueComment):
+            node_id = object.raw_data["node_id"]
+        elif isinstance(object, str):
+            node_id = object
+        else:
+            raise ValueError(f"invalid comment object passed: {object}")
+
+        res = self.gql.run_from_file(
+            variables={
+                "classifier": "OUTDATED",
+                "id": node_id,
+            },
+            filename=self.abspath("graphql/minimize_comment.gql"),
+        )
+
+        return bool(
+            fnc.get(
+                "data.minimizeComment.minimizedComment.isMinimized", res, default=False
+            )
+        )

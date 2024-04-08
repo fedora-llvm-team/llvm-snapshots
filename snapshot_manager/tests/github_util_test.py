@@ -15,6 +15,12 @@ class TestGithub(base_test.TestBase):
         )
         self.assertIsNotNone(issue)
 
+        marker = "<!--MYMARKER-->"
+        comment = gh.create_or_update_comment(
+            issue=issue, comment_body=f"{marker} Comment to be hidden", marker=marker
+        )
+        self.assertTrue(gh.minimize_comment_as_outdated(comment))
+
     def test_get_todays_issue(self):
         """Get today's github issue"""
         # Example: Get issue for day in the past
@@ -26,6 +32,7 @@ class TestGithub(base_test.TestBase):
         issue = gh.get_todays_github_issue(
             strategy="big-merge", github_repo="fedora-llvm-team/llvm-snapshots"
         )
+
         self.assertIsNotNone(issue)
         self.assertEqual(287, issue.number)
 
