@@ -12,6 +12,7 @@ import json
 import re
 import dataclasses
 import datetime
+import urllib.parse
 from typing import ClassVar
 
 import regex
@@ -415,7 +416,7 @@ class TestingFarmRequest:
         >>> TestingFarmRequest.url_inside_redhat("http://artifacts.osci.redhat.com/testing-farm/8cd428b8-4ea7-43f4-b405-bda8dc93839f/results.xml")
         True
         """
-        return "artifacts.osci.redhat.com" in url
+        return urllib.parse.urlparse(url).hostname == "artifacts.osci.redhat.com"
 
 
 @enum.unique
