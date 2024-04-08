@@ -36,7 +36,7 @@ class Config:
     github_repo: str = "fedora-llvm-team/llvm-snapshots-test"
     """Default github repo to use"""
 
-    github_token_env: str = "GITHUB_TEST_TOKEN"
+    github_token_env: str = "GH_TEST_TOKEN"
     """Default name of the environment variable which holds the github token"""
 
     update_marker: str = "<!--UPDATES_FOLLOW_HERE-->"

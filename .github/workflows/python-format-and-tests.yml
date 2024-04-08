@@ -21,6 +21,8 @@ jobs:
       - uses: ./.github/actions/prepare-python
       - name: Run pytest with coverage
         shell: bash -e {0}
+        env:
+          GH_TEST_TOKEN: ${{ secrets.GH_TEST_TOKEN }}
         run: |
           coverage run -m pytest
           coverage report -m
