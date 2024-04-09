@@ -17,7 +17,7 @@ prepare:
   - how: shell
     script: |
       dnf install -y dnf-plugins-core
-      dnf config-manager --save --setopt="tag-repository.priority=999"
+      dnf config-manager --save --setopt="testing-farm-tag-repository.priority=999"
 adjust:
   - discover+:
       - name: redhat-rpm-config-tests
