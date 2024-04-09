@@ -169,8 +169,8 @@ class SnapshotManager:
                 if watch_result.is_error:
                     # Fetch all failed test cases for this request
                     failed_test_cases.extend(
-                        request.fetch_failed_test_cases_from_url(
-                            artifacts_url=artifacts_url
+                        request.fetch_failed_test_cases(
+                            artifacts_url_origin=artifacts_url
                         )
                     )
                     self.github.flip_test_label(issue, chroot, failed_on)
