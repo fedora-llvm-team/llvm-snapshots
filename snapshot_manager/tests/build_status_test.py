@@ -4,12 +4,11 @@ import tests.base_test as base_test
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.util as util
+from snapshot_manager.build_status import ErrorCause
 
 
 class TestErrorCauseAndBuildStatus(base_test.TestBase):
     def test_get_cause_from_build_log(self):
-        from snapshot_manager.build_status import ErrorCause
-
         """Get cause from build log"""
 
         causes = [e.value for e in ErrorCause]

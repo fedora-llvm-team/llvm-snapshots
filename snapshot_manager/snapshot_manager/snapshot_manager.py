@@ -169,11 +169,15 @@ class SnapshotManager:
                 if watch_result.is_error:
                     # Fetch all failed test cases for this request
                     failed_test_cases.extend(
-                        request.fetch_failed_test_cases(artifacts_url=artifacts_url)
+                        request.fetch_failed_test_cases_from_url(
+                            artifacts_url=artifacts_url
+                        )
                     )
                     self.github.flip_test_label(issue, chroot, failed_on)
                 elif watch_result == tf.TestingFarmWatchResult.TESTS_PASSED:
                     self.github.flip_test_label(issue, chroot, tested_on)
+                else:
+                    self.github.flip_test_label(issue, chroot, in_testing)
             else:
                 logging.info(f"Starting tests for chroot {chroot}")
                 request = tf.TestingFarmRequest.make(

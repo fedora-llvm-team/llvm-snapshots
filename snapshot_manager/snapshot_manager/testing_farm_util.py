@@ -13,6 +13,7 @@ import re
 import dataclasses
 import datetime
 import urllib.parse
+import pathlib
 from typing import ClassVar
 
 import regex
@@ -343,37 +344,46 @@ class TestingFarmRequest:
             return "Fedora-Rawhide"
         return util.chroot_os(chroot).capitalize()
 
-    def fetch_failed_test_cases(self, artifacts_url: str) -> list["FailedTestCase"]:
-        """Returns a list of publically accessible failed test cases for this testing-farm request.
+    def fetch_failed_test_cases(
+        self, artifacts_url_origin: str
+    ) -> list["FailedTestCase"]:
+        request_file = self.get_request_file()
+        xunit_file = self.get_xunit_file(request_file=request_file)
+        return self.get_failed_test_cases_from_xunit_file(
+            xunit_file=xunit_file, artifacts_url_origin=artifacts_url_origin
+        )
 
-        Args:
-            artifacts_url (str): this will be attached to each test case in order to be able to create a link back to testing-farm
-
-        Example:
-
-        # >>> fetch_failed_test_cases(request_id="1f25b0df-71f1-4a13-a4b8-c066f6f5f116", artifacts_url="")
-        """
-        res: list[FailedTestCase] = []
-
-        logging.info(f"Fetching failed test cases for request ID {self.request_id}")
-
-        # Get xunit url from results file
+    def get_request_file(self) -> pathlib.Path:
         result_url = f"https://api.testing-farm.io/v0.1/requests/{self.request_id}"
-        result_file = util.read_url_response_into_file(result_url)
-        result_json = json.loads(result_file.read_text())
+        logging.info(
+            f"Fetching request file for request ID {self.request_id} from URL: {result_url}"
+        )
+        return util.read_url_response_into_file(result_url)
+
+    def get_xunit_file(self, request_file: pathlib.Path) -> pathlib.Path:
+        result_json = json.loads(request_file.read_text())
         if "result" not in result_json:
             raise KeyError("failed to find 'result' key in JSON result response")
         if "xunit_url" not in result_json["result"]:
             raise KeyError("failed to find 'xunit_url' key in result dict response")
-        xuinit_url = result_json["result"]["xunit_url"]
+        xunit_url = result_json["result"]["xunit_url"]
 
         # Get xunit file to log all testcases that have errors
-        if self.url_inside_redhat(xuinit_url):
+        if self.url_inside_redhat(xunit_url):
             logging.info(
-                f"Not getting xunit file from testing-farm results inside redhat: {xuinit_url}"
+                f"Not getting xunit file from testing-farm results inside redhat: {xunit_url}"
             )
-            return res
-        xunit_file = util.read_url_response_into_file(xuinit_url)
+            return None
+
+        logging.info(
+            f"Fetching xunit URL for request ID {self.request_id} from URL: {xunit_url}"
+        )
+        return util.read_url_response_into_file(xunit_url)
+
+    def get_failed_test_cases_from_xunit_file(
+        self, xunit_file: pathlib.Path, artifacts_url_origin: str
+    ) -> list["FailedTestCase"]:
+        res: list["FailedTestCase"] = []
 
         tree = ET.parse(xunit_file)
         root = tree.getroot()
@@ -387,7 +397,6 @@ class TestingFarmRequest:
             arch = failed_testcase.find(
                 './properties/property[@name="baseosci.arch"]'
             ).get("value")
-
             log_output_url = failed_testcase.find(
                 './logs/log[@name="testout.log"]'
             ).get("href")
@@ -399,7 +408,7 @@ class TestingFarmRequest:
                 log_output=log_file.read_text(),
                 request_id=self.request_id,
                 chroot=f"{distro.lower()}-{arch}",
-                artifacts_url=artifacts_url,
+                artifacts_url=artifacts_url_origin,
             )
             res.append(tc)
         return res
