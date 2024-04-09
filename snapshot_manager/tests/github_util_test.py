@@ -71,8 +71,9 @@ class TestGithub(base_test.TestBase):
         for test_state in all_test_states:
             logging.info(f"Flipping test label for chroot {chroot}")
             gh.flip_test_label(issue, chroot, test_state)
-            self.assertEqual(issue.get_labels().totalCount, 1)
-            self.assertEqual(issue.get_labels()[0].name, test_state)
+            labels = issue.get_labels()
+            self.assertEqual(labels.totalCount, 1)
+            self.assertEqual(labels.get_page(0)[0].name, test_state)
         pass
 
 
