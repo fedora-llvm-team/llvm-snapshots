@@ -379,50 +379,6 @@ remove the aforementioned labels.
             )
         )
 
-    @typing.overload
-    def clear_labels(self, issue: github.Issue.Issue) -> bool: ...
-
-    @typing.overload
-    def clear_labels(self, node_id: str) -> bool: ...
-
-    def clear_labels(
-        self,
-        object: str | github.Issue.Issue,
-    ) -> bool:
-        """Clears all labels from the given issue.
-
-        In order to get a `node_id` from a REST issue, use `issue.raw_data['node_id']`.
-
-        Args:
-            node_id (str|github.Issue.Issue): An issues's `node_id` or a `github.Issue.Issue` object.
-
-        Returns:
-            bool: True if the comment was minimized
-        """
-        node_id = ""
-        if isinstance(object, github.Issue.Issue):
-            node_id = object.raw_data["node_id"]
-        elif isinstance(object, str):
-            node_id = object
-        else:
-            raise ValueError(f"invalid issue object passed: {object}")
-
-        res = self.gql.run_from_file(
-            variables={
-                "id": node_id,
-            },
-            filename=self.abspath("graphql/clear_labels.gql"),
-        )
-
-        return (
-            fnc.get(
-                "data.clearLabelsFromLabelable.labelable.totalCount",
-                res,
-                default=-1,
-            )
-            == 0
-        )
-
     def label_in_testing(self, chroot: str) -> str:
         return f"{self.config.label_prefix_in_testing}{chroot}"
 
