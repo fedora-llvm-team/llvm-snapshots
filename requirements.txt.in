@@ -12,3 +12,4 @@ regex==2023.12.25
 munch==4.0.0
 copr==1.130
 requests==2.31.0
+fnc

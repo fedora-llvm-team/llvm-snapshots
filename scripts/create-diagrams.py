@@ -116,7 +116,7 @@ def save_figure(fig: go.Figure, filepath: str) -> None:
 
 
 def add_html_header_menu(
-    filepath: str, all_packages: [str], plotly_div_id: str = "plotly_div_id"
+    filepath: str, all_packages: list[str], plotly_div_id: str = "plotly_div_id"
 ) -> None:
     """Replace plotly's opening HTML-div element with itself and an additional
        menu so that you can navigate from any package to any other package
@@ -230,7 +230,7 @@ def prepare_data_combined(
     return df
 
 
-def create_index_page(all_packages: [str], filepath: str = "index.html") -> None:
+def create_index_page(all_packages: list[str], filepath: str = "index.html") -> None:
     """Create an index HTML overview page that links to each figure page
 
     Args:

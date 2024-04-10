@@ -4,12 +4,11 @@ import tests.base_test as base_test
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.util as util
+from snapshot_manager.build_status import ErrorCause
 
 
 class TestErrorCauseAndBuildStatus(base_test.TestBase):
     def test_get_cause_from_build_log(self):
-        from snapshot_manager.build_status import ErrorCause
-
         """Get cause from build log"""
 
         causes = [e.value for e in ErrorCause]
@@ -137,12 +136,12 @@ class TestErrorList(base_test.TestBase):
         """Test that a list of errors is rendered properly to HTML"""
         # fmt: off
         kwargs = {"copr_ownername": "foo", "copr_projectname": "bar"}
-        e1 = build_status.BuildState(url_build_log="http://e1", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-a", **kwargs)
-        e2 = build_status.BuildState(url_build_log="http://e2", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-b", **kwargs)
-        e3 = build_status.BuildState(url_build_log="http://e3", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-c", **kwargs)
-        e4 = build_status.BuildState(url_build_log="http://e4", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-a", **kwargs)
-        e5 = build_status.BuildState(url_build_log="http://e5", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-b", **kwargs)
-        e6 = build_status.BuildState(url_build_log="http://e6", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-c", **kwargs)
+        e1 = build_status.BuildState(url_build_log="http://e1", err_ctx="e1", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-a", **kwargs)
+        e2 = build_status.BuildState(url_build_log="http://e2", err_ctx="e2", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-b", **kwargs)
+        e3 = build_status.BuildState(url_build_log="http://e3", err_ctx="e3", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-c", **kwargs)
+        e4 = build_status.BuildState(url_build_log="http://e4", err_ctx="e4", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-a", **kwargs)
+        e5 = build_status.BuildState(url_build_log="http://e5", err_ctx="e5", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-b", **kwargs)
+        e6 = build_status.BuildState(url_build_log="http://e6", err_ctx="e6", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-c", **kwargs)
         # fmt: on
         unsorted: build_status.BuildStateList = [e3, e6, e1, e5, e4, e2]
 
@@ -151,57 +150,49 @@ class TestErrorList(base_test.TestBase):
 
         actual = build_status.render_as_markdown(unsorted)
 
-        expected = """
-
-<details open><summary><h2>network_issue</h2></summary>
-
-<ol><li>
+        expected = """<ul><li><b>network_issue</b><ol><li>
 <details>
 <summary>
 <code>package-a</code> on <code>chroot-a</code> (see <a href="http://e1">build log</a>)
 </summary>
-
+e1
 </details>
 </li><li>
 <details>
 <summary>
 <code>package-b</code> on <code>chroot-a</code> (see <a href="http://e2">build log</a>)
 </summary>
-
+e2
 </details>
 </li><li>
 <details>
 <summary>
 <code>package-c</code> on <code>chroot-a</code> (see <a href="http://e3">build log</a>)
 </summary>
-
+e3
 </details>
-</li></ol></details>
-
-<details open><summary><h2>test</h2></summary>
-
-<ol><li>
+</li></ol></li><li><b>test</b><ol><li>
 <details>
 <summary>
 <code>package-a</code> on <code>chroot-c</code> (see <a href="http://e4">build log</a>)
 </summary>
-
+e4
 </details>
 </li><li>
 <details>
 <summary>
 <code>package-b</code> on <code>chroot-c</code> (see <a href="http://e5">build log</a>)
 </summary>
-
+e5
 </details>
 </li><li>
 <details>
 <summary>
 <code>package-c</code> on <code>chroot-c</code> (see <a href="http://e6">build log</a>)
 </summary>
-
+e6
 </details>
-</li></ol></details>"""
+</li></ol></li></ul>"""
         self.assertEqual(expected, actual)
 
 
