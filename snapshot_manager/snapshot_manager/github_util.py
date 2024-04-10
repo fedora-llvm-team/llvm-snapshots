@@ -348,8 +348,6 @@ remove the aforementioned labels.
     ) -> bool:
         """Minimizes a comment with the given `node_id` and the reason `OUTDATED`.
 
-        In order to get a `node_id` from a REST comment, use `comment.raw_data['node_id']`.
-
         Args:
             node_id (str): A comment's `node_id`.
 
