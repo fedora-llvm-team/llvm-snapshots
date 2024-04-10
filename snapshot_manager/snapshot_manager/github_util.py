@@ -377,6 +377,45 @@ remove the aforementioned labels.
             )
         )
 
+    @typing.overload
+    def unminimize_comment(self, comment: github.IssueComment.IssueComment) -> bool: ...
+
+    @typing.overload
+    def unminimize_comment(self, node_id: str) -> bool: ...
+
+    def unminimize_comment(
+        self,
+        object: str | github.IssueComment.IssueComment,
+    ) -> bool:
+        """Unminimizes a comment with the given `node_id`.
+
+        Args:
+            node_id (str): A comment's `node_id`.
+
+        Returns:
+            bool: True if the comment was unminimized
+        """
+
+        node_id = ""
+        if isinstance(object, github.IssueComment.IssueComment):
+            node_id = object.raw_data["node_id"]
+        elif isinstance(object, str):
+            node_id = object
+        else:
+            raise ValueError(f"invalid comment object passed: {object}")
+
+        res = self.gql.run_from_file(
+            variables={
+                "id": node_id,
+            },
+            filename=self.abspath("graphql/unminimize_comment.gql"),
+        )
+
+        is_minimized = fnc.get(
+            "data.unminimizeComment.unminimizedComment.isMinimized", res, default=True
+        )
+        return not is_minimized
+
     def label_in_testing(self, chroot: str) -> str:
         return f"{self.config.label_prefix_in_testing}{chroot}"
 

@@ -1,0 +1,9 @@
+mutation unminimizeComment($id: ID!) {
+  unminimizeComment(input: {subjectId: $id}) {
+    clientMutationId
+    unminimizedComment {
+      isMinimized
+      minimizedReason
+    }
+  }
+}

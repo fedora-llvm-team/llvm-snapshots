@@ -76,7 +76,8 @@ class SnapshotManager:
             if chroot in self.copr.get_copr_chroots():
                 new_requests[chroot] = requests[chroot]
         requests = new_requests
-        # Hide all unused chroot error comments if they belong to a chroot we don't care about
+
+        # Hide/Unhide all unused/used chroot error comments if they belong to a chroot we don't care about
         for comment in issue.get_comments():
             logging.info("checking for <!--ERRORS_FOR_CHROOT/")
             match = re.search(r"<!--ERRORS_FOR_CHROOT/(.*)-->", comment.body)
@@ -86,6 +87,9 @@ class SnapshotManager:
                 if chroot not in self.copr.get_copr_chroots():
                     logging.info("minimizing comment")
                     self.github.minimize_comment_as_outdated(comment)
+                else:
+                    logging.info("unminimizing comment")
+                    self.github.unminimize_comment(comment)
 
         # logging.info(f"Update the issue comment body")
         # # See https://github.com/fedora-llvm-team/llvm-snapshots/issues/205#issuecomment-1902057639
