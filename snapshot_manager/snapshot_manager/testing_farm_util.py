@@ -667,6 +667,19 @@ class FailedTestCase:
     log_output: str = None
     artifacts_url: str
 
+    @classmethod
+    def shorten_test_output(cls, log_output: str) -> str:
+        """Remove cmake configure and build output"""
+        log_output = re.sub(
+            r"-- .*", "[... CMAKE CONFIGURE LOG SHORTENED ...]", log_output, 1
+        )
+        log_output = re.sub(r"-- .*\n", "", log_output)
+        log_output = re.sub(
+            r"\[\d+/\d+\] .*", "[... CMAKE BUILD LOG SHORTENED ...]", log_output, 1
+        )
+        log_output = re.sub(r"\[\d+/\d+\] .*\n", "", log_output)
+        return log_output
+
     def render_as_markdown(self) -> str:
         return f"""
 <details>
@@ -675,7 +688,7 @@ class FailedTestCase:
 </summary>
 
 ```
-{util.shorten_text(self.log_output)}
+{self.shorten_test_output(self.log_output)}
 ```
 
 </details>
