@@ -675,7 +675,7 @@ class FailedTestCase:
 </summary>
 
 ```
-{self.log_output}
+{util.shorten_text(self.log_output)}
 ```
 
 </details>
