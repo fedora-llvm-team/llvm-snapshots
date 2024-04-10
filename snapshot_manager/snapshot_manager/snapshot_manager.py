@@ -70,6 +70,17 @@ class SnapshotManager:
         if requests is None:
             requests = dict()
 
+        # Migrate recovered requests without build IDs.
+        # Just assign the build IDs of the current chroot respectively.
+        for chroot in requests:
+            if requests[chroot].copr_build_ids == []:
+                logging.info(
+                    f"Migrating request ID {requests[chroot].request_id} to get copr build IDs"
+                )
+                requests[chroot].copr_build_ids = [
+                    state.build_id for state in states if state.chroot == chroot
+                ]
+
         logging.info("Filter testing-farm requests by chroot of interest")
         new_requests = dict()
         for chroot in requests:

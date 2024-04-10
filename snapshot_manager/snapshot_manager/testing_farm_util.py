@@ -103,19 +103,24 @@ class TestingFarmRequest:
         ... Foo bAr. <!--TESTING_FARM:invalid-chroot/33333333-fc9a-4e1d-95fe-567cc9d62ad4/8,9,10--> fafa
         ... FOO bar. <!--TESTING_FARM: fedora-40-x86_64/; cat /tmp/secret/file/11--> fafa
         ... FOO bar. <!--TESTING_FARM: fedora-40-x86_64/33333333-fc9a-4e1d-95fe-567cc9d62ad4/12,13,14--> fafa
+        ... This next request ID is missing build IDs. We allow it because there used to be comment IDs
+        ... that didn't have these IDs.
+        ... FOO bar. <!--TESTING_FARM: fedora-38-x86_64/44444444-fc9a-4e1d-95fe-567cc9d62ad4--> fafa
         ... '''
         >>> requests = TestingFarmRequest.parse(s)
         >>> keys = requests.keys()
         >>> keys
-        dict_keys(['fedora-rawhide-x86_64', 'fedora-39-x86_64', 'fedora-40-x86_64'])
+        dict_keys(['fedora-rawhide-x86_64', 'fedora-39-x86_64', 'fedora-40-x86_64', 'fedora-38-x86_64'])
         >>> requests['fedora-rawhide-x86_64']
         TestingFarmRequest(request_id=UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-rawhide-x86_64', copr_build_ids=[1, 2, 3])
         >>> requests['fedora-39-x86_64']
         TestingFarmRequest(request_id=UUID('22222222-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-39-x86_64', copr_build_ids=[5, 6, 7])
         >>> requests['fedora-40-x86_64']
         TestingFarmRequest(request_id=UUID('33333333-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-40-x86_64', copr_build_ids=[12, 13, 14])
+        >>> requests['fedora-38-x86_64']
+        TestingFarmRequest(request_id=UUID('44444444-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-38-x86_64', copr_build_ids=[])
         """
-        matches = re.findall(r"<!--TESTING_FARM:([^/]+)/([^/]+)/([^/]+)-->", string)
+        matches = re.findall(r"<!--TESTING_FARM:([^/]+)/([^/]+)(/([^/]+))?-->", string)
         if not matches:
             logging.info("No testing-farm requests found to recover.")
             return None
@@ -127,8 +132,12 @@ class TestingFarmRequest:
                 tfr = TestingFarmRequest(
                     chroot=chroot,
                     request_id=sanitize_request_id(str(match[1])),
-                    copr_build_ids=[int(item.strip()) for item in match[2].split(",")],
+                    copr_build_ids=[],
                 )
+                if match[3]:
+                    tfr.copr_build_ids = [
+                        int(item.strip()) for item in match[3].split(",")
+                    ]
                 res[chroot] = tfr
                 logging.info(f"Added testing-farm request: {tfr}")
             except ValueError as e:
