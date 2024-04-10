@@ -5,6 +5,7 @@ SnapshotManager
 import datetime
 import logging
 import os
+import re
 
 import github.Issue
 
@@ -43,6 +44,12 @@ class SnapshotManager:
             copr_ownername=self.config.copr_ownername,
             copr_projectname=self.config.copr_projectname,
         )
+
+        logging.info("Filter states by chroot of interest")
+        states = [
+            state for state in states if state.chroot in self.copr.get_copr_chroots()
+        ]
+
         logging.info("Augment the states with information from the build logs")
         states = [state.augment_with_error() for state in states]
 
@@ -62,6 +69,23 @@ class SnapshotManager:
         requests = tf.TestingFarmRequest.parse(comment_body)
         if requests is None:
             requests = dict()
+
+        logging.info("Filter testing-farm requests by chroot of interest")
+        new_requests = dict()
+        for chroot in requests:
+            if chroot in self.copr.get_copr_chroots():
+                new_requests[chroot] = requests[chroot]
+        requests = new_requests
+        # Hide all unused chroot error comments if they belong to a chroot we don't care about
+        for comment in issue.get_comments():
+            logging.info("checking for <!--ERRORS_FOR_CHROOT/")
+            match = re.search(r"<!--ERRORS_FOR_CHROOT/(.*)-->", comment.body)
+            if match:
+                chroot = match.group(1)
+                logging.info(f"found match: chroot={chroot}")
+                if chroot not in self.copr.get_copr_chroots():
+                    logging.info("minimizing comment")
+                    self.github.minimize_comment_as_outdated(comment)
 
         # logging.info(f"Update the issue comment body")
         # # See https://github.com/fedora-llvm-team/llvm-snapshots/issues/205#issuecomment-1902057639
@@ -112,7 +136,7 @@ class SnapshotManager:
 
             in_testing = f"{self.config.label_prefix_in_testing}{chroot}"
             tested_on = f"{self.config.label_prefix_tested_on}{chroot}"
-            failed_on = f"{self.config.label_prefix_tested_on}{chroot}"
+            failed_on = f"{self.config.label_prefix_failed_on}{chroot}"
 
             # Gather build IDs associated with this chroot.
             # We'll attach them a new testing-farm request, and for a recovered

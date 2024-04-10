@@ -130,7 +130,7 @@ class TestingFarmRequest:
                     copr_build_ids=[int(item.strip()) for item in match[2].split(",")],
                 )
                 res[chroot] = tfr
-                logging.info(f"ADDED testing-farm request: {tfr}")
+                logging.info(f"Added testing-farm request: {tfr}")
             except ValueError as e:
                 logging.info(f"ignoring: {match} : {str(e)}")
 
