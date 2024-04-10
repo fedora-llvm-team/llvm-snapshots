@@ -81,6 +81,15 @@ class SnapshotManager:
                     state.build_id for state in states if state.chroot == chroot
                 ]
 
+        # Immediately update issue comment and maybe later we update it again:
+        logging.info("Update issue comment body")
+        comment_body = f"""
+{self.github.initial_comment}
+{build_status_matrix}
+{tf.TestingFarmRequest.dict_to_html_comment(requests)}
+"""
+        issue.edit(body=comment_body)
+
         logging.info("Filter testing-farm requests by chroot of interest")
         new_requests = dict()
         for chroot in requests:
