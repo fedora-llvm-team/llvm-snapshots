@@ -1,10 +1,10 @@
 mutation minimizeComment($id: ID!, $classifier: ReportedContentClassifiers!) {
-    minimizeComment(input: { subjectId: $id, classifier: $classifier }) {
-        clientMutationId
-        minimizedComment {
-            isMinimized
-            minimizedReason
-            viewerCanMinimize
-        }
+  minimizeComment(input: {subjectId: $id, classifier: $classifier}) {
+    clientMutationId
+    minimizedComment {
+      isMinimized
+      minimizedReason
+      viewerCanMinimize
     }
+  }
 }
