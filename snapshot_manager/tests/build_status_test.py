@@ -192,7 +192,7 @@ e5
 </summary>
 e6
 </details>
-</li><ol></li></ul>"""
+</li></ol></li></ul>"""
         self.assertEqual(expected, actual)
 
 

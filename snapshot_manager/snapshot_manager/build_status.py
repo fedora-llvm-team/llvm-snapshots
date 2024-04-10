@@ -424,7 +424,7 @@ def render_as_markdown(states: BuildStateList) -> str:
         html += f"<li>{state.render_as_markdown()}</li>"
         last_cause = state.err_cause
     if html != "":
-        html += "<ol></li></ul>"
+        html += "</ol></li></ul>"
     return html
 
 
