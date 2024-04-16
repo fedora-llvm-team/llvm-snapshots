@@ -46,7 +46,7 @@ discover:
       filter: "tag:-spoils-installation & tag:-not-in-default"
     - name: llvm-tests
       how: fmf
-      url: https://src.fedoraproject.org/tests/llvm.git
+      url: https://src.fedoraproject.org/forks/kkleine/tests/llvm.git
       ref: main
       filter: "tag:-spoils-installation & tag:-not-in-default"
     - name: python-lit
