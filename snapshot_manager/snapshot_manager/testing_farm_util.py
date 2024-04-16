@@ -205,7 +205,7 @@ class TestingFarmRequest:
             --context arch={util.chroot_arch(chroot)} \
             --no-wait \
             --user-webpage={issue.html_url} \
-            --user-webpage-name=f"GitHub Issue: {issue.title}" \
+            --user-webpage-name="GitHub Issue: {issue.title}" \
             --user-webpage-icon="https://github.com/fedora-llvm-team/llvm-snapshots/blob/main/media/github-mark.png?raw=true" \
             --context snapshot={config.yyyymmdd}"""
         exit_code, stdout, stderr = util.run_cmd(cmd, timeout_secs=None)
@@ -358,6 +358,9 @@ class TestingFarmRequest:
     ) -> list["FailedTestCase"]:
         request_file = self.get_request_file()
         xunit_file = self.get_xunit_file(request_file=request_file)
+        # The xunit file is None, if it is only available internally.
+        if xunit_file is None:
+            return []
         return self.get_failed_test_cases_from_xunit_file(
             xunit_file=xunit_file, artifacts_url_origin=artifacts_url_origin
         )
@@ -369,7 +372,7 @@ class TestingFarmRequest:
         )
         return util.read_url_response_into_file(result_url)
 
-    def get_xunit_file(self, request_file: pathlib.Path) -> pathlib.Path:
+    def get_xunit_file(self, request_file: pathlib.Path) -> pathlib.Path | None:
         result_json = json.loads(request_file.read_text())
         if "result" not in result_json:
             raise KeyError("failed to find 'result' key in JSON result response")

@@ -7,9 +7,8 @@
 
 image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/generate-snapshot-tarballs.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/generate-snapshot-tarballs.yml"]
 image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/fedora-copr-build.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/fedora-copr-build.yml"]
-image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/check-todays-snapshot.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/check-todays-snapshot.yml"]
-image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/tmt.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/tmt.yml"]
-image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/python-with-black.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/python-with-black.yml"]
+image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/check-snapshots.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/check-snapshots.yml"]
+image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/python-format-and-tests.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/python-format-and-tests.yml"]
 image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-build-time-diagrams.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-build-time-diagrams.yml"]
 image:https://img.shields.io/badge/code%20style-black-000000.svg[link="https://github.com/psf/black"]
 link:https://fedora-llvm-team.github.io/llvm-snapshots/fig-llvm.html[Build time Diagrams]
