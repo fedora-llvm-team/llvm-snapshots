@@ -16,11 +16,29 @@ class TestGithub(base_test.TestBase):
         )
         self.assertIsNotNone(issue)
 
-        marker = "<!--MYMARKER-->"
+        marker = "<!--HIDE_COMMMENT-->"
         comment = gh.create_or_update_comment(
             issue=issue, comment_body=f"{marker} Comment to be hidden", marker=marker
         )
         self.assertTrue(gh.minimize_comment_as_outdated(comment))
+
+        marker = "<!--HIDE_AND_UNHIDE_COMMMENT-->"
+        comment = gh.create_or_update_comment(
+            issue=issue,
+            comment_body=f"{marker} Comment to be hidden and unhidden",
+            marker=marker,
+        )
+        self.assertTrue(gh.minimize_comment_as_outdated(comment))
+        self.assertTrue(gh.unminimize_comment(comment))
+
+        marker = "<!--REACT_TO_COMMMENT-->"
+        comment = gh.create_or_update_comment(
+            issue=issue, comment_body=f"{marker} Comment to react to", marker=marker
+        )
+        self.assertTrue(gh.add_comment_reaction(comment, github_util.Reaction.HEART))
+        self.assertTrue(
+            gh.add_comment_reaction(comment, github_util.Reaction.THUMBS_UP)
+        )
 
     def test_get_todays_issue(self):
         """Get today's github issue"""

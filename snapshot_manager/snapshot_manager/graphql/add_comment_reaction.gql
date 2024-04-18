@@ -1,0 +1,10 @@
+mutation add_comment_reaction($comment_id: ID!, $reaction: ReactionContent!) {
+  addReaction(input: {subjectId: $comment_id, content: $reaction}) {
+    reaction {
+      content
+    }
+    subject {
+      id
+    }
+  }
+}
