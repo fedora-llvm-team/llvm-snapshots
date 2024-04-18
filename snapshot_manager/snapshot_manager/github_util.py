@@ -8,6 +8,7 @@ import logging
 import fnc
 import typing
 import pathlib
+import enum
 
 import github
 import github.GithubException
@@ -20,6 +21,24 @@ import github.Label
 import snapshot_manager.config as config
 import snapshot_manager.build_status as build_status
 import snapshot_manager.github_graphql as github_graphql
+
+
+@enum.unique
+class Reaction(enum.StrEnum):
+    """An enum to represent the possible comment reactions"""
+
+    THUMBS_UP = "THUMBS_UP"  # Represents the :+1: emoji.
+    THUMBS_DOWN = "THUMBS_DOWN"  # Represents the :-1: emoji.
+    LAUGH = "LAUGH"  # Represents the :laugh: emoji.
+    HOORAY = "HOORAY"  # Represents the :hooray: emoji.
+    CONFUSED = "CONFUSED"  # Represents the :confused: emoji.
+    HEART = "HEART"  # Represents the :heart: emoji.
+    ROCKET = "ROCKET"  # Represents the :rocket: emoji.
+    EYES = "EYES"  # Represents the :eyes: emoji.
+
+    @classmethod
+    def all_reactions(cls) -> list["Reaction"]:
+        return [s for s in Reaction]
 
 
 class GithubClient:
@@ -420,6 +439,54 @@ remove the aforementioned labels.
             "data.unminimizeComment.unminimizedComment.isMinimized", res, default=True
         )
         return not is_minimized
+
+    @typing.overload
+    def add_comment_reaction(
+        self, comment: github.IssueComment.IssueComment, reaction: Reaction
+    ) -> bool: ...
+
+    @typing.overload
+    def add_comment_reaction(self, node_id: str, reaction: Reaction) -> bool: ...
+
+    def add_comment_reaction(
+        self,
+        object: str | github.IssueComment.IssueComment,
+        reaction: Reaction,
+    ) -> bool:
+        """Adds a reaction to a comment with the given emoji name
+
+        Args:
+            object (str | github.IssueComment.IssueComment): The comment object or node ID to add reaction to.
+            reaction (Reaction): The name of the reaction.
+
+        Raises:
+            ValueError: If the the `object` has a wrong type.
+
+        Returns:
+            bool: True if the comment reaction was added successfully.
+        """
+        node_id = ""
+        if isinstance(object, github.IssueComment.IssueComment):
+            node_id = object.raw_data["node_id"]
+        elif isinstance(object, str):
+            node_id = object
+        else:
+            raise ValueError(f"invalid comment object passed: {object}")
+
+        res = self.gql.run_from_file(
+            variables={
+                "comment_id": node_id,
+                "reaction": reaction,
+            },
+            filename=self.abspath("graphql/add_comment_reaction.gql"),
+        )
+
+        actual_reaction = fnc.get(
+            "data.addReaction.reaction.content", res, default=None
+        )
+        actual_comment_id = fnc.get("data.addReaction.subject.id", res, default=None)
+
+        return actual_reaction == str(reaction) and actual_comment_id == node_id
 
     def label_in_testing(self, chroot: str) -> str:
         return f"{self.config.label_prefix_in_testing}{chroot}"
