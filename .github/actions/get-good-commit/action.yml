@@ -18,6 +18,10 @@ inputs:
     description: "Git reference (commit sha, tag, branch) where to start"
     required: false
     default: "main"
+  max-tries:
+    description: "How many commit to try before giving up?"
+    required: false
+    default: 20
 outputs:
   good-commit:
     description: "The commit we found that is good"
@@ -35,5 +39,5 @@ runs:
           --start-ref ${{ inputs.start-ref }} \
           --required-checks \
             clang-x86_64-debian-fast \
-          --max-tries 100 > good_commit.sha
+          --max-tries ${{ inputs.max-tries }} > good_commit.sha
         echo "good-commit=$(cat good_commit.sha)" >> $GITHUB_OUTPUT
