@@ -2,6 +2,7 @@
 
 import datetime
 import logging
+import uuid
 
 import tests.base_test as base_test
 import snapshot_manager.github_util as github_util
@@ -64,7 +65,10 @@ class TestGithub(base_test.TestBase):
 
     def test_flip_test_label(self):
         gh = github_util.GithubClient(config=self.config)
-        issue = gh.gh_repo.get_issue(46)
+        issue = gh.gh_repo.create_issue(
+            title=f"TestGithub.test_flip_test_label {uuid.uuid4()}",
+            body="This comment is for testing TestGithub.test_flip_test_label",
+        )
         self.assertIsNotNone(issue)
 
         # Remove all labels
