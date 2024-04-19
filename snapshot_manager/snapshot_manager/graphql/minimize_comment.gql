@@ -1,4 +1,4 @@
-mutation minimizeComment($id: ID!, $classifier: ReportedContentClassifiers! = OUTDATED) {
+mutation minimizeComment($id: ID!, $classifier: ReportedContentClassifiers = OUTDATED) {
   minimizeComment(input: {subjectId: $id, classifier: $classifier}) {
     clientMutationId
     minimizedComment {
