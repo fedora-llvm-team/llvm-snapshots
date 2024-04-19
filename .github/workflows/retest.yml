@@ -1,0 +1,28 @@
+name: "Retest chroots on testing-farm"
+
+on:
+  issue_comment:
+    types: created
+
+permissions:
+  # We need this in order to create or update snapshot issues
+  issues: write
+
+jobs:
+  job1:
+    # TODO(kwk: Uncomment as soon as we merge this change
+    # if: ${{ !github.event.issue.pull_request && contains(github.event.comment.body, '/retest')}}
+    if: ${{ contains(github.event.comment.body, '/retest')}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if comment author is member of team
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const comment_author = github.event.comment.user.login
+            const result = await github.rest.teams.getMembershipForUserInOrg({
+              org: context.repo.owner,
+              team_slug: 'llvm-toolset-engineers',
+              username: comment_author
+            })
+            console.log(comment_author, result)
