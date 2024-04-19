@@ -34,9 +34,7 @@ class GithubClient:
         if github_token is None:
             github_token = os.getenv(self.config.github_token_env)
         self.github = github.Github(login_or_token=github_token)
-        self.gql = github_graphql.GithubGraphQL(
-            token=os.getenv(self.config.github_token_env), raise_on_error=True
-        )
+        self.gql = github_graphql.GithubGraphQL(token=github_token, raise_on_error=True)
         self.__label_cache = None
         self.__repo_cache = None
 
@@ -314,7 +312,12 @@ remove the aforementioned labels.
         comment = self.get_comment(issue=issue, marker=marker)
         if comment is None:
             return issue.create_comment(body=comment_body)
-        comment.edit(body=comment_body)
+        try:
+            comment.edit(body=comment_body)
+        except github.GithubException.GithubException as ex:
+            raise ValueError(
+                f"Failed to update github comment with marker {marker} and comment body: {comment_body}"
+            ) from ex
         return comment
 
     def remove_labels_safe(
@@ -346,15 +349,17 @@ remove the aforementioned labels.
         self,
         object: str | github.IssueComment.IssueComment,
     ) -> bool:
-        """Minimizes a comment with the given `node_id` and the reason `OUTDATED`.
+        """Minimizes a comment identified by the `object` argument with the reason `OUTDATED`.
 
         Args:
-            node_id (str): A comment's `node_id`.
+            object (str | github.IssueComment.IssueComment): The comment to minimize
+
+        Raises:
+            ValueError: If the `object` has a wrong type.
 
         Returns:
-            bool: True if the comment was minimized
+            bool: True if the comment was properly minimized.
         """
-
         node_id = ""
         if isinstance(object, github.IssueComment.IssueComment):
             node_id = object.raw_data["node_id"]
