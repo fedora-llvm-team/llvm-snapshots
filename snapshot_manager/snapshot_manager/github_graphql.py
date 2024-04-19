@@ -49,6 +49,8 @@ class GithubGraphQL:
         self.__session.headers.update(
             {
                 "Authorization": f"Bearer {self.__token}",
+                # See https://graphql.org/learn/best-practices/#json-with-gzip
+                "Accept-Encoding": "gzip",
                 # See #
                 # https://github.blog/2021-11-16-graphql-global-id-migration-update/
                 "X-Github-Next-Global-ID": "1",
