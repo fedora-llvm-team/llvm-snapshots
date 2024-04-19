@@ -4,10 +4,11 @@ SnapshotManager
 
 import datetime
 import logging
-import os
 import re
 
+import github.GithubException
 import github.Issue
+import github.Reaction
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.config as config
@@ -25,7 +26,157 @@ class SnapshotManager:
         self.copr = copr_util.CoprClient(config=config)
         self.github = github_util.GithubClient(config=config)
 
-    def check_todays_builds(self):
+    @classmethod
+    def remove_chroot_html_comment(cls, comment_body: str, chroot: str):
+        """
+        >>> chroot="fedora-40-aarch64"
+        >>> req1 = f'<!--TESTING_FARM:{chroot}/68b70645-221d-4391-a918-06db7f414a48/7320315,7320317,7320318,7320316,7320314,7320231,7320313-->'
+        >>> req2 = '<!--TESTING_FARM:fedora-40-ppc64le/eee0e5d5-2d7a-4cbd-9b7d-7d60a10c40fe/7320327,7320329,7320330,7320328,7320326,7320231,7320325-->'
+        >>> input = f'''foo
+        ... {req1}
+        ... {req2}
+        ... bar'''
+        >>> expected = f'''foo
+        ...
+        ... {req2}
+        ... bar'''
+        >>> actual = SnapshotManager.remove_chroot_html_comment(comment_body=input, chroot=chroot)
+        >>> actual == expected
+        True
+        """
+        util.expect_chroot(chroot)
+        pattern = re.compile(rf"<!--TESTING_FARM:\s*{chroot}/.*?-->")
+        return re.sub(pattern=pattern, repl="", string=comment_body)
+
+    def retest(
+        self, issue_number: int, trigger_comment_id: str, chroots: list[str]
+    ) -> None:
+        """Causes testing-farm tests to (re-)run for a day.
+
+        There are a number of preconditions what qualifies an issue to be valid here.
+        The author of the trigger comment also needs to be in a special team.
+        The list of chroots is validated as well.
+
+        Whenever something doesn't work we bail and leave a message in the logs.
+
+        If everything is validated and the workflow is kicked off, we add the thumbs
+        up reaction to the trigger comment to signal the user that we've processed his
+        retest request. NOTE: This doesn't mean that the actual retest is done, yet!
+
+        Args:
+            issue_number (int): The issue for the day a retest is requested
+            trigger_comment_id (str): The ID of the comment in which the user requested a retest
+            chroots (list[str]): The list of chroots for which to run retests.
+        """
+        # Get repo
+        repo = self.github.github.get_repo(self.config.github_repo)
+
+        # Get issue
+        logging.info(
+            f"Getting issue with number {issue_number} from repo {self.config.github_repo}"
+        )
+        issue = repo.get_issue(issue_number)
+        if issue is None:
+            return
+        logging.info(f"Got issue: {issue.html_url}")
+
+        # Get YYYYMMDD from issue.title
+        issue_datetime: datetime = None
+        year_month_day = re.search("([0-9]{4})([0-9]{2})([0-9]{2})", issue.title)
+        if year_month_day is None:
+            logging.info("This comment doesn't appear to be a snapshot issue")
+            return
+
+        y = year_month_day.group(1)
+        m = year_month_day.group(2)
+        d = year_month_day.group(3)
+        try:
+            issue_datetime = datetime.date(year=y, month=m, day=d)
+        except ValueError as ex:
+            logging.info(
+                f"Is this really a snapshot issue. Invalid date found in issue title: {issue.title}: {ex}"
+            )
+            return
+        yyyymmdd = issue_datetime.strftime("%Y%m%d")
+
+        # Get strategy from issue
+        strategy: str = None
+        labels = issue.get_labels()
+        for label in labels:
+            if label.name.startswith("strategy/"):
+                strategy = label.name.removeprefix("strategy/")
+                break
+        if strategy is None:
+            logging.info(
+                f"No strategy label found in labels: {[label.name for label in labels]}"
+            )
+            return
+
+        # Get trigger comment
+        trigger_comment = issue.get_comment(id=trigger_comment_id)
+        if trigger_comment is None:
+            logging.info(f"Trigger comment with ID {trigger_comment_id} not found")
+            return
+
+        # Get author from trigger comment to verify one is in the correct team
+        team = repo.organization.get_team_by_slug(self.config.retest_team_slug)
+        if not team.has_in_members(trigger_comment.user):
+            logging.info(
+                f"Trigger comment author '{trigger_comment.user.login}' must be a member of this team: '{self.config.retest_team_slug}'"
+            )
+            return
+
+        # Check chroots
+        if chroots is None or len(chroots) == 0:
+            logging.info("No chroots found")
+            return
+
+        logging.info(
+            f"Checking if all given chroots are really relevant for us or even chroots"
+        )
+        relevant_chroots = self.copr.get_copr_chroots()
+        for chroot in chroots:
+            try:
+                util.expect_chroot(chroot)
+            except:
+                logging.info(f"Chroot {chroot} is not a valid chroot")
+                return
+            if chroot not in relevant_chroots:
+                logging.info(
+                    f"Chroot {chroot} is not in the list of chroots that we consider: {relevant_chroots}"
+                )
+                return
+
+        # Now everything is validated!
+
+        # Remove chroot HTML comments from issue body comment. The next time
+        # around, a check-snapshots workflow runs, it will notice the absence of
+        # a testing-farm request ID for a package with all Copr builds
+        # successful.
+        new_comment_body = issue.body
+        for chroot in chroots:
+            new_comment_body = self.remove_chroot_html_comment(
+                comment_body=new_comment_body, chroot=chroot
+            )
+        issue.edit(body=new_comment_body)
+
+        # Kick off a new workflow run and pass the exact date in YYYYMMDD (issue_datetime) form
+        # because we don't know if the issue was for today or some other day
+        workflow = repo.get_workflow("check-snapshots")
+        inputs = {"strategy": strategy, "yyyymmdd": yyyymmdd}
+        if not workflow.create_dispatch(ref="main", inputs=inputs):
+            logging.info(
+                f"Failed to create workflow dispatch event with inputs: {inputs}"
+            )
+            return
+
+        # Signal to the user that we've processed his retest request
+        self.github.add_comment_reaction(
+            trigger_comment, github_util.Reaction.THUMBS_UP
+        )
+        logging.info(f"All done! Workflow dispatch event created with inputs: {inputs}")
+
+    def check_todays_builds(self) -> None:
         """This method is driven from the config settings"""
         issue, _ = self.github.create_or_get_todays_github_issue(
             maintainer_handle=self.config.maintainer_handle,
