@@ -62,6 +62,9 @@ class Config:
     test_repo_url: str = "https://github.com/fedora-llvm-team/llvm-snapshots"
     """TBD"""
 
+    retest_team_slug: str = "llvm-toolset-engineers"
+    """The team that commenters must be in in order to run /retest comments."""
+
     label_prefix_in_testing: str = "in_testing/"
     label_prefix_tested_on: str = "tested_on/"
     label_prefix_failed_on: str = "failed_on/"
