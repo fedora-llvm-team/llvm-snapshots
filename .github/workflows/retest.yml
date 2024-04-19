@@ -1,0 +1,39 @@
+name: "Retest chroots on testing-farm"
+
+on:
+  issue_comment:
+    types: created
+
+permissions:
+  issues: write
+
+jobs:
+  get-chroots:
+    if: ${{ !github.event.issue.pull_request && contains(github.event.comment.body, '/retest')}}
+    runs-on: ubuntu-latest
+    outputs:
+      chroots: ${{ steps.chroots-step.outputs.chroots }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-python
+      - name: Get Chroots
+        id: chroots-step
+        run: |
+          echo "${{ github.event.comment.body }}" | grep -Pe '^\s*/retest\s+'
+          chroots=$(echo "${{ github.event.comment.body }}" | sed 's/^\s*\/retest\s*//g')
+          echo "chroots=$chroots" >> "$GITHUB_OUTPUT"
+  retest:
+    needs: get-chroots
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if comment author is member of team
+        shell: bash -e {0}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 snapshot_manager/main.py retest \
+            --github-repo ${GITHUB_REPOSITORY} \
+            --github-token-env GITHUB_TOKEN \
+            --trigger-comment-id ${{ github.event.comment.id }} \
+            --issue-number ${{ github.event.issue.number }} \
+            --chroots ${{ needs.get-chroots.outputs.chroots }}
