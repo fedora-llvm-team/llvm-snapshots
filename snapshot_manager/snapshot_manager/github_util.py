@@ -346,15 +346,17 @@ remove the aforementioned labels.
         self,
         object: str | github.IssueComment.IssueComment,
     ) -> bool:
-        """Minimizes a comment with the given `node_id` and the reason `OUTDATED`.
+        """Minimizes a comment identified by the `object` argument with the reason `OUTDATED`.
 
         Args:
-            node_id (str): A comment's `node_id`.
+            object (str | github.IssueComment.IssueComment): The comment to minimize
+
+        Raises:
+            ValueError: If the `object` has a wrong type.
 
         Returns:
-            bool: True if the comment was minimized
+            bool: True if the comment was properly minimized.
         """
-
         node_id = ""
         if isinstance(object, github.IssueComment.IssueComment):
             node_id = object.raw_data["node_id"]
