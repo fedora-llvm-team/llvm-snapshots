@@ -57,6 +57,38 @@ def main():
 
     subparsers = mainparser.add_subparsers(help="Command to run", dest="command")
 
+    subparser_retest = subparsers.add_parser(
+        "retest",
+        description="Issues a new testing-farm request for one or more chroots",
+        **parser_args,
+    )
+
+    subparser_retest.add_argument(
+        "--chroots",
+        metavar="CHROOT",
+        type=str,
+        nargs="+",
+        dest="chroots",
+        required=True,
+        help="Which chroots to retest (e.g. fedora-rawhide-x86_64)",
+    )
+
+    subparser_retest.add_argument(
+        "--trigger-comment-id",
+        type=str,
+        dest="trigger_comment_id",
+        required=True,
+        help="ID of the issue that contains the /retest <CHROOT> comment",
+    )
+
+    subparser_retest.add_argument(
+        "--issue-number",
+        type=str,
+        dest="issue_number",
+        required=True,
+        help="In what issue number did the comment appear in.",
+    )
+
     subparser_check = subparsers.add_parser(
         "check",
         description="Check Copr status and update today's github issue",
@@ -147,19 +179,26 @@ def main():
 
     args = mainparser.parse_args()
 
-    cfg.datetime = args.datetime
-    cfg.packages = args.packages
-    cfg.chroot_pattern = args.chroot_pattern
-    cfg.build_strategy = args.build_strategy
-    cfg.maintainer_handle = args.maintainer_handle
-    cfg.copr_ownername = args.copr_ownername
-    cfg.copr_project_tpl = args.copr_project_tpl
-    cfg.copr_monitor_tpl = args.copr_monitor_tpl
-    cfg.github_repo = args.github_repo
     cfg.github_token_env = args.github_token_env
+    cfg.github_repo = args.github_repo
 
     if args.command == "check":
+        cfg.datetime = args.datetime
+        cfg.packages = args.packages
+        cfg.chroot_pattern = args.chroot_pattern
+        cfg.build_strategy = args.build_strategy
+        cfg.maintainer_handle = args.maintainer_handle
+        cfg.copr_ownername = args.copr_ownername
+        cfg.copr_project_tpl = args.copr_project_tpl
+        cfg.copr_monitor_tpl = args.copr_monitor_tpl
+
         snapshot_manager.SnapshotManager(config=cfg).check_todays_builds()
+    elif args.command == "retest":
+        snapshot_manager.SnapshotManager(config=cfg).retest(
+            issue_number=args.issue_number,
+            trigger_comment_id=args.trigger_comment_id,
+            chroots=args.chroots,
+        )
     else:
         logging.error(f"Unsupported argument: {args.command}")
 
