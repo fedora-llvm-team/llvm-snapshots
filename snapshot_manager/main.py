@@ -26,6 +26,24 @@ def main():
         **parser_args,
     )
 
+    mainparser.add_argument(
+        "--github-token-env",
+        metavar="ENV_NAME",
+        type=str,
+        dest="github_token_env",
+        default=cfg.github_token_env,
+        help="Default name of the environment variable which holds the github token",
+    )
+
+    mainparser.add_argument(
+        "--github-repo",
+        metavar="OWNER/REPO",
+        type=str,
+        dest="github_repo",
+        default=cfg.github_repo,
+        help="Repo where to open or update issues.",
+    )
+
     # For config file support see:
     # https://newini.wordpress.com/2021/06/11/how-to-import-config-file-to-argparse-using-configparser/
     # subparser_check.add_argument(
@@ -82,15 +100,6 @@ def main():
     )
 
     subparser_check.add_argument(
-        "--github-repo",
-        metavar="OWNER/REPO",
-        type=str,
-        dest="github_repo",
-        default=cfg.github_repo,
-        help="Repo where to open or update issues.",
-    )
-
-    subparser_check.add_argument(
         "--copr-ownername",
         metavar="COPR-OWNWERNAME",
         type=str,
@@ -106,15 +115,6 @@ def main():
         dest="copr_project_tpl",
         default=cfg.copr_project_tpl,
         help="Copr project name to check. 'YYYYMMDD' will be replaced, so make sure you have it in there.",
-    )
-
-    subparser_check.add_argument(
-        "--github-token-env",
-        metavar="ENV_NAME",
-        type=str,
-        dest="github_token_env",
-        default=cfg.github_token_env,
-        help="Default name of the environment variable which holds the github token",
     )
 
     subparser_check.add_argument(
