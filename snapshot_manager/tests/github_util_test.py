@@ -50,7 +50,7 @@ class TestGithub(base_test.TestBase):
         self.assertIsNotNone(issue)
 
         # Remove all labels
-        logging.info("Removing all labels from issue")
+        logging.info(f"Removing all labels from issue: {issue.html_url}")
         for label in issue.get_labels():
             issue.remove_from_labels(label)
         self.assertEqual(issue.get_labels().totalCount, 0)
@@ -69,11 +69,14 @@ class TestGithub(base_test.TestBase):
 
         all_test_states = [in_testing, failed_on, tested_on]
         for test_state in all_test_states:
-            logging.info(f"Flipping test label for chroot {chroot}")
+            logging.info(f"Flipping test label for chroot {chroot} to: {test_state}")
             gh.flip_test_label(issue, chroot, test_state)
             labels = issue.get_labels()
+            self.assertIsNotNone(labels)
             self.assertEqual(labels.totalCount, 1)
-            self.assertEqual(labels.get_page(0)[0].name, test_state)
+            page = labels.get_page(0)
+            self.assertIsNotNone(page)
+            self.assertEqual(page[0].name, test_state)
         pass
 
 
