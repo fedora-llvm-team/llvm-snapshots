@@ -6,7 +6,17 @@ on:
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
     - cron: "*/60 * * * *"
 
-  workflow_dispatch: {}
+  # This is used when a /retest command asks for a re-check.
+  workflow_dispatch:
+    inputs:
+      yyyymmdd:
+        description: 'year month day'
+        required: true
+        type: string
+      strategy:
+        description: 'strategy (e.g. standalone, big-merge)'
+        required: true
+        type: string
 
 permissions:
   # We need this in order to create or update snapshot issues
@@ -45,6 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Copr config file
+        if: github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name)
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
@@ -54,14 +65,18 @@ jobs:
           printf "$COPR_CONFIG_FILE" > ~/.config/copr
 
       - name: Install Copr CLI
+        if: github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name)
         run: |
           sudo apt-get install -y lsb-release diffutils pcre2-utils jq
 
       - uses: actions/checkout@v4
+        if: github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name)
 
       - uses: ./.github/actions/prepare-python
+        if: github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name)
 
       - name: "Check day (today minus ${{matrix.today_minus_n_days}} days)"
+        if: github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name)
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -74,7 +89,11 @@ jobs:
             extra_args="${extra_args} --chroot-pattern ${{matrix.chroot_pattern}}"
           fi
 
-          yyyymmdd=`date --date='${{matrix.today_minus_n_days}} days ago' +%Y%m%d`
+          if [[ "${{github.event_name}}" == "workflow_dispatch" ]]; then
+            yyyymmdd=${{inputs.yyyymmdd}}
+          else
+            yyyymmdd=`date --date='${{matrix.today_minus_n_days}} days ago' +%Y%m%d`
+          fi
 
           python3 snapshot_manager/main.py check ${extra_args}\
             --github-repo ${GITHUB_REPOSITORY} \
