@@ -8,6 +8,30 @@ permissions:
   issues: write
 
 jobs:
+  show-reaction:
+    if: ${{ !github.event.issue.pull_request && contains(github.event.comment.body, '/retest')}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add reaction to trigger comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const mutation = `mutation($comment_id: ID!, $reaction: ReactionContent!) {
+              addReaction(input: {subjectId: $comment_id, content: $reaction}) {
+                reaction {
+                  content
+                }
+                subject {
+                  id
+                }
+              }
+            }`;
+            const variables = {
+              comment_id: github.event.comment.node_id,
+              reaction: 'EYES'
+            }
+            const result = await github.graphql(mutation, variables)
+            console.log(result)
   get-chroots:
     if: ${{ !github.event.issue.pull_request && contains(github.event.comment.body, '/retest')}}
     runs-on: ubuntu-latest
