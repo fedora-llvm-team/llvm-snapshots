@@ -312,7 +312,12 @@ remove the aforementioned labels.
         comment = self.get_comment(issue=issue, marker=marker)
         if comment is None:
             return issue.create_comment(body=comment_body)
-        comment.edit(body=comment_body)
+        try:
+            comment.edit(body=comment_body)
+        except github.GithubException.GithubException as ex:
+            raise ValueError(
+                f"Failed to update github comment with marker {marker} and comment body: {comment_body}"
+            ) from ex
         return comment
 
     def remove_labels_safe(
