@@ -122,16 +122,16 @@ jobs:
                 }
               }
             }`;
-            const variables = {
+            const add_reaction_variables = {
               comment_id: '${{ github.event.comment.node_id }}',
               reaction: 'THUMBS_UP'
             }
-            const result = await github.graphql(add_reaction, variables)
+            const result = await github.graphql(add_reaction, add_reaction_variables)
             console.log(result)
 
-            const variables = {
+            const remove_reaction_variables = {
               comment_id: '${{ github.event.comment.node_id }}',
               reaction: 'EYES'
             }
-            const result = await github.graphql(remove_reaction, variables)
+            const result = await github.graphql(remove_reaction, remove_reaction_variables)
             console.log(result)
