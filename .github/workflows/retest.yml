@@ -27,7 +27,7 @@ jobs:
               }
             }`;
             const variables = {
-              comment_id: github.event.comment.node_id,
+              comment_id: '${{ github.event.comment.node_id }}',
               reaction: 'EYES'
             }
             const result = await github.graphql(mutation, variables)
