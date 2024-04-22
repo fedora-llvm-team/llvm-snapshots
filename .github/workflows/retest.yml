@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Check if commented is member of the required team.
         uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TEST_TOKEN }}
         with:
           script: |
             const query = `query check_if_user_is_team_member($user_login: String!, $org: String!, $team_slug: String!) {
