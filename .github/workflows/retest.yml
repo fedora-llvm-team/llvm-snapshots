@@ -61,25 +61,17 @@ jobs:
             if(result['organization']['team']['members']['totalCount'] != 1) {
               core.setFailed("User is not allowed to use the /retest command");
             }
-  get-chroots:
+  retest:
     needs: check-team-membership
     if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/retest')}}
     runs-on: ubuntu-latest
-    outputs:
-      chroots: ${{ steps.chroots-step.outputs.chroots }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/prepare-python
       - name: Get Chroots
         id: chroots-step
         run: |
           echo "${{ github.event.comment.body }}" | grep -Pe '^\s*/retest\s+'
           chroots=$(echo "${{ github.event.comment.body }}" | sed 's/^\s*\/retest\s*//g')
-          echo "chroots=$chroots" >> "$GITHUB_OUTPUT"
-  retest:
-    needs: get-chroots
-    runs-on: ubuntu-latest
-    steps:
+          echo "chroots=$chroots" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare-python
       - name: Run retest script
@@ -93,7 +85,7 @@ jobs:
             retest \
             --trigger-comment-id ${{ github.event.comment.id }} \
             --issue-number ${{ github.event.issue.number }} \
-            --chroots ${{ needs.get-chroots.outputs.chroots }}
+            --chroots ${{ env.chroots }}
   show-reaction-thumbs-up:
     needs: retest
     runs-on: ubuntu-latest
@@ -133,5 +125,5 @@ jobs:
               comment_id: '${{ github.event.comment.node_id }}',
               reaction: 'EYES'
             }
-            const result = await github.graphql(remove_reaction, remove_reaction_variables)
-            console.log(result)
+            const result_removal = await github.graphql(remove_reaction, remove_reaction_variables)
+            console.log(result_removal)
