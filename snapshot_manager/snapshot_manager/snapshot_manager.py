@@ -108,14 +108,6 @@ class SnapshotManager:
             logging.info(f"Trigger comment with ID {trigger_comment_id} not found")
             return
 
-        # Get author from trigger comment to verify one is in the correct team
-        team = repo.organization.get_team_by_slug(self.config.retest_team_slug)
-        if not team.has_in_members(trigger_comment.user):
-            logging.info(
-                f"Trigger comment author '{trigger_comment.user.login}' must be a member of this team: '{self.config.retest_team_slug}'"
-            )
-            return
-
         # Check chroots
         if chroots is None or len(chroots) == 0:
             logging.info("No chroots found")
