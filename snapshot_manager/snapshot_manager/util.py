@@ -194,6 +194,27 @@ def expect_chroot(chroot: str) -> str:
     return chroot
 
 
+def is_chroot(chroot: str) -> bool:
+    """Returns True if the string in `chroot` is really a chroot.
+
+    Args:
+        chroot (str): Any chroot string
+
+    Examples:
+
+    >>> is_chroot("fedora-rawhide-x86_64")
+    True
+
+    >>> is_chroot("fedora-rawhide-")
+    False
+    """
+    try:
+        expect_chroot(chroot=chroot)
+    except:
+        return False
+    return True
+
+
 def chroot_name(chroot: str) -> str:
     """Get the name part of a chroot string
 
