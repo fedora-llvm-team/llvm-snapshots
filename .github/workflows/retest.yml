@@ -52,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare-python
-      - name: Check if comment author is member of team
+      - name: Run retest script
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
