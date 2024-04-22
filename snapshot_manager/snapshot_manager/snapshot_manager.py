@@ -152,10 +152,11 @@ class SnapshotManager:
             )
             return
 
-        # Signal to the user that we've processed his retest request
-        self.github.add_comment_reaction(
-            trigger_comment, github_util.Reaction.THUMBS_UP
-        )
+        # # Signal to the user that we've processed his retest request
+        # # NOTE: This doesn't use the correct github PAT.
+        # self.github.add_comment_reaction(
+        #     trigger_comment, github_util.Reaction.THUMBS_UP
+        # )
         logging.info(f"All done! Workflow dispatch event created with inputs: {inputs}")
 
     def check_todays_builds(self) -> None:

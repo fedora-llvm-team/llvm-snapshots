@@ -8,7 +8,7 @@ permissions:
   issues: write
 
 jobs:
-  show-reaction:
+  show-reaction-eyes:
     if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/retest')}}
     runs-on: ubuntu-latest
     steps:
@@ -94,3 +94,44 @@ jobs:
             --trigger-comment-id ${{ github.event.comment.id }} \
             --issue-number ${{ github.event.issue.number }} \
             --chroots ${{ needs.get-chroots.outputs.chroots }}
+  show-reaction-thumbs-up:
+    needs: retest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add reaction to trigger comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const add_reaction = `mutation($comment_id: ID!, $reaction: ReactionContent!) {
+              addReaction(input: {subjectId: $comment_id, content: $reaction}) {
+                reaction {
+                  content
+                }
+                subject {
+                  id
+                }
+              }
+            }`;
+            const remove_reaction = `mutation($comment_id: ID!, $reaction: ReactionContent!) {
+              removeReaction(input: {subjectId: $comment_id, content: $reaction}) {
+                reaction {
+                  content
+                }
+                subject {
+                  id
+                }
+              }
+            }`;
+            const variables = {
+              comment_id: '${{ github.event.comment.node_id }}',
+              reaction: 'THUMBS_UP'
+            }
+            const result = await github.graphql(add_reaction, variables)
+            console.log(result)
+
+            const variables = {
+              comment_id: '${{ github.event.comment.node_id }}',
+              reaction: 'EYES'
+            }
+            const result = await github.graphql(remove_reaction, variables)
+            console.log(result)
