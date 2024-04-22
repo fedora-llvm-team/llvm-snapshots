@@ -85,7 +85,7 @@ jobs:
       - name: Run retest script
         shell: bash -e {0}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TEST_TOKEN }}
         run: |
           python3 snapshot_manager/main.py \
             --github-repo ${GITHUB_REPOSITORY} \
