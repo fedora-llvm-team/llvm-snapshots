@@ -95,9 +95,10 @@ jobs:
             yyyymmdd=`date --date='${{matrix.today_minus_n_days}} days ago' +%Y%m%d`
           fi
 
-          python3 snapshot_manager/main.py check ${extra_args}\
+          python3 snapshot_manager/main.py \
             --github-repo ${GITHUB_REPOSITORY} \
             --github-token-env GITHUB_TOKEN \
+            check ${extra_args}\
             --maintainer-handle ${{matrix.maintainer_handle}} \
             --packages ${{matrix.packages}} \
             --build-strategy ${{matrix.name}} \
