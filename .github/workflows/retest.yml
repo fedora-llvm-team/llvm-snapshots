@@ -35,10 +35,10 @@ jobs:
   check-team-membership:
     runs-on: ubuntu-latest
     steps:
-      - name: Check if commented is member of the required team.
+      - name: Check if commenter is member of the required team.
         uses: actions/github-script@v7
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TEST_TOKEN }}
+          GITHUB_TOKEN: ${{secrets.GH_ORG_READ_MEMBERS_PAT}}
         with:
           script: |
             const query = `query check_if_user_is_team_member($user_login: String!, $org: String!, $team_slug: String!) {
