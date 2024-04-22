@@ -144,7 +144,7 @@ class SnapshotManager:
         # Kick off a new workflow run and pass the exact date in YYYYMMDD
         # form because we don't know if the issue was for today
         # or some other day.
-        workflow = repo.get_workflow("check-snapshots")
+        workflow = repo.get_workflow("check-snapshots.yml")
         inputs = {"strategy": strategy, "yyyymmdd": yyyymmdd}
         if not workflow.create_dispatch(ref="main", inputs=inputs):
             logging.info(

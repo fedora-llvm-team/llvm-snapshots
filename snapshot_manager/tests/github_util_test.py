@@ -101,6 +101,12 @@ class TestGithub(base_test.TestBase):
             self.assertEqual(page[0].name, test_state)
         pass
 
+    def test_get_workflow(self):
+        gh = github_util.GithubClient(config=self.config)
+        repo = gh.github.get_repo("fedora-llvm-team/llvm-snapshots")
+        workflow = repo.get_workflow("check-snapshots.yml")
+        self.assertIsNotNone(workflow)
+
 
 def load_tests(loader, tests, ignore):
     """We want unittest to pick up all of our doctests
