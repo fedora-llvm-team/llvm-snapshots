@@ -50,6 +50,8 @@ jobs:
     needs: get-chroots
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-python
       - name: Check if comment author is member of team
         shell: bash -e {0}
         env:
