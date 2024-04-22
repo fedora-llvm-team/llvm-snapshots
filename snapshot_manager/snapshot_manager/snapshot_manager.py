@@ -75,29 +75,19 @@ class SnapshotManager:
         logging.info(
             f"Getting issue with number {issue_number} from repo {self.config.github_repo}"
         )
-        issue = repo.get_issue(issue_number)
+        issue = repo.get_issue(number=issue_number)
         if issue is None:
             return
         logging.info(f"Got issue: {issue.html_url}")
 
         # Get YYYYMMDD from issue.title
-        issue_datetime: datetime = None
-        year_month_day = re.search("([0-9]{4})([0-9]{2})([0-9]{2})", issue.title)
-        if year_month_day is None:
-            logging.info("This comment doesn't appear to be a snapshot issue")
-            return
-
-        y = year_month_day.group(1)
-        m = year_month_day.group(2)
-        d = year_month_day.group(3)
         try:
-            issue_datetime = datetime.date(year=y, month=m, day=d)
+            yyyymmdd = util.get_yyyymmdd_from_title(issue.title)
         except ValueError as ex:
             logging.info(
-                f"Is this really a snapshot issue. Invalid date found in issue title: {issue.title}: {ex}"
+                f"issue title doesn't appear to look like a snapshot issue: {issue.title}: {ex}"
             )
             return
-        yyyymmdd = issue_datetime.strftime("%Y%m%d")
 
         # Get strategy from issue
         strategy: str = None
@@ -159,7 +149,7 @@ class SnapshotManager:
         issue.edit(body=new_comment_body)
 
         # Kick off a new workflow run and pass the exact date in YYYYMMDD
-        # (issue_datetime) form because we don't know if the issue was for today
+        # form because we don't know if the issue was for today
         # or some other day.
         workflow = repo.get_workflow("check-snapshots")
         inputs = {"strategy": strategy, "yyyymmdd": yyyymmdd}

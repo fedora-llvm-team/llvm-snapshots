@@ -2,20 +2,18 @@
 util
 """
 
-import enum
 import logging
 import pathlib
 import shlex
 import subprocess
 import os
 import re
-import string
+import datetime
 
 import requests
 import regex
 
 import snapshot_manager.file_access as file_access
-import snapshot_manager.build_status as build_status
 
 
 def fenced_code_block(
@@ -168,6 +166,50 @@ def golden_file_path(basename: str, extension: str = ".golden.txt") -> pathlib.P
         f"{basename}{extension}",
     )
     return pathlib.Path(path)
+
+
+def get_yyyymmdd_from_title(title: str) -> str:
+    """Returns the year-month-day combination in YYYYMMDD form from
+    an issue `title` or raises an error.
+
+    Args:
+        title (str): The title of a github issue
+
+    Raises:
+        ValueError: If `title` doesn't contain proper YYYYMMDD string
+        ValueError: If the date in the title is invalid
+
+    Returns:
+        str: The year-month-day extracted from `title`
+
+    Examples:
+
+    >>> get_yyyymmdd_from_title("Foo 20240124 Bar")
+    '20240124'
+
+    >>> get_yyyymmdd_from_title("Foo 20240132 Bar")
+    Traceback (most recent call last):
+      ...
+    ValueError: invalid date found in issue title: Foo 20240132 Bar
+
+    >>> get_yyyymmdd_from_title("Foo")
+    Traceback (most recent call last):
+      ...
+    ValueError: title doesn't appear to reference a snapshot issue: Foo
+    """
+    issue_datetime: datetime = None
+    year_month_day = re.search("([0-9]{4})([0-9]{2})([0-9]{2})", title)
+    if year_month_day is None:
+        raise ValueError(f"title doesn't appear to reference a snapshot issue: {title}")
+
+    y = int(year_month_day.group(1))
+    m = int(year_month_day.group(2))
+    d = int(year_month_day.group(3))
+    try:
+        issue_datetime = datetime.date(year=y, month=m, day=d)
+    except ValueError as ex:
+        raise ValueError(f"invalid date found in issue title: {title}") from ex
+    return issue_datetime.strftime("%Y%m%d")
 
 
 def expect_chroot(chroot: str) -> str:
