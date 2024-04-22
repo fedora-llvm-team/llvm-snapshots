@@ -33,6 +33,7 @@ jobs:
             const result = await github.graphql(mutation, variables)
             console.log(result)
   check-team-membership:
+    if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/retest')}}
     runs-on: ubuntu-latest
     steps:
       - name: Check if commenter is member of the required team.
