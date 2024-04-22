@@ -136,10 +136,8 @@ class SnapshotManager:
         )
         relevant_chroots = self.copr.get_copr_chroots()
         for chroot in chroots:
-            try:
-                util.expect_chroot(chroot)
-            except:
-                logging.info(f"Chroot {chroot} is not a valid chroot")
+            if util.expect_chroot(chroot):
+                logging.info(f"Chroot {chroot} is not a valid chroot: {ex}")
                 return
             if chroot not in relevant_chroots:
                 logging.info(
