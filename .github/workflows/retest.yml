@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   show-reaction:
-    if: ${{ !github.event.issue.pull_request && contains(github.event.comment.body, '/retest')}}
+    if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/retest')}}
     runs-on: ubuntu-latest
     steps:
       - name: Add reaction to trigger comment
@@ -33,7 +33,7 @@ jobs:
             const result = await github.graphql(mutation, variables)
             console.log(result)
   get-chroots:
-    if: ${{ !github.event.issue.pull_request && contains(github.event.comment.body, '/retest')}}
+    if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/retest')}}
     runs-on: ubuntu-latest
     outputs:
       chroots: ${{ steps.chroots-step.outputs.chroots }}
