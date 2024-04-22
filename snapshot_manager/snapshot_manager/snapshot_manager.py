@@ -158,8 +158,9 @@ class SnapshotManager:
             )
         issue.edit(body=new_comment_body)
 
-        # Kick off a new workflow run and pass the exact date in YYYYMMDD (issue_datetime) form
-        # because we don't know if the issue was for today or some other day
+        # Kick off a new workflow run and pass the exact date in YYYYMMDD
+        # (issue_datetime) form because we don't know if the issue was for today
+        # or some other day.
         workflow = repo.get_workflow("check-snapshots")
         inputs = {"strategy": strategy, "yyyymmdd": yyyymmdd}
         if not workflow.create_dispatch(ref="main", inputs=inputs):
