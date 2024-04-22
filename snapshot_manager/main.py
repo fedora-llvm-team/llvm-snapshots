@@ -75,7 +75,7 @@ def main():
 
     subparser_retest.add_argument(
         "--trigger-comment-id",
-        type=str,
+        type=int,
         dest="trigger_comment_id",
         required=True,
         help="ID of the comment that contains the /retest <CHROOT> string",
@@ -83,7 +83,7 @@ def main():
 
     subparser_retest.add_argument(
         "--issue-number",
-        type=str,
+        type=int,
         dest="issue_number",
         required=True,
         help="In what issue number did the comment appear in.",
