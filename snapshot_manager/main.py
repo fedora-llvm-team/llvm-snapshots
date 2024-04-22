@@ -78,7 +78,7 @@ def main():
         type=str,
         dest="trigger_comment_id",
         required=True,
-        help="ID of the issue that contains the /retest <CHROOT> comment",
+        help="ID of the comment that contains the /retest <CHROOT> string",
     )
 
     subparser_retest.add_argument(
