@@ -168,7 +168,7 @@ def golden_file_path(basename: str, extension: str = ".golden.txt") -> pathlib.P
     return pathlib.Path(path)
 
 
-def get_yyyymmdd_from_title(title: str) -> str:
+def get_yyyymmdd_from_string(string: str) -> str:
     """Returns the year-month-day combination in YYYYMMDD form from
     an issue `title` or raises an error.
 
@@ -184,23 +184,25 @@ def get_yyyymmdd_from_title(title: str) -> str:
 
     Examples:
 
-    >>> get_yyyymmdd_from_title("Foo 20240124 Bar")
+    >>> get_yyyymmdd_from_string("Foo 20240124 Bar")
     '20240124'
 
-    >>> get_yyyymmdd_from_title("Foo 20240132 Bar")
+    >>> get_yyyymmdd_from_string("Foo 20240132 Bar")
     Traceback (most recent call last):
       ...
     ValueError: invalid date found in issue title: Foo 20240132 Bar
 
-    >>> get_yyyymmdd_from_title("Foo")
+    >>> get_yyyymmdd_from_string("Foo")
     Traceback (most recent call last):
       ...
     ValueError: title doesn't appear to reference a snapshot issue: Foo
     """
     issue_datetime: datetime = None
-    year_month_day = re.search("([0-9]{4})([0-9]{2})([0-9]{2})", title)
+    year_month_day = re.search("([0-9]{4})([0-9]{2})([0-9]{2})", string)
     if year_month_day is None:
-        raise ValueError(f"title doesn't appear to reference a snapshot issue: {title}")
+        raise ValueError(
+            f"title doesn't appear to reference a snapshot issue: {string}"
+        )
 
     y = int(year_month_day.group(1))
     m = int(year_month_day.group(2))
@@ -208,7 +210,7 @@ def get_yyyymmdd_from_title(title: str) -> str:
     try:
         issue_datetime = datetime.date(year=y, month=m, day=d)
     except ValueError as ex:
-        raise ValueError(f"invalid date found in issue title: {title}") from ex
+        raise ValueError(f"invalid date found in issue title: {string}") from ex
     return issue_datetime.strftime("%Y%m%d")
 
 

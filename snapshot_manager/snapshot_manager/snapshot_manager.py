@@ -82,7 +82,7 @@ class SnapshotManager:
 
         # Get YYYYMMDD from issue.title
         try:
-            yyyymmdd = util.get_yyyymmdd_from_title(issue.title)
+            yyyymmdd = util.get_yyyymmdd_from_string(issue.title)
         except ValueError as ex:
             logging.info(
                 f"issue title doesn't appear to look like a snapshot issue: {issue.title}: {ex}"

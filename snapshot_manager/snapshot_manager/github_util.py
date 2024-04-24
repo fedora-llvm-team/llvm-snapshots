@@ -36,10 +36,6 @@ class Reaction(enum.StrEnum):
     ROCKET = "ROCKET"  # Represents the :rocket: emoji.
     EYES = "EYES"  # Represents the :eyes: emoji.
 
-    @classmethod
-    def all_reactions(cls) -> list["Reaction"]:
-        return [s for s in Reaction]
-
 
 class GithubClient:
     dirname = pathlib.Path(os.path.dirname(__file__))
