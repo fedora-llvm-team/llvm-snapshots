@@ -21,6 +21,7 @@ import github.Label
 import snapshot_manager.config as config
 import snapshot_manager.build_status as build_status
 import snapshot_manager.github_graphql as github_graphql
+import snapshot_manager.util as util
 
 
 @enum.unique
@@ -102,12 +103,14 @@ class GithubClient:
 
     @property
     def initial_comment(self) -> str:
+        llvm_release = util.get_release_for_yyyymmdd(self.config.yyyymmdd)
+        llvm_git_revision = util.get_git_revision_for_yyyymmdd(self.config.yyyymmdd)
         return f"""
 Hello @{self.config.maintainer_handle}!
 
 <p>
 This issue exists to let you know that we are about to monitor the builds
-of the LLVM snapshot for <a href="{self.config.copr_monitor_url}">{self.config.yyyymmdd}</a>.
+of the LLVM (v{llvm_release}, <a href="https://github.com/llvm/llvm-project/commit/{llvm_git_revision}">llvm/llvm-project@ {llvm_git_revision[:7]}</a>) snapshot for <a href="{self.config.copr_monitor_url}">{self.config.yyyymmdd}</a>.
 <details>
 <summary>At certain intervals the CI system will update this very comment over time to reflect the progress of builds.</summary>
 <dl>

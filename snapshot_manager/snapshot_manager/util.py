@@ -369,3 +369,21 @@ def chroot_arch(chroot: str) -> str:
     expect_chroot(chroot)
     match = regex.search(pattern=r"[^-]+-[^-]+-\K[^\s]+", string=chroot)
     return str(match[0])
+
+
+def get_git_revision_for_yyyymmdd(yyyymmdd: str) -> str:
+    """Get LLVM commit hash for the given date"""
+    yyyymmdd = get_yyyymmdd_from_string(yyyymmdd)
+    url = f"https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/source-snapshot/llvm-git-revision-{yyyymmdd}.txt"
+    logging.info(f"Getting URL {url}")
+    response = requests.get(url)
+    return response.text.strip()
+
+
+def get_release_for_yyyymmdd(yyyymmdd: str) -> str:
+    """Get LLVM release (e.g. 19.0.0) for the given date"""
+    yyyymmdd = get_yyyymmdd_from_string(yyyymmdd)
+    url = f"https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/source-snapshot/llvm-release-{yyyymmdd}.txt"
+    logging.info(f"Getting URL {url}")
+    response = requests.get(url)
+    return response.text.strip()
