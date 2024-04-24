@@ -40,14 +40,18 @@ name: "Generate LLVM snapshot tarballs"
 #   "source-snapshot" release doesn't exist, it will be created automatically.
 
 on:
-  # Uncomment to be able to trigger the workflow manually
-  # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
-  workflow_dispatch: {}
-
   schedule:
     # Everyday at 00:00am
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
     - cron:  '0 0 * * *'
+
+  workflow_dispatch:
+    inputs:
+      commit_hash:
+        description: 'Commit hash to use without tests'
+        required: true
+        default: origin/main
+        type: string
 
 permissions:
   # For release assets to be deletable we need this permission
@@ -93,7 +97,9 @@ jobs:
         with:
           checkout-path: llvm-snapshots
 
-      - uses: ./llvm-snapshots/.github/actions/get-good-commit
+      - name: Determine good commit (on schedule only)
+        uses: ./llvm-snapshots/.github/actions/get-good-commit
+        if: github.event_name != 'workflow_dispatch'
         id: good-commit
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -101,6 +107,15 @@ jobs:
           github-project: llvm/llvm-project
           start-ref: main
           max-tries: 500
+
+      - name: "Variables and functions"
+        shell: bash -e {0}
+        run: |
+          if [[ "${{github.event_name}}" == "workflow_dispatch"  ]]; then
+            echo "commit_hash=${{inputs.commit_hash}}" >> $GITHUB_ENV
+          else
+            echo "commit_hash=${{ steps.good-commit.outputs.good-commit }}" >> $GITHUB_ENV
+          fi
 
       - name: "checkout llvm/llvm-project"
         uses: actions/checkout@v4
@@ -111,13 +126,13 @@ jobs:
           submodules: true
           path: llvm-project
 
-      - name: "fetch stable revision to archive"
-        run: git -C llvm-project fetch --depth=1 --no-tags origin ${{ steps.good-commit.outputs.good-commit }}
+      - name: "fetch LLVM revision to archive"
+        run: git -C llvm-project fetch --depth=1 --no-tags origin ${{ env.commit_hash }}
 
       - name: "create source-snapshot tarballs"
         run: |
           llvm-project/llvm/utils/release/export.sh \
-            --git-ref ${{ steps.good-commit.outputs.good-commit }} \
+            --git-ref ${{ env.commit_hash }} \
             --template '${PROJECT}-${YYYYMMDD}.src.tar.xz'
 
       - name: >-
