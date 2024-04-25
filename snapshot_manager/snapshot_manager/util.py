@@ -171,17 +171,17 @@ def golden_file_path(basename: str, extension: str = ".golden.txt") -> pathlib.P
 
 def get_yyyymmdd_from_string(string: str) -> str:
     """Returns the year-month-day combination in YYYYMMDD form from
-    an issue `title` or raises an error.
+    `string` or raises an error.
 
     Args:
-        title (str): The title of a github issue
+        string (str): e.g. the title of a github issue
 
     Raises:
-        ValueError: If `title` doesn't contain proper YYYYMMDD string
+        ValueError: If `string` doesn't contain proper YYYYMMDD string
         ValueError: If the date in the title is invalid
 
     Returns:
-        str: The year-month-day extracted from `title`
+        str: The year-month-day extracted from `string`
 
     Examples:
 
