@@ -69,6 +69,8 @@ class Config:
     label_prefix_tested_on: str = "tested_on/"
     label_prefix_failed_on: str = "failed_on/"
 
+    label_prefix_llvm_release: str = "release/"
+
     @property
     def copr_projectname(self) -> str:
         """Takes the copr_project_tpl and replaces the YYYYMMDD placeholder (if any) with a date.
