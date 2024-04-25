@@ -425,7 +425,8 @@ class SnapshotManager:
         os_labels = list({f"os/{err.os}" for err in errors})
         arch_labels = list({f"arch/{err.arch}" for err in errors})
         strategy_labels = [f"strategy/{self.config.build_strategy}"]
-        other_labels: list[str] = []
+        llvm_release = util.get_release_for_yyyymmdd(self.config.yyyymmdd)
+        other_labels: list[str] = [llvm_release]
         if errors is None and len(errors) > 0:
             other_labels.append("broken_snapshot_detected")
 
@@ -441,6 +442,7 @@ class SnapshotManager:
         self.github.create_labels_for_in_testing(all_chroots)
         self.github.create_labels_for_tested_on(all_chroots)
         self.github.create_labels_for_failed_on(all_chroots)
+        self.github.create_labels_for_llvm_releases([llvm_release])
 
         # Remove old labels from issue if they no longer apply. This is great
         # for restarted builds for example to make all builds green and be able

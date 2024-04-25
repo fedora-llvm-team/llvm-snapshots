@@ -310,6 +310,16 @@ remove the aforementioned labels.
             *kw_args,
         )
 
+    def create_labels_for_llvm_releases(
+        self, labels: list[str], **kw_args
+    ) -> list[github.Label.Label]:
+        return self.create_labels(
+            labels=labels,
+            prefix=self.config.label_prefix_llvm_release,
+            color="2F3950",
+            *kw_args,
+        )
+
     def get_comment(
         self, issue: github.Issue.Issue, marker: str
     ) -> github.IssueComment.IssueComment:
