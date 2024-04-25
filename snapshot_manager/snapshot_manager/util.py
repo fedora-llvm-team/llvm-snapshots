@@ -9,6 +9,7 @@ import subprocess
 import os
 import re
 import datetime
+import functools
 
 import requests
 import regex
@@ -371,6 +372,7 @@ def chroot_arch(chroot: str) -> str:
     return str(match[0])
 
 
+@functools.cache
 def get_git_revision_for_yyyymmdd(yyyymmdd: str) -> str:
     """Get LLVM commit hash for the given date"""
     yyyymmdd = get_yyyymmdd_from_string(yyyymmdd)
@@ -380,6 +382,7 @@ def get_git_revision_for_yyyymmdd(yyyymmdd: str) -> str:
     return response.text.strip()
 
 
+@functools.cache
 def get_release_for_yyyymmdd(yyyymmdd: str) -> str:
     """Get LLVM release (e.g. 19.0.0) for the given date"""
     yyyymmdd = get_yyyymmdd_from_string(yyyymmdd)
