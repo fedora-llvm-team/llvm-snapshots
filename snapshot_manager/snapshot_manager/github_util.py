@@ -153,9 +153,12 @@ remove the aforementioned labels.
         strategy = self.config.build_strategy
         repo = self.gh_repo
         logging.info("Creating issue for today")
+
+        llvm_release = util.get_release_for_yyyymmdd(self.config.yyyymmdd)
+        llvm_git_revision = util.get_git_revision_for_yyyymmdd(self.config.yyyymmdd)
         issue = repo.create_issue(
             assignee=maintainer_handle,
-            title=f"Snapshot build for {self.config.yyyymmdd} ({strategy})",
+            title=f"Snapshot for {self.config.yyyymmdd}, v{llvm_release}, {llvm_git_revision[:7]} ({strategy})",
             body=self.initial_comment,
         )
         self.create_labels_for_strategies(labels=[strategy])
