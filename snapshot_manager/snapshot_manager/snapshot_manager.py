@@ -426,7 +426,9 @@ class SnapshotManager:
         arch_labels = list({f"arch/{err.arch}" for err in errors})
         strategy_labels = [f"strategy/{self.config.build_strategy}"]
         llvm_release = util.get_release_for_yyyymmdd(self.config.yyyymmdd)
-        other_labels: list[str] = [llvm_release]
+        other_labels: list[str] = [
+            f"{self.config.label_prefix_llvm_release}{llvm_release}"
+        ]
         if errors is None and len(errors) > 0:
             other_labels.append("broken_snapshot_detected")
 
