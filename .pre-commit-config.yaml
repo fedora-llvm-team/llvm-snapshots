@@ -13,12 +13,11 @@ repos:
   -   id: name-tests-test
   -   id: requirements-txt-fixer
 
-# Disabled until https://github.com/teemtee/tmt/issues/2651 is fixed
 # See https://tmt.readthedocs.io/en/latest/guide.html#checking-data-validity
-# - repo: https://github.com/teemtee/tmt.git
-#   rev: 1.28.2
-#   hooks:
-#   - id: tmt-lint
+- repo: https://github.com/teemtee/tmt.git
+  rev: 1.32.2
+  hooks:
+  - id: tmt-lint
 
 # See https://black.readthedocs.io/en/stable/integrations/source_version_control.html
 # Using this mirror lets us use mypyc-compiled black, which is about 2x faster
