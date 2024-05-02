@@ -96,7 +96,7 @@ class BuildState:
 
     def render_as_markdown(self) -> str:
         """Return an HTML string representation of this Build State to be used in a github issue"""
-        link = f'<a href="{self.build_log_url}">build log</a>'
+        link = f'<a href="{self.build_log_url}">build log</a>, <a href="https://logdetective.com/contribute/copr/{self.build_id:08}/{self.chroot}]">contribute to log-detective</a>'
         if self.url_build_log is None:
             link = f'<a href="{self.build_page_url}">build page</a>'
         return f"""
