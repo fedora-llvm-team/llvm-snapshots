@@ -56,7 +56,7 @@ packaging==23.2
     # via plotly
 pandas==2.2.0
     # via -r requirements.txt.in
-plotly==5.19.0
+plotly==5.22.0
     # via -r requirements.txt.in
 pycparser==2.21
     # via cffi
