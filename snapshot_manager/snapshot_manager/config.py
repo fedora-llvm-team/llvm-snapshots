@@ -13,7 +13,6 @@ class Config:
 
     packages: list[str] = dataclasses.field(
         default_factory=lambda: [
-            "llvm-snapshot-builder",
             "python-lit",
             "llvm",
             "clang",
