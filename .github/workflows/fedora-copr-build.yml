@@ -24,7 +24,7 @@ jobs:
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
             copr_target_project: "@fedora-llvm-team/llvm-snapshots"
             extra_script_file: "scripts/functions-big-merge.sh"
-            clone_url_tpl: "https://src.fedoraproject.org/forks/kkleine/rpms/PKG.git"
+            clone_url_tpl: "https://src.fedoraproject.org/rpms/PKG.git"
             clone_ref: big-merge
           - name: bootstrap
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD"
