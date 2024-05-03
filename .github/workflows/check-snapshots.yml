@@ -35,7 +35,7 @@ jobs:
           #   copr_ownername: "@fedora-llvm-team"
           #   copr_project_tpl: "llvm-snapshots-incubator-YYYYMMDD"
           #   copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
-          #   packages: "llvm-snapshot-builder python-lit llvm clang lld compiler-rt libomp"
+          #   packages: "python-lit llvm clang lld compiler-rt libomp"
           - name: big-merge
             maintainer_handle: "kwk"
             copr_ownername: "@fedora-llvm-team"
