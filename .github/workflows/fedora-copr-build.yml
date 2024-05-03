@@ -13,14 +13,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [standalone, big-merge, bootstrap]
+        name: [big-merge, bootstrap]
         include:
-          - name: standalone
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
-            copr_target_project: "@fedora-llvm-team/llvm-snapshots"
-            clone_url_tpl: "https://src.fedoraproject.org/rpms/PKG.git"
-            clone_ref: upstream-snapshot
-            needs_llvm_snapshot_builder: true
+          # - name: standalone
+          #   copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
+          #   copr_target_project: "@fedora-llvm-team/llvm-snapshots"
+          #   clone_url_tpl: "https://src.fedoraproject.org/rpms/PKG.git"
+          #   clone_ref: upstream-snapshot
+          #   needs_llvm_snapshot_builder: true
           - name: big-merge
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
             copr_target_project: "@fedora-llvm-team/llvm-snapshots-big-merge"
