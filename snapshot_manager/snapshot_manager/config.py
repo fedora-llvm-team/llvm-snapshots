@@ -29,7 +29,7 @@ class Config:
     datetime: "datetime.datetime" = datetime.datetime.now()
     """Datetime of today"""
 
-    build_strategy: str = "standalone"
+    build_strategy: str = "big-merge"
     """The build strategy to use a by default."""
 
     github_repo: str = "fedora-llvm-team/llvm-snapshots-test"
