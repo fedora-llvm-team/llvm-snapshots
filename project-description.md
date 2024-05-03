@@ -14,7 +14,7 @@ fedora-38-aarch64 fedora-38-i386 fedora-38-ppc64le fedora-38-s390x fedora-38-x86
 Did you notice a line like the follwing at the top of this project page?
 
 ```text
-@fedora-llvm-team/llvm-snapshots ( forked from @fedora-llvm-team/llvm-snapshots-incubator-20231218 )
+@fedora-llvm-team/llvm-snapshots ( forked from @fedora-llvm-team/llvm-snapshots-big-merge-20231218 )
 ```
 
 We carefully create a new copr project for each day. These projects are called *incubator* projects.
@@ -22,7 +22,7 @@ Only if all packages for all operating systems and architectures in an incubator
 we will promote it to be the next "official" snapshot here.
 
 That is the reason why sometimes it can take days until a new version of LLVM
-will be published here. If you're interested in the version for a particular day, feel free to open **https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/** (replace **YYYYMMDD** with the date you desire). Notice, that we cannot keep the invdividual incubator projects around forever.
+will be published here. If you're interested in the version for a particular day, feel free to open **https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/** (replace **YYYYMMDD** with the date you desire). Notice, that we cannot keep the invdividual incubator projects around forever.
 
 ### Contributing
 
