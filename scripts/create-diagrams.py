@@ -140,9 +140,9 @@ def add_html_header_menu(
         ]
     )
     header_menu += (
-        ' | <a href="fig-combined-standalone.html">llvm+clang+compiler-rt+libomp</a>',
-        ' | <a href="fig-big-merge.html">llvm (big-merge)</a>',
+        ' | <a href="fig-combined-standalone.html">llvm+clang+compiler-rt+libomp</a>'
     )
+    header_menu += ' | <a href="fig-big-merge.html">llvm (big-merge)</a>'
     header_menu += "</div>"
     header_menu += replace_me
 
