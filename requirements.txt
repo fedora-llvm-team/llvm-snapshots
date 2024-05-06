@@ -54,7 +54,7 @@ numpy==1.26.3
     # via pandas
 packaging==23.2
     # via plotly
-pandas==2.2.0
+pandas==2.2.2
     # via -r requirements.txt.in
 plotly==5.22.0
     # via -r requirements.txt.in
