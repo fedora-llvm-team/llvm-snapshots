@@ -13,28 +13,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [standalone, big-merge, bootstrap]
+        name: [big-merge, bootstrap]
         include:
-          - name: standalone
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
-            copr_target_project: "@fedora-llvm-team/llvm-snapshots"
-            clone_url_tpl: "https://src.fedoraproject.org/rpms/PKG.git"
-            clone_ref: upstream-snapshot
-            needs_llvm_snapshot_builder: true
+          # - name: standalone
+          #   copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
+          #   copr_target_project: "@fedora-llvm-team/llvm-snapshots"
+          #   clone_url_tpl: "https://src.fedoraproject.org/rpms/PKG.git"
+          #   clone_ref: upstream-snapshot
           - name: big-merge
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
-            copr_target_project: "@fedora-llvm-team/llvm-snapshots-big-merge"
+            copr_target_project: "@fedora-llvm-team/llvm-snapshots"
             extra_script_file: "scripts/functions-big-merge.sh"
             clone_url_tpl: "https://src.fedoraproject.org/rpms/PKG.git"
             clone_ref: big-merge
-            needs_llvm_snapshot_builder: false
           - name: bootstrap
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD"
             copr_target_project: "@fedora-llvm-team/llvm-snapshots-bootstrap"
             extra_script_file: "scripts/functions-bootstrap.sh"
             clone_url_tpl: "https://src.fedoraproject.org/forks/kkleine/rpms/PKG.git"
             clone_ref: bootstrap
-            needs_llvm_snapshot_builder: false
     runs-on: ubuntu-latest
     container: fedora:39
     steps:
@@ -83,10 +80,7 @@ jobs:
           # Check if yesterday's project exists and all builds succeeded
           yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`
           if [[ "$yesterdays_project_exists" == "true" ]]; then
-            if [ "${{ matrix.needs_llvm_snapshot_builder }}" == "true" ]; then
-              extra_packages=llvm-snapshot-builder
-            fi
-            if ! has_all_good_builds ${{env.project_yesterday}} $extra_packages; then
+            if ! has_all_good_builds ${{env.project_yesterday}}; then
               yesterdays_project_exists=false
             fi
           fi
@@ -159,18 +153,6 @@ jobs:
               "${{ env.project_today }}"
           done
 
-      - name: "Build llvm-snapshot-builder from SRPM into today's project: ${{ env.project_today }}"
-        if: ${{ matrix.needs_llvm_snapshot_builder }}
-        shell: bash -e {0}
-        run: |
-          source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
-
-          make -C llvm-snapshot-builder/ srpm
-          copr build \
-            "${{ env.project_today }}" \
-            llvm-snapshot-builder/tmp/SRPMS/llvm-snapshot-builder-*.rpm \
-
       - name: "Build packages in chroot batches in this order: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
@@ -178,15 +160,6 @@ jobs:
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           for chroot in ${{ env.chroots }}; do
-            if [ "${{ matrix.needs_llvm_snapshot_builder }}" == "true" ]; then
-              # Modify chroot to know about compat package repo and about the --with=snapshot_build option
-              copr edit-chroot \
-                --repos "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/${chroot}/" \
-                --rpmbuild-with "snapshot_build" \
-                --packages "llvm-snapshot-builder" \
-                ${{ env.project_today }}/$chroot
-            fi
-
             # Start a new batch
             after_build_id=""
             for pkg in ${{ env.packages }}; do

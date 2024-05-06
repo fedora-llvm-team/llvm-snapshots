@@ -1,8 +1,0 @@
-summary: Test the evaluation of llvm_sb macro
-discover:
-    how: shell
-    tests:
-    - name: test evaluation of llvm_sb macro
-      test: mkdir -p /root/rpmbuild/SOURCES && rpm --eval "%{llvm_sb}" | grep "llvm_snapshot_version:"
-execute:
-    how: tmt
