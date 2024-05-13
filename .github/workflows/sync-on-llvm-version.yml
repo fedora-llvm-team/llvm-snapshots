@@ -1,0 +1,88 @@
+name: "Sync on LLVM version"
+
+on:
+  schedule:
+    # Everyday at 00:00am
+    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+    - cron:  '0 0 * * *'
+
+  workflow_dispatch:
+    inputs:
+      commit_hash:
+        description: 'Commit hash to use without tests'
+        required: true
+        default: origin/main
+        type: string
+
+permissions:
+  # For release assets to be deletable we need this permission
+  contents: write
+
+jobs:
+
+  # In order to re-build source snapshots and upload them, we must first delete
+  # the old ones from today; otherwise there would be a conflict. As a measure
+  # of not storing old snapshots for too long we'll delete older ones here as
+  # well.
+  regenerate-assets:
+    name: "(Re)generate assets"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/prepare-python
+
+      - name: "delete assets older than 33 days and from today"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./scripts/delete-assets.py \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --project ${{ github.repository }} \
+            --release-name source-snapshot \
+            --delete-older 33 \
+            --delete-today
+
+      - name: Determine good commit (on schedule only)
+        uses: ./llvm-snapshots/.github/actions/get-good-commit
+        if: github.event_name != 'workflow_dispatch'
+        id: good-commit
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkout-path: llvm-snapshots
+          github-project: llvm/llvm-project
+          start-ref: main
+          max-tries: 500
+
+      - name: "Variables and functions"
+        shell: bash -e {0}
+        run: |
+          if [[ "${{github.event_name}}" == "workflow_dispatch"  ]]; then
+            echo "commit_hash=${{inputs.commit_hash}}" >> $GITHUB_ENV
+          else
+            echo "commit_hash=${{ steps.good-commit.outputs.good-commit }}" >> $GITHUB_ENV
+          fi
+
+          llvm_snapshot_yyyymmdd=$(date +%Y%m%d)
+          versionfile=LLVMVersion.cmake
+          curl -sL -o ${versionfile} "https://raw.githubusercontent.com/llvm/llvm-project/${commit_hash}/cmake/Modules/${versionfile}"
+
+          llvm_snapshot_git_revision=${commit_hash}
+          llvm_snapshot_version=$(grep -ioP 'set\(\s*LLVM_VERSION_(MAJOR|MINOR|PATCH)\s\K[0-9]+' ${versionfile} | paste -sd '.')
+
+          echo "${llvm_snapshot_version}" > llvm-release-NEW-${llvm_snapshot_yyyymmdd}.txt
+          echo "${llvm_snapshot_git_revision}" > llvm-git-revision-NEW-${llvm_snapshot_yyyymmdd}.txt
+
+      - name: >-
+          upload version files to the 'snapshot-version'
+          pre-release of ${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./scripts/upload-source-snapshots.py \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --project ${{ github.repository }} \
+            --release-name snapshot-version \
+            --yyyymmdd "$(date +%Y%m%d)"
