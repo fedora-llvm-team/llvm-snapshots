@@ -50,7 +50,7 @@ jobs:
         id: good-commit
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          checkout-path: llvm-snapshots
+          checkout-path: .
           github-project: llvm/llvm-project
           start-ref: main
           max-tries: 500
