@@ -12,6 +12,7 @@ repos:
   -   id: check-docstring-first
   -   id: name-tests-test
   -   id: requirements-txt-fixer
+  -   id: check-yaml
 
 # See https://tmt.readthedocs.io/en/latest/guide.html#checking-data-validity
 - repo: https://github.com/teemtee/tmt.git
