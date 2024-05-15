@@ -47,7 +47,6 @@ jobs:
 
       - name: Determine good commit (on schedule only)
         uses: ./.github/actions/get-good-commit
-        if: github.event_name != 'workflow_dispatch'
         id: good-commit
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
