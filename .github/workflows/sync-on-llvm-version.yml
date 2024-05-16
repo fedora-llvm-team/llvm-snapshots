@@ -66,13 +66,18 @@ jobs:
             commit_hash=${{ steps.good-commit.outputs.good-commit }}
           fi
 
-          # See https://docs.github.com/de/rest/commits/commits?apiVersion=2022-11-28#list-branches-for-head-commit
-          commit_hash=`curl -L \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{env.GITHUB_TOKEN}}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/llvm/llvm-project/commits/${commit_hash}/branches-where-head \
-          | jq -r '.[0].commit.sha'`
+          if [[ "$commit_hash" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "commit_hash looks like a SHA1. No need to resolve: ${commit_hash}"
+          else
+            echo "commit_hash doesn't look like a SHA1 (maybe it is a branch or tag name). Trying to resolve it: ${commit_hash}"
+            # See https://docs.github.com/de/rest/commits/commits?apiVersion=2022-11-28#list-branches-for-head-commit
+            commit_hash=`curl -L \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{env.GITHUB_TOKEN}}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              https://api.github.com/repos/llvm/llvm-project/commits/${commit_hash}/branches-where-head \
+            | jq -r '.[0].commit.sha'`
+          fi
 
           echo "commit_hash=${commit_hash}" >> $GITHUB_ENV
 
