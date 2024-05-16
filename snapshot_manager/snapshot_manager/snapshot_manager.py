@@ -139,7 +139,7 @@ class SnapshotManager:
             new_comment_body = self.remove_chroot_html_comment(
                 comment_body=new_comment_body, chroot=chroot
             )
-        issue.edit(body=new_comment_body)
+        issue.edit(body=new_comment_body, title=self.github.issue_title)
 
         # Kick off a new workflow run and pass the exact date in YYYYMMDD
         # form because we don't know if the issue was for today
@@ -222,7 +222,7 @@ class SnapshotManager:
 {build_status_matrix}
 {tf.TestingFarmRequest.dict_to_html_comment(requests)}
 """
-        issue.edit(body=comment_body)
+        issue.edit(body=comment_body, title=self.github.issue_title)
 
         logging.info("Filter testing-farm requests by chroot of interest")
         new_requests = dict()
@@ -388,7 +388,7 @@ class SnapshotManager:
 {build_status_matrix}
 {tf.TestingFarmRequest.dict_to_html_comment(requests)}
 """
-        issue.edit(body=comment_body)
+        issue.edit(body=comment_body, title=self.github.issue_title)
 
         logging.info("Checking if issue can be closed")
         # issue.update()
@@ -406,7 +406,9 @@ class SnapshotManager:
             msg = f"@{self.config.maintainer_handle}, all required packages have been successfully built and tested on all required chroots. We'll close this issue for you now as completed. Congratulations!"
             logging.info(msg)
             issue.create_comment(body=msg)
-            issue.edit(state="closed", state_reason="completed")
+            issue.edit(
+                state="closed", state_reason="completed", title=self.github.issue_title
+            )
             # TODO(kwk): Promotion of issue goes here.
         else:
             logging.info("Cannot close issue yet.")
