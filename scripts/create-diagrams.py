@@ -127,7 +127,7 @@ def add_html_header_menu(
         all_packages (str]): All the packages names for which to generate a menu entry
         plotly_div_id (str, optional): Plotly's HTML div's ID. Defaults to "plotly_div_id".
     """
-    replace_me = '<div id="{}"'.format(plotly_div_id)
+    replace_me = f'<div id="{plotly_div_id}"'
 
     file = Path(filepath)
     header_menu = '<div id="headermenu">Build-Stats by package: '
@@ -323,7 +323,7 @@ def main() -> None:
         # To debug, uncomment the following:
         # fig.show()
         # break
-        filepath = "fig-{}.html".format(package_name)
+        filepath = f"fig-{package_name}.html"
         save_figure(fig=fig, filepath=filepath)
         add_html_header_menu(filepath=filepath, all_packages=all_packages)
 

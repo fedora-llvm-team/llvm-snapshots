@@ -67,7 +67,7 @@ class GithubGraphQL:
         return self.__encoding
 
     def run_from_file(
-        self, filename: str, variables: dict[str, Union[str, int]] = None, **kwargs
+        self, filename: str, variables: dict[str, str | int] = None, **kwargs
     ) -> Any:
         """
         Read the query/mutation from the given file and execute it with the variables
@@ -84,7 +84,7 @@ class GithubGraphQL:
             variables (dict): The variables to be applied to the query/mutation.
             **kwargs: key-value pairs (e.g. {raise_on_error=True})
         """
-        with open(file=filename, mode="r", encoding=self.encoding) as file_handle:
+        with open(file=filename, encoding=self.encoding) as file_handle:
             query = file_handle.read()
         return self.run(query, variables, **kwargs)
 
@@ -103,9 +103,7 @@ class GithubGraphQL:
         """Closes the session."""
         self.__session.close()
 
-    def run(
-        self, query: str, variables: dict[str, Union[str, int]] = None, **kwargs
-    ) -> dict:
+    def run(self, query: str, variables: dict[str, str | int] = None, **kwargs) -> dict:
         """
         Execute the query with the variables applied. If not requested otherwise
         the plain result is returned. If you want to raise an exception in case
