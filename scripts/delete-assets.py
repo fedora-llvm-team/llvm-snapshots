@@ -1,9 +1,10 @@
 #!/bin/env python3
 
-from github import Github, UnknownObjectException
 import argparse
 import datetime
 import sys
+
+from github import Github, UnknownObjectException
 
 
 def delete_assets(

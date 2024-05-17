@@ -2,8 +2,8 @@
 config
 """
 
-import datetime
 import dataclasses
+import datetime
 
 
 @dataclasses.dataclass(kw_only=True)

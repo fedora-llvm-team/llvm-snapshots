@@ -1,10 +1,11 @@
 #!/bin/env python3
 
-from github import Github, UnknownObjectException
 import argparse
 import datetime
 import os
 from glob import glob
+
+from github import Github, UnknownObjectException
 
 
 def main(args) -> None:

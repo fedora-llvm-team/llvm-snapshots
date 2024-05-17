@@ -43,6 +43,7 @@ def load_tests(loader, tests, ignore):
     See https://stackoverflow.com/a/27171468
     """
     import doctest
+
     import snapshot_manager.util
 
     tests.addTests(doctest.DocTestSuite(snapshot_manager.util))

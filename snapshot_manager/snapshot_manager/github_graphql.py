@@ -2,10 +2,9 @@
 GithubGraphQL
 """
 
-import pathlib
-import os
 import logging
-import fnc
+import os
+import pathlib
 from typing import Any, Union
 
 import fnc

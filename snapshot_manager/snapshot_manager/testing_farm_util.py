@@ -2,26 +2,25 @@
 testing_farm_util
 """
 
-import enum
-import logging
-import re
-import string
-import uuid
-import os
-import json
-import re
 import dataclasses
 import datetime
-import urllib.parse
+import enum
+import json
+import logging
+import os
 import pathlib
+import re
+import string
+import urllib.parse
+import uuid
+import xml.etree.ElementTree as ET
 from typing import ClassVar
 
-import regex
 import github.Issue
-import xml.etree.ElementTree as ET
+import regex
 
-import snapshot_manager.util as util
 import snapshot_manager.config as config
+import snapshot_manager.util as util
 
 
 @dataclasses.dataclass(kw_only=True, unsafe_hash=True)

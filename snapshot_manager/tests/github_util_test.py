@@ -5,6 +5,7 @@ import logging
 import uuid
 
 import tests.base_test as base_test
+
 import snapshot_manager.github_util as github_util
 
 

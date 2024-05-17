@@ -1,9 +1,10 @@
 #!/bin/env python3
 
 import argparse
-import sys
-from github import Github
 import logging
+import sys
+
+from github import Github
 
 
 def get_good_commit(

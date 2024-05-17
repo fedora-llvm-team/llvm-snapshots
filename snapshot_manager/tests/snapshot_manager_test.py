@@ -3,8 +3,9 @@
 import datetime
 
 import tests.base_test as base_test
-import snapshot_manager.snapshot_manager as snapshot_manager
+
 import snapshot_manager.github_util as github_util
+import snapshot_manager.snapshot_manager as snapshot_manager
 
 
 class TestSnapshotManager(base_test.TestBase):

@@ -1,12 +1,13 @@
 #!/bin/env python3
 
-import os
-from datetime import datetime
 import argparse
-import sys
-from copr.v3 import Client, CoprNoResultException
 import calendar
+import os
+import sys
 import time
+from datetime import datetime
+
+from copr.v3 import Client, CoprNoResultException
 
 
 def gather_build_stats(

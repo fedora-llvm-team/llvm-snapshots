@@ -2,17 +2,17 @@
 util
 """
 
-import logging
-import pathlib
-import shlex
-import subprocess
-import os
-import re
 import datetime
 import functools
+import logging
+import os
+import pathlib
+import re
+import shlex
+import subprocess
 
-import requests
 import regex
+import requests
 
 import snapshot_manager.file_access as file_access
 

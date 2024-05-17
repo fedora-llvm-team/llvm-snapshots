@@ -3,23 +3,23 @@ github_util
 """
 
 import datetime
-import os
-import logging
-import fnc
-import typing
-import pathlib
 import enum
+import logging
+import os
+import pathlib
+import typing
 
+import fnc
 import github
 import github.GithubException
 import github.Issue
 import github.IssueComment
-import github.Repository
-import github.PaginatedList
 import github.Label
+import github.PaginatedList
+import github.Repository
 
-import snapshot_manager.config as config
 import snapshot_manager.build_status as build_status
+import snapshot_manager.config as config
 import snapshot_manager.github_graphql as github_graphql
 import snapshot_manager.util as util
 
