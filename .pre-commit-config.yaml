@@ -9,21 +9,32 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
-    -   id: trailing-whitespace
-    -   id: end-of-file-fixer
-    -   id: check-yaml
-    -   id: check-added-large-files
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: fix-byte-order-marker
+      - id: detect-private-key
+      - id: check-toml
+      - id: check-yaml
+        args:
+          - "--allow-multiple-documents"
+      - id: check-added-large-files
         args: ['--maxkb=3000']
-    -   id: check-docstring-first
-    -   id: name-tests-test
-    -   id: requirements-txt-fixer
-    -   id: check-yaml
+      - id: check-docstring-first
+      - id: name-tests-test
+      - id: requirements-txt-fixer
 
   # See https://tmt.readthedocs.io/en/latest/guide.html#checking-data-validity
   - repo: https://github.com/teemtee/tmt.git
     rev: 1.32.2
     hooks:
-    - id: tmt-lint
+      - id: tmt-lint
 
   # See https://black.readthedocs.io/en/stable/integrations/source_version_control.html
   # Using this mirror lets us use mypyc-compiled black, which is about 2x faster
