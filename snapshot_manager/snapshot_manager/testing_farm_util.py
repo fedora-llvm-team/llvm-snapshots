@@ -200,6 +200,7 @@ class TestingFarmRequest:
             --arch {util.chroot_arch(chroot)} \
             --plan /tests/snapshot-gating \
             --environment COPR_PROJECT={config.copr_projectname} \
+            --environment COPR_CHROOT={chroot} \
             --context distro={util.chroot_os(chroot)} \
             --context arch={util.chroot_arch(chroot)} \
             --no-wait \
