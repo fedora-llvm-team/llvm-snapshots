@@ -22,7 +22,7 @@ colorama==0.4.6
     #   typer
 commonmark==0.9.1
     # via rich
-copr==1.130
+copr==1.132
     # via
     #   -r requirements.txt.in
     #   copr-cli
