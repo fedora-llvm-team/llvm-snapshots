@@ -347,7 +347,26 @@ class TestingFarmRequest:
 
     @classmethod
     def get_compose(cls, chroot: str) -> str:
+        """
+        Returns the testing farm compose for the given chroot
+
+        For the redhat ranch see this list: https://api.testing-farm.io/v0.1/composes/redhat
+        For the public ranch see this list: https://api.testing-farm.io/v0.1/composes/public
+
+        Examples:
+
+        >>> TestingFarmRequest.get_compose("fedora-rawhide-x86_64")
+        'Fedora-Rawhide'
+        >>> TestingFarmRequest.get_compose("fedora-39-x86_64")
+        'Fedora-39'
+        >>> TestingFarmRequest.get_compose("rhel-9-aarch")
+        'RHEL-9-Nightly'
+        """
         util.expect_chroot(chroot)
+
+        if util.chroot_name(chroot) == "rhel":
+            return f"RHEL-{util.chroot_version(chroot)}-Nightly"
+
         if util.chroot_version(chroot) == "rawhide":
             return "Fedora-Rawhide"
         return util.chroot_os(chroot).capitalize()
