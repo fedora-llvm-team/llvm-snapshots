@@ -11,7 +11,7 @@
 summary: LLVM Tests for snapshot gating
 prepare:
   - how: install
-    copr: "@fedora-llvm-team/$COPR_PROJECT"
+    copr: "@fedora-llvm-team/$COPR_PROJECT $COPR_CHROOT"
     # Lower the priority of the testing-farm-tag-repository so that our copr repo is picked up.
     # See: https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_tag_repository
   - how: shell
