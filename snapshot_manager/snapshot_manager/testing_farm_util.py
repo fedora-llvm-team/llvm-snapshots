@@ -597,6 +597,13 @@ class TestingFarmWatchResult(enum.StrEnum):
         >>> s = base64.b64decode(s).decode()
         >>> TestingFarmWatchResult.from_output(s)
         (<TestingFarmWatchResult.PIPELINE_ERROR: 'pipeline error'>, None)
+        >>> s='''8J+UjiBhcGkgaHR0cHM6Ly9hcGkuZGV2LnRlc3RpbmctZmFybS5pby92MC4xL3JlcXVlc3RzLzk3
+        ... YTdjYzI0LTY5MjYtNDA1OS04NGFjLWQwMDc4Mjk3YzMxOQrwn5qAIHJlcXVlc3QgaXMgcnVubmlu
+        ... Zwrwn5qiIGFydGlmYWN0cyBodHRwczovL2FydGlmYWN0cy5kZXYudGVzdGluZy1mYXJtLmlvLzk3
+        ... YTdjYzI0LTY5MjYtNDA1OS04NGFjLWQwMDc4Mjk3YzMxOQo='''
+        >>> s = base64.b64decode(s).decode()
+        >>> TestingFarmWatchResult.from_output(s)
+        (<TestingFarmWatchResult.REQUEST_RUNNING: 'request is running'>, 'https://artifacts.dev.testing-farm.io/97a7cc24-6926-4059-84ac-d0078297c319')
         """
         string = clean_testing_farm_output(string)
         for watch_result in TestingFarmWatchResult.all_watch_results():
