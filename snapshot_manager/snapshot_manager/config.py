@@ -8,7 +8,7 @@ import datetime
 
 @dataclasses.dataclass(kw_only=True)
 class Config:
-    chroot_pattern: str = r"^fedora-(rawhide|[0-9]+)"
+    chroot_pattern: str = r"^(fedora-(rawhide|[0-9]+)|rhel-9-)"
     """Regular expression to select chroots from all chroots currently supported on Copr."""
 
     packages: list[str] = dataclasses.field(
