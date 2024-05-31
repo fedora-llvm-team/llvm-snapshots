@@ -1,0 +1,21 @@
+
+```
+RPM build errors:
+    absolute symlink: /usr/bin/clang-format-diff -> /usr/share/clang/clang-format-diff.py
+    File not found: /builddir/build/BUILDROOT/llvm-19.0.0~pre20240528.g1de1ee9cbabd64-1.fc39.i386/usr/lib/clang/19/bin/hwasan_symbolize
+    File not found: /builddir/build/BUILDROOT/llvm-19.0.0~pre20240528.g1de1ee9cbabd64-1.fc39.i386/usr/lib/clang/19/lib/i686-redhat-linux-gnu/libclang_rt.*
+    File not found: /builddir/build/BUILDROOT/llvm-19.0.0~pre20240528.g1de1ee9cbabd64-1.fc39.i386/usr/lib/clang/19/lib/i686-redhat-linux-gnu/clang_rt.crtbegin.o
+    File not found: /builddir/build/BUILDROOT/llvm-19.0.0~pre20240528.g1de1ee9cbabd64-1.fc39.i386/usr/lib/clang/19/lib/i686-redhat-linux-gnu/clang_rt.crtend.o
+Finish: rpmbuild llvm-19.0.0~pre20240528.g1de1ee9cbabd64-1.fc39.src.rpm
+Finish: build phase for llvm-19.0.0~pre20240528.g1de1ee9cbabd64-1.fc39.src.rpm
+INFO: chroot_scan: 3 files copied to /var/lib/copr-rpmbuild/results/chroot_scan
+INFO: /var/lib/mock/fedora-39-i686-1716860810.346640/root/var/log/dnf.log
+/var/lib/mock/fedora-39-i686-1716860810.346640/root/var/log/dnf.librepo.log
+/var/lib/mock/fedora-39-i686-1716860810.346640/root/var/log/dnf.rpm.log
+ERROR: Exception(/var/lib/copr-rpmbuild/results/llvm-19.0.0~pre20240528.g1de1ee9cbabd64-1.fc39.src.rpm) Config(fedora-39-i686) 398 minutes 25 seconds
+INFO: Results and/or logs in: /var/lib/copr-rpmbuild/results
+INFO: Cleaning up build root ('cleanup_on_failure=True')
+Start: clean chroot
+INFO: unmounting tmpfs.
+Finish
+```
