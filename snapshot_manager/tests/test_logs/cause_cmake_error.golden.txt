@@ -1,0 +1,13 @@
+
+```
+CMake Error at /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake:230 (message):
+Jun 02 02:16:32   Could NOT find Threads (missing: Threads_FOUND)
+Jun 02 02:16:32 Call Stack (most recent call first):
+Jun 02 02:16:32   /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake:600 (_FPHSA_FAILURE_MESSAGE)
+Jun 02 02:16:32   /usr/share/cmake/Modules/FindThreads.cmake:226 (FIND_PACKAGE_HANDLE_STANDARD_ARGS)
+Jun 02 02:16:32   /builddir/build/BUILD/llvm-19.0.0~pre20240602.g0310f7f2d0c56a-build/llvm-project-0310f7f2d0c56a5697710251cec9803cbf7b4d56/openmp/runtime/cmake/config-ix.cmake:158 (find_package)
+Jun 02 02:16:32   /builddir/build/BUILD/llvm-19.0.0~pre20240602.g0310f7f2d0c56a-build/llvm-project-0310f7f2d0c56a5697710251cec9803cbf7b4d56/openmp/runtime/CMakeLists.txt:279 (include)
+Jun 02 02:16:32 
+Jun 02 02:16:32 
+Jun 02 02:16:32 -- Configuring incomplete, errors occurred!
+```

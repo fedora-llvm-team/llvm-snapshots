@@ -76,6 +76,7 @@ class ErrorCause(enum.StrEnum):
     )
     ISSUE_RPM__DIRECTORY_NOT_FOUND = "rpm__directory_not_found"
     ISSUE_RPM__FILE_NOT_FOUND = "rpm__file_not_found"
+    ISSUE_CMAKE_ERROR = "cmake_error"
     ISSUE_UNKNOWN = "unknown"
 
     @classmethod
@@ -387,6 +388,20 @@ def get_cause_from_build_log(
         ctx = ctx.rstrip("\x00")
         return handle_golden_file(
             ErrorCause.ISSUE_RPM__FILE_NOT_FOUND,
+            util.fenced_code_block(ctx),
+        )
+
+    logging.info(" Checking for CMake error...")
+    ret, ctx, _ = util.grep_file(
+        pattern=r"(?s)CMake Error at.*Configuring incomplete, errors occurred!",
+        extra_args="-Pzo",
+        filepath=build_log_file,
+    )
+    if ret == 0:
+        # Remove trailing binary zero
+        ctx = ctx.rstrip("\x00")
+        return handle_golden_file(
+            ErrorCause.ISSUE_CMAKE_ERROR,
             util.fenced_code_block(ctx),
         )
 
