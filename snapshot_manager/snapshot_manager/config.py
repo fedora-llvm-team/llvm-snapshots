@@ -66,7 +66,7 @@ class Config:
 
     label_prefix_in_testing: str = "in_testing/"
     label_prefix_tested_on: str = "tested_on/"
-    label_prefix_failed_on: str = "failed_on/"
+    label_prefix_tests_failed_on: str = "tests_failed_on/"
 
     label_prefix_llvm_release: str = "release/"
 

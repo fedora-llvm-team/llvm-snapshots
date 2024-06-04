@@ -294,7 +294,7 @@ class SnapshotManager:
 
             in_testing = f"{self.config.label_prefix_in_testing}{chroot}"
             tested_on = f"{self.config.label_prefix_tested_on}{chroot}"
-            failed_on = f"{self.config.label_prefix_failed_on}{chroot}"
+            failed_on = f"{self.config.label_prefix_tests_failed_on}{chroot}"
 
             # Gather build IDs associated with this chroot.
             # We'll attach them a new testing-farm request, and for a recovered
@@ -445,7 +445,7 @@ class SnapshotManager:
         self.github.create_labels_for_strategies(strategy_labels)
         self.github.create_labels_for_in_testing(all_chroots)
         self.github.create_labels_for_tested_on(all_chroots)
-        self.github.create_labels_for_failed_on(all_chroots)
+        self.github.create_labels_for_tests_failed_on(all_chroots)
         self.github.create_labels_for_llvm_releases([llvm_release])
 
         # Remove old labels from issue if they no longer apply. This is great
