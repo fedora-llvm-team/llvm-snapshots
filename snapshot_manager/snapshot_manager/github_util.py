@@ -298,12 +298,12 @@ remove the aforementioned labels.
             *kw_args,
         )
 
-    def create_labels_for_failed_on(
+    def create_labels_for_tests_failed_on(
         self, labels: list[str], **kw_args
     ) -> list[github.Label.Label]:
         return self.create_labels(
             labels=labels,
-            prefix=self.config.label_prefix_failed_on,
+            prefix=self.config.label_prefix_tests_failed_on,
             color="D93F0B",
             *kw_args,
         )
@@ -502,7 +502,7 @@ remove the aforementioned labels.
         return f"{self.config.label_prefix_in_testing}{chroot}"
 
     def label_failed_on(self, chroot: str) -> str:
-        return f"{self.config.label_prefix_failed_on}{chroot}"
+        return f"{self.config.label_prefix_tests_failed_on}{chroot}"
 
     def label_tested_on(self, chroot: str) -> str:
         return f"{self.config.label_prefix_tested_on}{chroot}"
