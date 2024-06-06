@@ -200,6 +200,7 @@ class TestingFarmRequest:
             --arch {util.chroot_arch(chroot)} \
             --plan /tests/snapshot-gating \
             --environment COPR_PROJECT={config.copr_projectname} \
+            --environment COPR_CHROOT={chroot} \
             --context distro={util.chroot_os(chroot)} \
             --context arch={util.chroot_arch(chroot)} \
             --no-wait \
@@ -347,7 +348,26 @@ class TestingFarmRequest:
 
     @classmethod
     def get_compose(cls, chroot: str) -> str:
+        """
+        Returns the testing farm compose for the given chroot
+
+        For the redhat ranch see this list: https://api.testing-farm.io/v0.1/composes/redhat
+        For the public ranch see this list: https://api.testing-farm.io/v0.1/composes/public
+
+        Examples:
+
+        >>> TestingFarmRequest.get_compose("fedora-rawhide-x86_64")
+        'Fedora-Rawhide'
+        >>> TestingFarmRequest.get_compose("fedora-39-x86_64")
+        'Fedora-39'
+        >>> TestingFarmRequest.get_compose("rhel-9-aarch")
+        'RHEL-9-Nightly'
+        """
         util.expect_chroot(chroot)
+
+        if util.chroot_name(chroot) == "rhel":
+            return f"RHEL-{util.chroot_version(chroot)}-Nightly"
+
         if util.chroot_version(chroot) == "rawhide":
             return "Fedora-Rawhide"
         return util.chroot_os(chroot).capitalize()
@@ -578,6 +598,13 @@ class TestingFarmWatchResult(enum.StrEnum):
         >>> s = base64.b64decode(s).decode()
         >>> TestingFarmWatchResult.from_output(s)
         (<TestingFarmWatchResult.PIPELINE_ERROR: 'pipeline error'>, None)
+        >>> s='''8J+UjiBhcGkgaHR0cHM6Ly9hcGkuZGV2LnRlc3RpbmctZmFybS5pby92MC4xL3JlcXVlc3RzLzk3
+        ... YTdjYzI0LTY5MjYtNDA1OS04NGFjLWQwMDc4Mjk3YzMxOQrwn5qAIHJlcXVlc3QgaXMgcnVubmlu
+        ... Zwrwn5qiIGFydGlmYWN0cyBodHRwczovL2FydGlmYWN0cy5kZXYudGVzdGluZy1mYXJtLmlvLzk3
+        ... YTdjYzI0LTY5MjYtNDA1OS04NGFjLWQwMDc4Mjk3YzMxOQo='''
+        >>> s = base64.b64decode(s).decode()
+        >>> TestingFarmWatchResult.from_output(s)
+        (<TestingFarmWatchResult.REQUEST_RUNNING: 'request is running'>, 'https://artifacts.dev.testing-farm.io/97a7cc24-6926-4059-84ac-d0078297c319')
         """
         string = clean_testing_farm_output(string)
         for watch_result in TestingFarmWatchResult.all_watch_results():

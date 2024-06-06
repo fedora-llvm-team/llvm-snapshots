@@ -120,7 +120,7 @@ we'll analyze the build log (if any) to identify the cause of the failure. The c
 For each cause we will list the packages and the relevant log excerpts.</dd>
 <dt>Use of labels</dt>
 <dd>Let's assume a unit test test in upstream LLVM was broken.
-We will then add these labels to this issue: <code>error/test</code>, <code>arch/x86_64</code>, <code>os/fedora-rawhide</code>, <code>project/llvm</code>.
+We will then add these labels to this issue: <code>error/test</code>, <code>build_failed_on/fedora-rawhide-x86_64</code>, <code>project/llvm</code>.
 If you manually restart a build in Copr and can bring it to a successful state, we will automatically
 remove the aforementioned labels.
 </dd>
@@ -242,11 +242,10 @@ remove the aforementioned labels.
     def get_error_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
         return self.get_label_names_on_issue(issue, prefix="error/")
 
-    def get_os_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
-        return self.get_label_names_on_issue(issue, prefix="os/")
-
-    def get_arch_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
-        return self.get_label_names_on_issue(issue, prefix="arch/")
+    def get_build_failed_on_names_on_issue(
+        self, issue: github.Issue.Issue
+    ) -> list[str]:
+        return self.get_label_names_on_issue(issue, prefix="build_failed_on/")
 
     def get_project_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
         return self.get_label_names_on_issue(issue, prefix="project/")
@@ -258,11 +257,11 @@ remove the aforementioned labels.
             labels=labels, prefix="error/", color="FBCA04", **kw_args
         )
 
-    def create_labels_for_oses(
+    def create_labels_for_build_failed_on(
         self, labels: list[str], **kw_args
     ) -> list[github.Label.Label]:
         return self.create_labels(
-            labels=labels, prefix="os/", color="F9D0C4", **kw_args
+            labels=labels, prefix="build_failed_on/", color="F9D0C4", **kw_args
         )
 
     def create_labels_for_projects(
@@ -277,13 +276,6 @@ remove the aforementioned labels.
     ) -> list[github.Label.Label]:
         return self.create_labels(
             labels=labels, prefix="strategy/", color="FFFFFF", *kw_args
-        )
-
-    def create_labels_for_archs(
-        self, labels: list[str], **kw_args
-    ) -> list[github.Label.Label]:
-        return self.create_labels(
-            labels=labels, prefix="arch/", color="C5DEF5", *kw_args
         )
 
     def create_labels_for_in_testing(
@@ -306,12 +298,12 @@ remove the aforementioned labels.
             *kw_args,
         )
 
-    def create_labels_for_failed_on(
+    def create_labels_for_tests_failed_on(
         self, labels: list[str], **kw_args
     ) -> list[github.Label.Label]:
         return self.create_labels(
             labels=labels,
-            prefix=self.config.label_prefix_failed_on,
+            prefix=self.config.label_prefix_tests_failed_on,
             color="D93F0B",
             *kw_args,
         )
@@ -510,7 +502,7 @@ remove the aforementioned labels.
         return f"{self.config.label_prefix_in_testing}{chroot}"
 
     def label_failed_on(self, chroot: str) -> str:
-        return f"{self.config.label_prefix_failed_on}{chroot}"
+        return f"{self.config.label_prefix_tests_failed_on}{chroot}"
 
     def label_tested_on(self, chroot: str) -> str:
         return f"{self.config.label_prefix_tested_on}{chroot}"

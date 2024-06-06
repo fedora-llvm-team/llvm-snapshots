@@ -71,7 +71,12 @@ class ErrorCause(enum.StrEnum):
     ISSUE_DEPENDENCY = "dependency_issue"
     ISSUE_TEST = "test"
     ISSUE_DOWNSTREAM_PATCH_APPLICATION = "downstream_patch_application"
-    ISSUE_INSTALLED_BUT_UNPACKAGED_FILES_FOUND = "installed_but_unpackaged_files_found"
+    ISSUE_RPM__INSTALLED_BUT_UNPACKAGED_FILES_FOUND = (
+        "rpm__installed_but_unpackaged_files_found"
+    )
+    ISSUE_RPM__DIRECTORY_NOT_FOUND = "rpm__directory_not_found"
+    ISSUE_RPM__FILE_NOT_FOUND = "rpm__file_not_found"
+    ISSUE_CMAKE_ERROR = "cmake_error"
     ISSUE_UNKNOWN = "unknown"
 
     @classmethod
@@ -332,7 +337,7 @@ def get_cause_from_build_log(
 
     logging.info(" Checking for installed but unackaged files...")
     ret, ctx, _ = util.grep_file(
-        pattern=r"(?s)RPM build errors:\n    Installed \(but unpackaged\) file\(s\) found:.*Finish",
+        pattern=r"(?s)RPM build errors:\n.*    Installed \(but unpackaged\) file\(s\) found:.*Finish",
         extra_args="-Pzo",
         filepath=build_log_file,
     )
@@ -340,7 +345,63 @@ def get_cause_from_build_log(
         # Remove trailing binary zero
         ctx = ctx.rstrip("\x00")
         return handle_golden_file(
-            ErrorCause.ISSUE_INSTALLED_BUT_UNPACKAGED_FILES_FOUND,
+            ErrorCause.ISSUE_RPM__INSTALLED_BUT_UNPACKAGED_FILES_FOUND,
+            util.fenced_code_block(ctx),
+        )
+
+    logging.info(" Checking for alternative installed but unackaged files...")
+    ret, ctx, _ = util.grep_file(
+        pattern=r"(?s)Checking for unpackaged file(s):.*Installed (but unpackaged) file(s) found:.*\n\n",
+        extra_args="-Pzo",
+        filepath=build_log_file,
+    )
+    if ret == 0:
+        # Remove trailing binary zero
+        ctx = ctx.rstrip("\x00")
+        return handle_golden_file(
+            ErrorCause.ISSUE_RPM__INSTALLED_BUT_UNPACKAGED_FILES_FOUND,
+            util.fenced_code_block(ctx),
+        )
+
+    logging.info(" Checking for directory not found...")
+    ret, ctx, _ = util.grep_file(
+        pattern=r"(?s)RPM build errors:\n.*    Directory not found: /builddir/.*Finish",
+        extra_args="-Pzo",
+        filepath=build_log_file,
+    )
+    if ret == 0:
+        # Remove trailing binary zero
+        ctx = ctx.rstrip("\x00")
+        return handle_golden_file(
+            ErrorCause.ISSUE_RPM__DIRECTORY_NOT_FOUND,
+            util.fenced_code_block(ctx),
+        )
+
+    logging.info(" Checking for file not found...")
+    ret, ctx, _ = util.grep_file(
+        pattern=r"(?s)RPM build errors:\n.*    File not found: /builddir/.*Finish",
+        extra_args="-Pzo",
+        filepath=build_log_file,
+    )
+    if ret == 0:
+        # Remove trailing binary zero
+        ctx = ctx.rstrip("\x00")
+        return handle_golden_file(
+            ErrorCause.ISSUE_RPM__FILE_NOT_FOUND,
+            util.fenced_code_block(ctx),
+        )
+
+    logging.info(" Checking for CMake error...")
+    ret, ctx, _ = util.grep_file(
+        pattern=r"(?s)CMake Error at.*Configuring incomplete, errors occurred!",
+        extra_args="-Pzo",
+        filepath=build_log_file,
+    )
+    if ret == 0:
+        # Remove trailing binary zero
+        ctx = ctx.rstrip("\x00")
+        return handle_golden_file(
+            ErrorCause.ISSUE_CMAKE_ERROR,
             util.fenced_code_block(ctx),
         )
 
