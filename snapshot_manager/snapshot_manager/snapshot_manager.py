@@ -294,7 +294,7 @@ class SnapshotManager:
 
             in_testing = f"{self.config.label_prefix_in_testing}{chroot}"
             tested_on = f"{self.config.label_prefix_tested_on}{chroot}"
-            failed_on = f"{self.config.label_prefix_failed_on}{chroot}"
+            failed_on = f"{self.config.label_prefix_tests_failed_on}{chroot}"
 
             # Gather build IDs associated with this chroot.
             # We'll attach them a new testing-farm request, and for a recovered
@@ -424,8 +424,9 @@ class SnapshotManager:
         logging.info("Gather labels based on the errors we've found")
         error_labels = list({f"error/{err.err_cause}" for err in errors})
         project_labels = list({f"project/{err.package_name}" for err in errors})
-        os_labels = list({f"os/{err.os}" for err in errors})
-        arch_labels = list({f"arch/{err.arch}" for err in errors})
+        build_failed_on_labels = list(
+            {f"build_failed_on/{err.chroot}" for err in errors}
+        )
         strategy_labels = [f"strategy/{self.config.build_strategy}"]
         llvm_release = util.get_release_for_yyyymmdd(self.config.yyyymmdd)
         other_labels: list[str] = [
@@ -439,13 +440,12 @@ class SnapshotManager:
             labels=["broken_snapshot_detected"], color="F46696", prefix=""
         )
         self.github.create_labels_for_error_causes(error_labels)
-        self.github.create_labels_for_oses(os_labels)
+        self.github.create_labels_for_build_failed_on(build_failed_on_labels)
         self.github.create_labels_for_projects(project_labels)
-        self.github.create_labels_for_archs(arch_labels)
         self.github.create_labels_for_strategies(strategy_labels)
         self.github.create_labels_for_in_testing(all_chroots)
         self.github.create_labels_for_tested_on(all_chroots)
-        self.github.create_labels_for_failed_on(all_chroots)
+        self.github.create_labels_for_tests_failed_on(all_chroots)
         self.github.create_labels_for_llvm_releases([llvm_release])
 
         # Remove old labels from issue if they no longer apply. This is great
@@ -455,11 +455,15 @@ class SnapshotManager:
         labels_to_be_removed: list[str] = []
         old_error_labels = self.github.get_error_label_names_on_issue(issue=issue)
         old_project_labels = self.github.get_project_label_names_on_issue(issue=issue)
-        old_arch_labels = self.github.get_arch_label_names_on_issue(issue=issue)
+        old_build_failed_labels = self.github.get_build_failed_on_names_on_issue(
+            issue=issue
+        )
 
         labels_to_be_removed.extend(set(old_error_labels) - set(error_labels))
         labels_to_be_removed.extend(set(old_project_labels) - set(project_labels))
-        labels_to_be_removed.extend(set(old_arch_labels) - set(arch_labels))
+        labels_to_be_removed.extend(
+            set(old_build_failed_labels) - set(build_failed_on_labels)
+        )
 
         for label in labels_to_be_removed:
             logging.info(f"Removing label that no longer applies: {label}")
@@ -469,8 +473,7 @@ class SnapshotManager:
         labels_to_add = (
             error_labels
             + project_labels
-            + os_labels
-            + arch_labels
+            + build_failed_on_labels
             + strategy_labels
             + other_labels
         )

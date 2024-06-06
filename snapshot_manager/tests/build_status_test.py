@@ -13,10 +13,11 @@ class TestErrorCauseAndBuildStatus(base_test.TestBase):
 
         causes = [e.value for e in ErrorCause]
 
-        # TODO(kwk): Find good example log files for these two error causes
+        # TODO(kwk): Find good example log files for these three error causes
         # (existing ones have timed out and were already deleted)
         causes.remove(ErrorCause.ISSUE_NETWORK)
         causes.remove(ErrorCause.ISSUE_SRPM_BUILD)
+        causes.remove(ErrorCause.ISSUE_UNKNOWN)
 
         for expectedCause in causes:
             with self.subTest(expectedCause=expectedCause):

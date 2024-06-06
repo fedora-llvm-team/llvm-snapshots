@@ -1,0 +1,15 @@
+
+```
+RPM build errors:
+    Directory not found: /builddir/build/BUILDROOT/llvm-19.0.0~pre20240528.g1de1ee9cbabd64-1.fc41.s390x/usr/lib/clang/19/bin
+Finish: rpmbuild llvm-19.0.0~pre20240528.g1de1ee9cbabd64-1.fc41.src.rpm
+Finish: build phase for llvm-19.0.0~pre20240528.g1de1ee9cbabd64-1.fc41.src.rpm
+INFO: chroot_scan: 1 files copied to /var/lib/copr-rpmbuild/results/chroot_scan
+INFO: /var/lib/mock/fedora-rawhide-s390x-1716860898.527168/root/var/log/dnf5.log
+ERROR: Exception(/var/lib/copr-rpmbuild/results/llvm-19.0.0~pre20240528.g1de1ee9cbabd64-1.fc41.src.rpm) Config(fedora-rawhide-s390x) 494 minutes 28 seconds
+INFO: Results and/or logs in: /var/lib/copr-rpmbuild/results
+INFO: Cleaning up build root ('cleanup_on_failure=True')
+Start: clean chroot
+INFO: unmounting tmpfs.
+Finish
+```
