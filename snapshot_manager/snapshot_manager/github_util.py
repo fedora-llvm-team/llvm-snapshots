@@ -137,13 +137,15 @@ remove the aforementioned labels.
     def last_updated_html(cls) -> str:
         return f"<p><b>Last updated: {datetime.datetime.now().isoformat()}</b></p>"
 
-    @property
-    def issue_title(self) -> str:
+    def issue_title(self, strategy: str = None, yyyymmdd: str = None) -> str:
         """Constructs the issue title we want to use"""
-        strategy = self.config.build_strategy
-        llvm_release = util.get_release_for_yyyymmdd(self.config.yyyymmdd)
-        llvm_git_revision = util.get_git_revision_for_yyyymmdd(self.config.yyyymmdd)
-        return f"Snapshot for {self.config.yyyymmdd}, v{llvm_release}, {llvm_git_revision[:7]} ({strategy})"
+        if strategy is None:
+            strategy = self.config.build_strategy
+        if yyyymmdd is None:
+            yyyymmdd = self.config.yyyymmdd
+        llvm_release = util.get_release_for_yyyymmdd(yyyymmdd)
+        llvm_git_revision = util.get_git_revision_for_yyyymmdd(yyyymmdd)
+        return f"Snapshot for {yyyymmdd}, v{llvm_release}, {llvm_git_revision[:7]} ({strategy})"
 
     def create_or_get_todays_github_issue(
         self,
@@ -164,7 +166,7 @@ remove the aforementioned labels.
 
         issue = repo.create_issue(
             assignee=maintainer_handle,
-            title=self.issue_title,
+            title=self.issue_title(),
             body=self.initial_comment,
         )
         self.create_labels_for_strategies(labels=[strategy])
