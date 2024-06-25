@@ -3,8 +3,9 @@
 import uuid
 
 import tests.base_test as base_test
-import snapshot_manager.copr_util as copr_util
+
 import snapshot_manager.config as config
+import snapshot_manager.copr_util as copr_util
 
 
 class TestCopr(base_test.TestBase):

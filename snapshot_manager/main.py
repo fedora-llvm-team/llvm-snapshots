@@ -1,7 +1,7 @@
 import argparse
+import datetime
 import logging
 import sys
-import datetime
 
 import snapshot_manager.config as config
 import snapshot_manager.snapshot_manager as snapshot_manager

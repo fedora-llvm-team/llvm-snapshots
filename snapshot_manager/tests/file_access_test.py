@@ -2,8 +2,8 @@
 
 import tests.base_test as base_test
 
-import snapshot_manager.file_access as file_access
 import snapshot_manager.build_status as build_status
+import snapshot_manager.file_access as file_access
 
 
 class TestFileAccess(base_test.TestBase):
@@ -17,6 +17,7 @@ def load_tests(loader, tests, ignore):
     See https://stackoverflow.com/a/27171468
     """
     import doctest
+
     import snapshot_manager.file_access
 
     tests.addTests(doctest.DocTestSuite(snapshot_manager.file_access))

@@ -3,23 +3,23 @@ github_util
 """
 
 import datetime
-import os
-import logging
-import fnc
-import typing
-import pathlib
 import enum
+import logging
+import os
+import pathlib
+import typing
 
+import fnc
 import github
 import github.GithubException
 import github.Issue
 import github.IssueComment
-import github.Repository
-import github.PaginatedList
 import github.Label
+import github.PaginatedList
+import github.Repository
 
-import snapshot_manager.config as config
 import snapshot_manager.build_status as build_status
+import snapshot_manager.config as config
 import snapshot_manager.github_graphql as github_graphql
 import snapshot_manager.util as util
 
@@ -120,7 +120,7 @@ we'll analyze the build log (if any) to identify the cause of the failure. The c
 For each cause we will list the packages and the relevant log excerpts.</dd>
 <dt>Use of labels</dt>
 <dd>Let's assume a unit test test in upstream LLVM was broken.
-We will then add these labels to this issue: <code>error/test</code>, <code>arch/x86_64</code>, <code>os/fedora-rawhide</code>, <code>project/llvm</code>.
+We will then add these labels to this issue: <code>error/test</code>, <code>build_failed_on/fedora-rawhide-x86_64</code>, <code>project/llvm</code>.
 If you manually restart a build in Copr and can bring it to a successful state, we will automatically
 remove the aforementioned labels.
 </dd>
@@ -136,6 +136,16 @@ remove the aforementioned labels.
     @classmethod
     def last_updated_html(cls) -> str:
         return f"<p><b>Last updated: {datetime.datetime.now().isoformat()}</b></p>"
+
+    def issue_title(self, strategy: str = None, yyyymmdd: str = None) -> str:
+        """Constructs the issue title we want to use"""
+        if strategy is None:
+            strategy = self.config.build_strategy
+        if yyyymmdd is None:
+            yyyymmdd = self.config.yyyymmdd
+        llvm_release = util.get_release_for_yyyymmdd(yyyymmdd)
+        llvm_git_revision = util.get_git_revision_for_yyyymmdd(yyyymmdd)
+        return f"Snapshot for {yyyymmdd}, v{llvm_release}, {llvm_git_revision[:7]} ({strategy})"
 
     def create_or_get_todays_github_issue(
         self,
@@ -154,11 +164,9 @@ remove the aforementioned labels.
         repo = self.gh_repo
         logging.info("Creating issue for today")
 
-        llvm_release = util.get_release_for_yyyymmdd(self.config.yyyymmdd)
-        llvm_git_revision = util.get_git_revision_for_yyyymmdd(self.config.yyyymmdd)
         issue = repo.create_issue(
             assignee=maintainer_handle,
-            title=f"Snapshot for {self.config.yyyymmdd}, v{llvm_release}, {llvm_git_revision[:7]} ({strategy})",
+            title=self.issue_title(),
             body=self.initial_comment,
         )
         self.create_labels_for_strategies(labels=[strategy])
@@ -236,11 +244,10 @@ remove the aforementioned labels.
     def get_error_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
         return self.get_label_names_on_issue(issue, prefix="error/")
 
-    def get_os_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
-        return self.get_label_names_on_issue(issue, prefix="os/")
-
-    def get_arch_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
-        return self.get_label_names_on_issue(issue, prefix="arch/")
+    def get_build_failed_on_names_on_issue(
+        self, issue: github.Issue.Issue
+    ) -> list[str]:
+        return self.get_label_names_on_issue(issue, prefix="build_failed_on/")
 
     def get_project_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
         return self.get_label_names_on_issue(issue, prefix="project/")
@@ -252,11 +259,11 @@ remove the aforementioned labels.
             labels=labels, prefix="error/", color="FBCA04", **kw_args
         )
 
-    def create_labels_for_oses(
+    def create_labels_for_build_failed_on(
         self, labels: list[str], **kw_args
     ) -> list[github.Label.Label]:
         return self.create_labels(
-            labels=labels, prefix="os/", color="F9D0C4", **kw_args
+            labels=labels, prefix="build_failed_on/", color="F9D0C4", **kw_args
         )
 
     def create_labels_for_projects(
@@ -271,13 +278,6 @@ remove the aforementioned labels.
     ) -> list[github.Label.Label]:
         return self.create_labels(
             labels=labels, prefix="strategy/", color="FFFFFF", *kw_args
-        )
-
-    def create_labels_for_archs(
-        self, labels: list[str], **kw_args
-    ) -> list[github.Label.Label]:
-        return self.create_labels(
-            labels=labels, prefix="arch/", color="C5DEF5", *kw_args
         )
 
     def create_labels_for_in_testing(
@@ -300,12 +300,12 @@ remove the aforementioned labels.
             *kw_args,
         )
 
-    def create_labels_for_failed_on(
+    def create_labels_for_tests_failed_on(
         self, labels: list[str], **kw_args
     ) -> list[github.Label.Label]:
         return self.create_labels(
             labels=labels,
-            prefix=self.config.label_prefix_failed_on,
+            prefix=self.config.label_prefix_tests_failed_on,
             color="D93F0B",
             *kw_args,
         )
@@ -504,7 +504,7 @@ remove the aforementioned labels.
         return f"{self.config.label_prefix_in_testing}{chroot}"
 
     def label_failed_on(self, chroot: str) -> str:
-        return f"{self.config.label_prefix_failed_on}{chroot}"
+        return f"{self.config.label_prefix_tests_failed_on}{chroot}"
 
     def label_tested_on(self, chroot: str) -> str:
         return f"{self.config.label_prefix_tested_on}{chroot}"

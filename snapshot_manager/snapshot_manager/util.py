@@ -2,17 +2,17 @@
 util
 """
 
-import logging
-import pathlib
-import shlex
-import subprocess
-import os
-import re
 import datetime
 import functools
+import logging
+import os
+import pathlib
+import re
+import shlex
+import subprocess
 
-import requests
 import regex
+import requests
 
 import snapshot_manager.file_access as file_access
 
@@ -376,7 +376,7 @@ def chroot_arch(chroot: str) -> str:
 def get_git_revision_for_yyyymmdd(yyyymmdd: str) -> str:
     """Get LLVM commit hash for the given date"""
     yyyymmdd = get_yyyymmdd_from_string(yyyymmdd)
-    url = f"https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/source-snapshot/llvm-git-revision-{yyyymmdd}.txt"
+    url = f"https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-git-revision-{yyyymmdd}.txt"
     logging.info(f"Getting URL {url}")
     response = requests.get(url)
     return response.text.strip()
@@ -386,7 +386,7 @@ def get_git_revision_for_yyyymmdd(yyyymmdd: str) -> str:
 def get_release_for_yyyymmdd(yyyymmdd: str) -> str:
     """Get LLVM release (e.g. 19.0.0) for the given date"""
     yyyymmdd = get_yyyymmdd_from_string(yyyymmdd)
-    url = f"https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/source-snapshot/llvm-release-{yyyymmdd}.txt"
+    url = f"https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-release-{yyyymmdd}.txt"
     logging.info(f"Getting URL {url}")
     response = requests.get(url)
     return response.text.strip()

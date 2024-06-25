@@ -22,11 +22,11 @@ colorama==0.4.6
     #   typer
 commonmark==0.9.1
     # via rich
-copr==1.130
+copr==1.132
     # via
     #   -r requirements.txt.in
     #   copr-cli
-copr-cli==1.110
+copr-cli==1.112
     # via -r requirements.txt.in
 cryptography==42.0.4
     # via pyjwt
@@ -72,9 +72,9 @@ python-dateutil==2.8.2
     # via pandas
 pytz==2023.4
     # via pandas
-regex==2023.12.25
+regex==2024.5.15
     # via -r requirements.txt.in
-requests==2.31.0
+requests==2.32.3
     # via
     #   -r requirements.txt.in
     #   copr
@@ -87,8 +87,6 @@ rich==12.6.0
     # via typer
 shellingham==1.5.4
     # via typer
-simplejson==3.19.2
-    # via copr-cli
 six==1.16.0
     # via
     #   copr
@@ -103,7 +101,7 @@ typing-extensions==4.8.0
     # via pygithub
 tzdata==2023.4
     # via pandas
-urllib3==1.26.18
+urllib3==1.26.19
     # via
     #   pygithub
     #   requests

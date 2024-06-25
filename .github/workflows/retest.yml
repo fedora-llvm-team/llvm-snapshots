@@ -78,6 +78,7 @@ jobs:
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TEST_TOKEN }}
+          chroots: ${{ env.chroots }}
         run: |
           python3 snapshot_manager/main.py \
             --github-repo ${GITHUB_REPOSITORY} \

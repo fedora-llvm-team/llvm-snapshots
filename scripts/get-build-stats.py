@@ -1,12 +1,13 @@
 #!/bin/env python3
 
-import os
-from datetime import datetime
 import argparse
-import sys
-from copr.v3 import Client, CoprNoResultException
 import calendar
+import os
+import sys
 import time
+from datetime import datetime
+
+from copr.v3 import Client, CoprNoResultException
 
 
 def gather_build_stats(
@@ -69,7 +70,7 @@ def gather_build_stats(
 def main():
     defaut_yyyymmdd = datetime.today().strftime("%Y%m%d")
     default_copr_ownername = "@fedora-llvm-team"
-    default_copr_projectname = "llvm-snapshots-incubator-{}".format(defaut_yyyymmdd)
+    default_copr_projectname = f"llvm-snapshots-incubator-{defaut_yyyymmdd}"
 
     parser = argparse.ArgumentParser(
         description="Print stats for a snapshot run in CVS format for further consumption"
@@ -80,7 +81,7 @@ def main():
         dest="copr_ownername",
         type=str,
         default=default_copr_ownername,
-        help="copr ownername to use (default: {})".format(default_copr_ownername),
+        help=f"copr ownername to use (default: {default_copr_ownername})",
     )
 
     parser.add_argument(

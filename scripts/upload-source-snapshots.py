@@ -1,10 +1,11 @@
 #!/bin/env python3
 
-from github import Github, UnknownObjectException
 import argparse
 import datetime
 import os
 from glob import glob
+
+from github import Github, UnknownObjectException
 
 
 def main(args) -> None:
@@ -14,11 +15,11 @@ def main(args) -> None:
     yyyymmdd = args.yyyymmdd
     release_name = args.release_name
     tag_name = release_name
-    print("uploading assets for yyyymmdd='{}'".format(yyyymmdd))
+    print(f"uploading assets for yyyymmdd='{yyyymmdd}'")
     try:
         release = repo.get_release(release_name)
     except UnknownObjectException as ex:
-        print("release '{}' not found but creating it now".format(release_name))
+        print(f"release '{release_name}' not found but creating it now")
         release = repo.create_git_release(
             prerelease=True,
             name=release_name,
@@ -28,7 +29,7 @@ def main(args) -> None:
         )
     else:
         dir = os.getenv(key="GITHUB_WORKSPACE", default=".")
-        print("looking for source snapshots in directory: {}".format(dir))
+        print(f"looking for source snapshots in directory: {dir}")
         glob_patterns = [
             "*-{}.src.tar.xz",
             "llvm-release-{}.txt",
@@ -38,7 +39,7 @@ def main(args) -> None:
         for pattern in glob_patterns:
             for name in glob(pattern.format(yyyymmdd)):
                 path = os.path.join(dir, name)
-                print("uploading path: {}".format(path))
+                print(f"uploading path: {path}")
                 release.upload_asset(path=path)
 
 

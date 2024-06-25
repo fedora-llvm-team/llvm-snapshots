@@ -1,9 +1,10 @@
 #!/bin/env python3
 
 import argparse
-import sys
-from github import Github
 import logging
+import sys
+
+from github import Github
 
 
 def get_good_commit(
@@ -38,7 +39,7 @@ Required checks: {required_checks}
 """
     )
 
-    required_checks = set((check, "success") for check in required_checks)
+    required_checks = {(check, "success") for check in required_checks}
     for i in range(0, max_tries):
         commit = repo.get_commit(sha=next_sha)
         commit_url = f"https://github.com/{project}/commit/{commit.sha}"
@@ -49,9 +50,9 @@ Required checks: {required_checks}
         )
         # Makes sure the required checks are among the ones that have been run
         # on the commit.
-        actual_checks = set(
+        actual_checks = {
             (status.context, status.state) for status in commit.get_statuses()
-        )
+        }
         if not required_checks.issubset(actual_checks):
             logging.warning(
                 f"- Ignoring commit because of missing or failed check(s): {required_checks - actual_checks}"

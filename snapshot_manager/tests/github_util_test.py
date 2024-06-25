@@ -5,6 +5,7 @@ import logging
 import uuid
 
 import tests.base_test as base_test
+
 import snapshot_manager.github_util as github_util
 
 
@@ -82,7 +83,7 @@ class TestGithub(base_test.TestBase):
         all_chroots = [chroot]
         logging.info("Creating test labels")
         gh.create_labels_for_in_testing(all_chroots)
-        gh.create_labels_for_failed_on(all_chroots)
+        gh.create_labels_for_tests_failed_on(all_chroots)
         gh.create_labels_for_tested_on(all_chroots)
 
         in_testing = gh.label_in_testing(chroot=chroot)

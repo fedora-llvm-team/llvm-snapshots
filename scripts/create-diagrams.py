@@ -4,14 +4,14 @@
 import argparse
 import re
 from datetime import datetime
+from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
-import plotly.io as pio
 import plotly.graph_objects as go
+import plotly.io as pio
 from plotly.offline import plot
-from pathlib import Path
-import numpy as np
 
 
 # %%
@@ -127,7 +127,7 @@ def add_html_header_menu(
         all_packages (str]): All the packages names for which to generate a menu entry
         plotly_div_id (str, optional): Plotly's HTML div's ID. Defaults to "plotly_div_id".
     """
-    replace_me = '<div id="{}"'.format(plotly_div_id)
+    replace_me = f'<div id="{plotly_div_id}"'
 
     file = Path(filepath)
     header_menu = '<div id="headermenu">Build-Stats by package: '
@@ -142,6 +142,7 @@ def add_html_header_menu(
     header_menu += (
         ' | <a href="fig-combined-standalone.html">llvm+clang+compiler-rt+libomp</a>'
     )
+    header_menu += ' | <a href="fig-big-merge.html">llvm (big-merge)</a>'
     header_menu += "</div>"
     header_menu += replace_me
 
@@ -250,6 +251,7 @@ def create_index_page(all_packages: list[str], filepath: str = "index.html") -> 
             <ul>
                 {package_link_items}
                 <li><a href="fig-combined-standalone.html">llvm+clang+compiler-rt+libomp</a></li>
+                <li><a href="fig-big-merge.html">llvm (big-merge)</a></li>
             </ul>
             <hr/>
             <small>Last updated: {last_updated}</small>
@@ -321,7 +323,7 @@ def main() -> None:
         # To debug, uncomment the following:
         # fig.show()
         # break
-        filepath = "fig-{}.html".format(package_name)
+        filepath = f"fig-{package_name}.html"
         save_figure(fig=fig, filepath=filepath)
         add_html_header_menu(filepath=filepath, all_packages=all_packages)
 
@@ -355,6 +357,12 @@ def main() -> None:
 
     fig = create_figure(df=df_result)
     filepath = "fig-combined-standalone.html"
+    save_figure(fig=fig, filepath=filepath)
+    add_html_header_menu(filepath=filepath, all_packages=all_packages)
+
+    # Create dedicated big-merge figure with nothing else in it.
+    fig = create_figure(df=df_big_merge)
+    filepath = "fig-big-merge.html"
     save_figure(fig=fig, filepath=filepath)
     add_html_header_menu(filepath=filepath, all_packages=all_packages)
 

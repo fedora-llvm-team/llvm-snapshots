@@ -5,7 +5,6 @@
 :showtitle:
 :homepage: https://github.com/fedora-llvm-team/llvm-snapshots
 
-image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/generate-snapshot-tarballs.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/generate-snapshot-tarballs.yml"]
 image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/fedora-copr-build.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/fedora-copr-build.yml"]
 image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/check-snapshots.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/check-snapshots.yml"]
 image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/python-format-and-tests.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/python-format-and-tests.yml"]

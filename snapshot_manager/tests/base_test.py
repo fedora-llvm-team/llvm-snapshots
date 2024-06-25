@@ -3,12 +3,12 @@ TestBase
 """
 
 import contextlib
+import logging
 import os
 import pathlib
+import sys
 import typing
 import unittest
-import logging
-import sys
 
 import snapshot_manager.config as config
 

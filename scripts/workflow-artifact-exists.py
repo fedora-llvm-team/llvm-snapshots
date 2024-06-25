@@ -1,11 +1,12 @@
 #!/bin/env python3
 
 import argparse
-from github import Github
-from datetime import date
 import re
 import sys
+from datetime import date
 from pprint import pprint
+
+from github import Github
 
 
 def workflow_artifact_exists(
