@@ -74,7 +74,7 @@ pytz==2023.4
     # via pandas
 regex==2024.5.15
     # via -r requirements.txt.in
-requests==2.31.0
+requests==2.32.3
     # via
     #   -r requirements.txt.in
     #   copr
@@ -101,7 +101,7 @@ typing-extensions==4.8.0
     # via pygithub
 tzdata==2023.4
     # via pandas
-urllib3==1.26.18
+urllib3==1.26.19
     # via
     #   pygithub
     #   requests

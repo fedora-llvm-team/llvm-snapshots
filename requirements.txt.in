@@ -11,5 +11,5 @@ tft-cli==0.0.16
 regex==2024.5.15
 munch==4.0.0
 copr==1.132
-requests==2.31.0
+requests==2.32.3
 fnc

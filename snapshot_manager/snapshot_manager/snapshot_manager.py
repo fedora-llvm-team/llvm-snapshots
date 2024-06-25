@@ -139,7 +139,10 @@ class SnapshotManager:
             new_comment_body = self.remove_chroot_html_comment(
                 comment_body=new_comment_body, chroot=chroot
             )
-        issue.edit(body=new_comment_body, title=self.github.issue_title)
+        issue.edit(
+            body=new_comment_body,
+            title=self.github.issue_title(strategy=strategy, yyyymmdd=yyyymmdd),
+        )
 
         # Kick off a new workflow run and pass the exact date in YYYYMMDD
         # form because we don't know if the issue was for today
@@ -222,7 +225,7 @@ class SnapshotManager:
 {build_status_matrix}
 {tf.TestingFarmRequest.dict_to_html_comment(requests)}
 """
-        issue.edit(body=comment_body, title=self.github.issue_title)
+        issue.edit(body=comment_body, title=self.github.issue_title())
 
         logging.info("Filter testing-farm requests by chroot of interest")
         new_requests = dict()
@@ -388,7 +391,7 @@ class SnapshotManager:
 {build_status_matrix}
 {tf.TestingFarmRequest.dict_to_html_comment(requests)}
 """
-        issue.edit(body=comment_body, title=self.github.issue_title)
+        issue.edit(body=comment_body, title=self.github.issue_title())
 
         logging.info("Checking if issue can be closed")
         # issue.update()
@@ -407,7 +410,9 @@ class SnapshotManager:
             logging.info(msg)
             issue.create_comment(body=msg)
             issue.edit(
-                state="closed", state_reason="completed", title=self.github.issue_title
+                state="closed",
+                state_reason="completed",
+                title=self.github.issue_title(),
             )
             # TODO(kwk): Promotion of issue goes here.
         else:
