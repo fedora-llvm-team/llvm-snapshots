@@ -3,7 +3,7 @@ set +x
 
 # Prints the chroots we care about.
 function get_chroots() {
-  echo "fedora-39-x86_64"
+  echo "fedora-40-x86_64"
 }
 
 # Prints the packages we care about
