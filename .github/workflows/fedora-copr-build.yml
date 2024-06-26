@@ -15,15 +15,9 @@ jobs:
       matrix:
         name: [big-merge, bootstrap]
         include:
-          # - name: standalone
-          #   copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD"
-          #   copr_target_project: "@fedora-llvm-team/llvm-snapshots"
-          #   clone_url_tpl: "https://src.fedoraproject.org/rpms/PKG.git"
-          #   clone_ref: upstream-snapshot
           - name: big-merge
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
             copr_target_project: "@fedora-llvm-team/llvm-snapshots"
-            extra_script_file: "scripts/functions-big-merge.sh"
             clone_url_tpl: "https://src.fedoraproject.org/rpms/PKG.git"
             clone_ref: big-merge
           - name: pgo
