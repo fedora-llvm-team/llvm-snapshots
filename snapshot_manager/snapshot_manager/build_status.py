@@ -337,7 +337,7 @@ def get_cause_from_build_log(
 
     logging.info(" Checking for installed but unackaged files...")
     ret, ctx, _ = util.grep_file(
-        pattern=r"(?s)RPM build errors:\n.*    Installed \(but unpackaged\) file\(s\) found:.*Finish",
+        pattern=r"(?s)Installed \(but unpackaged\) file\(s\) found:.*Finish",
         extra_args="-Pzo",
         filepath=build_log_file,
     )
