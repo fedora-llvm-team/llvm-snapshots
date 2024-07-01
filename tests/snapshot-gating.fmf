@@ -59,6 +59,11 @@ discover:
       url: https://src.fedoraproject.org/tests/lld.git
       ref: main
       filter: "tag:-spoils-installation & tag:-not-in-default"
+    - name: lldb-tests
+      how: fmf
+      url: https://src.fedoraproject.org/tests/lldb.git
+      ref: main
+      filter: "tag:-spoils-installation & tag:-not-in-default"
 
       # TODO(kwk): In case we want to import a test and ignore its result for
       # experimentation reasons using
