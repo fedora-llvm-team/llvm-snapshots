@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [big-merge, bootstrap]
+        name: [big-merge, pgo]
         include:
           - name: big-merge
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
