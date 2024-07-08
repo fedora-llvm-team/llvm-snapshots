@@ -16,7 +16,7 @@
 #           ├── ...
 #           ├── clang-libs.txt
 #
-# The "old" and "new" direcories refer to "rawhide" and "snapshots".
+# The "old" and "new" directories refer to "rawhide" and "snapshots".
 # The "version.txt" file contains the output of "clang --version".
 #
 # With a tool like "meld" you can get a nice representation of differences
