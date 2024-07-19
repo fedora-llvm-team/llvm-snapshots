@@ -136,7 +136,7 @@ jobs:
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           for chroot in ${{ env.chroots }}; do
-            if [[ "$chroot" ==  rhel-8- ]]; then
+            if [[ "$chroot" == rhel-8-* ]]; then
               copr edit-chroot --modules "swig:4.0" ${{ env.project_today }}/$chroot
             fi
           done
