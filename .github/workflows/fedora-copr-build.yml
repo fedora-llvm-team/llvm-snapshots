@@ -129,6 +129,18 @@ jobs:
             --delete-after-days 32 \
             $chroot_opts "${{ env.project_today }}"
 
+      - name: "Enable swig:4.0 module in RHEL 8 build chroots (if any)"
+        shell: bash -e {0}
+        run: |
+          source scripts/functions.sh
+          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+
+          for chroot in ${{ env.chroots }}; do
+            if [[ "$chroot" ==  rhel-8- ]]; then
+              copr edit-chroot --modules "swig:4.0" ${{ env.project_today }}/$chroot
+            fi
+          done
+
       - name: "Create today's packages: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
