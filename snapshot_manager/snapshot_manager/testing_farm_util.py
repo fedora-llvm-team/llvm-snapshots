@@ -362,6 +362,8 @@ class TestingFarmRequest:
         'Fedora-39'
         >>> TestingFarmRequest.get_compose("rhel-9-aarch")
         'RHEL-9-Nightly'
+        >>> TestingFarmRequest.get_compose("rhel-8-x86_64")
+        'RHEL-8-Nightly'
         """
         util.expect_chroot(chroot)
 
