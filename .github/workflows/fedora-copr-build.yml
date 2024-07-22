@@ -127,6 +127,7 @@ jobs:
             --multilib on \
             --appstream off \
             --delete-after-days 32 \
+            --module-hotfixes on \
             $chroot_opts "${{ env.project_today }}"
 
       - name: "Enable swig:4.0 module in RHEL 8 build chroots (if any)"
