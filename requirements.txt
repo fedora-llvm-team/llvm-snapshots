@@ -72,7 +72,7 @@ python-dateutil==2.8.2
     # via pandas
 pytz==2023.4
     # via pandas
-regex==2024.5.15
+regex==2024.7.24
     # via -r requirements.txt.in
 requests==2.32.3
     # via
