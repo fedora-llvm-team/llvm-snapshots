@@ -85,6 +85,10 @@ requests-toolbelt==1.0.0
     # via copr
 rich==12.6.0
     # via typer
+ruamel-yaml==0.18.6
+    # via tft-cli
+ruamel-yaml-clib==0.2.8
+    # via ruamel-yaml
 shellingham==1.5.4
     # via typer
 six==1.16.0
@@ -93,7 +97,7 @@ six==1.16.0
     #   python-dateutil
 tenacity==8.2.3
     # via plotly
-tft-cli==0.0.17
+tft-cli==0.0.18
     # via -r requirements.txt.in
 typer[all]==0.7.0
     # via tft-cli
