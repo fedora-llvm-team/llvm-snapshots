@@ -146,6 +146,32 @@ class TestingFarmRequest:
         return res
 
     @classmethod
+    def adjust_env(cls, chroot: str) -> None:
+        """Adjusts the TESTING_FARM_API_TOKEN env var based on the chroot.
+        The next testing-farm command is then set up to work with the correct
+        ranch.
+
+        Raises:
+            ValueError: if the chroot is not supported by the ranch
+        """
+        ranch = cls.select_ranch(chroot)
+
+        if not cls.is_chroot_supported(chroot=chroot, ranch=ranch):
+            raise ValueError(
+                f"Chroot {chroot} has an unsupported architecture on ranch {ranch}"
+            )
+
+        logging.info(f"Adjusting TESTING_FARM_API_TOKEN for ranch: {ranch}")
+        if ranch == "public":
+            os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
+                "TESTING_FARM_API_TOKEN_PUBLIC_RANCH", "MISSING_ENV_FOR_PUBLIC_RANCH"
+            )
+        if ranch == "redhat":
+            os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
+                "TESTING_FARM_API_TOKEN_REDHAT_RANCH", "MISSING_ENV_FOR_REDHAT_RANCH"
+            )
+
+    @classmethod
     def make(
         cls,
         config: config.Config,
@@ -177,22 +203,8 @@ class TestingFarmRequest:
         """
         logging.info(f"Kicking off new tests for chroot {chroot}.")
 
-        ranch = cls.select_ranch(chroot)
+        cls.adjust_env(chroot)
 
-        if not cls.is_chroot_supported(chroot=chroot, ranch=ranch):
-            raise ValueError(
-                f"Chroot {chroot} has an unsupported architecture on ranch {ranch}"
-            )
-
-        logging.info(f"Using testing-farm ranch: {ranch}")
-        if ranch == "public":
-            os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
-                "TESTING_FARM_API_TOKEN_PUBLIC_RANCH", "MISSING_ENV"
-            )
-        if ranch == "redhat":
-            os.environ["TESTING_FARM_API_TOKEN"] = os.getenv(
-                "TESTING_FARM_API_TOKEN_REDHAT_RANCH", "MISSING_ENV"
-            )
         cmd = f"""testing-farm \
             request \
             --compose {cls.get_compose(chroot=chroot)} \
@@ -220,6 +232,8 @@ class TestingFarmRequest:
         )
 
     def watch(self) -> tuple["TestingFarmWatchResult", str]:
+        self.adjust_env(self.chroot)
+
         request_id = sanitize_request_id(request_id=self.request_id)
         cmd = f"testing-farm watch --no-wait --id {self.request_id}"
         # We ignore the exit code because in case of a test error, 1 is the exit code
