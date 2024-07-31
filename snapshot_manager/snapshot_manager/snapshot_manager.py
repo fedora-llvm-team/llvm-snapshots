@@ -339,32 +339,40 @@ class SnapshotManager:
             # Check for current status of testing-farm request
             if chroot in requests:
                 request = requests[chroot]
-                watch_result, artifacts_url = request.watch()
-                if watch_result is None and artifacts_url is None:
-                    continue
+                try:
+                    watch_result, artifacts_url = request.watch()
+                    if watch_result is None and artifacts_url is None:
+                        continue
 
-                html = tf.render_html(request, watch_result, artifacts_url)
-                build_status_matrix = build_status_matrix.replace(
-                    chroot,
-                    f"{chroot}<br />{html}",
-                )
-
-                logging.info(
-                    f"Chroot {chroot} testing-farm watch result: {watch_result} (URL: {artifacts_url})"
-                )
-
-                if watch_result.is_error:
-                    # Fetch all failed test cases for this request
-                    failed_test_cases.extend(
-                        request.fetch_failed_test_cases(
-                            artifacts_url_origin=artifacts_url
-                        )
+                    html = tf.render_html(request, watch_result, artifacts_url)
+                    build_status_matrix = build_status_matrix.replace(
+                        chroot,
+                        f"{chroot}<br />{html}",
                     )
-                    self.github.flip_test_label(issue, chroot, failed_on)
-                elif watch_result == tf.TestingFarmWatchResult.TESTS_PASSED:
-                    self.github.flip_test_label(issue, chroot, tested_on)
-                else:
-                    self.github.flip_test_label(issue, chroot, in_testing)
+
+                    logging.info(
+                        f"Chroot {chroot} testing-farm watch result: {watch_result} (URL: {artifacts_url})"
+                    )
+
+                    if watch_result.is_error:
+                        # Fetch all failed test cases for this request
+                        failed_test_cases.extend(
+                            request.fetch_failed_test_cases(
+                                artifacts_url_origin=artifacts_url
+                            )
+                        )
+                        self.github.flip_test_label(issue, chroot, failed_on)
+
+                    elif watch_result == tf.TestingFarmWatchResult.TESTS_PASSED:
+                        self.github.flip_test_label(issue, chroot, tested_on)
+                    else:
+                        self.github.flip_test_label(issue, chroot, in_testing)
+
+                except TimeoutExpired:
+                    logging.error(
+                        "Timer expired without receiving a response from Testing Farm."
+                    )
+
             else:
                 logging.info(f"Starting tests for chroot {chroot}")
                 request = tf.TestingFarmRequest.make(
