@@ -223,12 +223,16 @@ class TestingFarmRequest:
         request_id = sanitize_request_id(request_id=self.request_id)
         cmd = f"testing-farm watch --no-wait --id {self.request_id}"
         # We ignore the exit code because in case of a test error, 1 is the exit code
-        _, stdout, stderr = util.run_cmd(cmd=cmd, timeout_secs=20)
-        watch_result, artifacts_url = TestingFarmWatchResult.from_output(stdout)
-        if watch_result is None:
-            raise SystemError(
-                f"failed to watch 'testing-farm request': {cmd}\n\nstdout: {stdout}\n\nstderr: {stderr}"
-            )
+        try:
+            _, stdout, stderr = util.run_cmd(cmd=cmd, timeout_secs=20)
+            watch_result, artifacts_url = TestingFarmWatchResult.from_output(stdout)
+            if watch_result is None:
+                raise SystemError(
+                    f"failed to watch 'testing-farm request': {cmd}\n\nstdout: {stdout}\n\nstderr: {stderr}"
+                )
+        except Exception as ex:
+            logging.warn(f"failed to watch for testing-farm result {ex}")
+            return (None, None)
         return (watch_result, artifacts_url)
 
     @classmethod

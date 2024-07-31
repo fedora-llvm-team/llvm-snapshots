@@ -340,6 +340,8 @@ class SnapshotManager:
             if chroot in requests:
                 request = requests[chroot]
                 watch_result, artifacts_url = request.watch()
+                if watch_result is None and artifacts_url is None:
+                    continue
 
                 html = tf.render_html(request, watch_result, artifacts_url)
                 build_status_matrix = build_status_matrix.replace(
@@ -371,7 +373,9 @@ class SnapshotManager:
                     issue=issue,
                     copr_build_ids=current_copr_build_ids,
                 )
-                logging.info(f"Request ID: {request.request_id}")
+                logging.info(
+                    f"testing-farm request ID for {chroot}: {request.request_id}"
+                )
                 requests[chroot] = request
                 self.github.flip_test_label(issue, chroot, in_testing)
 
