@@ -12,7 +12,7 @@ def main():
 
     logging.basicConfig(
         level=logging.INFO,
-        format="[%(asctime)s] %(levelname)s [%(pathname)s:%(lineno)d %(funcName)s] %(message)s",
+        format="[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d %(funcName)s] %(message)s",
         datefmt="%d/%b/%Y %H:%M:%S",
         stream=sys.stderr,
     )
