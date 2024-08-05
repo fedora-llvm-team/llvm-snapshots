@@ -238,7 +238,8 @@ class TestingFarmRequest:
         cmd = f"testing-farm watch --no-wait --id {self.request_id}"
         # We ignore the exit code because in case of a test error, 1 is the exit code
         try:
-            _, stdout, stderr = util.run_cmd(cmd=cmd, timeout_secs=20)
+            logging.info(f"Watching for testing-farm request: {cmd}")
+            _, stdout, stderr = util.run_cmd(cmd=cmd, timeout_secs=40)
             watch_result, artifacts_url = TestingFarmWatchResult.from_output(stdout)
             if watch_result is None:
                 raise SystemError(
@@ -625,6 +626,13 @@ class TestingFarmWatchResult(enum.StrEnum):
         >>> s = base64.b64decode(s).decode()
         >>> TestingFarmWatchResult.from_output(s)
         (<TestingFarmWatchResult.REQUEST_RUNNING: 'request is running'>, 'https://artifacts.dev.testing-farm.io/97a7cc24-6926-4059-84ac-d0078297c319')
+        >>> s='''8J+UjiBhcGkgaHR0cHM6Ly9hcGkuZGV2LnRlc3RpbmctZmFybS5pby92MC4xL3JlcXVlc3RzLzg2
+        ... MGExZjdlLTA2NmMtNGU0Mi1iYWRkLThlNmRjYTkwYzE0Ygrwn5qiIGFydGlmYWN0cyBodHRwczov
+        ... L2FydGlmYWN0cy5vc2NpLnJlZGhhdC5jb20vdGVzdGluZy1mYXJtLzg2MGExZjdlLTA2NmMtNGU0
+        ... Mi1iYWRkLThlNmRjYTkwYzE0YgrinIUgdGVzdHMgcGFzc2VkCg=='''
+        >>> s = base64.b64decode(s).decode()
+        >>> TestingFarmWatchResult.from_output(s)
+        (<TestingFarmWatchResult.TESTS_PASSED: 'tests passed'>, 'https://artifacts.osci.redhat.com/testing-farm/860a1f7e-066c-4e42-badd-8e6dca90c14b')
         """
         string = clean_testing_farm_output(string)
         for watch_result in TestingFarmWatchResult.all_watch_results():
