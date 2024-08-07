@@ -13,9 +13,7 @@ class TestGithub(base_test.TestBase):
     def test_create_or_get_todays_github_issue(self):
         """Creates or gets today's github issue"""
         gh = github_util.GithubClient(config=self.config)
-        issue, _ = gh.create_or_get_todays_github_issue(
-            maintainer_handle="kwk", creator="kwk"
-        )
+        issue, _ = gh.create_or_get_todays_github_issue(creator="kwk")
         self.assertIsNotNone(issue)
 
         marker = "<!--HIDE_COMMMENT-->"
