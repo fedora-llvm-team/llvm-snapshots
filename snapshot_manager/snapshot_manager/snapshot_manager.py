@@ -164,8 +164,7 @@ class SnapshotManager:
 
     def check_todays_builds(self) -> None:
         """This method is driven from the config settings"""
-        issue, _ = self.github.create_or_get_todays_github_issue(
-            maintainer_handle=self.config.maintainer_handle,
+        issue, issue_is_newly_created = self.github.create_or_get_todays_github_issue(
             creator=self.config.creator_handle,
         )
         # if issue.state == "closed":
@@ -175,6 +174,17 @@ class SnapshotManager:
         #     return
 
         all_chroots = self.copr.get_copr_chroots()
+
+        if issue_is_newly_created:
+            # The issue was newly created so we'll create comments for each
+            # chroot that we care about and hide them for now. Then humanly
+            # created output will always come at the end.
+            for chroot in all_chroots:
+                comment = issue.create_comment(f"<!--ERRORS_FOR_CHROOT/{chroot}-->")
+                self.github.minimize_comment_as_outdated(comment)
+            # Only assign the issue now so that there are no notifications for
+            # all the error comments we've just created.
+            issue.add_to_assignees(self.config.maintainer_handle)
 
         logging.info("Get build states from copr")
         states = self.copr.get_build_states_from_copr_monitor(
@@ -234,20 +244,6 @@ class SnapshotManager:
                 new_requests[chroot] = requests[chroot]
         requests = new_requests
 
-        # Hide/Unhide all unused/used chroot error comments if they belong to a chroot we don't care about
-        for comment in issue.get_comments():
-            logging.info("checking for <!--ERRORS_FOR_CHROOT/")
-            match = re.search(r"<!--ERRORS_FOR_CHROOT/(.*)-->", comment.body)
-            if match:
-                chroot = match.group(1)
-                logging.info(f"found match: chroot={chroot}")
-                if chroot not in self.copr.get_copr_chroots():
-                    logging.info("minimizing comment")
-                    self.github.minimize_comment_as_outdated(comment)
-                else:
-                    logging.info("unminimizing comment")
-                    self.github.unminimize_comment(comment)
-
         # logging.info(f"Update the issue comment body")
         # # See https://github.com/fedora-llvm-team/llvm-snapshots/issues/205#issuecomment-1902057639
         # max_length = 65536
@@ -276,6 +272,7 @@ class SnapshotManager:
 {build_status.render_as_markdown(errors_for_this_chroot)}
 """,
                 )
+                self.github.unminimize_comment(comment)
                 build_status_matrix = build_status_matrix.replace(
                     chroot,
                     f'{chroot}<br /> :x: <a href="{comment.html_url}">Copr build(s) failed</a>',

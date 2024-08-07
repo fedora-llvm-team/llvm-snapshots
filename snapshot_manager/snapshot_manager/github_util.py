@@ -106,8 +106,6 @@ class GithubClient:
         llvm_release = util.get_release_for_yyyymmdd(self.config.yyyymmdd)
         llvm_git_revision = util.get_git_revision_for_yyyymmdd(self.config.yyyymmdd)
         return f"""
-Hello @{self.config.maintainer_handle}!
-
 <p>
 This issue exists to let you know that we are about to monitor the builds
 of the LLVM (v{llvm_release}, <a href="https://github.com/llvm/llvm-project/commit/{llvm_git_revision}">llvm/llvm-project@ {llvm_git_revision[:7]}</a>) snapshot for <a href="{self.config.copr_monitor_url}">{self.config.yyyymmdd}</a>.
@@ -149,7 +147,6 @@ remove the aforementioned labels.
 
     def create_or_get_todays_github_issue(
         self,
-        maintainer_handle: str,
         creator: str = "github-actions[bot]",
     ) -> tuple[github.Issue.Issue, bool]:
         issue = self.get_todays_github_issue(
@@ -164,11 +161,7 @@ remove the aforementioned labels.
         repo = self.gh_repo
         logging.info("Creating issue for today")
 
-        issue = repo.create_issue(
-            assignee=maintainer_handle,
-            title=self.issue_title(),
-            body=self.initial_comment,
-        )
+        issue = repo.create_issue(title=self.issue_title(), body=self.initial_comment)
         self.create_labels_for_strategies(labels=[strategy])
         issue.add_to_labels(f"strategy/{strategy}")
         return (issue, True)
