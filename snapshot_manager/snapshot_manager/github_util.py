@@ -161,7 +161,6 @@ remove the aforementioned labels.
         repo = self.gh_repo
         logging.info("Creating issue for today")
 
-        opts = {}
         issue = repo.create_issue(title=self.issue_title(), body=self.initial_comment)
         self.create_labels_for_strategies(labels=[strategy])
         issue.add_to_labels(f"strategy/{strategy}")
