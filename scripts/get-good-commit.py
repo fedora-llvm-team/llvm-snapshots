@@ -63,9 +63,7 @@ Required checks: {required_checks}
         return commit.sha
 
     sha = repo.get_commit(sha=start_ref).sha
-    logging.info(
-        f"No good commit found, using the initial one: {start_ref}, aka {sha}"
-    )
+    logging.info(f"No good commit found, using the initial one: {start_ref}, aka {sha}")
     return sha
 
 
