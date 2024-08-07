@@ -66,7 +66,7 @@ Required checks: {required_checks}
     logging.info(
         f"No good commit found, using the initial one: {start_ref}, aka {sha}"
     )
-    return {sha}
+    return sha
 
 
 def main():
