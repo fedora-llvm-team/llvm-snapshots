@@ -178,7 +178,7 @@ class SnapshotManager:
         if issue_is_newly_created:
             # The issue was newly created so we'll create comments for each
             # chroot that we care about and hide them for now. Then humanly
-            # created output will be come at the end always.
+            # created output will always come at the end.
             for chroot in all_chroots:
                 comment = issue.create_comment(f"<!--ERRORS_FOR_CHROOT/{chroot}-->")
                 self.github.minimize_comment_as_outdated(comment)
