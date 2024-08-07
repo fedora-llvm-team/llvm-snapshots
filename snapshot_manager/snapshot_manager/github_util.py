@@ -168,7 +168,7 @@ remove the aforementioned labels.
         if maintainer_handle is not None:
             opts["assignee"] = maintainer_handle
         issue = repo.create_issue(
-            title=self.issue_title(), body=self.initial_comment, *opts
+            title=self.issue_title(), body=self.initial_comment, **opts
         )
         self.create_labels_for_strategies(labels=[strategy])
         issue.add_to_labels(f"strategy/{strategy}")
