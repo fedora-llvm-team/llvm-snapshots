@@ -42,6 +42,12 @@ class TestingFarmRequest:
     )
     copr_build_ids_pattern: ClassVar[str] = r"(\d,)*\d"
 
+    _in_test_mode: bool = False
+    """When this mode is on, we can workaround certain restrictions for fetching
+    outdated URLs for example."""
+
+    _dirname: str = pathlib.Path(os.path.dirname(__file__))
+
     @property
     def are_build_ids_still_valid(self, copr_build_ids: list[int]) -> bool:
         """Returns True if the given copr builds are the same as the ones
@@ -110,14 +116,30 @@ class TestingFarmRequest:
         >>> keys = requests.keys()
         >>> keys
         dict_keys(['fedora-rawhide-x86_64', 'fedora-39-x86_64', 'fedora-40-x86_64', 'fedora-38-x86_64'])
-        >>> requests['fedora-rawhide-x86_64']
-        TestingFarmRequest(request_id=UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-rawhide-x86_64', copr_build_ids=[1, 2, 3])
-        >>> requests['fedora-39-x86_64']
-        TestingFarmRequest(request_id=UUID('22222222-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-39-x86_64', copr_build_ids=[5, 6, 7])
-        >>> requests['fedora-40-x86_64']
-        TestingFarmRequest(request_id=UUID('33333333-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-40-x86_64', copr_build_ids=[12, 13, 14])
-        >>> requests['fedora-38-x86_64']
-        TestingFarmRequest(request_id=UUID('44444444-fc9a-4e1d-95fe-567cc9d62ad4'), chroot='fedora-38-x86_64', copr_build_ids=[])
+        >>> requests['fedora-rawhide-x86_64'].request_id
+        UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad4')
+        >>> requests['fedora-rawhide-x86_64'].chroot
+        'fedora-rawhide-x86_64'
+        >>> requests['fedora-rawhide-x86_64'].copr_build_ids
+        [1, 2, 3]
+        >>> requests['fedora-39-x86_64'].request_id
+        UUID('22222222-fc9a-4e1d-95fe-567cc9d62ad4')
+        >>> requests['fedora-39-x86_64'].chroot
+        'fedora-39-x86_64'
+        >>> requests['fedora-39-x86_64'].copr_build_ids
+        [5, 6, 7]
+        >>> requests['fedora-40-x86_64'].request_id
+        UUID('33333333-fc9a-4e1d-95fe-567cc9d62ad4')
+        >>> requests['fedora-40-x86_64'].chroot
+        'fedora-40-x86_64'
+        >>> requests['fedora-40-x86_64'].copr_build_ids
+        [12, 13, 14]
+        >>> requests['fedora-38-x86_64'].request_id
+        UUID('44444444-fc9a-4e1d-95fe-567cc9d62ad4')
+        >>> requests['fedora-38-x86_64'].chroot
+        'fedora-38-x86_64'
+        >>> requests['fedora-38-x86_64'].copr_build_ids
+        []
         """
         matches = re.findall(r"<!--TESTING_FARM:([^/]+)/([^/]+)(/([^/]+))?-->", string)
         if not matches:
@@ -453,7 +475,14 @@ class TestingFarmRequest:
                 './logs/log[@name="testout.log"]'
             ).get("href")
 
-            log_file = util.read_url_response_into_file(log_output_url)
+            log_file: pathlib.Path
+            if not self._in_test_mode:
+                log_file = util.read_url_response_into_file(log_output_url)
+            else:
+                p = self._dirname.joinpath(
+                    f"../tests/testing-farm-logs/output_{self.request_id}.txt"
+                )
+                log_file = pathlib.Path(p)
             tc = FailedTestCase(
                 test_name=failed_testcase.get("name"),
                 log_output_url=log_output_url,

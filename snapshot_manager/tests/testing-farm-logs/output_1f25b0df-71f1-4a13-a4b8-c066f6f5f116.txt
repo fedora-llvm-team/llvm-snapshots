@@ -1,0 +1,4 @@
++ clang -m32 -fsanitize=address test.c
+/usr/bin/ld: cannot find -lgcc_s: No such file or directory
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+Shared connection to 3.12.104.11 closed.
