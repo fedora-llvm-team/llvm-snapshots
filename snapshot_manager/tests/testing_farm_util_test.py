@@ -13,6 +13,7 @@ class TestTestingFarmUtil(base_test.TestBase):
             request_id=request_id,
             chroot=chroot,
             copr_build_ids=[11, 22, 33],
+            _in_test_mode=True,
         )
         actual = req.get_failed_test_cases_from_xunit_file(
             xunit_file=self.abspath(f"testing-farm-logs/results_{request_id}.xml"),
