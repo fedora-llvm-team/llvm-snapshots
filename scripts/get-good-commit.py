@@ -62,12 +62,16 @@ Required checks: {required_checks}
         logging.info(f"Found good commit: {commit_url}")
         return commit.sha
 
-    return ""
+    sha = repo.get_commit(sha=start_ref).sha
+    logging.info(
+        f"Not found a good commit, using the intial one: {start_ref}, aka {sha}"
+    )
+    return {sha}
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Find the latest commit that passed tests"
+        description="Find the latest commit that passed tests or return the start-ref commit sha"
     )
     parser.add_argument(
         "--token",
@@ -115,8 +119,7 @@ def main():
         required_checks=args.required_checks,
         max_tries=args.max_tries,
     )
-    if sha == "":
-        sys.exit(-1)
+
     print(sha)
 
 
