@@ -149,7 +149,7 @@ remove the aforementioned labels.
 
     def create_or_get_todays_github_issue(
         self,
-        maintainer_handle: str,
+        maintainer_handle: str = None,
         creator: str = "github-actions[bot]",
     ) -> tuple[github.Issue.Issue, bool]:
         issue = self.get_todays_github_issue(
@@ -164,10 +164,11 @@ remove the aforementioned labels.
         repo = self.gh_repo
         logging.info("Creating issue for today")
 
+        opts = {}
+        if maintainer_handle is not None:
+            opts["assignee"] = maintainer_handle
         issue = repo.create_issue(
-            assignee=maintainer_handle,
-            title=self.issue_title(),
-            body=self.initial_comment,
+            title=self.issue_title(), body=self.initial_comment, *opts
         )
         self.create_labels_for_strategies(labels=[strategy])
         issue.add_to_labels(f"strategy/{strategy}")

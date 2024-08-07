@@ -165,7 +165,6 @@ class SnapshotManager:
     def check_todays_builds(self) -> None:
         """This method is driven from the config settings"""
         issue, issue_is_newly_created = self.github.create_or_get_todays_github_issue(
-            maintainer_handle=self.config.maintainer_handle,
             creator=self.config.creator_handle,
         )
         # if issue.state == "closed":
@@ -183,6 +182,9 @@ class SnapshotManager:
             for chroot in all_chroots:
                 comment = issue.create_comment(f"<!--ERRORS_FOR_CHROOT/{chroot}-->")
                 self.github.minimize_comment_as_outdated(comment)
+            # Only assign the issue now so that there are no notifications for
+            # all the error comments we've just created.
+            issue.add_to_assignees(self.config.maintainer_handle)
 
         logging.info("Get build states from copr")
         states = self.copr.get_build_states_from_copr_monitor(
