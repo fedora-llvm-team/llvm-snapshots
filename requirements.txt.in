@@ -7,7 +7,7 @@ PyGithub==2.3.0
 pandas
 plotly==5.23.0
 copr-cli
-tft-cli==0.0.16
+tft-cli==0.0.18
 regex==2024.7.24
 munch==4.0.0
 copr==1.132
