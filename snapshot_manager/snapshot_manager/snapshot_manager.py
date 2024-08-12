@@ -180,7 +180,9 @@ class SnapshotManager:
             # chroot that we care about and hide them for now. Then humanly
             # created output will always come at the end.
             for chroot in all_chroots:
-                comment = issue.create_comment(f"<!--ERRORS_FOR_CHROOT/{chroot}-->")
+                comment = issue.create_comment(
+                    f"<!--ERRORS_FOR_CHROOT/{chroot}--> This is a placeholder for any errors that might happen for the `{chroot}` chroot."
+                )
                 self.github.minimize_comment_as_outdated(comment)
             # Only assign the issue now so that there are no notifications for
             # all the error comments we've just created.
