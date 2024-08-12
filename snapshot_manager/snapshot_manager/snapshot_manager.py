@@ -184,6 +184,8 @@ class SnapshotManager:
                     f"<!--ERRORS_FOR_CHROOT/{chroot}--> This is a placeholder for any errors that might happen for the `{chroot}` chroot."
                 )
                 self.github.minimize_comment_as_outdated(comment)
+
+        else:
             # Only assign the issue now so that there are no notifications for
             # all the error comments we've just created.
             issue.add_to_assignees(self.config.maintainer_handle)
