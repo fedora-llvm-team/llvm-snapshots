@@ -181,7 +181,7 @@ class SnapshotManager:
             # created output will always come at the end.
             for chroot in all_chroots:
                 comment = issue.create_comment(
-                    f"<!--ERRORS_FOR_CHROOT/{chroot}--> This is a placeholder for any errors that might happen for the `{chroot}` chroot."
+                    f"<!--ERRORS_FOR_CHROOT/{chroot}--> This is a placeholder for any errors that might happen for the <code>{chroot}</code> chroot."
                 )
                 self.github.minimize_comment_as_outdated(comment)
 
