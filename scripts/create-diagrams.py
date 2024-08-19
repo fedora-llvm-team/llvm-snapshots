@@ -252,6 +252,7 @@ def create_index_page(all_packages: list[str], filepath: str = "index.html") -> 
                 {package_link_items}
                 <li><a href="fig-combined-standalone.html">llvm+clang+compiler-rt+libomp</a></li>
                 <li><a href="fig-big-merge.html">llvm (big-merge)</a></li>
+                <li><a href="fig-pgo.html">llvm (pgo)</a></li>
             </ul>
             <hr/>
             <small>Last updated: {last_updated}</small>
