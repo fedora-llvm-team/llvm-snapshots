@@ -295,11 +295,11 @@ def main() -> None:
         help="path to your build-stats-big-merge.csv file",
     )
     parser.add_argument(
-        "--datafile-bootstrap",
-        dest="datafile_bootstrap",
+        "--datafile-pgo",
+        dest="datafile_pgo",
         type=str,
-        default="build-stats-bootstrap.csv",
-        help="path to your build-stats-bootstrap.csv file",
+        default="build-stats-pgo.csv",
+        help="path to your build-stats-pgo.csv file",
     )
     args = parser.parse_args()
 
@@ -344,16 +344,16 @@ def main() -> None:
     df_big_merge.build_id = df_big_merge.build_id.apply(lambda x: [x])
 
     # Create dataframe of llvm, clang, compiler-rt and libomp but when build in
-    # bootstrap mode. The chroots are prefixed with "bootstrap-" on the fly to
+    # pgo mode. The chroots are prefixed with "pgo-" on the fly to
     # be able to distinguish the two cases.
-    df_bootstrap = prepare_data(filepath=args.datafile_bootstrap)
-    df_bootstrap["chroot"] = "bootstrap-" + df_bootstrap["chroot"]
+    df_pgo = prepare_data(filepath=args.datafile_pgo)
+    df_pgo["chroot"] = "pgo-" + df_pgo["chroot"]
     # Convert build_id column with int64's in it to an array of int64's to match
     # that of the combined standalone dataframe above (see: df_combined).
-    df_bootstrap.build_id = df_bootstrap.build_id.apply(lambda x: [x])
+    df_pgo.build_id = df_pgo.build_id.apply(lambda x: [x])
 
     # Concat the three dataframes of combined standalone and big-merge
-    df_result = pd.concat([df_combined, df_big_merge, df_bootstrap])
+    df_result = pd.concat([df_combined, df_big_merge, df_pgo])
 
     fig = create_figure(df=df_result)
     filepath = "fig-combined-standalone.html"
@@ -363,6 +363,12 @@ def main() -> None:
     # Create dedicated big-merge figure with nothing else in it.
     fig = create_figure(df=df_big_merge)
     filepath = "fig-big-merge.html"
+    save_figure(fig=fig, filepath=filepath)
+    add_html_header_menu(filepath=filepath, all_packages=all_packages)
+
+    # Create dedicated big-merge figure with nothing else in it.
+    fig = create_figure(df=df_pgo)
+    filepath = "fig-pgo.html"
     save_figure(fig=fig, filepath=filepath)
     add_html_header_menu(filepath=filepath, all_packages=all_packages)
 

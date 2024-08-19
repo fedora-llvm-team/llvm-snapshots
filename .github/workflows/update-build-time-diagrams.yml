@@ -66,11 +66,11 @@ jobs:
           if ${{ env.get_stats }}; then
             main/scripts/get-build-stats.py --copr-projectname llvm-snapshots-incubator-`date '+%Y%m%d'` | tee -a gh-pages/build-stats.csv
             main/scripts/get-build-stats.py --copr-projectname llvm-snapshots-big-merge-`date '+%Y%m%d'` | tee -a gh-pages/build-stats-big-merge.csv
-            main/scripts/get-build-stats.py --copr-projectname llvm-snapshots-bootstrap-`date '+%Y%m%d'` | tee -a gh-pages/build-stats-bootstrap.csv
-            git -C gh-pages add build-stats.csv build-stats-big-merge.csv build-stats-bootstrap.csv
+            main/scripts/get-build-stats.py --copr-projectname llvm-snapshots-pgo-`date '+%Y%m%d'` | tee -a gh-pages/build-stats-pgo.csv
+            git -C gh-pages add build-stats.csv build-stats-big-merge.csv build-stats-pgo.csv
           fi
           if ${{ env.create_diagrams }}; then
-            main/scripts/create-diagrams.py --datafile gh-pages/build-stats.csv --datafile-big-merge gh-pages/build-stats-big-merge.csv --datafile-bootstrap gh-pages/build-stats-bootstrap.csv
+            main/scripts/create-diagrams.py --datafile gh-pages/build-stats.csv --datafile-big-merge gh-pages/build-stats-big-merge.csv --datafile-pgo gh-pages/build-stats-pgo.csv
             mv index.html gh-pages/index.html
             mv fig-*.html gh-pages/
             git -C gh-pages add index.html fig-*.html
