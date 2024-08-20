@@ -23,7 +23,7 @@ jobs:
           - name: pgo
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD"
             copr_target_project: "@fedora-llvm-team/llvm-snapshots-pgo"
-            extra_script_file: "scripts/functions-pgo.sh"
+            # extra_script_file: "scripts/functions-pgo.sh"
             clone_url_tpl: "https://src.fedoraproject.org/forks/kkleine/rpms/PKG.git"
             clone_ref: pgo
     runs-on: ubuntu-latest
