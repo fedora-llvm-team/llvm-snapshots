@@ -105,7 +105,7 @@ class BuildState:
         if self.url_build_log is None:
             link = f'<a href="{self.build_page_url}">build page</a>'
         return f"""
-<details open>
+<details>
 <summary>
 <code>{self.package_name}</code> on <code>{self.chroot}</code> (see {link})
 </summary>
