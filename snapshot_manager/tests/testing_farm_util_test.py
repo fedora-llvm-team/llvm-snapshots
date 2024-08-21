@@ -19,15 +19,13 @@ class TestTestingFarmUtil(base_test.TestBase):
             strategy="big-merge", github_repo="fedora-llvm-team/llvm-snapshots"
         )
 
-        self.assertRaises(
-            SystemError,
+        with self.assertRaises(SystemError):
             tf.TestingFarmRequest.make(
                 chroot="fedora-900-x86_64",
                 config=self.config,
                 issue=issue,
                 copr_build_ids=[1, 2, 3],
-            ),
-        )
+            )
 
     def test_fetch_failed_test_cases_from_file(self):
         request_id = "1f25b0df-71f1-4a13-a4b8-c066f6f5f116"
