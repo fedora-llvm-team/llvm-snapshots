@@ -375,7 +375,7 @@ class SnapshotManager:
                         issue=issue,
                         copr_build_ids=current_copr_build_ids,
                     )
-                except Exception as ex:
+                except SystemError as ex:
                     logging.warning(
                         f"testing-farm request for {chroot} failed with: {ex}"
                     )
