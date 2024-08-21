@@ -368,17 +368,23 @@ class SnapshotManager:
                     self.github.flip_test_label(issue, chroot, in_testing)
             else:
                 logging.info(f"Starting tests for chroot {chroot}")
-                request = tf.TestingFarmRequest.make(
-                    chroot=chroot,
-                    config=self.config,
-                    issue=issue,
-                    copr_build_ids=current_copr_build_ids,
-                )
-                logging.info(
-                    f"testing-farm request ID for {chroot}: {request.request_id}"
-                )
-                requests[chroot] = request
-                self.github.flip_test_label(issue, chroot, in_testing)
+                try:
+                    request = tf.TestingFarmRequest.make(
+                        chroot=chroot,
+                        config=self.config,
+                        issue=issue,
+                        copr_build_ids=current_copr_build_ids,
+                    )
+                except Exception as ex:
+                    logging.warning(
+                        f"testing-farm request for {chroot} failed with: {ex}"
+                    )
+                else:
+                    logging.info(
+                        f"testing-farm request ID for {chroot}: {request.request_id}"
+                    )
+                    requests[chroot] = request
+                    self.github.flip_test_label(issue, chroot, in_testing)
 
             # Create or update a comment for testing-farm results display
             if len(failed_test_cases) > 0:

@@ -1,11 +1,32 @@
 """ Tests for build_status """
 
+import datetime
+
 import tests.base_test as base_test
 
+import snapshot_manager.github_util as github_util
 import snapshot_manager.testing_farm_util as tf
 
 
 class TestTestingFarmUtil(base_test.TestBase):
+    def test_make_with_missing_compose(self):
+        cfg = self.config
+        cfg.datetime = datetime.datetime(year=2024, month=2, day=27)
+        self.assertEqual("20240227", cfg.yyyymmdd)
+        gh = github_util.GithubClient(config=cfg)
+
+        issue = gh.get_todays_github_issue(
+            strategy="big-merge", github_repo="fedora-llvm-team/llvm-snapshots"
+        )
+
+        with self.assertRaises(SystemError):
+            tf.TestingFarmRequest.make(
+                chroot="fedora-900-x86_64",
+                config=self.config,
+                issue=issue,
+                copr_build_ids=[1, 2, 3],
+            )
+
     def test_fetch_failed_test_cases_from_file(self):
         request_id = "1f25b0df-71f1-4a13-a4b8-c066f6f5f116"
         chroot = "fedora-39-x86_64"
