@@ -40,7 +40,7 @@ echo "rpm_suffix=$rpm_suffix"
 # Install and enable the repository that provides the PGO LLVM Toolchain
 # See https://llvm.org/docs/HowToBuildWithPGO.html#building-clang-with-pgo
 dnf copr enable -y @fedora-llvm-team/llvm-snapshots-pgo-${yyyymmdd}
-dnf install -y \
+dnf -y repository-packages copr:copr.fedorainfracloud.org:group_fedora-llvm-team:llvm-snapshots-pgo-${yyyymmdd} install \
     clang-${rpm_suffix} \
     clang-${rpm_suffix} \
     clang-libs-${rpm_suffix} \
@@ -62,7 +62,7 @@ dnf -y copr remove @fedora-llvm-team/llvm-snapshots-pgo-${yyyymmdd}
 
 # Install and enable the repository that provides the big-merge LLVM Toolchain
 dnf copr enable -y @fedora-llvm-team/llvm-snapshots-big-merge-${yyyymmdd}
-dnf install -y \
+dnf -y repository-packages copr:copr.fedorainfracloud.org:group_fedora-llvm-team:llvm-snapshots-big-merge-${yyyymmdd} install \
     clang-${rpm_suffix} \
     clang-${rpm_suffix} \
     clang-libs-${rpm_suffix} \
