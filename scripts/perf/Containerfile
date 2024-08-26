@@ -1,0 +1,42 @@
+FROM fedora:40
+LABEL description="Test compilers with llvm-test-suite"
+
+USER root
+WORKDIR /root
+
+# Install deps to run test-suite
+RUN dnf install -y \
+        cmake \
+        fedora-packager \
+        git \
+        python3-pip \
+        python3-virtualenv \
+        python3-lit \
+        ninja-build \
+        which \
+        coreutils \
+        tcl \
+        tcl-devel \
+        tcl-tclreadline \
+        tcl-tclxml-devel \
+        tcl-tclxml \
+        tcl-zlib \
+        tcl-thread-devel
+
+RUN virtualenv ~/mysandbox
+RUN source ~/mysandbox/bin/activate \
+    && pip install \
+        pandas \
+        scipy
+
+# Clone test suite (in correct version for installed clang version)
+# See https://llvm.org/docs/TestSuiteGuide.html
+# RUN export VERSION=`clang --version | grep -ioP 'clang version\s\K[0-9\.]+'` \
+#     && git clone --depth=1 --branch llvmorg-${VERSION} https://github.com/llvm/llvm-test-suite.git test-suite
+RUN git clone --depth=1 https://github.com/llvm/llvm-test-suite.git test-suite
+
+RUN dnf install -y 'dnf-command(copr)' perf
+
+COPY entrypoint.sh /root/entrypoint.sh
+USER root
+ENTRYPOINT [ "/root/entrypoint.sh" ]
