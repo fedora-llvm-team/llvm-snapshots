@@ -25,8 +25,11 @@ prepare:
   # See: https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_tag_repository
   - how: shell
     script: |
-      dnf install -y dnf-plugins-core
-      dnf config-manager --save --setopt="testing-farm-tag-repository.priority=999" || true
+      if dnf repolist | grep -q testing-farm-tag-repository; then
+        dnf install -y 'dnf5-command(config-manager)' || dnf install -y 'dnf-command(config-manager)'
+        dnf config-manager --save --setopt="testing-farm-tag-repository.priority=999" || \
+          dnf config-manager setopt "testing-farm-tag-repository.priority=999"
+      fi
 
   - name: "Check that snapshot (~pre) version of LLVM is installed"
     how: shell
