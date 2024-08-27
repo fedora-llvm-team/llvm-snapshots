@@ -23,6 +23,11 @@ prepare:
     script: |
       dnf install -y dnf-plugins-core
       dnf config-manager --save --setopt="testing-farm-tag-repository.priority=999" || true
+
+  - name: "Check that snapshot (~pre) version of LLVM is installed"
+    how: shell
+    order: 99
+    script: rpm -q --qf "%{version}" llvm-libs | grep '~pre'
 adjust:
   - discover+:
       - name: redhat-rpm-config-tests
