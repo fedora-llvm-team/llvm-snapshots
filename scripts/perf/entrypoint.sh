@@ -96,7 +96,7 @@ system_llvm_release=$(clang --version | grep -Po '[0-9]+\.[0-9]+\.[0-9]' | head 
     --metric compile_time \
     --metric link_time \
     --lhs-name ${system_llvm_release} \
-    --rhs-name pgo-${rpm_suffix} \
+    --rhs-name pgo \
     ~/system/results.json vs ~/pgo/results.json > ~/results-system-vs-pgo.txt || true
 
 /root/test-suite/utils/compare.py \
@@ -104,15 +104,15 @@ system_llvm_release=$(clang --version | grep -Po '[0-9]+\.[0-9]+\.[0-9]' | head 
     --metric compile_time \
     --metric link_time \
     --lhs-name ${system_llvm_release} \
-    --rhs-name big-merge-${rpm_suffix} \
+    --rhs-name big-merge} \
     ~/system/results.json vs ~/big-merge/results.json > ~/results-system-vs-big-merge.txt || true
 
 /root/test-suite/utils/compare.py \
     --metric exec_time \
     --metric compile_time \
     --metric link_time \
-    --lhs-name big-merge-${rpm_suffix} \
-    --rhs-name pgo-${rpm_suffix} \
+    --lhs-name big-merge \
+    --rhs-name pgo \
     ~/big-merge/results.json vs ~/pgo/results.json > ~/results-big-merge-vs-pgo.txt || true
 
 bash
