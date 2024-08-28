@@ -10,19 +10,31 @@
 
 summary: LLVM Tests for snapshot gating
 prepare:
-  # dnf5's copr plugin has trouble resolving the runtime dependency repos, so
-  # we need to use dnf4. Check https://github.com/fedora-copr/copr/issues/3387
   - name: Enable copr repo
     how: shell
-    script: |
-      dnf install -y dnf-plugins-core
-      dnf-3 -y copr enable @fedora-llvm-team/$COPR_PROJECT $COPR_CHROOT
+    script:
+      - dnf install -y 'dnf5-command(copr)' || dnf install -y 'dnf-command(copr)'
+      - dnf -y copr enable @fedora-llvm-team/$COPR_PROJECT $COPR_CHROOT
+      # dnf5's copr plugin has trouble resolving the runtime dependency repos,
+      # and is not replacing the $distname special var. Hence we need to do that
+      # parsing ourselves.
+      # Check https://github.com/fedora-copr/copr/issues/3387
+      - sed -i "s/\$distname/$(echo "$COPR_CHROOT" | cut -d '-' -f 1)/" /etc/yum.repos.d/*$COPR_PROJECT*
+
   # Lower the priority of the testing-farm-tag-repository so that our copr repo is picked up.
   # See: https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_tag_repository
   - how: shell
     script: |
-      dnf install -y dnf-plugins-core
-      dnf config-manager --save --setopt="testing-farm-tag-repository.priority=999" || true
+      if dnf repolist | grep -q testing-farm-tag-repository; then
+        dnf install -y 'dnf5-command(config-manager)' || dnf install -y 'dnf-command(config-manager)'
+        dnf config-manager --save --setopt="testing-farm-tag-repository.priority=999" || \
+          dnf config-manager setopt "testing-farm-tag-repository.priority=999"
+      fi
+
+  - name: "Check that snapshot (~pre) version of LLVM is installed"
+    how: shell
+    order: 99
+    script: rpm -q --qf "%{version}" llvm-libs | grep '~pre'
 adjust:
   - discover+:
       - name: redhat-rpm-config-tests
