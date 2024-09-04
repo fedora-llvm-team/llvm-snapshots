@@ -20,6 +20,10 @@ prepare:
       # parsing ourselves.
       # Check https://github.com/fedora-copr/copr/issues/3387
       - sed -i "s/\$distname/$(echo "$COPR_CHROOT" | cut -d '-' -f 1)/" /etc/yum.repos.d/*$COPR_PROJECT*
+      # Ensure that latest llvm-libs (from our snapshot) is installed to prevent
+      # potential dependency solving issues when rpms depending on llvm-libs are
+      # already in the system.
+      - dnf -y install --best llvm-libs
 
   # Lower the priority of the testing-farm-tag-repository so that our copr repo is picked up.
   # See: https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_tag_repository
