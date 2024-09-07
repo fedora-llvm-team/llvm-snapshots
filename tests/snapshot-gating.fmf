@@ -10,6 +10,17 @@
 
 summary: LLVM Tests for snapshot gating
 prepare:
+  # Lower the priority of the testing-farm-tag-repository so that our copr repo is picked up.
+  # See: https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_tag_repository
+  - name: Set testing-farm-tag-repository priority
+    how: shell
+    script: |
+      if dnf repolist | grep -q testing-farm-tag-repository; then
+        dnf install -y 'dnf5-command(config-manager)' || dnf install -y 'dnf-command(config-manager)'
+        dnf config-manager --save --setopt="testing-farm-tag-repository.priority=999" || \
+          dnf config-manager setopt "testing-farm-tag-repository.priority=999"
+      fi
+
   - name: Enable copr repo
     how: shell
     script:
@@ -24,16 +35,6 @@ prepare:
       # potential dependency solving issues when rpms depending on llvm-libs are
       # already in the system.
       - dnf -y install --best llvm-libs
-
-  # Lower the priority of the testing-farm-tag-repository so that our copr repo is picked up.
-  # See: https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_tag_repository
-  - how: shell
-    script: |
-      if dnf repolist | grep -q testing-farm-tag-repository; then
-        dnf install -y 'dnf5-command(config-manager)' || dnf install -y 'dnf-command(config-manager)'
-        dnf config-manager --save --setopt="testing-farm-tag-repository.priority=999" || \
-          dnf config-manager setopt "testing-farm-tag-repository.priority=999"
-      fi
 
   - name: "Check that snapshot (~pre) version of LLVM is installed"
     how: shell
