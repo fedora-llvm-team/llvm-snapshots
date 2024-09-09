@@ -1,9 +1,10 @@
 #!/usr/bin/bash
 
 set -x
+set -e
 
-# Source the python environment with required packages
-source ~/mysandbox/bin/activate
+## Source the python environment with required packages
+#source ~/mysandbox/bin/activate
 
 function configure_build_run {
     # Configure the test suite
@@ -15,14 +16,14 @@ function configure_build_run {
         ~/test-suite
 
     # Build the test-suite
-    ninja -j30
+    ninja
 
     # Run the tests with lit:
     lit -j1 -v -o results.json . || true
 }
 
 # Query version information for given day
-yyyymmdd=20240825
+yyyymmdd=20240909
 git_rev=$(curl -sL https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-git-revision-${yyyymmdd}.txt)
 git_rev_short="${git_rev:0:14}"
 llvm_release=$(curl -sL https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-release-${yyyymmdd}.txt)
@@ -40,7 +41,10 @@ echo "rpm_suffix=$rpm_suffix"
 # Install and enable the repository that provides the PGO LLVM Toolchain
 # See https://llvm.org/docs/HowToBuildWithPGO.html#building-clang-with-pgo
 dnf copr enable -y @fedora-llvm-team/llvm-snapshots-pgo-${yyyymmdd}
-dnf -y repository-packages copr:copr.fedorainfracloud.org:group_fedora-llvm-team:llvm-snapshots-pgo-${yyyymmdd} install \
+repo_file=$(dnf repoinfo --json *llvm-snapshots-pgo* | jq -r ".[0].repo_file_path")
+distname=$(rpm --eval "%{?fedora:fedora}%{?rhel:rhel}") envsubst '$distname' < $repo_file > /tmp/new_repo_file
+cat /tmp/new_repo_file > $repo_file
+dnf -y install \
     clang-${rpm_suffix} \
     clang-${rpm_suffix} \
     clang-libs-${rpm_suffix} \
@@ -52,9 +56,11 @@ mkdir -pv ~/pgo
 cd ~/pgo
 
 configure_build_run
+
 # Remove packages from that PGO repo and the repo itself
-dnf -y repository-packages copr:copr.fedorainfracloud.org:group_fedora-llvm-team:llvm-snapshots-pgo-${yyyymmdd} remove
-dnf -y copr remove @fedora-llvm-team/llvm-snapshots-pgo-${yyyymmdd}
+repo_pkgs_installed=$(dnf repoquery --installed --queryformat ' %{name} %{from_repo} ' | grep -Po "[^ ]+ [^ ]+llvm-snapshots-pgo" | awk '{print $1}')
+dnf -y remove $repo_pkgs_installed;
+dnf copr disable -y @fedora-llvm-team/llvm-snapshots-pgo-${yyyymmdd}
 
 ######################################################################################
 # big-merge
@@ -62,7 +68,10 @@ dnf -y copr remove @fedora-llvm-team/llvm-snapshots-pgo-${yyyymmdd}
 
 # Install and enable the repository that provides the big-merge LLVM Toolchain
 dnf copr enable -y @fedora-llvm-team/llvm-snapshots-big-merge-${yyyymmdd}
-dnf -y repository-packages copr:copr.fedorainfracloud.org:group_fedora-llvm-team:llvm-snapshots-big-merge-${yyyymmdd} install \
+repo_file=$(dnf repoinfo --json *llvm-snapshots-big-merge* | jq -r ".[0].repo_file_path")
+distname=$(rpm --eval "%{?fedora:fedora}%{?rhel:rhel}") envsubst '$distname' < $repo_file > /tmp/new_repo_file
+cat /tmp/new_repo_file > $repo_file
+dnf -y install \
     clang-${rpm_suffix} \
     clang-${rpm_suffix} \
     clang-libs-${rpm_suffix} \
@@ -75,8 +84,9 @@ cd ~/big-merge
 
 configure_build_run
 # Remove packages from that big-merge repo and the repo itself
-dnf -y repository-packages copr:copr.fedorainfracloud.org:group_fedora-llvm-team:llvm-snapshots-big-merge-${yyyymmdd} remove
-dnf -y copr remove @fedora-llvm-team/llvm-snapshots-big-merge-${yyyymmdd}
+repo_pkgs_installed=$(dnf repoquery --installed --queryformat ' %{name} %{from_repo} ' | grep -Po "[^ ]+ [^ ]+llvm-snapshots-big-merge" | awk '{print $1}')
+dnf -y remove $repo_pkgs_installed;
+dnf copr disable -y @fedora-llvm-team/llvm-snapshots-big-merge-${yyyymmdd}
 
 ######################################################################################
 # system llvm

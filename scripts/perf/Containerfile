@@ -1,4 +1,4 @@
-FROM fedora:40
+FROM fedora:41
 LABEL description="Test compilers with llvm-test-suite"
 
 USER root
@@ -24,10 +24,13 @@ RUN dnf install -y \
         tcl-thread-devel
 
 RUN virtualenv ~/mysandbox
-RUN source ~/mysandbox/bin/activate \
-    && pip install \
-        pandas \
-        scipy
+RUN dnf install -y clang
+RUN dnf install -y python3-pandas python3-scipy
+RUN dnf install -y jq envsubst
+#RUN source ~/mysandbox/bin/activate \
+#    && pip install \
+#        pandas \
+#        scipy
 
 # Clone test suite (in correct version for installed clang version)
 # See https://llvm.org/docs/TestSuiteGuide.html
