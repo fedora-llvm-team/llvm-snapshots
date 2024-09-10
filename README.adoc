@@ -13,75 +13,62 @@ image:https://img.shields.io/badge/code%20style-black-000000.svg[link="https://g
 link:https://fedora-llvm-team.github.io/llvm-snapshots/fig-llvm.html[Build time Diagrams]
 image:https://coveralls.io/repos/github/fedora-llvm-team/llvm-snapshots/badge.svg[link="https://coveralls.io/github/fedora-llvm-team/llvm-snapshots"]
 
-== Tips on contributing
-
-This project uses `pre-commit` to validate that certain files (e.g. fmf or python) are not broken. Please install `pre-commit` using `pip install pre-commit` as described link:https://pre-commit.com/#install[here]. Then navigate to your clone of this project and install the git hook scripts using `cd ~/llvm-snapshots && pre-commit install`. This will run pre-commit on every `git commit`.
-
 == Maintaining the LLVM Snapshots for Fedora
 Konrad Kleine <kkleine@redhat.com>
 
 This document is supposed to give you an idea of what goes into maintaining the
 LLVM snapshots for Fedora. Don't feel like you have read this document from top
-to bottom but instead consider it a reference. There is a <<faq, Frequently
+to bottom but instead consider it a reference. There is an <<faq, Frequently
 Asked Questions (FAQ)>> section at the botton that probably contains many
 answers. Feel free to add your own there.
 
-WARNING: This page needs to be updated to reflect the latest updates.
-
 This is home for the generation of daily
 
-* link:https://github.com/fedora-llvm-team/llvm-snapshots/releases/tag/source-snapshot[LLVM source snapshots]
-** See link:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/generate-snapshot-tarballs.yml[generate-snapshot-tarballs] workflow
 * link:https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots/monitor/[Fedora LLVM snapshot RPMs]
 ** See link:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/fedora-copr-build.yml[fedora-copr-build] workflow
 
+=== Getting the latest snapshot
+
+We need a bit of post-configuration after enabling the copr repository for this project.
+
+----
+$ dnf -y install jq envsubst
+$ dnf -y install --skip-broken 'dnf-command(copr)' 'dnf5-command(copr)'
+$ dnf -y copr enable @fedora-llvm-team/llvm-snapshots
+$ repo_file=$(dnf repoinfo --json *llvm-snapshots* | jq -r ".[0].repo_file_path")
+$ distname=$(rpm --eval "%{?fedora:fedora}%{?rhel:rhel}") envsubst '$distname' < $repo_file > /tmp/new_repo_file
+$ cat /tmp/new_repo_file > $repo_file
+----
+
+Then install `clang` or some of the other packages.
+
+== Tips on contributing
+
+This project uses `pre-commit` to validate that certain files (e.g. fmf or python) are not broken. Please install `pre-commit` using `pip install pre-commit` as described link:https://pre-commit.com/#install[here]. Then navigate to your clone of this project and install the git hook scripts using `cd ~/llvm-snapshots && pre-commit install`. This will run pre-commit on every `git commit`.
+
 == Process overview [[overview]]
 
-For each LLVM subproject that we build as a snapshot, we have a branch called `upstream-snapshot` in the appropriate `/rpms/<PACKAGE>` directory on the **Fedora Package Source**. For clang the branch can be found here for example:
+We build LLVM snapshots on a daily basis on Copr and create a github issue in this very repository for every day to keep track of the build and testing status. The link:https://github.com/fedora-llvm-team/llvm-snapshots/blob/816d4e061e748c82f15ca3d1c772d93814a91afe/.github/workflows/check-snapshots.yml#L40[maintainer] changes on a monthly basis and will be assigned to the issue.
 
-https://src.fedoraproject.org/rpms/clang/tree/upstream-snapshot
+For a while now we've switched from standalone builds to the building everything from a single link:https://src.fedoraproject.org/rpms/llvm/tree/big-merge[dist git repo] with the working title "big-merge" on the **Fedora Package Source**. Before we used to have one spec file repository for all the llvm subprojects (clang, lld, lldb, etc.).
 
-There's a github actions workflow, that automatically builds the snapshots every night from the latest upstream LLVM source:
+Our snapshot builds are done under our link:https://copr.fedorainfracloud.org/groups/g/fedora-llvm-team/coprs/[group account] on Fedora Copr. There build for all supported Fedora version and some RHEL versions.
 
-https://github.com/fedora-llvm-team/llvm-snapshots/blob/main/.github/workflows/fedora-copr-build.yml
+We carefully create a new copr project for each day. These projects are called incubator projects. Only if all packages for all operating systems and architectures in an incubator project were successfully built without errors, we will promote it to be the next "official" snapshot link:https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots/[here].
 
-This workflow contains `copr` CLI calls that are needed in order to:
+For each chroot (except i386) we will also run testing-farm tests and report them in the daily issue. Some of these tests run on Red Hat internal hardware and are only reachable within the VPN. We try our best to utilize github labels to reflect the current state of builds and tests for each chroot.
 
-1. Build the snapshots for today in a distinct `@fedora-llvm-team/llvm-snapshots-incubator-<YYYYMMDD>`
-+
---
-NOTE: Replace `<YYYYMMDD>` with a date in reversed year month day order (e.g. `20230223`).
---
-2. Take the snapshots from yesterday and make them available ("fork" in Copr) under link:https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots/monitor/[@fedora-llvm-team/llvm-snapshots], if all builds succeeded.
+NOTE: For now we "promote" a daily snapshot to the next "official" snapshot **without** having run testing-farm tests. This might change in the future.
 
-When you repeat these two steps every day, you get a project for each day with with `@fedora-llvm-team/llvm-snapshots` "pointing to" the build from yesterday.
-
-Building LLVM takes a lot of time which is why our snapshots are usually a day behind the `main` branch of upstream LLVM.
-
-In the link:https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots/monitor/[@fedora-llvm-team/llvm-snapshots] project, you'll never see failing builds, because the "fork" mechanism in Copr only forks successful builds. To see why a build is missing you have to go to the individual project for a particular day.
+That is the reason why sometimes it can take days until a new version of LLVM will be published here. If you're interested in the version for a particular day, feel free to open https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/ (replace YYYYMMDD with the date you desire). Notice, that we cannot keep the invdividual incubator projects around forever.
 
 == Find out about the health of snapshots
 
-Go to the Fedora Copr project and look for anything red in the monitor for today (see
-<<monitor>>).
-
-If many things are red in one line, it's possibly due to a shared problem, e.g.
-with a patch not being applicable or something alike.
-
-== What to look at first?
-
-Also, if a column (a combination of an arch and OS) is mostly red, it's probably
-due to a problem with depending packages not being built. For example if `clang`
-is red and `llvm` is as well, then most likely `llvm` not building is the reason
-why clang is red as well. Having said that, you should always look at the
-package that builds first. Open up the spec file of a package to find out if it
-depends on another one. Make sure you look at a spec-file in the
-`upstream-snapshot` branch. For LLVM that would be
-link:https://src.fedoraproject.org/rpms/llvm/blob/upstream-snapshot/f/llvm.spec[`llvm.spec`].
+Go to the Fedora Copr project and look for anything red in the monitor for today (see <<monitor>>).
 
 == How to fix an error in a package build for a specific OS/arch combination?
 
-Suppose you want to work on the `compiler-rt` package with nothing checkout locally, yet.
+Suppose you want to work on the `llvm` package with nothing checkout locally, yet.
 
 1. Export your Fedora Account System username so you can copy and paste the commands below:
 +
@@ -93,28 +80,26 @@ $ export FAS_USER=<YOUR_USERMAME>
 NOTE: This is optional and only for copy pasting the below commands. Use the username to login in here: https://id.fedoraproject.org/login.
 --
 
-2. Clone the original source code's `upstream-snapshot` branch and navigate to that directory.
+2. Clone the original source code's `big-merge` branch and navigate to that directory.
 +
 --
 ----
-$ fedpkg clone compiler-rt -b upstream-snapshot ~/dev/llvm-rpms/compiler-rt-snapshot
+$ fedpkg clone llvm -b big-merge ~/dev/llvm-rpms/llvm
 
-$ cd ~/dev/llvm-rpms/compiler-rt-snapshot
+$ cd ~/dev/llvm-rpms/llvm
 ----
-
-NOTE: I have a directory called `~/dev/llvm-rpms` with a distinct directory for the different LLVM RPMs (e.g. `~/dev/llvm-rpms/clang-rhel`, `~/dev/llvm-rpms/clang-rawhide`, `~/dev/llvm-rpms/clang-centos`, `~/dev/llvm-rpms/clang-snapshot`). I'm going to use that structuring below as well. Over time I found this very useful to quickly use file diffs and peek into other branches without using `git` all the time but maybe `meld`.
 --
 
-3. Go to https://src.fedoraproject.org/rpms/compiler-rt and click the "fork" button in the top-right corner to create fork just for you. Then add it as a remote:
+3. Go to https://src.fedoraproject.org/rpms/llvm and click the "fork" button in the top-right corner to create fork just for you. Then add it as a remote:
 +
 ----
 $ git remote add $FAS_USER \
-    ssh://$FAS_USER@pkgs.fedoraproject.org/forks/$FAS_USER/rpms/compiler-rt.git
+    ssh://$FAS_USER@pkgs.fedoraproject.org/forks/$FAS_USER/rpms/llvm.git
 ----
 +
 You should have two git remote now: `origin` and one that is named after your FAS login.
 
-4. Make your changes to `compiler-rt` and commit them locally.
+4. Make your changes to `llvm` and commit them locally.
 +
 ----
 $ git add -p
@@ -127,10 +112,10 @@ $ git commit -m "My changes"
 $ git push $FAS_USER HEAD:mybranch
 ----
 
-6. Create a pull-requst for your changes so they can go into the `upstream-snapshot` branch by executing this and heading over to your browser:
+6. Create a pull-requst for your changes so they can go into the `big-merge` branch by executing this and heading over to your browser:
 +
 ----
-$ xdg-open https://src.fedoraproject.org/fork/$FAS_USER/rpms/compiler-rt/diff/upstream-snapshot..mybranch
+$ xdg-open https://src.fedoraproject.org/fork/$FAS_USER/rpms/compiler-rt/diff/big-merge..mybranch
 ----
 
 7. Wait for your changes to be approved and merged. Maybe ping someone from the team.
@@ -142,13 +127,13 @@ Then your changes will automatically be taken into account for the next daily bu
 --
 ----
 $ copr build-package \
-    --name compiler-rt \
+    --name llvm \
     -r fedora-rawhide-x86_64 \
     --timeout $((30*3600)) \
-    @fedora-llvm-team/llvm-snapshots-incubator-`date +%Y%m%d`
+    @fedora-llvm-team/llvm-snapshots-big-merge-`date +%Y%m%d`
 ----
 
-This will build the `compiler-rt` package with your changes as soon as they landed in the `upstream-snapshot` branch in today's Copr project.
+This will build the `llvm` package with your changes as soon as they landed in the `big-merge` branch in today's Copr project.
 --
 
 
@@ -161,241 +146,41 @@ IMPORTANT: That is why we almost always prefer `git merge --no-ff --log --summar
 
 == Frequently Asked Questions [[faq]]
 
-=== What git remotes do I need? [[git-remotes]]
+=== How can I clone `llvm`?
 
-==== For the llvm-project
-
-[horizontal]
-upstream:: [[llvm-project-remote-upstream]]I have the `llvm-project` cloned
-like so:
-+
-----
-$ git clone \
-  --origin upstream \
-  --branch main \
-  git@github.com:llvm/llvm-project.git \
-  ~/llvm-project
-----
-This ensures the upstream work is tracked under the `upstream` remote and not
-under the `origin` remote. I find this more adequate.
-
-fedora:: [[llvm-project-remote-fedora]]Then you need to add another remote
-called `fedora` to track the downstream patches.
-+
---
-----
-$ cd ~/llvm-project
-$ git remote add fedora ssh://git@pagure.io/llvm-project.git
-----
-
-NOTE: This is currently not widely used by all packagers but the idea is to have a branch for each Fedora version (e.g. `f36`, `f37`, `rawhide`) and for tracking the rolling downstream patches in a `streamline` branch. The `streamline` branch should contain the `rawhide` patches and exclude the ones that have already landed plus add those that are not yet needed in `rawhide`.
---
-
-==== For each package repo
-
-I have each LLVM subproject file project (e.g. `clang`) cloned with the appropriate tool (e.g. `fedpkg`, `centpkg` and `rhpkg`).
+I cloned `llvm` with the appropriate tool (e.g. `fedpkg`, `centpkg` and `rhpkg`).
 
 ----
-$ fedpkg clone clang -b rawhide ~/dev/llvm-rpms/clang-rawhide #<1>
-$ fedpkg clone clang -b upstream-snapshot ~/dev/llvm-rpms/clang-snapshot #<2>
-$ centpkg clone clang -b c9s ~/dev/llvm-rpms/clang-centos #<3>
-$ rhpkg clone clang -b rhel-9-main ~/dev/llvm-rpms/clang-rhel #<4>
+$ fedpkg clone llvm -b rawhide ~/dev/llvm-rpms/llvm-rawhide #<1>
+$ fedpkg clone llvm -b big-merge ~/dev/llvm-rpms/llvm-big-merge #<2>
+$ centpkg clone llvm -b c9s ~/dev/llvm-rpms/llvm-centos #<3>
+$ rhpkg clone llvm -b rhel-9-main ~/dev/llvm-rpms/clang-rhel #<4>
 ----
 <1> This is for the regular fedora work on rawhide.
 <2> This is for the work on the LLVM snapshots.
 <3> This is for the work on CentOS stream.
-<4> This is for the internal work on RHEL.
+<4> This is for the internal work on RHEL9.
 
+=== How to sync with rawhide?
 
-=== How to sync with rawhide? [[sync-with-rawhide]]
+It is not entirely clear yet but we're aiming towards doing the snapshot work in the `rawhide` branch of fedora.
 
-Every now and then you'll find out that the `rawhide` branch of a package
-contains commits that you don't have yet in the `upstream-snapshot` branch.
-That's when you need to merge the `rawhide` branch into the `upstream-snapshot`
-branch. **DO NOT REBASE!**. This is how you can do it for `clang` as an example:
+These are the benefits that we see:
+* No special handling for contributors. They can just use rawhide.
+* When making changes to the spec files for snapshots we can be sure that we’re not breaking rawhide because it is tested by Fedora CI.
+* No complicated git merging with `big-merge` or `upstream-snapshot` branches that we've had in the past.
+* Reverts are possible
+* Smoother release process?
+  * Just increment the `Version:` tag used in the non-snapshot part and consume the previously tested changes from the snapshots.
 
-----
-$ cd ~/dev/llvm-rpms/clang-snapshot
-$ git fetch
-$ git merge \
-  --no-ff \#<1>
-  --summary \
-  --log origin/rawhide #<2>
-$ vim clang.spec #<3>
-$ git add clang.spec #<4>
-$ git merge --continue #<5>
-$ git push origin HEAD:upstream-snapshot #<6>
-----
-<1> The `--no-ff` prevents any rebasing to happen, which is desireable here. I
-understand that it is different for feature development in most other projects.
-But this is different.
-<2> The `--log` will add information to the commit message
-about what commits from `rawhide` were merged into the `upstream-snapshot`
-branch.
-<3> Resolve conflicts that happen when merging.
-<4> Add the files that had conflicts when merging.
-<5> Continue the merge
-<6> Push the merged state back to the `upstream-snapshot` branch.
+Of course there are some downsides as well:
+* Possibly a lot of commit activity can happen in the `rawhide` branch that doesn’t change anything related to `rawhide` but only snapshots.
+* A bit more if/else branches in the spec files.
+* Duplicated patch files with slightly different content as they apply to each supported LLVM version.
 
-IMPORTANT: This will ensure that you'll keep the complete history of the
-`upstream-snapshot` branch which is very important. Trust me! Sometimes it can
-be quite confusing to not know if a patch is new or already in upstream and
-you're wondering if you removed it before. All of this information would be lost
-if you rebased instead of merging. The other benefit is that you just have to
-deal with conflicts of the final revision and no every patch that exists
-downstream.
+We would need `%if %{maj_ver} >= 20` conditions or alike for different LLVM versions (see link:https://src.fedoraproject.org/rpms/llvm/pull-request/286#_4__13[this PR] for example).
 
-=== When are snapshots build?
-
-[horizontal]
-source-tarball::
-
-[[source-tarball]]Every night at 00:00 am we build a source tarball using the
-`~/llvm-project/llvm/utils/release/export.sh` script that is run by the github
-workflow defined in link:https://github.com/fedora-llvm-team/llvm-snapshots/blob/main/.github/workflows/generate-snapshot-tarballs.yml[generate-snapshot-tarballs.yml]. This is essentially just an archive of each LLVM subproject directory. Those source-tarballs are served in the link:https://github.com/fedora-llvm-team/llvm-snapshots/releases/tag/source-snapshot[source-snapshot release] and are kept for a limitied amount of days.
-
-copr-builds::
-
-The Fedora Copr builds are controlled by the link:https://github.com/fedora-llvm-team/llvm-snapshots/blob/main/.github/workflows/fedora-copr-build.yml:[fedora-copr-build.yml]. This runs at 00:45am every night. This gives the `generate-snapshot-tarballs.yml` workflow enough time to finish.
-
-=== How to update downstream patches?
-
-Unfortunately you cannot run `fedpkg prep` locally in order to check why a patch cannot be applied in Copr. This is because we're relying on a rather nebulous _beature_: the spec file evaluation of the `Version:`-tag with custom lua macros applied.
-
-In case Fedora Copr tells you that a patch is not applicable, you probably want
-to check if the patch is already in the
-<<llvm-project-remote-upstream,`upstream/main`>> branch.
-
-==== Patch has landed upstream
-
-If the patch has already landed upstream, then you can remove the corresponding RPM `Patch`
-tag from the `<project>.spec` file and also `git rm -f <mypatch>.patch` from the
-project's git repo.
-
-==== Patch hasn't landed upstream
-
-If the patch hasn't landed upstream, then you probably need to update the patch.
-
-Navigate to your `llvm-project` clone and see if the patch exists in the
-<<llvm-project-remote-fedora,`fedora/streamline`>> branch. Sometimes package
-maintainers are unaware of this branch and add their patches to the project's
-spec file right away. And that's perfectly fine. We can cope with that.
-
-Update the <<llvm-project-remote-fedora,`fedora/streamline`>> branch by rebasing
-onto the latest changes from <<llvm-project-remote-upstream,`upstream/main`>>.
-
-----
-$ cd ~/llvm-project
-$ git fetch fedora
-$ git fetch upstream
-
-$ # You don't need the -b and the --track if you already have this branch
-$ git checkout -b streamline --track fedora/streamline
-
-$ git rebase upstream/main #<1>
-
-...potentially resolve rebasing conflicts...
-
-$ git push -f fedora HEAD:streamline #<2>
-----
-<1> We don't want to merge here because of the way we generate patches from the
-<<llvm-project-remote-fedora,`fedora/streamline`>> branch. We use
-`git format-patch` to generate the patches and any resolved conflicts in a merge
-commit won't be picked up by it. Again, trust me. I've spend hours finding out why a change wasn't picked up by `git format-patch` and it was simply becuase of merge commits.
-<2> You have to force push `-f` and you need to be careful not to overwrite
-somebody else's changes that happened in between.
-
-Now that the <<llvm-project-remote-fedora,`fedora/streamline`>> branch is up to
-date, take the patch file from the RPM project's directory and copy it to the
-llvm-project's root dir. Here's an example of how I did that with `clang`
-today:
-
-----
-$ cd ~/dev/llvm-rpms/clang-snapshot
-$ cp 0006-PATCH-Driver-Add-a-gcc-equivalent-triple-to-the-list.patch ~/llvm-project
-$ cd ~/llvm-project
-$ git checkout streamline
-$ git am 0006-PATCH-Driver-Add-a-gcc-equivalent-triple-to-the-list.patch
-----
-
-You might need to resolve conflicts and then do `git am --continue`. But after
-that the patch is now in the <<llvm-project-remote-fedora,`fedora/streamline`>>
-branch.
-
-Don't forget to push the changes back:
-
-----
-$ git push -f fedora HEAD:streamline
-----
-
-Now continue with: <<generate-patch-files>>
-
-=== How to generate patch files that go into the specfile? [[generate-patch-files]]
-
-I'll show you how to generate the patch files for the `clang` package. This is
-especially interesting because this package consumes two tarballs, one for
-`clang` and one for `clang-tools-extra`. Yet, the `clang.spec` file has just one
-list of patch files. The question is how to delegate a portion of this list of
-patches to the `clang` tarball and the rest to the `clang-tools-extra` tarball.
-For this, we have to begin by generating patch files for each sub-project
-individually even though the original patches in the
-<<llvm-project-remote-fedora,`fedora/streamline`>> branch might be touching both
-projects at once.
-
-----
-$ cd ~/llvm-project
-$ git fetch upstream
-$ git fetch fedora
-$ git checkout streamline
-$ rm *.patch #<1>
-
-$ git format-patch --keep-subject upstream/main..HEAD -- clang #<2>
-0001-Reorganize-gtest-integration.patch
-0002-ToolChain-Add-lgcc_s-to-the-linker-flags-when-using-.patch
-0003-Make-funwind-tables-the-default-on-all-archs.patch
-0004-Don-t-install-static-libraries.patch
-0005-Prefer-gcc-toolchains-with-libgcc_s.so-when-not-stat.patch
-0006-Driver-Add-a-gcc-equivalent-triple-to-the-list-of-tr.patch
-0007-Work-around-gcc-miscompile.patch
-0008-cmake-Allow-shared-libraries-to-customize-the-soname.patch
-0009-Revert-replace-clang-LLVM_ENABLE_PLUGINS-CLANG_PLUGI.patch
-
-$ git format-patch --keep-subject upstream/main..HEAD -- clang-tools-extra #<3>
-0001-Revert-replace-clang-LLVM_ENABLE_PLUGINS-CLANG_PLUGI.patch
-0002-Revert-Reland-enable-plugins-for-clang-tidy.patch
-
-$ mv -v {0001,0201}-Revert-replace-clang-LLVM_ENABLE_PLUGINS-CLANG_PLUGI.patch #<4>
-$ mv -v {0002,0202}-Revert-Reland-enable-plugins-for-clang-tidy.patch
-----
-<1> Remove all left-over patch files
-<2> Generate patches for `clang` that go ontop of <<llvm-project-remote-upstream, `upstream/main`>>.
-<3> Generate patches for `clang-tools-extra` that go ontop of <<llvm-project-remote-upstream, `upstream/main`>>.
-<4> These two steps exist just to make it match up with the `Patch201:` and
-`Patch202:` tags in the spec file.
-
-Now move those files over to the RPM project directory:
-
-----
-$ cd ~/dev/llvm-rpms/clang-snapshot
-$ mv ~/llvm-project/*.patch .
-----
-
-Weave those patches in the spec file and make sure you use `Patch` tags with
-numbers higher or equal to `200` for the patches targeting `clang-tools-extra`.
-
-NOTE: Look for
-link:https://rpm-software-management.github.io/rpm/manual/autosetup.html#autopatch[`%autopatch`]
-in the `clang.spec` to find out how patch tags are applied to different
-tarballs.
-
-Now push the changes back to the
-<<llvm-project-remote-upstream,`upstream/upstream-snapshot`>> branch:
-
-----
-$ git push origin HEAD:upstream-snapshot #<1>
-----
-<1> You might need to force (`-f`) push here.
-
+Once we've found a good way to do the patch handling and versioning inside the `rawhide` spec file repository of `llvm`, we're going to update this very FAQ.
 
 === How do I find the monitor? [[monitor]]
 
@@ -407,85 +192,18 @@ The above link brings you to the latest "forked" build. It will only contain suc
 
 To find out where this build came from, take a look at the title of the project. There it should say something like:
 
->  ( forked from @fedora-llvm-team/llvm-snapshots-incubator-20230221 )
+>  ( forked from @fedora-llvm-team/llvm-snapshots-big-merge-20230221 )
 
 Go to the project from which `@fedora-llvm-team/llvm-snapshots` was forked to find failing builds.
 
-As described in the <<overview, overview>> the monitor `@fedora-llvm-team/llvm-snapshots` Copr project is always reflecting the state of yesterday. The nice benefit is that if a build fails today, you have one day to fix things before s*** hits the fan.
-
-=== How do I run a local mockbuild?
-
-This is slightly more advanced but helpful if you need to fix build errors locally.
+=== How do I run a local snapshot build?
 
 ----
-# Enable the llvm-snapshot-builder repo and install the llvm-snapshot-builder package
-# This is needed because the *.spec files of the repos use special macros provided by
-# this package. We need it on the host and in mock unfortunately. On the host this is
-# needed to download the source with spectool.
-# NOTE: This only needs to be done once and NOT for every package.
-dnf install -y 'dnf-command(copr)'
-dnf copr enable -y @fedora-llvm-team/llvm-snapshot-builder
-dnf install -y llvm-snapshot-builder
-
-# Make sure you have an rpm tree, because temporary files may be placed there.
-rpmdev-setuptree -d
-
-# Checkout project into buildroot and fetch the sources and patches
-fedpkg clone -b upstream-snapshot clang /tmp/workdir/buildroot
-cd /tmp/workdir/buildroot
-spectool -g *.spec
-
-# Install llvm-snapshot-builder into chroot
-mock \
-  -r fedora-36-x86_64 \
-  --addrepo https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/llvm-snapshot-builder/fedora-36-x86_64/ \
-  --install llvm-snapshot-builder
-
-# Build with mock
-fedpkg \
-  --release f36 \
-  mockbuild -N \
-  -- \
-    --addrepo https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/llvm-snapshots/fedora-36-x86_64/devel
-
-# Install vim (optionally)
-mock -r fedora-36-x86_64 --install vim
-
-# Open a shell in the mock buildroot
-fedpkg --release f36 mockbuild --shell
+$ git clone https://src.fedoraproject.org/rpms/llvm.git
+$ cd llvm
+$ make snapshot-rpm
 ----
 
-== Advanced
+You might need to install missing dependencies. The build process itself probably takes quite some time.
 
-=== Troubleshooting
-
-We also have a `Makefile` in case we encounter an error with the snapshots and
-want to rebuild locally to fix errors. These are the make targets to choose from:
-
-clone-%:: Clones the upstream-snapshot branch of the given package package (%) into the
- buildroot.
-build-%:: Clones and builds the package (%) and then installs it in the chroot.
-init-mock:: Initializes the mock chroot.
-build-and-install-%:: For the package (%) an SRPM and an RPM is built and then it is installed in
- the chroot.
-shell:: Opens up a shell to inspect the mock chroot.
-install-vim:: Allows you to use vim inside of mock.
-clean-mock:: Cleans the mock chroot
-clean-buildroot:: Removes the buildroot directory
-clean:: Cleans the mock chroot and removes the buildroot.
-clean-%:: Removes the buildroot dir for the given package (%).
-copr-build-%:: Builds the package (%) in copr by using the tooling used for the automated
- snapshot generation.
-help:: Display this help text.
-help-html:: Display this help text as an HTML definition list for better documentation generation
-help-adoc:: Display this help text as an ASCIDoc definition list for better documentation generation
-
-=== Usage
-
-The LLVM snapshot packages depend on one another. The fastest and independent
-package to build is `python-lit`. To try out how to build it, you can do:
-
-----
-make init-mock
-make build-python-lit
-----
+You're going to find `results/YYYYMMDD/snapshot-rpm.log` with logging everything from this makefile target.
