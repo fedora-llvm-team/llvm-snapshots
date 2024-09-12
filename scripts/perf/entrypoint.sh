@@ -12,6 +12,9 @@ function configure_build_run {
         -DCMAKE_GENERATOR=Ninja \
         -DCMAKE_C_COMPILER=/usr/bin/clang \
         -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+        -DTEST_SUITE_BENCHMARKING_ONLY=ON \
+        -DTEST_SUITE_COLLECT_STATS=ON \
+        -DTEST_SUITE_USE_PERF=ON \
         -C~/test-suite/cmake/caches/O3.cmake \
         ~/test-suite
 
@@ -23,7 +26,7 @@ function configure_build_run {
 }
 
 # Query version information for given day
-yyyymmdd=20240909
+yyyymmdd=20240911
 git_rev=$(curl -sL https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-git-revision-${yyyymmdd}.txt)
 git_rev_short="${git_rev:0:14}"
 llvm_release=$(curl -sL https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-release-${yyyymmdd}.txt)
