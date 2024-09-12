@@ -229,12 +229,15 @@ def expect_chroot(chroot: str) -> str:
     >>> expect_chroot("fedora-rawhide-x86_64")
     'fedora-rawhide-x86_64'
 
+    >>> expect_chroot("centos-stream-10-x86_64")
+    'centos-stream-10-x86_64'
+
     >>> expect_chroot("fedora-rawhide-")
     Traceback (most recent call last):
       ...
     ValueError: invalid chroot fedora-rawhide-
     """
-    if not re.search(pattern=r"^[^-]+-[^-]+-[^-]+$", string=chroot):
+    if not re.search(pattern=r"^[^-]+-[^-]+-[^-]+(-[^-]+)?$", string=chroot):
         raise ValueError(f"invalid chroot {chroot}")
     return chroot
 

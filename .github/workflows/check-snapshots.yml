@@ -48,7 +48,7 @@ jobs:
             copr_ownername: "@fedora-llvm-team"
             copr_project_tpl: "llvm-snapshots-pgo-YYYYMMDD"
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/"
-            chroot_pattern: '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)'
+            chroot_pattern: '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-|centos-stream-10)'
             packages: "llvm"
           # - name: bootstrap
           #   maintainer_handle: "kwk"

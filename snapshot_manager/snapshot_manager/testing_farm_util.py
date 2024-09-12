@@ -301,6 +301,12 @@ class TestingFarmRequest:
 
         >>> TestingFarmRequest.select_ranch("fedora-rawhide-i386")
         'redhat'
+
+        >>> TestingFarmRequest.select_ranch("centos-stream-x86_64")
+        'public'
+
+        >>> TestingFarmRequest.select_ranch("centos-stream-ppc64le")
+        'redhat'
         """
         util.expect_chroot(chroot)
         ranch = None
@@ -405,6 +411,8 @@ class TestingFarmRequest:
         'RHEL-9-Nightly'
         >>> TestingFarmRequest.get_compose("rhel-8-x86_64")
         'RHEL-8-Nightly'
+        >>> TestingFarmRequest.get_compose("centos-stream-10-s390x")
+        CentOS-Stream-10
         """
         util.expect_chroot(chroot)
 
