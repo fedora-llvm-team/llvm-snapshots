@@ -11,7 +11,7 @@ function configure_build_run {
         -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
         -DTEST_SUITE_BENCHMARKING_ONLY=ON \
         -DTEST_SUITE_COLLECT_STATS=ON \
-        -DTEST_SUITE_USE_PERF=ON \
+        -DTEST_SUITE_USE_PERF=OFF \
         -DTEST_SUITE_SUBDIRS=CTMark \
         -DTEST_SUITE_RUN_BENCHMARKS=OFF \
         -C~/test-suite/cmake/caches/O3.cmake \
