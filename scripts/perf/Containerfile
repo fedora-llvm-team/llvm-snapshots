@@ -15,11 +15,11 @@ RUN dnf install -y \
         jq \
         jq \
         ninja-build \
-        perf
+        perf \
         python3-lit \
         python3-pandas \
         python3-pip \
-        python3-scipy
+        python3-scipy \
         python3-setuptools \
         python3-virtualenv \
         tcl \
@@ -29,7 +29,7 @@ RUN dnf install -y \
         tcl-tclxml-devel \
         tcl-thread-devel \
         tcl-zlib \
-        which \
+        which
 
 # Clone test suite (in correct version for installed clang version)
 # See https://llvm.org/docs/TestSuiteGuide.html
