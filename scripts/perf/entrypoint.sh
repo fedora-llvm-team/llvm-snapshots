@@ -12,14 +12,15 @@ function configure_build_run {
         -DTEST_SUITE_BENCHMARKING_ONLY=ON \
         -DTEST_SUITE_COLLECT_STATS=ON \
         -DTEST_SUITE_USE_PERF=ON \
+        -DTEST_SUITE_RUN_BENCHMARKS=OFF \
         -C~/test-suite/cmake/caches/O3.cmake \
         ~/test-suite
 
     # Build the test-suite
-    ninja
+    ninja -j1
 
     # Run the tests with lit:
-    lit -j1 -v -o results.json . || true
+    lit -v -o results.json . || true
 }
 
 # Query version information for given day
@@ -102,7 +103,6 @@ configure_build_run
 system_llvm_release=$(clang --version | grep -Po '[0-9]+\.[0-9]+\.[0-9]' | head -n1)
 
 /root/test-suite/utils/compare.py \
-    --metric exec_time \
     --metric compile_time \
     --metric link_time \
     --lhs-name ${system_llvm_release} \
@@ -110,7 +110,6 @@ system_llvm_release=$(clang --version | grep -Po '[0-9]+\.[0-9]+\.[0-9]' | head 
     ~/system/results.json vs ~/pgo/results.json > ~/results-system-vs-pgo.txt || true
 
 /root/test-suite/utils/compare.py \
-    --metric exec_time \
     --metric compile_time \
     --metric link_time \
     --lhs-name ${system_llvm_release} \
@@ -118,7 +117,6 @@ system_llvm_release=$(clang --version | grep -Po '[0-9]+\.[0-9]+\.[0-9]' | head 
     ~/system/results.json vs ~/big-merge/results.json > ~/results-system-vs-big-merge.txt || true
 
 /root/test-suite/utils/compare.py \
-    --metric exec_time \
     --metric compile_time \
     --metric link_time \
     --lhs-name big-merge \
