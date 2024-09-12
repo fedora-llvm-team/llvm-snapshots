@@ -3,9 +3,6 @@
 set -x
 set -e
 
-## Source the python environment with required packages
-#source ~/mysandbox/bin/activate
-
 function configure_build_run {
     # Configure the test suite
     cmake \
