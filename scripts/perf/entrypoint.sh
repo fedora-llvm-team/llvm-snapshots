@@ -12,6 +12,7 @@ function configure_build_run {
         -DTEST_SUITE_BENCHMARKING_ONLY=ON \
         -DTEST_SUITE_COLLECT_STATS=ON \
         -DTEST_SUITE_USE_PERF=ON \
+        -DTEST_SUITE_SUBDIRS=CTMark \
         -DTEST_SUITE_RUN_BENCHMARKS=OFF \
         -C~/test-suite/cmake/caches/O3.cmake \
         ~/test-suite
@@ -104,23 +105,20 @@ system_llvm_release=$(clang --version | grep -Po '[0-9]+\.[0-9]+\.[0-9]' | head 
 
 /root/test-suite/utils/compare.py \
     --metric compile_time \
-    --metric link_time \
     --lhs-name ${system_llvm_release} \
-    --rhs-name pgo \
+    --rhs-name pgo-${yyyymmdd} \
     ~/system/results.json vs ~/pgo/results.json > ~/results-system-vs-pgo.txt || true
 
 /root/test-suite/utils/compare.py \
     --metric compile_time \
-    --metric link_time \
     --lhs-name ${system_llvm_release} \
-    --rhs-name big-merge} \
+    --rhs-name big-merge-${yyyymmdd} \
     ~/system/results.json vs ~/big-merge/results.json > ~/results-system-vs-big-merge.txt || true
 
 /root/test-suite/utils/compare.py \
     --metric compile_time \
-    --metric link_time \
     --lhs-name big-merge \
-    --rhs-name pgo \
+    --rhs-name pgo-${yyyymmdd} \
     ~/big-merge/results.json vs ~/pgo/results.json > ~/results-big-merge-vs-pgo.txt || true
 
 bash
