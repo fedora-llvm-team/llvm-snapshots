@@ -6,31 +6,30 @@ WORKDIR /root
 
 # Install deps to run test-suite
 RUN dnf install -y \
+        clang \
         cmake \
+        coreutils \
+        envsubst \
         fedora-packager \
         git \
-        python3-pip \
-        python3-virtualenv \
-        python3-lit \
+        jq \
+        jq \
         ninja-build \
-        which \
-        coreutils \
+        perf
+        python3-lit \
+        python3-pandas \
+        python3-pip \
+        python3-scipy
+        python3-setuptools \
+        python3-virtualenv \
         tcl \
         tcl-devel \
         tcl-tclreadline \
-        tcl-tclxml-devel \
         tcl-tclxml \
+        tcl-tclxml-devel \
+        tcl-thread-devel \
         tcl-zlib \
-        tcl-thread-devel
-
-RUN virtualenv ~/mysandbox
-RUN dnf install -y clang
-RUN dnf install -y python3-pandas python3-scipy
-RUN dnf install -y jq envsubst
-#RUN source ~/mysandbox/bin/activate \
-#    && pip install \
-#        pandas \
-#        scipy
+        which \
 
 # Clone test suite (in correct version for installed clang version)
 # See https://llvm.org/docs/TestSuiteGuide.html
@@ -38,7 +37,7 @@ RUN dnf install -y jq envsubst
 #     && git clone --depth=1 --branch llvmorg-${VERSION} https://github.com/llvm/llvm-test-suite.git test-suite
 RUN git clone --depth=1 https://github.com/llvm/llvm-test-suite.git test-suite
 
-RUN dnf install -y 'dnf-command(copr)' perf
+RUN dnf install -y 'dnf-command(copr)'
 
 COPY entrypoint.sh /root/entrypoint.sh
 USER root
