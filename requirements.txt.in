@@ -5,7 +5,7 @@
 
 PyGithub==2.4.0
 pandas
-plotly==5.24.0
+plotly==5.24.1
 copr-cli
 tft-cli==0.0.16
 regex==2024.7.24
