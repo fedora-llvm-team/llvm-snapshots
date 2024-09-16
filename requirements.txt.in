@@ -8,7 +8,7 @@ pandas
 plotly==5.24.1
 copr-cli
 tft-cli==0.0.16
-regex==2024.7.24
+regex==2024.9.11
 munch==4.0.0
 copr==1.132
 requests==2.32.3
