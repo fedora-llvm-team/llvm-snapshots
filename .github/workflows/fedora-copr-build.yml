@@ -25,7 +25,7 @@ jobs:
             copr_target_project: "@fedora-llvm-team/llvm-snapshots-pgo"
             extra_script_file: "scripts/functions-pgo.sh"
             clone_url_tpl: "https://src.fedoraproject.org/forks/kkleine/rpms/PKG.git"
-            clone_ref: pgo
+            clone_ref: pgo-manual
     runs-on: ubuntu-latest
     container: fedora:39
     steps:
