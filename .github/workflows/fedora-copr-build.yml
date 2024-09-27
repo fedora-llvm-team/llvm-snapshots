@@ -130,13 +130,14 @@ jobs:
             --module-hotfixes on \
             $chroot_opts "${{ env.project_today }}"
 
-      - name: "Enable swig:4.0 module in RHEL 8 build chroots (if any)"
+      - name: "Enable snapshot_build build condition for all and swig:4.0 module in RHEL 8 build chroots (if any)"
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
           [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           for chroot in ${{ env.chroots }}; do
+            copr edit-chroot --rpmbuild-with "snapshot_build" ${{ env.project_today }}/$chroot
             if [[ "$chroot" == rhel-8-* ]]; then
               copr edit-chroot --modules "swig:4.0" ${{ env.project_today }}/$chroot
             fi
