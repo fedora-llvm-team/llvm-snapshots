@@ -19,7 +19,7 @@ jobs:
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
             copr_target_project: "@fedora-llvm-team/llvm-snapshots"
             clone_url_tpl: "https://src.fedoraproject.org/rpms/PKG.git"
-            clone_ref: big-merge
+            clone_ref: rawhide
           - name: pgo
             copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD"
             copr_target_project: "@fedora-llvm-team/llvm-snapshots-pgo"
