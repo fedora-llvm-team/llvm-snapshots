@@ -37,7 +37,7 @@ jobs:
           #   copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
           #   packages: "python-lit llvm clang lld compiler-rt libomp"
           - name: big-merge
-            maintainer_handle: "nikic"
+            maintainer_handle: "tstellar"
             copr_ownername: "@fedora-llvm-team"
             copr_project_tpl: "llvm-snapshots-big-merge-YYYYMMDD"
             copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/"
