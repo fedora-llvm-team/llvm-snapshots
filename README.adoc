@@ -50,7 +50,7 @@ This project uses `pre-commit` to validate that certain files (e.g. fmf or pytho
 
 We build LLVM snapshots on a daily basis on Copr and create a github issue in this very repository for every day to keep track of the build and testing status. The link:https://github.com/fedora-llvm-team/llvm-snapshots/blob/816d4e061e748c82f15ca3d1c772d93814a91afe/.github/workflows/check-snapshots.yml#L40[maintainer] changes on a monthly basis and will be assigned to the issue.
 
-For a while now we've switched from standalone builds to the building everything from a single link:https://src.fedoraproject.org/rpms/llvm/tree/big-merge[dist git repo] with the working title "big-merge" on the **Fedora Package Source**. Before we used to have one spec file repository for all the llvm subprojects (clang, lld, lldb, etc.).
+For a while now we've switched from standalone builds to the building everything from a single link:https://src.fedoraproject.org/rpms/llvm/tree/rawhide[dist git repo] with the working title "big-merge" on the **Fedora Package Source**. Before we used to have one spec file repository for all the llvm subprojects (clang, lld, lldb, etc.). Now we've taken it one step further and build the snapshots directly out of the `rawhide` branch.
 
 Our snapshot builds are done under our link:https://copr.fedorainfracloud.org/groups/g/fedora-llvm-team/coprs/[group account] on Fedora Copr. There build for all supported Fedora version and some RHEL versions.
 
@@ -80,11 +80,11 @@ $ export FAS_USER=<YOUR_USERMAME>
 NOTE: This is optional and only for copy pasting the below commands. Use the username to login in here: https://id.fedoraproject.org/login.
 --
 
-2. Clone the original source code's `big-merge` branch and navigate to that directory.
+2. Clone the original source code's `rawhide` branch and navigate to that directory.
 +
 --
 ----
-$ fedpkg clone llvm -b big-merge ~/dev/llvm-rpms/llvm
+$ fedpkg clone llvm -b rawhide ~/dev/llvm-rpms/llvm
 
 $ cd ~/dev/llvm-rpms/llvm
 ----
@@ -112,10 +112,10 @@ $ git commit -m "My changes"
 $ git push $FAS_USER HEAD:mybranch
 ----
 
-6. Create a pull-requst for your changes so they can go into the `big-merge` branch by executing this and heading over to your browser:
+6. Create a pull-request for your changes so they can go into the `rawhide` branch by executing this and heading over to your browser:
 +
 ----
-$ xdg-open https://src.fedoraproject.org/fork/$FAS_USER/rpms/compiler-rt/diff/big-merge..mybranch
+$ xdg-open https://src.fedoraproject.org/fork/$FAS_USER/rpms/compiler-rt/diff/rawhide..mybranch
 ----
 
 7. Wait for your changes to be approved and merged. Maybe ping someone from the team.
@@ -133,16 +133,9 @@ $ copr build-package \
     @fedora-llvm-team/llvm-snapshots-big-merge-`date +%Y%m%d`
 ----
 
-This will build the `llvm` package with your changes as soon as they landed in the `big-merge` branch in today's Copr project.
+This will build the `llvm` package in today's Copr project with your changes as soon as they landed in the `rawhide` branch.
 --
 
-
-=== Syncing a package with rawhide
-
-Unlike with many other projects, we actually do want to keep the complete git
-history of downstream patches and changes being made to a `.spec` file.
-
-IMPORTANT: That is why we almost always prefer `git merge --no-ff --log --summary` over `git rebase`.
 
 == Frequently Asked Questions [[faq]]
 
@@ -151,19 +144,17 @@ IMPORTANT: That is why we almost always prefer `git merge --no-ff --log --summar
 I cloned `llvm` with the appropriate tool (e.g. `fedpkg`, `centpkg` and `rhpkg`).
 
 ----
-$ fedpkg clone llvm -b rawhide ~/dev/llvm-rpms/llvm-rawhide #<1>
-$ fedpkg clone llvm -b big-merge ~/dev/llvm-rpms/llvm-big-merge #<2>
-$ centpkg clone llvm -b c9s ~/dev/llvm-rpms/llvm-centos #<3>
-$ rhpkg clone llvm -b rhel-9-main ~/dev/llvm-rpms/clang-rhel #<4>
+$ fedpkg clone llvm -b rawhide ~/src/llvm-rpms/llvm-rawhide #<1>
+$ centpkg clone llvm -b c9s ~/src/llvm-rpms/llvm-centos #<2>
+$ rhpkg clone llvm -b rhel-9-main ~/src/llvm-rpms/llvm-rhel #<3>
 ----
 <1> This is for the regular fedora work on rawhide.
-<2> This is for the work on the LLVM snapshots.
-<3> This is for the work on CentOS stream.
-<4> This is for the internal work on RHEL9.
+<2> This is for the work on CentOS stream.
+<3> This is for the internal work on RHEL9.
 
 === How to sync with rawhide?
 
-It is not entirely clear yet but we're aiming towards doing the snapshot work in the `rawhide` branch of fedora.
+We do the snapshot work in the `rawhide` branch of fedora.
 
 These are the benefits that we see:
 * No special handling for contributors. They can just use rawhide.
@@ -178,9 +169,7 @@ Of course there are some downsides as well:
 * A bit more if/else branches in the spec files.
 * Duplicated patch files with slightly different content as they apply to each supported LLVM version.
 
-We would need `%if %{maj_ver} >= 20` conditions or alike for different LLVM versions (see link:https://src.fedoraproject.org/rpms/llvm/pull-request/286#_4__13[this PR] for example).
-
-Once we've found a good way to do the patch handling and versioning inside the `rawhide` spec file repository of `llvm`, we're going to update this very FAQ.
+We need `%if %{maj_ver} >= 20` conditions or alike for different LLVM versions (see link:https://src.fedoraproject.org/rpms/llvm/pull-request/286#_4__13[this PR] for example).
 
 === How do I find the monitor? [[monitor]]
 
