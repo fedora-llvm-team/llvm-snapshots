@@ -419,6 +419,9 @@ class TestingFarmRequest:
         if util.chroot_name(chroot) == "rhel":
             return f"RHEL-{util.chroot_version(chroot)}-Nightly"
 
+        if util.chroot_name(chroot) == "centos-stream":
+            return f"Centos-Stream-{util.chroot_version(chroot)}"
+
         if util.chroot_version(chroot) == "rawhide":
             return "Fedora-Rawhide"
         return util.chroot_os(chroot).capitalize()
