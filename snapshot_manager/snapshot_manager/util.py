@@ -232,7 +232,7 @@ def allowed_os_names_as_regex_str() -> str:
     Example:
 
     >>> allowed_os_names_as_regex_str()
-    '(fedora|centos-stream|rhel)'
+    '(centos-stream|fedora|rhel)'
     """
     return "(" + "|".join(allowed_os_names()) + ")"
 
@@ -254,7 +254,7 @@ def allowed_archs_as_regex_str() -> str:
     Example:
 
     >>> allowed_archs_as_regex_str()
-    '(x86_64|ppc64le|s390x|i386|aarch64)'
+    '(aarch64|i386|ppc64le|s390x|x86_64)'
     """
     return "(" + "|".join(allowed_archs()) + ")"
 
