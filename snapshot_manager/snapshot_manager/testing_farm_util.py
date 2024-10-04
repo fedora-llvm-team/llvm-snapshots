@@ -302,17 +302,20 @@ class TestingFarmRequest:
         >>> TestingFarmRequest.select_ranch("fedora-rawhide-i386")
         'redhat'
 
-        >>> TestingFarmRequest.select_ranch("centos-stream-x86_64")
+        >>> TestingFarmRequest.select_ranch("centos-stream-10-x86_64")
         'public'
 
-        >>> TestingFarmRequest.select_ranch("centos-stream-ppc64le")
+        >>> TestingFarmRequest.select_ranch("centos-stream-10-ppc64le")
         'redhat'
         """
         util.expect_chroot(chroot)
         ranch = None
-        if re.search(r"(x86_64|aarch64)$", chroot):
+        arch = util.chroot_arch(chroot)
+        if arch in ["x86_64", "aarch64"]:
             ranch = "public"
-        if re.search(r"(^rhel|(ppc64le|s390x|i386)$)", chroot):
+        if util.chroot_name(chroot) == "rhel":
+            ranch = "redhat"
+        if arch in ["ppc64le", "s390x", "i386"]:
             ranch = "redhat"
         return ranch
 
@@ -407,12 +410,12 @@ class TestingFarmRequest:
         'Fedora-Rawhide'
         >>> TestingFarmRequest.get_compose("fedora-39-x86_64")
         'Fedora-39'
-        >>> TestingFarmRequest.get_compose("rhel-9-aarch")
+        >>> TestingFarmRequest.get_compose("rhel-9-aarch64")
         'RHEL-9-Nightly'
         >>> TestingFarmRequest.get_compose("rhel-8-x86_64")
         'RHEL-8-Nightly'
         >>> TestingFarmRequest.get_compose("centos-stream-10-s390x")
-        CentOS-Stream-10
+        'CentOS-Stream-10'
         """
         util.expect_chroot(chroot)
 
@@ -420,7 +423,7 @@ class TestingFarmRequest:
             return f"RHEL-{util.chroot_version(chroot)}-Nightly"
 
         if util.chroot_name(chroot) == "centos-stream":
-            return f"Centos-Stream-{util.chroot_version(chroot)}"
+            return f"CentOS-Stream-{util.chroot_version(chroot)}"
 
         if util.chroot_version(chroot) == "rawhide":
             return "Fedora-Rawhide"
