@@ -10,6 +10,6 @@ copr-cli
 tft-cli==0.0.16
 regex==2024.9.11
 munch==4.0.0
-copr==1.132
+copr==2.0
 requests==2.32.3
 fnc
