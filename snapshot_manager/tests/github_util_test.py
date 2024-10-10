@@ -4,12 +4,14 @@ import datetime
 import logging
 import uuid
 
+import pytest
 import tests.base_test as base_test
 
 import snapshot_manager.github_util as github_util
 
 
 class TestGithub(base_test.TestBase):
+    @pytest.mark.skip(reason="Skip this for now because of token issue")
     def test_create_or_get_todays_github_issue(self):
         """Creates or gets today's github issue"""
         gh = github_util.GithubClient(config=self.config)
@@ -62,6 +64,7 @@ class TestGithub(base_test.TestBase):
         )
         self.assertIsNone(issue)
 
+    @pytest.mark.skip(reason="Skip this for now because of token issue")
     def test_flip_test_label(self):
         gh = github_util.GithubClient(config=self.config)
         issue = gh.gh_repo.create_issue(

@@ -215,6 +215,61 @@ def get_yyyymmdd_from_string(string: str) -> str:
     return issue_datetime.strftime("%Y%m%d")
 
 
+def allowed_os_names() -> list[str]:
+    """Returns a list of allowed OS names.
+
+    Example:
+
+    >>> sorted(allowed_os_names())
+    ['centos-stream', 'fedora', 'rhel']
+    """
+    return ["centos-stream", "fedora", "rhel"]
+
+
+def allowed_os_names_as_regex_str() -> str:
+    """Returns a list of allowed OS names as a regex
+
+    Example:
+
+    >>> allowed_os_names_as_regex_str()
+    '(centos-stream|fedora|rhel)'
+    """
+    return "(" + "|".join(allowed_os_names()) + ")"
+
+
+def allowed_archs() -> list[str]:
+    """Returns a list of allowed architectures.
+
+    Example:
+
+    >>> sorted(allowed_archs())
+    ['aarch64', 'i386', 'ppc64le', 's390x', 'x86_64']
+    """
+    return ["aarch64", "i386", "ppc64le", "s390x", "x86_64"]
+
+
+def allowed_archs_as_regex_str() -> str:
+    """Returns a list of allowed architectures as a regex
+
+    Example:
+
+    >>> allowed_archs_as_regex_str()
+    '(aarch64|i386|ppc64le|s390x|x86_64)'
+    """
+    return "(" + "|".join(allowed_archs()) + ")"
+
+
+def allowed_os_versions_as_regex_str() -> str:
+    """Returns a list of allowed version
+
+    Example:
+
+    >>> allowed_os_versions_as_regex_str()
+    '([0-9]+|rawhide)'
+    """
+    return "([0-9]+|rawhide)"
+
+
 def expect_chroot(chroot: str) -> str:
     """Raises an exception if given string is not a chroot
 
@@ -237,7 +292,10 @@ def expect_chroot(chroot: str) -> str:
       ...
     ValueError: invalid chroot fedora-rawhide-
     """
-    if not re.search(pattern=r"^[^-]+-[^-]+-[^-]+(-[^-]+)?$", string=chroot):
+    if not re.search(
+        pattern=rf"^{allowed_os_names_as_regex_str()}-{allowed_os_versions_as_regex_str()}-{allowed_archs_as_regex_str()}$",
+        string=chroot,
+    ):
         raise ValueError(f"invalid chroot {chroot}")
     return chroot
 
@@ -281,13 +339,18 @@ def chroot_name(chroot: str) -> str:
     'fedora'
 
     >>> chroot_name(chroot="fedora-rawhide-NEWARCH")
-    'fedora'
+    Traceback (most recent call last):
+      ...
+    ValueError: invalid chroot fedora-rawhide-NEWARCH
 
     >>> chroot_name(chroot="rhel-9-x86_64")
     'rhel'
+
+    >>> chroot_name("centos-stream-10-s390x")
+    'centos-stream'
     """
     expect_chroot(chroot)
-    match = re.search(pattern=r"^[^-]+", string=chroot)
+    match = re.search(pattern=rf"^{allowed_os_names_as_regex_str()}", string=chroot)
     return str(match[0])
 
 
@@ -309,13 +372,17 @@ def chroot_version(chroot: str) -> str:
     '40'
 
     >>> chroot_version(chroot="fedora-rawhide-NEWARCH")
-    'rawhide'
+    Traceback (most recent call last):
+      ...
+    ValueError: invalid chroot fedora-rawhide-NEWARCH
 
     >>> chroot_version(chroot="rhel-9-x86_64")
     '9'
     """
     expect_chroot(chroot)
-    match = re.search(pattern=r"(-)([^-]+)(-)", string=chroot)
+    match = re.search(
+        pattern=rf"(-){allowed_os_versions_as_regex_str()}(-)", string=chroot
+    )
     return str(match.groups()[1])
 
 
@@ -340,10 +407,19 @@ def chroot_os(chroot: str) -> str:
     'fedora-40'
 
     >>> chroot_os(chroot="fedora-rawhide-NEWARCH")
-    'fedora-rawhide'
+    Traceback (most recent call last):
+      ...
+    ValueError: invalid chroot fedora-rawhide-NEWARCH
+
+    >>> chroot_os(chroot="centos-stream-10-x86_64")
+    'centos-stream-10'
     """
     expect_chroot(chroot)
-    match = re.search(pattern=r"[^-]+-[0-9,rawhide]+", string=chroot)
+    match = re.search(
+        pattern=rf"{allowed_os_names_as_regex_str()}-{allowed_os_versions_as_regex_str()}",
+        string=chroot,
+    )
+
     return str(match[0])
 
 
@@ -368,10 +444,15 @@ def chroot_arch(chroot: str) -> str:
     'ppc64le'
 
     >>> chroot_arch(chroot="fedora-rawhide-NEWARCH")
-    'NEWARCH'
+    Traceback (most recent call last):
+      ...
+    ValueError: invalid chroot fedora-rawhide-NEWARCH
+
+    >>> chroot_arch(chroot="centos-stream-10-ppc64le")
+    'ppc64le'
     """
     expect_chroot(chroot)
-    match = regex.search(pattern=r"[^-]+-[^-]+-\K[^\s]+", string=chroot)
+    match = regex.search(pattern=rf"-\K{allowed_archs_as_regex_str()}", string=chroot)
     return str(match[0])
 
 
