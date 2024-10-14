@@ -13,4 +13,4 @@ munch==4.0.0
 copr==2.0
 requests==2.32.3
 fnc
-coverage==7.6.2
+coverage==7.6.3
