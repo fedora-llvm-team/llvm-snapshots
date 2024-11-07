@@ -62,7 +62,7 @@ plotly==5.24.1
     # via -r requirements.txt.in
 pycparser==2.21
     # via cffi
-pygithub==2.4.0
+pygithub==2.5.0
     # via -r requirements.txt.in
 pygments==2.17.2
     # via rich
