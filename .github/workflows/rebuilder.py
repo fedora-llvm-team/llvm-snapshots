@@ -67,6 +67,7 @@ def get_pkgs(exclusions: Set[str]) -> Set[set]:
     pkgs = set([p.name for p in list(q)])
     return filter_llvm_pkgs(pkgs) - exclusions
 
+
 def get_monthly_rebuild_packages(
     project_owner: str, project_name: str, copr_client: copr.v3.Client, pkgs: Set[str]
 ) -> Set[str]:
@@ -92,7 +93,7 @@ def get_monthly_rebuild_regressions(
     project_owner: str,
     project_name: str,
     copr_client: copr.v3.Client,
-    start_time: datetime.datetime
+    start_time: datetime.datetime,
 ) -> Set[str]:
     pkgs = []
     for p in copr_client.package_proxy.get_list(
@@ -110,7 +111,7 @@ def get_monthly_rebuild_regressions(
             "forked",
             "skipped",
             "failed",
-            "canceled"
+            "canceled",
         ]:
             return []
 
@@ -127,8 +128,8 @@ def get_monthly_rebuild_regressions(
         latest["name"] = p["name"]
         pkgs.append(
             {
-                "name" : p["name"],
-                "url" : f"https://copr.fedorainfracloud.org/coprs/{project_owner}/{project_name}/build/{latest['id']}/"
+                "name": p["name"],
+                "url": f"https://copr.fedorainfracloud.org/coprs/{project_owner}/{project_name}/build/{latest['id']}/",
             }
         )
     return pkgs
@@ -148,7 +149,7 @@ def start_rebuild(
         project_name,
         additional_repos=[
             "copr://tstellar/fedora-clang-default-cc",
-            f"copr://@fedora-llvm-team/{snapshot_project_name}"
+            f"copr://@fedora-llvm-team/{snapshot_project_name}",
         ],
     )
 
@@ -199,10 +200,7 @@ def create_new_project(
     copr_client: copr.v3.Client,
     target_chroots: list[str],
 ):
-    copr_client.project_proxy.add(
-        project_owner,
-        project_name,
-        chroots = target_chroots)
+    copr_client.project_proxy.add(project_owner, project_name, chroots=target_chroots)
     for c in target_chroots:
         copr_client.project_chroot_proxy.edit(
             project_owner,
@@ -214,7 +212,6 @@ def create_new_project(
 
 
 def main():
-
 
     parser = argparse.ArgumentParser()
     parser.add_argument("command", type=str, choices=["rebuild", "get-regressions"])
