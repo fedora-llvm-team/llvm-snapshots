@@ -21,7 +21,7 @@ def filter_llvm_pkgs(pkgs: Set[str]) -> Set[str]:
         "libcxx",
         "libclc",
         "flang",
-        "mlir"
+        "mlir",
     ]
     filtered = set()
     for p in pkgs:
@@ -38,19 +38,22 @@ def filter_llvm_pkgs(pkgs: Set[str]) -> Set[str]:
 """
 This returns a list of packages we don't want to test.
 """
+
+
 def get_exclusions() -> Set[str]:
     return set()
+
 
 def get_pkgs(exclusions: Set[str]) -> Set[set]:
     base = dnf.Base()
     conf = base.conf
     for c in "AppStream", "BaseOS", "CRB", "Extras":
-         base.repos.add_new_repo(
-             f"{c}-source",
-             conf,
-             baseurl=[
-                 f"https://odcs.fedoraproject.org/composes/production/latest-Fedora-ELN/compose/{c}/source/tree/"
-            ]
+        base.repos.add_new_repo(
+            f"{c}-source",
+            conf,
+            baseurl=[
+                f"https://odcs.fedoraproject.org/composes/production/latest-Fedora-ELN/compose/{c}/source/tree/"
+           ]
         )
     repos = base.repos.get_matching("*")
     repos.disable()
@@ -65,13 +68,13 @@ def get_pkgs(exclusions: Set[str]) -> Set[set]:
     return filter_llvm_pkgs(pkgs) - exclusions
 
 def get_monthly_rebuild_packages(
-    project_owner: str, project_name: str, copr_client : copr.v3.Client, pkgs : Set[str]
+    project_owner: str, project_name: str, copr_client: copr.v3.Client, pkgs: Set[str]
 ) -> Set[str]:
     for p in copr_client.package_proxy.get_list(
         project_owner,
         project_name,
-        with_latest_succeeded_build = True,
-        with_latest_build = True
+        with_latest_succeeded_build=True,
+        with_latest_build=True,
     ):
         latest_succeeded = p["builds"]["latest_succeeded"]
         latest = p["builds"]["latest"]
@@ -84,24 +87,31 @@ def get_monthly_rebuild_packages(
             pkgs.discard(p["name"])
     return pkgs
 
+
 def get_monthly_rebuild_regressions(
     project_owner: str,
     project_name: str,
-    copr_client : copr.v3.Client,
+    copr_client: copr.v3.Client,
     start_time: datetime.datetime
 ) -> Set[str]:
     pkgs = []
     for p in copr_client.package_proxy.get_list(
         project_owner,
         project_name,
-        with_latest_succeeded_build = True,
-        with_latest_build = True
+        with_latest_succeeded_build=True,
+        with_latest_build=True,
     ):
         latest_succeeded = p["builds"]["latest_succeeded"]
         latest = p["builds"]["latest"]
 
         # Don't report regressions if there are still builds in progress
-        if latest["state"] not in ["succeeded", "forked", "skipped", "failed", "canceled"]:
+        if latest["state"] not in [
+            "succeeded",
+            "forked",
+            "skipped",
+            "failed",
+            "canceled"
+        ]:
             return []
 
         if not latest_succeeded:
@@ -115,18 +125,21 @@ def get_monthly_rebuild_regressions(
         if int(latest["submitted_on"]) < start_time.timestamp():
             continue
         latest["name"] = p["name"]
-        pkgs.append({
-            "name" : p["name"],
-            "url" : f"https://copr.fedorainfracloud.org/coprs/{project_owner}/{project_name}/build/{latest['id']}/"
-        })
+        pkgs.append(
+            {
+                "name" : p["name"],
+                "url" : f"https://copr.fedorainfracloud.org/coprs/{project_owner}/{project_name}/build/{latest['id']}/"
+            }
+        )
     return pkgs
+
 
 def start_rebuild(
     project_owner: str,
     project_name: str,
     copr_client: copr.v3.Client,
     pkgs: Set[str],
-    snapshot_project_name: str
+    snapshot_project_name: str,
 ):
 
     # Update the rebuild project to use the latest snapshot
@@ -136,28 +149,28 @@ def start_rebuild(
         additional_repos=[
             "copr://tstellar/fedora-clang-default-cc",
             f"copr://@fedora-llvm-team/{snapshot_project_name}"
-        ]
+        ],
     )
 
     buildopts = {
-        "background" : True,
+        "background": True,
     }
     print("Rebuilding", len(pkgs), "packages")
     for p in pkgs:
         print("Rebuild", p)
-        copr_client.build_proxy.create_from_distgit(project_owner, project_name,
-                                                    p, "f41", buildopts=buildopts)
+        copr_client.build_proxy.create_from_distgit(
+            project_owner, project_name, p, "f41", buildopts=buildopts
+        )
         return
 
 
 def select_snapshot_project(
-    copr_client: copr.v3.Client,
-    target_chroots: list[str]
+    copr_client: copr.v3.Client, target_chroots: list[str]
 ) -> str:
     project_owner = "@fedora-llvm-team"
     for i in range(14):
         chroots = set()
-        day = datetime.date.today() - datetime.timedelta(days = i)
+        day = datetime.date.today() - datetime.timedelta(days=i)
         project_name = day.strftime("llvm-snapshots-big-merge-%Y%m%d")
         print("Trying:", project_name)
         try:
@@ -165,10 +178,11 @@ def select_snapshot_project(
             if not p:
                 continue
             pkgs = copr_client.build_proxy.get_list(
-                project_owner, project_name, "llvm", status="succeeded")
+                project_owner, project_name, "llvm", status="succeeded"
+            )
             for pkg in pkgs:
                 chroots.update(pkg["chroots"])
-          
+
             print(project_name, chroots)
             if all(t in chroots for t in target_chroots):
                 print("PASS", project_name)
@@ -178,34 +192,39 @@ def select_snapshot_project(
     print("FAIL")
     return None
 
+
 def create_new_project(
     project_owner: str,
     project_name: str,
     copr_client: copr.v3.Client,
-    target_chroots: list[str]
+    target_chroots: list[str],
 ):
     copr_client.project_proxy.add(
         project_owner,
         project_name,
         chroots = target_chroots)
     for c in target_chroots:
-        copr_client.project_chroot_proxy.edit(project_owner, project_name, c,
-                                              additional_packages=["fedora-clang-default-cc"],
-                                              with_opts=["toolchain_clang", "clang_lto"])
+        copr_client.project_chroot_proxy.edit(
+            project_owner,
+            project_name,
+            c,
+            additional_packages=["fedora-clang-default-cc"],
+            with_opts=["toolchain_clang", "clang_lto"],
+        )
 
 
 def main():
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", type=str, choices=["rebuild","get-regressions"])
+    parser.add_argument("command", type=str, choices=["rebuild", "get-regressions"])
     parser.add_argument(
         "--start-date", type=str, help="Any ISO date format is accepted"
     )
 
     args = parser.parse_args()
     copr_client = copr.v3.Client.create_from_config_file()
-   
+
     os_name = "fedora-41"
     clang_version = "20"
     target_arches = ["aarch64", "ppc64le", "s390x", "x86_64"]
@@ -218,7 +237,9 @@ def main():
         pkgs = get_pkgs(exclusions)
         try:
             copr_client.project_proxy.get(project_owner, project_name)
-            pkgs = get_monthly_rebuild_packages(project_owner, project_name, copr_client, pkgs)
+            pkgs = get_monthly_rebuild_packages(
+                project_owner, project_name, copr_client, pkgs
+            )
         except:
             create_new_project(project_owner, project_name, copr_client, target_chroots)
         snapshot_project = select_snapshot_project(copr_client, target_chroots)
@@ -229,7 +250,6 @@ def main():
             project_owner, project_name, copr_client, start_time
         )
         print(json.dumps(pkg_failures))
-
 
 
 if __name__ == "__main__":
