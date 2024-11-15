@@ -53,7 +53,7 @@ def get_pkgs(exclusions: Set[str]) -> Set[set]:
             conf,
             baseurl=[
                 f"https://odcs.fedoraproject.org/composes/production/latest-Fedora-ELN/compose/{c}/source/tree/"
-           ]
+            ],
         )
     repos = base.repos.get_matching("*")
     repos.disable()
