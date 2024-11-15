@@ -1,14 +1,15 @@
-import dnf
-import hawkey
+import argparse
+import datetime
+import json
 import re
 from typing import Set
-import datetime
+
 import copr.v3
-import json
-import argparse
+import dnf
+import hawkey
 
 
-def filter_llvm_pkgs(pkgs: Set[str]) -> Set[str]:
+def filter_llvm_pkgs(pkgs: set[str]) -> set[str]:
     llvm_pkgs = [
         "llvm",
         "clang",
@@ -40,11 +41,11 @@ This returns a list of packages we don't want to test.
 """
 
 
-def get_exclusions() -> Set[str]:
+def get_exclusions() -> set[str]:
     return set()
 
 
-def get_pkgs(exclusions: Set[str]) -> Set[set]:
+def get_pkgs(exclusions: set[str]) -> set[set]:
     base = dnf.Base()
     conf = base.conf
     for c in "AppStream", "BaseOS", "CRB", "Extras":
@@ -64,13 +65,13 @@ def get_pkgs(exclusions: Set[str]) -> Set[set]:
     q = base.sack.query(flags=hawkey.IGNORE_MODULAR_EXCLUDES)
     q = q.available()
     q = q.filter(requires=["clang", "gcc", "gcc-c++"])
-    pkgs = set([p.name for p in list(q)])
+    pkgs = {[p.name for p in list(q)]}
     return filter_llvm_pkgs(pkgs) - exclusions
 
 
 def get_monthly_rebuild_packages(
-    project_owner: str, project_name: str, copr_client: copr.v3.Client, pkgs: Set[str]
-) -> Set[str]:
+    project_owner: str, project_name: str, copr_client: copr.v3.Client, pkgs: set[str]
+) -> set[str]:
     for p in copr_client.package_proxy.get_list(
         project_owner,
         project_name,
@@ -94,7 +95,7 @@ def get_monthly_rebuild_regressions(
     project_name: str,
     copr_client: copr.v3.Client,
     start_time: datetime.datetime,
-) -> Set[str]:
+) -> set[str]:
     pkgs = []
     for p in copr_client.package_proxy.get_list(
         project_owner,
@@ -139,7 +140,7 @@ def start_rebuild(
     project_owner: str,
     project_name: str,
     copr_client: copr.v3.Client,
-    pkgs: Set[str],
+    pkgs: set[str],
     snapshot_project_name: str,
 ):
 
