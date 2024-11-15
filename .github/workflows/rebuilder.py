@@ -36,10 +36,10 @@ def filter_llvm_pkgs(pkgs: set[str]) -> set[str]:
     return filtered
 
 
-"""
-This returns a list of packages we don't want to test.
-"""
 def get_exclusions() -> set[str]:
+    """
+    This returns a list of packages we don't want to test.
+    """
     return set()
 
 
