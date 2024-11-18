@@ -10,7 +10,24 @@ import hawkey
 
 
 def filter_llvm_pkgs(pkgs: set[str]) -> set[str]:
-    llvm_pkgs = [
+    """Filters out LLVM packages and returns the rest.
+    
+    Args:
+        pkgs (set[str]): List of package names
+
+    Returns:
+        set[str]: List of package names without LLVM packages
+
+    Example:
+    
+    >>> pkgs={'firefox', 'llvm99' 'libreoffice', 'clang18', 'compiler-rt'}
+    >>> filtered=list(filter_llvm_pkgs(pkgs))
+    >>> filtered.sort()
+    >>> print(filtered)
+    ['firefox', 'libreoffice']
+    
+    """
+    llvm_pkgs = {
         "llvm",
         "clang",
         "llvm-bolt",
@@ -23,17 +40,9 @@ def filter_llvm_pkgs(pkgs: set[str]) -> set[str]:
         "libclc",
         "flang",
         "mlir",
-    ]
-    filtered = set()
-    for p in pkgs:
-        exclude = False
-        for l in llvm_pkgs:
-            if re.match(l + "[0-9]*$", p):
-                exclude = True
-                break
-        if not exclude:
-            filtered.add(p)
-    return filtered
+    }    
+    llvm_pkg_pattern=rf"({"|".join(llvm_pkgs)})[0-9]*$"
+    return {pkg for pkg in pkgs if not re.match(llvm_pkg_pattern, pkg)}
 
 
 def get_exclusions() -> set[str]:
