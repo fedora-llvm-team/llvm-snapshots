@@ -174,10 +174,11 @@ def start_rebuild(
 
 
 def select_snapshot_project(
-    copr_client: copr.v3.Client, target_chroots: list[str]
+    copr_client: copr.v3.Client, target_chroots: list[str],
+    max_lookback_days:int=14
 ) -> str:
     project_owner = "@fedora-llvm-team"
-    for i in range(14):
+    for i in range(max_lookback_days):
         chroots = set()
         day = datetime.date.today() - datetime.timedelta(days=i)
         project_name = day.strftime("llvm-snapshots-big-merge-%Y%m%d")
