@@ -40,6 +40,7 @@ runs:
     - name: "Test dnf"
       shell: bash
       run: |
+        env
         python3 -c 'import sys; print(sys.path)'
         which python3
         python3 -c 'import dnf'
