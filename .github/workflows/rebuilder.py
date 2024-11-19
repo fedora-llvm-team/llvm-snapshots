@@ -24,7 +24,7 @@ def load_tests(loader, tests, ignore):
 
 def filter_llvm_pkgs(pkgs: set[str]) -> set[str]:
     """Filters out LLVM packages and returns the rest.
-    
+
     Args:
         pkgs (set[str]): List of package names
 
@@ -32,13 +32,13 @@ def filter_llvm_pkgs(pkgs: set[str]) -> set[str]:
         set[str]: List of package names without LLVM packages
 
     Example:
-    
+
     >>> pkgs={'firefox', 'llvm99' 'libreoffice', 'clang18', 'compiler-rt'}
     >>> filtered=list(filter_llvm_pkgs(pkgs))
     >>> filtered.sort()
     >>> print(filtered)
     ['firefox', 'libreoffice']
-    
+ 
     """
     llvm_pkgs = {
         "llvm",
@@ -53,8 +53,8 @@ def filter_llvm_pkgs(pkgs: set[str]) -> set[str]:
         "libclc",
         "flang",
         "mlir",
-    }    
-    llvm_pkg_pattern=rf"({'|'.join(llvm_pkgs)})[0-9]*$"
+    }
+    llvm_pkg_pattern = rf"({'|'.join(llvm_pkgs)})[0-9]*$"
     return {pkg for pkg in pkgs if not re.match(llvm_pkg_pattern, pkg)}
 
 
@@ -99,8 +99,7 @@ def get_builds_from_copr(
         with_latest_build=True,
     )
 
-def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[dict]
-) -> set[str]:
+def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[dict]) -> set[str]:
     for p in copr_pkgs:
         latest_succeeded = p["builds"]["latest_succeeded"]
         latest = p["builds"]["latest"]
@@ -118,11 +117,11 @@ def get_monthly_rebuild_regressions(
     project_owner: str,
     project_name: str,
     start_time: datetime.datetime,
-    copr_pkgs: list[dict]
+    copr_pkgs: list[dict],
 ) -> set[str]:
     """Returns the list of packages that failed to build in the most recent
        rebuild, but built successfully in the previous rebuild.
-    
+
     Args:
         start_time (datetime.datetime): The start time of the most recent mass
                                         rebuild.  This needs to be a time
@@ -134,7 +133,7 @@ def get_monthly_rebuild_regressions(
         set[str]: List of packages that regressed in the most recent rebuilt.
 
     Example:
-   
+
     >>> a = {"name" : "a", "latest" : { "id" : 1, "state" : "running", "submitted_on" : 1731457321 } , "latest_succeeded" : None }
     >>> b = {"name" : "b", "latest" : { "id" : 1, "state" : "succeeded", "submitted_on" : 1731457321 } , "latest_succeeded" : None }
     >>> c = {"name" : "c", "latest" : { "id" : 1, "state" : "succeeded", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } }
@@ -213,8 +212,7 @@ def start_rebuild(
 
 
 def select_snapshot_project(
-    copr_client: copr.v3.Client, target_chroots: list[str],
-    max_lookback_days:int=14
+    copr_client: copr.v3.Client, target_chroots: list[str], max_lookback_days:int = 14
 ) -> str:
     project_owner = "@fedora-llvm-team"
     for i in range(max_lookback_days):
@@ -291,7 +289,9 @@ def main():
     elif args.command == "get-regressions":
         start_time = datetime.datetime.fromisoformat(args.start_date)
         copr_pkgs = get_builds_from_copr(project_owner, project_name, copr_client)
-        pkg_failures = get_monthly_rebuild_regressions(project_owner, project_name, start_time, copr_pkgs)
+        pkg_failures = get_monthly_rebuild_regressions(
+            project_owner, project_name, start_time, copr_pkgs
+        )
         print(json.dumps(pkg_failures))
 
 
