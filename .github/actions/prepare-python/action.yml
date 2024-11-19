@@ -15,7 +15,7 @@ runs:
     - name: "Install dnf"
       shell: bash
       run: |
-        sudo apt-get install python3-dnf
+        sudo dnf install python3-dnf
         python3 -c 'import dnf'
         python3 -c 'import sys; print(sys.path)'
         which python3
