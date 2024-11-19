@@ -38,7 +38,7 @@ def filter_llvm_pkgs(pkgs: set[str]) -> set[str]:
     >>> filtered.sort()
     >>> print(filtered)
     ['firefox', 'libreoffice']
- 
+
     """
     llvm_pkgs = {
         "llvm",
@@ -99,6 +99,7 @@ def get_builds_from_copr(
         with_latest_build=True,
     )
 
+
 def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[dict]) -> set[str]:
     for p in copr_pkgs:
         latest_succeeded = p["builds"]["latest_succeeded"]
@@ -144,7 +145,7 @@ def get_monthly_rebuild_regressions(
     >>> regressions = get_monthly_rebuild_regressions(datetime.datetime.fromisoformat("2024-11-11", copr_pkgs)
     >>> print(regressions)
     { 'f' }
-    
+
     """
     pkgs = []
     for p in copr_pkgs:
@@ -212,7 +213,7 @@ def start_rebuild(
 
 
 def select_snapshot_project(
-    copr_client: copr.v3.Client, target_chroots: list[str], max_lookback_days:int = 14
+    copr_client: copr.v3.Client, target_chroots: list[str], max_lookback_days: int = 14
 ) -> str:
     project_owner = "@fedora-llvm-team"
     for i in range(max_lookback_days):
