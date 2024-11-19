@@ -17,7 +17,7 @@ runs:
       run: |
         sudo apt-get install python3-dnf
         python3 -c 'import dnf'
-        python3 -c 'import sys; print(sys.path)
+        python3 -c 'import sys; print(sys.path)'
         which python3
 
     - name: "Setup python"
@@ -39,6 +39,6 @@ runs:
     - name: "Test dnf"
       shell: bash
       run: |
-        python3 -c 'import sys; print(sys.path)
+        python3 -c 'import sys; print(sys.path)'
         which python3
         python3 -c 'import dnf'
