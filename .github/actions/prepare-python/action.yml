@@ -27,4 +27,5 @@ runs:
       run: pip install -r ${{ inputs.checkout-path }}/requirements.txt
 
     - name: "Install dnf"
+      shell: bash
       run: pip install dnf
