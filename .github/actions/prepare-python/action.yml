@@ -33,3 +33,4 @@ runs:
       run: |
         sudo apt-get install python3-dnf
         find / -iname '*dnf*'
+        python3 -c 'import dnf'
