@@ -25,3 +25,6 @@ runs:
     - name: "Install python dependencies for project"
       shell: bash
       run: pip install -r ${{ inputs.checkout-path }}/requirements.txt
+
+    - name: "Install dnf"
+      run: pip install dnf
