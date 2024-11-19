@@ -23,6 +23,7 @@ runs:
 
     - name: "Setup python"
       uses: actions/setup-python@v5
+      id: setup-python
       with:
         python-version: 3.12
         cache: 'pip'
@@ -43,4 +44,5 @@ runs:
         env
         python3 -c 'import sys; print(sys.path)'
         which python3
+        cp -R /usr/lib/python3/dist-packages/dnf/ $(python3 -c 'import site; print(site.getsitepackages()[0])') 
         python3 -c 'import dnf'
