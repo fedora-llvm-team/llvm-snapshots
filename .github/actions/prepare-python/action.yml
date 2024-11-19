@@ -44,7 +44,7 @@ runs:
         env
         python3 -c 'import sys; print(sys.path)'
         which python3
-        cp -R /usr/lib/python3/dist-packages/dnf/ $(python3 -c 'import site; print(site.getsitepackages()[0])') 
+        cp -R /usr/lib/python3/dist-packages/*dnf*/ $(python3 -c 'import site; print(site.getsitepackages()[0])') 
         ls -l $(python3 -c 'import site; print(site.getsitepackages()[0])') 
         echo $(python3 -c 'import site; print(site.getsitepackages()[0])') 
         python3 -c 'import dnf'
