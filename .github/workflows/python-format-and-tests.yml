@@ -15,7 +15,11 @@ jobs:
             options: "--check --diff --verbose --color --force-exclude '^snapshot_manager/tests/test_logs/'"
   run-tests:
     name: run-tests
-    runs-on: ubuntu-latest
+    # We have tests in a python script that uses the dnf module, and this
+    # module can only be install via the package manager, so we need to
+    # use ubuntu-24.04, because the system version of python (3.12)
+    # matches the version we use in ./.github/actions/prepare-python.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare-python
