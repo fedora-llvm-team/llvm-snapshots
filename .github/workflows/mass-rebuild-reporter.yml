@@ -1,0 +1,80 @@
+name: "Mass Rebuild Reporter"
+
+on:
+  schedule:
+    - cron: "40 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-for-rebuild:
+    runs-on: ubuntu-24.04
+    permissions:
+      issues: write
+    container:
+      image: "registry.fedoraproject.org/fedora:41"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/workflows/rebuilder.py
+          sparse-checkout-cone-mode: false
+
+
+      - name: Check for existing report
+        uses: actions/github-script@v7
+        id: check-existing
+        with:
+          result-encoding: string
+          script: |
+            const issues = await github.rest.search.issuesAndPullRequests({
+              q: "label:mass-rebuild+is:issue",
+              sort: "created",
+              order: "desc",
+              per_page: 1
+            });
+
+            console.log(issues)
+            if (issues.data.total_count == 0)
+              return "2024-11-11";
+            const issue = issues.data.items[0];
+            console.log(issue);
+            if (issue.state == "open")
+              return "skip";
+            return issue.closed_at
+
+      - name: Collect Regressions
+        if: steps.check-existing.outputs.result != 'skip'
+        id: regressions
+        run: |
+          sudo dnf install -y python3-dnf python3-copr
+          python3 .github/workflows/rebuilder.py get-regressions --start-date ${{ steps.check-existing.outputs.result }} > regressions
+
+      - name: Create Report
+        if: steps.check-existing.outputs.result != 'skip'
+        uses: actions/github-script@v7
+        env:
+          REGRESSIONS: ${{ steps.regressions.outputs.REGRESSIONS }}
+        with:
+          script: |
+            var fs = require('fs');
+            const regressions = await JSON.parse(fs.readFileSync('./regressions'));
+            comment = "During the last mass rebuild, some packages failed:\n";
+            console.log(regressions);
+            if (regressions.length == 0)
+              return;
+            regressions.forEach(function(value){
+              comment = comment.concat('\n', value.name);
+              comment = comment.concat(': ', value.url);
+            });
+            console.log(comment);
+            const issue = await github.rest.issues.create({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               title: "Mass Rebuild Report",
+               labels: ['mass-rebuild'],
+               body: comment
+            });
+            console.log(issue);
