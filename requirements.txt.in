@@ -14,5 +14,3 @@ copr==2.0
 requests==2.32.3
 fnc
 coverage==7.6.7
-rpm
-hawkey
