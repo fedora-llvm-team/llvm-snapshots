@@ -10,6 +10,14 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # It's not possible to install dnf via pip.  It fails with the error:
+    # RuntimeError: Install aborted - please install python-dnf from distribution system.
+    - name: "Install dnf"
+      shell: bash
+      run: |
+        sudo apt-get install python3-dnf
+        python3 -c 'import dnf'
+
     - name: "Setup python"
       uses: actions/setup-python@v5
       with:
@@ -26,10 +34,7 @@ runs:
       shell: bash
       run: pip install -r ${{ inputs.checkout-path }}/requirements.txt
 
-    # It's not possible to install dnf via pip.  It fails with the error:
-    # RuntimeError: Install aborted - please install python-dnf from distribution system.
-    - name: "Install dnf"
+    - name: "Test dnf"
       shell: bash
       run: |
-        sudo apt-get install python3-dnf
         python3 -c 'import dnf'
