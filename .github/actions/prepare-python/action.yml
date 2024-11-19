@@ -26,6 +26,8 @@ runs:
       shell: bash
       run: pip install -r ${{ inputs.checkout-path }}/requirements.txt
 
+    # It's not possible to install dnf via pip.  It fails with the error:
+    # RuntimeError: Install aborted - please install python-dnf from distribution system.
     - name: "Install dnf"
       shell: bash
-      run: pip install dnf
+      run: sudo apt-get install python3-dnf
