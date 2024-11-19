@@ -30,4 +30,6 @@ runs:
     # RuntimeError: Install aborted - please install python-dnf from distribution system.
     - name: "Install dnf"
       shell: bash
-      run: sudo apt-get install python3-dnf
+      run: |
+        sudo apt-get install python3-dnf
+        find / -iname '*dnf*'
