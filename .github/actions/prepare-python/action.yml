@@ -18,7 +18,6 @@ runs:
         sudo dnf -y install python3-dnf
         python3 -c 'import dnf'
         python3 -c 'import sys; print(sys.path)'
-        which python3
 
     - name: "Setup python"
       uses: actions/setup-python@v5
@@ -42,7 +41,6 @@ runs:
       run: |
         env
         python3 -c 'import sys; print(sys.path)'
-        which python3
         cp -R /usr/lib/python3/dist-packages/dnf*/ $(python3 -c 'import site; print(site.getsitepackages()[0])') 
         cp -R /usr/lib/python3/dist-packages/*hawkey*/ $(python3 -c 'import site; print(site.getsitepackages()[0])') 
         ls -l $(python3 -c 'import site; print(site.getsitepackages()[0])') 
