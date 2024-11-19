@@ -10,20 +10,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # It's not possible to install dnf via pip.  It fails with the error:
-    # RuntimeError: Install aborted - please install python-dnf from distribution system.
-    - name: "Install dnf"
-      shell: bash
-      run: |
-        sudo dnf -y install python3-dnf lsb_release pip
-        python3 -c 'import dnf'
-        python3 -c 'import sys; print(sys.path)'
-
     - name: "Setup python"
       uses: actions/setup-python@v5
-      id: setup-python
       with:
         python-version: 3.12
+        cache: 'pip'
 
     - name: "Install and upgrade pip"
       shell: bash
@@ -34,14 +25,3 @@ runs:
     - name: "Install python dependencies for project"
       shell: bash
       run: pip install -r ${{ inputs.checkout-path }}/requirements.txt
-
-    - name: "Test dnf"
-      shell: bash
-      run: |
-        env
-        python3 -c 'import sys; print(sys.path)'
-        cp -R /usr/lib/python3/dist-packages/dnf*/ $(python3 -c 'import site; print(site.getsitepackages()[0])') 
-        cp -R /usr/lib/python3/dist-packages/*hawkey*/ $(python3 -c 'import site; print(site.getsitepackages()[0])') 
-        ls -l $(python3 -c 'import site; print(site.getsitepackages()[0])') 
-        echo $(python3 -c 'import site; print(site.getsitepackages()[0])') 
-        PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/  python3 -c 'import dnf'
