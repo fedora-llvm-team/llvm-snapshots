@@ -20,6 +20,8 @@ jobs:
     # use ubuntu-24.04, because the system version of python (3.12)
     # matches the version we use in ./.github/actions/prepare-python.
     runs-on: ubuntu-24.04
+    container:
+      image: "registry.fedoraproject.org/fedora:41"
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare-python
