@@ -19,7 +19,7 @@ runs:
         python3 -c 'import dnf'
         python3 -c 'import sys; print(sys.path)'
         which python3
-        echo "PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/" >> .bashrc
+        echo "export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/" >> .bashrc
 
     - name: "Setup python"
       uses: actions/setup-python@v5
