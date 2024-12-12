@@ -1,0 +1,28 @@
+name: Mass Rebuild Bisect
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      pkg:
+        description: "The package to bisect"
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      pkg:
+        description: "The package to bisect"
+        required: true
+        type: string
+
+jobs:
+  mass-rebuild-bisect:
+    runs-on: ubuntu-24.04
+    container:
+      image: "ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer"
+    steps:
+      - run: |
+       bash bisect.sh ${{ inputs.pkg }} 
+

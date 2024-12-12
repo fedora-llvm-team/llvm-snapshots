@@ -152,6 +152,9 @@ def get_monthly_rebuild_regressions(
         latest_succeeded = p["builds"]["latest_succeeded"]
         latest = p["builds"]["latest"]
 
+        if not latest:
+            continue
+
         # Don't report regressions if there are still builds in progress
         if latest["state"] not in [
             "succeeded",
@@ -160,7 +163,7 @@ def get_monthly_rebuild_regressions(
             "failed",
             "canceled",
         ]:
-            return []
+            continue
 
         if not latest_succeeded:
             continue
@@ -190,6 +193,7 @@ def start_rebuild(
     snapshot_project_name: str,
 ):
 
+    print("START", pkgs, "END")
     # Update the rebuild project to use the latest snapshot
     copr_client.project_proxy.edit(
         project_owner,
@@ -209,7 +213,6 @@ def start_rebuild(
         copr_client.build_proxy.create_from_distgit(
             project_owner, project_name, p, "f41", buildopts=buildopts
         )
-        return
 
 
 def select_snapshot_project(
@@ -260,6 +263,7 @@ def create_new_project(
 
 def main():
 
+    logging.basicConfig(filename='rebuilder.log', level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument("command", type=str, choices=["rebuild", "get-regressions"])
     parser.add_argument(
@@ -279,10 +283,13 @@ def main():
     if args.command == "rebuild":
         exclusions = get_exclusions()
         pkgs = get_pkgs(exclusions)
+        print(pkgs)
         try:
             copr_client.project_proxy.get(project_owner, project_name)
             copr_pkgs = get_builds_from_copr(project_owner, project_name, copr_client)
+            print(copr_pkgs)
             pkgs = get_monthly_rebuild_packages(pkgs, copr_pkgs)
+            print(pkgs)
         except:
             create_new_project(project_owner, project_name, copr_client, target_chroots)
         snapshot_project = select_snapshot_project(copr_client, target_chroots)

@@ -1,0 +1,20 @@
+name: "Build Reproducer Container"
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  build-reproducer-contianer:
+    runs-on: ubuntu-24.04
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+        apt-get -y update
+        apt-get -y install podman
+        podman build -t ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer containers/reproducer
+        podman push ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer containers/reproducer
