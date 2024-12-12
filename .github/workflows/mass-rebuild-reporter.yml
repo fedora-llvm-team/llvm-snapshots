@@ -15,6 +15,8 @@ jobs:
       issues: write
     container:
       image: "registry.fedoraproject.org/fedora:41"
+    outputs:
+      regressions: ${{ steps.regressions.outputs.REGRESSIONS }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,6 +53,7 @@ jobs:
         run: |
           sudo dnf install -y python3-dnf python3-copr
           python3 .github/workflows/rebuilder.py get-regressions --start-date ${{ steps.check-existing.outputs.result }} > regressions
+          echo "REGRESSIONS=$(cat regressions)" >> $GITHUB_OUTPUT 
 
       - name: Create Report
         if: steps.check-existing.outputs.result != 'skip'
@@ -78,3 +81,16 @@ jobs:
                body: comment
             });
             console.log(issue);
+
+  bisect-failures:
+    needs:
+      - check-for-rebuild
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix: 
+        include: ${{ fromJson(needs.check-for-rebuild.outputs.regressions) }}
+    uses: ./.github/workflows/mass-rebuild-bisect.yml
+    with:
+      pkg: ${{ matrix.name }}
+
