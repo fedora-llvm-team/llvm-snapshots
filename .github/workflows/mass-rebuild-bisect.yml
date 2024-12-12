@@ -21,8 +21,19 @@ jobs:
   mass-rebuild-bisect:
     runs-on: ubuntu-24.04
     container:
-      image: "ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer"
+      image: "ghcr.io/${{ github.repository_owner }}/llvm-snapshots-reproducer"
     steps:
-      - run: |
-       bash bisect.sh ${{ inputs.pkg }} 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          max-size: 8G
+          key: bisect
+      - working-directory: /root/llvm-project/
+        run: |
+          bash bisect.sh ${{ inputs.pkg }} 
+
+      - if: always()
+        working-directory: /root/llvm-project
+        run: |
+          git bisect log
 
