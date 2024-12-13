@@ -141,6 +141,12 @@ jobs:
             if [[ "$chroot" == rhel-8-* ]]; then
               copr edit-chroot --modules "swig:4.0" ${{ env.project_today }}/$chroot
             fi
+            # TODO(kwk): The python-nanobind package acceptance review is taking place here:
+            #            https://bugzilla.redhat.com/show_bug.cgi?id=2331339
+            #            Once that package is accepted in Fedora, remove the following chroot edit.
+            if [[ "$chroot" =~ fedora-(4[0-9]|rawhide) ]]; then
+              copr edit-chroot --repo "https://download.copr.fedorainfracloud.org/results/kkleine/python-nanobind/\$distname-\$releasever-\$basearch" ${{ env.project_today }}/$chroot
+            fi
           done
 
       - name: "Create today's packages: ${{ env.packages }}"
