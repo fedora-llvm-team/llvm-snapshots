@@ -146,7 +146,7 @@ def get_monthly_rebuild_regressions(
     >>> project_name = "fedora41-clang-20"
     >>> regressions = get_monthly_rebuild_regressions(project_owner, project_name, datetime.datetime.fromisoformat("2024-11-11"), copr_pkgs)
     >>> print(regressions)
-    { 'name' : 'f', 'url' : 'https://copr.fedorainfracloud.org/coprs/@fedora-llvm-team/fedora-41-clang-20/build/2' }
+    [{'name' : 'f', 'url' : 'https://copr.fedorainfracloud.org/coprs/@fedora-llvm-team/fedora-41-clang-20/build/2/'}]
 
     """
     pkgs = []
