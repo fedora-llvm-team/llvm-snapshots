@@ -17,4 +17,3 @@ WORKDIR /root/llvm-project
 ADD bisect.sh git-bisect-script.sh .
 
 COPY --from=ghcr.io/llvm/ci-ubuntu-22.04:1734145213 $LLVM_SYSROOT $LLVM_SYSROOT
-
