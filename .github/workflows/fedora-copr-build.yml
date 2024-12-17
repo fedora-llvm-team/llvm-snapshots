@@ -147,6 +147,9 @@ jobs:
             if [[ "$chroot" =~ fedora-(4[0-9]|rawhide) ]]; then
               copr edit-chroot --repos "copr://kkleine/python-nanobind" ${{ env.project_today }}/$chroot
             fi
+
+            # Dump chroot information after all modification
+            copr get-chroot ${{ env.project_today }}/$chroot
           done
 
       - name: "Create today's packages: ${{ env.packages }}"
