@@ -16,7 +16,7 @@ runs:
   steps:
     - name: "Setup python"
       uses: actions/setup-python@v5
-      if: "${{ !inputs.use-system-python }}"
+      if: "${{ inputs.use-system-python != 'true' }}"
       with:
         python-version: 3.12
         cache: 'pip'
