@@ -124,7 +124,7 @@ def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[dict]) -> set[s
     >>> copr_pkgs = [a, b, c, d]
     >>> rebuild_pkgs = get_monthly_rebuild_packages(pkgs, copr_pkgs)
     >>> print(rebuild_pkgs)
-    { "d" }
+    {'d'}
     """
 
     for p in copr_pkgs:
