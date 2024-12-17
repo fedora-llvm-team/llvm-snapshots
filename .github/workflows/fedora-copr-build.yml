@@ -17,7 +17,7 @@ on:
         - pgo
 
 jobs:
-  job1:
+  generate-matrix:
     runs-on: ubuntu-latest
     outputs:
       mymatrix: ${{ steps.set-matrix.outputs.myoutput }}
@@ -48,22 +48,19 @@ jobs:
         )
 
         if [[ '${{ inputs.strategy }}' == 'big-merge' ]]; then
-          NAMES='["big-merge"]'
           INCLUDES="[$BIG_MERGE_CONFIG]"
         elif [[ '${{ inputs.strategy }}' == 'pgo' ]]; then
-          NAMES='["pgo"]'
           INCLUDES="[$PGO_CONFIG]"
         else
-          NAMES='["big-merge", "pgo"]'
           INCLUDES="[$BIG_MERGE_CONFIG, $PGO_CONFIG]"
         fi
-        echo "myoutput=$(jq -cn --argjson names "$NAMES" --argjson includes "$INCLUDES" '{name: $names, include:$includes}')" >> $GITHUB_OUTPUT
+        echo "myoutput=$(jq -cn --argjson includes "$INCLUDES" '{include:$includes}')" >> $GITHUB_OUTPUT
 
   build-on-copr:
-    needs: job1
+    needs: generate-matrix
     strategy:
       fail-fast: false
-      matrix: ${{fromJson(needs.job1.outputs.mymatrix)}}
+      matrix: ${{fromJson(needs.generate-matrix.outputs.mymatrix)}}
     runs-on: ubuntu-latest
     container: fedora:39
     steps:
