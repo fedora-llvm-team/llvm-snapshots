@@ -531,4 +531,5 @@ remove the aforementioned labels.
                 new_label_already_present = True
 
         if not new_label_already_present:
-            issue.add_to_labels(new_label)
+            if new_label is not None:
+                issue.add_to_labels(new_label)
