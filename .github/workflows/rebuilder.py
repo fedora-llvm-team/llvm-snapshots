@@ -33,7 +33,7 @@ def filter_llvm_pkgs(pkgs: set[str]) -> set[str]:
 
     Example:
 
-    >>> pkgs={'firefox', 'llvm99' 'libreoffice', 'clang18', 'compiler-rt'}
+    >>> pkgs={'firefox', 'llvm99', 'libreoffice', 'clang18', 'compiler-rt'}
     >>> filtered=list(filter_llvm_pkgs(pkgs))
     >>> filtered.sort()
     >>> print(filtered)
@@ -142,7 +142,7 @@ def get_monthly_rebuild_regressions(
     >>> e = {"name" : "e", "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1 } , "latest_succeeded" : { "id" : 1 } }
     >>> f = {"name" : "f", "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } }
     >>> copr_pkgs=[ a, b, c, d, e, f ]
-    >>> regressions = get_monthly_rebuild_regressions(datetime.datetime.fromisoformat("2024-11-11", copr_pkgs)
+    >>> regressions = get_monthly_rebuild_regressions(datetime.datetime.fromisoformat("2024-11-11", copr_pkgs))
     >>> print(regressions)
     { 'f' }
 
