@@ -49,8 +49,7 @@ class GithubClient:
         self.config = config
         if github_token is None:
             github_token = os.getenv(self.config.github_token_env)
-        auth = github.Auth.Token(token=github_token)
-        self.github = github.Github(auth=auth)
+        self.github = github.Github(login_or_token=github_token)
         self.gql = github_graphql.GithubGraphQL(token=github_token, raise_on_error=True)
         self.__label_cache = None
         self.__repo_cache = None

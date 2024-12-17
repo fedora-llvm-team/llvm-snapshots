@@ -17,28 +17,57 @@ on:
         - pgo
 
 jobs:
+  job1:
+    runs-on: ubuntu-latest
+    outputs:
+      mymatrix: ${{ steps.set-matrix.outputs.myoutput }}
+    steps:
+    - id: set-matrix
+      run: |
+        BIG_MERGE_CONFIG=$(jq -c <<EOF
+          {
+              "name": "big-merge",
+              "copr_project_tpl": "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD",
+              "copr_target_project": "@fedora-llvm-team/llvm-snapshots",
+              "clone_url_tpl": "https://src.fedoraproject.org/rpms/PKG.git",
+              "clone_ref": "rawhide"
+          }
+        EOF
+        )
+
+        PGO_CONFIG=$(jq -c <<EOF
+          {
+            "name": "pgo",
+            "copr_project_tpl": "@fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD",
+            "copr_target_project": "@fedora-llvm-team/llvm-snapshots-pgo",
+            "extra_script_file": "scripts/functions-pgo.sh",
+            "clone_url_tpl": "https://src.fedoraproject.org/forks/kkleine/rpms/PKG.git",
+            "clone_ref": "pgo"
+          }
+        EOF
+        )
+
+        if [[ '${{ inputs.strategy }}' == 'big-merge' ]]; then
+          NAMES='["big-merge"]'
+          INCLUDES="[$BIG_MERGE_CONFIG]"
+        elif [[ '${{ inputs.strategy }}' == 'pgo' ]]; then
+          NAMES='["pgo"]'
+          INCLUDES="[$PGO_CONFIG]"
+        else
+          NAMES='["big-merge", "pgo"]'
+          INCLUDES="[$BIG_MERGE_CONFIG, $PGO_CONFIG]"
+        fi
+        echo "myoutput=$(jq -cn --argjson names "$NAMES" --argjson includes "$INCLUDES" '{name: $names, include:$includes}')" >> $GITHUB_OUTPUT
+
   build-on-copr:
+    needs: job1
     strategy:
       fail-fast: false
-      matrix:
-        name: [big-merge, pgo]
-        include:
-          - name: big-merge
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
-            copr_target_project: "@fedora-llvm-team/llvm-snapshots"
-            clone_url_tpl: "https://src.fedoraproject.org/rpms/PKG.git"
-            clone_ref: rawhide
-          - name: pgo
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD"
-            copr_target_project: "@fedora-llvm-team/llvm-snapshots-pgo"
-            extra_script_file: "scripts/functions-pgo.sh"
-            clone_url_tpl: "https://src.fedoraproject.org/forks/kkleine/rpms/PKG.git"
-            clone_ref: pgo
+      matrix: ${{fromJson(needs.job1.outputs.mymatrix)}}
     runs-on: ubuntu-latest
     container: fedora:39
     steps:
       - name: Setup Copr config file
-        if: github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
@@ -48,15 +77,12 @@ jobs:
           printf "$COPR_CONFIG_FILE" > ~/.config/copr
 
       - name: Install Copr CLI and required tools
-        if: github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)
         run: |
           dnf install -y copr-cli make bzip2 rpm-build pcre2-tools jq
 
       - uses: actions/checkout@v4
-        if: github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)
 
       - name: "Variables and functions"
-        if: github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
@@ -78,7 +104,6 @@ jobs:
           echo "project_target=${{ matrix.copr_target_project }}" >> $GITHUB_ENV
 
       - name: "Check for Copr projects existence (yesterday, today, target)"
-        if: github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
@@ -97,7 +122,7 @@ jobs:
           echo "target_project_exists=`project_exists ${{ env.project_target }}`" >> $GITHUB_ENV
 
       - name: "Canceling active builds (if any) in today's Copr project before recreating it: ${{ env.project_today }}"
-        if: (github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)) && env.todays_project_exists == 'true'
+        if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
@@ -115,7 +140,7 @@ jobs:
           fi
 
       - name: "Deleting today's Copr project before recreating it: ${{ env.project_today }}"
-        if: (github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)) && env.todays_project_exists == 'true'
+        if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
@@ -124,7 +149,6 @@ jobs:
           copr delete ${{ env.project_today }}
 
       - name: "Create today's Copr project: ${{ env.project_today }}"
-        if: github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
@@ -145,7 +169,6 @@ jobs:
             $chroot_opts "${{ env.project_today }}"
 
       - name: "Enable snapshot_build build condition for all and swig:4.0 module in RHEL 8 build chroots (if any)"
-        if: github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
@@ -168,7 +191,6 @@ jobs:
           done
 
       - name: "Create today's packages: ${{ env.packages }}"
-        if: github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
@@ -187,7 +209,6 @@ jobs:
           done
 
       - name: "Build packages in chroot batches in this order: ${{ env.packages }}"
-        if: github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
@@ -214,7 +235,7 @@ jobs:
           done
 
       - name: "Delete target Copr project at ${{ env.project_target }} before forking to it"
-        if: (github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)) && (env.yesterdays_project_exists == 'true' && env.target_project_exists == 'true')
+        if: ${{ env.yesterdays_project_exists == 'true' && env.target_project_exists == 'true' }}
         run: |
           copr delete "${{ env.project_target }}"
           # Give Copr some time to process the deletion, to avoid race conditions with forking.
@@ -222,7 +243,7 @@ jobs:
           sleep 1m
 
       - name: "Fork Copr project from ${{ env.project_yesterday }} to ${{ env.project_target }}"
-        if: (github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)) && (env.yesterdays_project_exists == 'true')
+        if: ${{ env.yesterdays_project_exists == 'true' }}
         run: |
           copr fork --confirm ${{ env.project_yesterday }} ${{ env.project_target }}
           copr modify --delete-after-days -1 --unlisted-on-hp off ${{ env.project_target }}
@@ -230,6 +251,6 @@ jobs:
       - name: "Regenerate repos for target project ${{ env.project_target }}"
         # If yesterday's project didn't exist, we haven't forked and so we don't
         # need to regenerate the repos.
-        if: (github.event_name != 'workflow_dispatch' || (inputs.strategy == matrix.name)) && (env.yesterdays_project_exists == 'true')
+        if: ${{ env.yesterdays_project_exists == 'true' }}
         run: |
           copr regenerate-repos ${{ env.project_target }}
