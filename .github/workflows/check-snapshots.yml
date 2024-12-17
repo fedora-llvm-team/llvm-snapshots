@@ -94,6 +94,7 @@ jobs:
             --maintainer-handle ${{matrix.maintainer_handle}} \
             --packages ${{matrix.packages}} \
             --build-strategy ${{matrix.name}} \
+            --copr-ownername ${{matrix.copr_ownername}} \
             --copr-project-tpl ${{matrix.copr_project_tpl}} \
             --copr-monitor-tpl ${{matrix.copr_monitor_tpl}} \
             --yyyymmdd $yyyymmdd

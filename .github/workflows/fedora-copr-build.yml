@@ -70,8 +70,8 @@ jobs:
           echo "packages=$packages" >> $GITHUB_ENV
           echo "chroots=$chroots" >> $GITHUB_ENV
           echo "all_chroots=$all_chroots" >> $GITHUB_ENV
-          echo "project_today=${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/" >> $GITHUB_ENV
-          echo "project_yesterday=${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$yesterday/" >> $GITHUB_ENV
+          echo "project_today=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/" >> $GITHUB_ENV
+          echo "project_yesterday=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$yesterday/" >> $GITHUB_ENV
           echo "project_target=${{ matrix.copr_target_project }}" >> $GITHUB_ENV
 
       - name: "Check for Copr projects existence (yesterday, today, target)"
