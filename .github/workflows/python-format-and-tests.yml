@@ -10,8 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare-python
-        with:
-          use-system-python: true
       - uses: psf/black@stable
         with:
             options: "--check --diff --verbose --color --force-exclude '^snapshot_manager/tests/test_logs/'"
@@ -21,6 +19,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare-python
+        with:
+          use-system-python: true
       - name: Run pytest with coverage
         shell: bash -e {0}
         env:
