@@ -7,11 +7,16 @@ inputs:
     description: "Where this project was checked out"
     required: false
     default: "."
+  use-system-python:
+    description: "Set to true if you want to use the python installation from the OS"
+    required: false
+    default: false
 runs:
   using: "composite"
   steps:
     - name: "Setup python"
       uses: actions/setup-python@v5
+      if: "${{ !inputs.use-system-python }}"
       with:
         python-version: 3.12
         cache: 'pip'
@@ -24,4 +29,6 @@ runs:
 
     - name: "Install python dependencies for project"
       shell: bash
-      run: pip install -r ${{ inputs.checkout-path }}/requirements.txt
+      run: |
+        sudo apt-get install python-dnf
+        pip install -r ${{ inputs.checkout-path }}/requirements.txt
