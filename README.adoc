@@ -196,3 +196,33 @@ $ make snapshot-rpm
 You might need to install missing dependencies. The build process itself probably takes quite some time.
 
 You're going to find `results/YYYYMMDD/snapshot-rpm.log` with logging everything from this makefile target.
+
+== Mass Rebuilds ==
+
+This repository uses GitHub Actions to periodically perform rebuilds of select
+Fedora packages.  Once a mass rebuild is complete there is also automation
+that will create a new issue with the results of the rebuild.  Note that this
+automation will run automatically when the issue for the previous month's mass
+rebuild is closed.  So don't close the previous months issue until the next
+months rebuild is complete.
+
+The rebuild process will attempt to automatically bisect the failures to a specific upstream
+LLVM commit.
+
+The rebuild can be started manually using the rebuilder.py script in
+.github/workflows/
+
+---
+$ python3 rebuilder.py rebuild
+---
+
+You can also view the regression report once the rebuild is complete using
+the same script.
+
+---
+$ python3 rebuilder.py get-regressions --start-date=<yyyy-mm-dd>
+---
+
+The start date should be the day the rebuild was started (In reality
+it can be any date between when the last rebuild ended and the
+new rebuild began).
