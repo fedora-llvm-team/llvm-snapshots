@@ -30,5 +30,6 @@ runs:
     - name: "Install python dependencies for project"
       shell: bash
       run: |
-        sudo apt-get install python-dnf
+        sudo apt-get update
+        sudo apt-get install python3-dnf
         pip install -r ${{ inputs.checkout-path }}/requirements.txt
