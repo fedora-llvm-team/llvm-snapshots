@@ -35,12 +35,10 @@ function todays_issue_number() {
 # Checks if a copr project exists
 function copr_project_exists(){
   local project=$1;
-  copr get-chroot $project/fedora-rawhide-x86_64 > /dev/null 2>&1
+  copr get $project > /dev/null 2>&1
 }
 
 # set -e
-# TODO(kwk): Is there a better way to check project existence?
-# TODO(kwk): Maybe: copr list $username | grep --regexp="^Name: \$project$"
 # TODO(kwk): get rid of echoing "true" and "false"
 function project_exists(){
   local project=$1
