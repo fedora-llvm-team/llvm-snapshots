@@ -142,7 +142,9 @@ def get_monthly_rebuild_regressions(
     >>> e = {"name" : "e", "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1 } , "latest_succeeded" : { "id" : 1 } }
     >>> f = {"name" : "f", "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } }
     >>> copr_pkgs=[ a, b, c, d, e, f ]
-    >>> regressions = get_monthly_rebuild_regressions(datetime.datetime.fromisoformat("2024-11-11"), copr_pkgs)
+    >>> project_owner = "@fedora-llvm-team"
+    >>> project_name = "fedora41-clang-10"
+    >>> regressions = get_monthly_rebuild_regressions(project_owner, project_name, datetime.datetime.fromisoformat("2024-11-11"), copr_pkgs)
     >>> print(regressions)
     { 'f' }
 
