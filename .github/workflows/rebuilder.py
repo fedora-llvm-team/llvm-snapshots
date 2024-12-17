@@ -135,12 +135,12 @@ def get_monthly_rebuild_regressions(
 
     Example:
 
-    >>> a = {"name" : "a", "latest" : { "id" : 1, "state" : "running", "submitted_on" : 1731457321 } , "latest_succeeded" : None }
-    >>> b = {"name" : "b", "latest" : { "id" : 1, "state" : "succeeded", "submitted_on" : 1731457321 } , "latest_succeeded" : None }
-    >>> c = {"name" : "c", "latest" : { "id" : 1, "state" : "succeeded", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } }
-    >>> d = {"name" : "d", "latest" : { "id" : 2, "state" : "canceled", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } }
-    >>> e = {"name" : "e", "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1 } , "latest_succeeded" : { "id" : 1 } }
-    >>> f = {"name" : "f", "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } }
+    >>> a = {"name" : "a", "builds" : { "latest" : { "id" : 1, "state" : "running", "submitted_on" : 1731457321 } , "latest_succeeded" : None } }
+    >>> b = {"name" : "b", "builds" : { "latest" : { "id" : 1, "state" : "succeeded", "submitted_on" : 1731457321 } , "latest_succeeded" : None } }
+    >>> c = {"name" : "c", "builds" : { "latest" : { "id" : 1, "state" : "succeeded", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } } }
+    >>> d = {"name" : "d", "builds" : { "latest" : { "id" : 2, "state" : "canceled", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } } }
+    >>> e = {"name" : "e", "builds" : { "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1 } , "latest_succeeded" : { "id" : 1 } } }
+    >>> f = {"name" : "f", "builds" : { "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } } }
     >>> copr_pkgs=[ a, b, c, d, e, f ]
     >>> project_owner = "@fedora-llvm-team"
     >>> project_name = "fedora41-clang-10"
