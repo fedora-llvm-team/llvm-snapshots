@@ -101,7 +101,7 @@ def get_builds_from_copr(
 
 
 def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[dict]) -> set[str]:
-    """ Returns the list of packages that should be built in the next rebuild.
+    """Returns the list of packages that should be built in the next rebuild.
         It will select all the packages that built successfully during the last
         rebuild.
 
