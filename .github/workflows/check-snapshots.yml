@@ -13,6 +13,10 @@ on:
         description: 'year month day'
         required: true
         type: string
+      lookback_days:
+        description: "A JSON list of integers for how many days to look back. \"[0]\" means just today."
+        default: "[0]"
+        type: string
       strategy:
           description: 'build strategy'
           required: true
@@ -38,7 +42,7 @@ jobs:
       id: set-matrix
       with:
         strategy: ${{ inputs.strategy }}
-        lookback_days: "[0,1,2]"
+        lookback_days: ${{ inputs.lookback_days }}
   check-snapshot:
     needs: generate-matrix
     strategy:

@@ -29,6 +29,7 @@ jobs:
       id: set-matrix
       with:
         strategy: ${{ inputs.strategy }}
+        lookback_days: "[0]"
 
   build-on-copr:
     needs: generate-matrix

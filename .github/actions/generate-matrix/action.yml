@@ -8,7 +8,7 @@ inputs:
     default: "all"
   lookback_days:
     description: "A JSON list of integers for how many days to look back. \"[0]\" means just today."
-    default: "[0]"
+    default: "[0,1,2]"
 outputs:
   matrix:
     description: "The build matrix to use in consequential jobs"
@@ -67,5 +67,8 @@ runs:
         fi
 
         LOOKBACK_DAYS="${{ inputs.lookback_days }}"
+        if [[ $(echo "$LOOKBACK_DAYS" | tr -d '[:space:]') == "" ]]; then
+          LOOKBACK_DAYS="[0,1,2]"
+        fi
 
         echo "myoutput=$(jq -cn --argjson includes "$INCLUDES" --argjson names "$NAMES" --argjson lookback_days "$LOOKBACK_DAYS" '{name: $names, today_minus_n_days: $lookback_days, include:$includes}')" >> $GITHUB_OUTPUT
