@@ -12,9 +12,9 @@ function get_clang_commit {
 
 pkg_or_buildid=$1
 
-if echo $pkg_or_buildid | grep '^[0-9]\+'; then 
+if echo $pkg_or_buildid | grep '^[0-9]\+'; then
   buildid=$pkg_or_buildid
-  read -r pkg last_success_id <<<$(curl -X 'GET' "https://copr.fedorainfracloud.org/api_3/build/$buildid" -H 'accept: application/json' | jq -r '[.builds.latest.source_package.name,.builds.latest_succeeded.id] |  join(" ")') 
+  read -r pkg last_success_id <<<$(curl -X 'GET' "https://copr.fedorainfracloud.org/api_3/build/$buildid" -H 'accept: application/json' | jq -r '[.builds.latest.source_package.name,.builds.latest_succeeded.id] |  join(" ")')
 else
   pkg=$pkg_or_buildid
 fi
