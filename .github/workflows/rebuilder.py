@@ -101,6 +101,32 @@ def get_builds_from_copr(
 
 
 def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[dict]) -> set[str]:
+    """ Returns the list of packages that should be built in the next rebuild.
+        It will select all the packages that built successfully during the last
+        rebuild.
+
+    Args:
+        pkgs (set[str]): A list of every package that should be considered for
+                        the rebuild.
+        copr_pkgs (list[dist]): A list containing the latest build results from
+                                the COPR project.
+
+    Returns:
+        set[str]: List of packages that should be rebuilt.
+
+    Example:
+
+    >>> a = {"name" : "a", "builds" : { "latest" : { "id" : 1 } , "latest_succeeded" : { "id" : 1 } } }
+    >>> b = {"name" : "b", "builds" : { "latest" : { "id" : 1 } , "latest_succeeded" : None } }
+    >>> c = {"name" : "c", "builds" : { "latest" : { "id" : 2 } , "latest_succeeded" : { "id" : 1 } } }
+    >>> d = {"name" : "d", "builds" : { "latest" : { "id" : 2 } , "latest_succeeded" : { "id" : 2 } } }
+    >>> pkgs = { "b", "c", "d"}
+    >>> copr_pkgs = [a, b, c, d]
+    >>> rebuild_pkgs = get_monthly_rebuild_packages(pkgs, copr_pkgs)
+    >>> print(rebuild_pkgs)
+    { "d" }
+    """
+
     for p in copr_pkgs:
         latest_succeeded = p["builds"]["latest_succeeded"]
         latest = p["builds"]["latest"]
@@ -265,7 +291,7 @@ def create_new_project(
 
 def main():
 
-    logging.basicConfig(filename='rebuilder.log', level=logging.INFO)
+    logging.basicConfig(filename="rebuilder.log", level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument("command", type=str, choices=["rebuild", "get-regressions"])
     parser.add_argument(
