@@ -193,6 +193,9 @@ $ cd llvm
 $ make snapshot-rpm
 ----
 
+= README
+:icons: font
+
 You might need to install missing dependencies. The build process itself probably takes quite some time.
 
 You're going to find `results/YYYYMMDD/snapshot-rpm.log` with logging everything from this makefile target.
