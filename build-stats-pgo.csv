@@ -3386,3 +3386,4 @@ date,package,chroot,build_time,state,build_id,timestamp
 2024/12/16,llvm,centos-stream-10-ppc64le,23096,failed,8396683,1734390924
 2024/12/16,llvm,centos-stream-10-aarch64,27109,failed,8396681,1734390924
 2024/12/17,llvm,fedora-41-x86_64,-1,running,8404837,1734477291
+2024/12/18,llvm,fedora-41-x86_64,1105,failed,8406043,1734563686
