@@ -41,7 +41,7 @@ jobs:
 
             console.log(issues)
             if (issues.data.total_count == 0)
-              return "2024-11-11";
+              return "2024-11-11";  // Date of the first rebuild.
             const issue = issues.data.items[0];
             console.log(issue);
             if (issue.state == "open")

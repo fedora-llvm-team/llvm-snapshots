@@ -9,6 +9,51 @@ import copr.v3
 import dnf
 import hawkey
 
+class CoprBuild:
+
+    def __init__(self, data: dict):
+        self.data = data
+
+    @property
+    def id(self):
+        return self.data["id"]
+
+    @property
+    def state(self):
+        return self.data["state"]
+
+    @property
+    def submitted_on(self):
+        return self.data["submitted_on"]
+
+
+class CoprPkg:
+
+    def __init__(self, data: dict):
+        self.data = data
+
+    @property
+    def name(self) -> str:
+        return self.data["name"]
+
+    @property
+    def latest(self) -> CoprBuild:
+        if "builds" not in self.data:
+            return None
+        builds = self.data["builds"]
+        if "latest" not in builds:
+            return None
+        return CoprBuild(builds['latest'])
+
+    def latest_succeeded(self) -> CoprBuild:
+        if "builds" not in self.data:
+            return None
+        builds = self.data["builds"]
+        if "latest_succeeded" not in builds:
+            return None
+        return CoprBuild(builds['latest_succeeded'])
+
+
 
 def load_tests(loader, tests, ignore):
     """We want unittest to pick up all of our doctests
@@ -91,16 +136,16 @@ def get_pkgs(exclusions: set[str]) -> set[set]:
 
 def get_builds_from_copr(
     project_owner: str, project_name: str, copr_client: copr.v3.Client
-) -> list[dict]:
-    return copr_client.package_proxy.get_list(
+) -> list[CoprPkg]:
+    return [CoprPkg(p) for p in copr_client.package_proxy.get_list(
         project_owner,
         project_name,
         with_latest_succeeded_build=True,
         with_latest_build=True,
-    )
+    )]
 
 
-def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[dict]) -> set[str]:
+def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[CoprPkg]) -> set[str]:
     """Returns the list of packages that should be built in the next rebuild.
         It will select all the packages that built successfully during the last
         rebuild.
@@ -128,15 +173,13 @@ def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[dict]) -> set[s
     """
 
     for p in copr_pkgs:
-        latest_succeeded = p["builds"]["latest_succeeded"]
-        latest = p["builds"]["latest"]
-        if p["name"] not in pkgs:
+        if p.name not in pkgs:
             continue
-        if not latest_succeeded:
-            pkgs.discard(p["name"])
+        if not p.latest_succeeded:
+            pkgs.discard(p.name)
             continue
-        if latest["id"] != latest_succeeded["id"]:
-            pkgs.discard(p["name"])
+        if p.latest.id != p.latest_succeeded.id:
+            pkgs.discard(p.name)
     return pkgs
 
 
@@ -144,7 +187,7 @@ def get_monthly_rebuild_regressions(
     project_owner: str,
     project_name: str,
     start_time: datetime.datetime,
-    copr_pkgs: list[dict],
+    copr_pkgs: list[CoprPkg],
 ) -> set[str]:
     """Returns the list of packages that failed to build in the most recent
        rebuild, but built successfully in the previous rebuild.
@@ -177,14 +220,11 @@ def get_monthly_rebuild_regressions(
     """
     pkgs = []
     for p in copr_pkgs:
-        latest_succeeded = p["builds"]["latest_succeeded"]
-        latest = p["builds"]["latest"]
-
-        if not latest:
+        if not p.latest:
             continue
 
         # Don't report regressions if there are still builds in progress
-        if latest["state"] not in [
+        if p.latest.state not in [
             "succeeded",
             "forked",
             "skipped",
@@ -193,21 +233,20 @@ def get_monthly_rebuild_regressions(
         ]:
             continue
 
-        if not latest_succeeded:
+        if not p.latest_succeeded:
             continue
-        if latest["id"] == latest_succeeded["id"]:
+        if p.latest.id == p.latest_succeeded.id:
             continue
         # latest is a successful build, but this doesn't mean it failed.
         # It could be in progress.
-        if latest["state"] != "failed":
+        if p.latest.state != "failed":
             continue
-        if int(latest["submitted_on"]) < start_time.timestamp():
+        if int(p.latest.submitted_on) < start_time.timestamp():
             continue
-        latest["name"] = p["name"]
         pkgs.append(
             {
-                "name": p["name"],
-                "url": f"https://copr.fedorainfracloud.org/coprs/{project_owner}/{project_name}/build/{latest['id']}/",
+                "name": p.name,
+                "url": f"https://copr.fedorainfracloud.org/coprs/{project_owner}/{project_name}/build/{p.latest.id}/",
             }
         )
     return pkgs
@@ -315,9 +354,7 @@ def main():
         try:
             copr_client.project_proxy.get(project_owner, project_name)
             copr_pkgs = get_builds_from_copr(project_owner, project_name, copr_client)
-            print(copr_pkgs)
             pkgs = get_monthly_rebuild_packages(pkgs, copr_pkgs)
-            print(pkgs)
         except:
             create_new_project(project_owner, project_name, copr_client, target_chroots)
         snapshot_project = select_snapshot_project(copr_client, target_chroots)
