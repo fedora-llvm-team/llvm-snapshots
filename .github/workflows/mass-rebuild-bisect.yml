@@ -7,13 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       pkg:
-        description: "The package to bisect"
+        description: "The name of the Fedora package build that you want to bisect."
         required: true
         type: string
   workflow_call:
     inputs:
       pkg:
-        description: "The package to bisect"
+        description: "The name of the Fedora package build that you want to bisect."
         required: true
         type: string
 
