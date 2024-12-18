@@ -33,6 +33,7 @@ permissions:
 
 jobs:
   generate-matrix:
+    if: github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-latest
     outputs:
       mymatrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -44,6 +45,7 @@ jobs:
         strategy: ${{ inputs.strategy }}
         lookback_days: ${{ inputs.lookback_days }}
   check-snapshot:
+    if: github.repository_owner == 'fedora-llvm-team'
     needs: generate-matrix
     strategy:
       fail-fast: false
