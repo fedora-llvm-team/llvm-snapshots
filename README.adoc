@@ -222,6 +222,7 @@ $ python3 rebuilder.py rebuild
 You can also view the regression report once the rebuild is complete using
 the same script.
 
+[source,console]
 ---
 $ python3 rebuilder.py get-regressions --start-date=<yyyy-mm-dd>
 ---
