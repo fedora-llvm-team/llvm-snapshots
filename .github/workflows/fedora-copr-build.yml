@@ -20,6 +20,7 @@ on:
 
 jobs:
   generate-matrix:
+    if: github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-latest
     outputs:
       mymatrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -32,6 +33,7 @@ jobs:
         lookback_days: "[0]"
 
   build-on-copr:
+    if: github.repository_owner == 'fedora-llvm-team'
     needs: generate-matrix
     strategy:
       fail-fast: false
