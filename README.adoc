@@ -213,7 +213,7 @@ The rebuild process will attempt to automatically bisect the failures to a speci
 LLVM commit.
 
 The rebuild can be started manually using the rebuilder.py script in
-.github/workflows/
+`.github/workflows/`
 
 [source,console]
 ---
