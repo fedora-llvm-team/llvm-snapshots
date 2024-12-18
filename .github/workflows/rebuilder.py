@@ -9,6 +9,7 @@ import copr.v3
 import dnf
 import hawkey
 
+
 class CoprBuild:
 
     def __init__(self, data: dict):
@@ -43,7 +44,7 @@ class CoprPkg:
         builds = self.data["builds"]
         if "latest" not in builds:
             return None
-        return CoprBuild(builds['latest'])
+        return CoprBuild(builds["latest"])
 
     def latest_succeeded(self) -> CoprBuild:
         if "builds" not in self.data:
@@ -51,8 +52,7 @@ class CoprPkg:
         builds = self.data["builds"]
         if "latest_succeeded" not in builds:
             return None
-        return CoprBuild(builds['latest_succeeded'])
-
+        return CoprBuild(builds["latest_succeeded"])
 
 
 def load_tests(loader, tests, ignore):
@@ -137,12 +137,15 @@ def get_pkgs(exclusions: set[str]) -> set[set]:
 def get_builds_from_copr(
     project_owner: str, project_name: str, copr_client: copr.v3.Client
 ) -> list[CoprPkg]:
-    return [CoprPkg(p) for p in copr_client.package_proxy.get_list(
-        project_owner,
-        project_name,
-        with_latest_succeeded_build=True,
-        with_latest_build=True,
-    )]
+    return [
+        CoprPkg(p)
+        for p in copr_client.package_proxy.get_list(
+            project_owner,
+            project_name,
+            with_latest_succeeded_build=True,
+            with_latest_build=True,
+        )
+    ]
 
 
 def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[CoprPkg]) -> set[str]:
