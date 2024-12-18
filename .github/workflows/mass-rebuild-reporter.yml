@@ -2,6 +2,7 @@ name: "Mass Rebuild Reporter"
 
 on:
   schedule:
+    # Hourly at minute 40, e.g. 2024-12-18 00:40:00 
     - cron: "40 * * * *"
   workflow_dispatch:
 
