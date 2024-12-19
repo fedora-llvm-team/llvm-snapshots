@@ -56,7 +56,7 @@ class CoprPkg:
         builds = self.data["builds"]
         if "latest_succeeded" not in builds:
             return None
-        latest_succeeded = builds['latest_succeeded']
+        latest_succeeded = builds["latest_succeeded"]
         if not latest_succeeded:
             return None
         return CoprBuild(builds["latest_succeeded"])
