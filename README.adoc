@@ -202,7 +202,7 @@ You're going to find `results/YYYYMMDD/snapshot-rpm.log` with logging everything
 
 == Mass Rebuilds ==
 
-This repository uses GitHub Actions to periodically perform rebuilds of select
+This repository uses GitHub Actions to periodically perform rebuilds of selected
 Fedora packages.  Once a mass rebuild is complete there is also automation
 that will create a new issue with the results of the rebuild.
 
