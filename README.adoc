@@ -206,7 +206,7 @@ This repository uses GitHub Actions to periodically perform rebuilds of select
 Fedora packages.  Once a mass rebuild is complete there is also automation
 that will create a new issue with the results of the rebuild.
 
-[NOTE] 
+[NOTE]
 ====
 Note that this automation will run automatically when the issue
 for the previous month's mass rebuild is closed. So don't close
