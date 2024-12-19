@@ -342,7 +342,7 @@ def main():
 
     logging.basicConfig(filename="rebuilder.log", level=logging.INFO)
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", type=str, choices=["rebuild", "get-regressions"])
+    parser.add_argument("command", type=str, choices=["rebuild", "get-regressions", "get-snapshot-date"])
     parser.add_argument(
         "--start-date", type=str, help="Any ISO date format is accepted"
     )
@@ -376,6 +376,13 @@ def main():
             project_owner, project_name, start_time, copr_pkgs
         )
         print(json.dumps(pkg_failures))
+    elif args.command == 'get-snapshot-date':
+        project = copr_client.project_proxy.get(project_owner, project_name)
+        for repo in project['additional_repos']:
+            match = re.match(r"copr://@fedora-llvm-team/llvm-snapshots-big-merge-([0-9]+)$", repo)
+            if not match:
+                continue
+            print(int(datetime.datetime.fromisoformat(match.group(1)).timestamp()))
 
 
 if __name__ == "__main__":
