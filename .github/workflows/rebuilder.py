@@ -46,6 +46,7 @@ class CoprPkg:
             return None
         return CoprBuild(builds["latest"])
 
+    @property
     def latest_succeeded(self) -> CoprBuild:
         if "builds" not in self.data:
             return None
