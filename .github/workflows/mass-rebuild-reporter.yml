@@ -26,9 +26,9 @@ jobs:
           sparse-checkout-cone-mode: false
 
 
-      - name: Check for existing report
+      - name: Check for last report
         uses: actions/github-script@v7
-        id: check-existing
+        id: last-report
         with:
           result-encoding: string
           script: |
@@ -41,23 +41,35 @@ jobs:
 
             console.log(issues)
             if (issues.data.total_count == 0)
-              return "2024-11-11";  // Date of the first rebuild.
+              return 0;
             const issue = issues.data.items[0];
             console.log(issue);
-            if (issue.state == "open")
-              return "skip";
-            return issue.closed_at
+            return Date(issue.closed_at).getTime() / 1000;
 
+      - name: Check if a new rebuild has completed
+        id: new-rebuild
+        run: |
+          if python3 .github/workflows/rebuilder.py rebuild-in-progress; then
+            echo "completed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [ $(python3 .github/workflows/rebuilder.py get-snapshot-date) -gt ${{ steps.last-report.outputs.result }} ]; then
+            echo "completed=false" >> $GITHUB_OUTPUT
+          else
+            echo "completed=true" >> $GITHUB_OUTPUT
+          fi
+              
       - name: Collect Regressions
-        if: steps.check-existing.outputs.result != 'skip'
+        if: steps.new-rebuild.outputs.completed == 'true'
         id: regressions
         run: |
           sudo dnf install -y python3-dnf python3-copr
-          python3 .github/workflows/rebuilder.py get-regressions --start-date ${{ steps.check-existing.outputs.result }} > regressions
+          python3 .github/workflows/rebuilder.py get-regressions --start-date ${{ steps.last-report.outputs.result }} > regressions
           echo "REGRESSIONS=$(cat regressions)" >> $GITHUB_OUTPUT
 
       - name: Create Report
-        if: steps.check-existing.outputs.result != 'skip'
+        if: steps.new-rebuild.outputs.completed == 'true'
         uses: actions/github-script@v7
         env:
           REGRESSIONS: ${{ steps.regressions.outputs.REGRESSIONS }}
