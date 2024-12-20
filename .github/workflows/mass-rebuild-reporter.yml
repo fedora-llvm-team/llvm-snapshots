@@ -59,6 +59,8 @@ jobs:
           last_rebuild=$(date +%s -d "${{ steps.last-report.outputs.result }}")
           current_snapshot=$(date +%s -d "$(python3 .github/workflows/rebuilder.py get-snapshot-date)")
 
+          echo "last_rebuild: $last_rebuild current_snapshot: $current_snapshot"
+
           if [ $last_rebuild -gt $current_snapshot ]; then
             echo "completed=false" >> $GITHUB_OUTPUT
           else
