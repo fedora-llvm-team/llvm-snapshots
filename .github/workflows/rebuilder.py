@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import re
+import sys
 from typing import Set
 
 import copr.v3
@@ -342,7 +343,7 @@ def main():
 
     logging.basicConfig(filename="rebuilder.log", level=logging.INFO)
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", type=str, choices=["rebuild", "get-regressions", "get-snapshot-date"])
+    parser.add_argument("command", type=str, choices=["rebuild", "get-regressions", "get-snapshot-date", "rebuild-in-progress"])
     parser.add_argument(
         "--start-date", type=str, help="Any ISO date format is accepted"
     )
@@ -376,13 +377,20 @@ def main():
             project_owner, project_name, start_time, copr_pkgs
         )
         print(json.dumps(pkg_failures))
-    elif args.command == 'get-snapshot-date':
+    elif args.command == "get-snapshot-date":
         project = copr_client.project_proxy.get(project_owner, project_name)
         for repo in project['additional_repos']:
             match = re.match(r"copr://@fedora-llvm-team/llvm-snapshots-big-merge-([0-9]+)$", repo)
             if not match:
                 continue
             print(int(datetime.datetime.fromisoformat(match.group(1)).timestamp()))
+    elif args.command == "rebuild-in-progress":
+        for pkg in copr_client.monitor_proxy.monitor(project_owner, project_name)["packages"]:
+            for c in pkg["chroots"]:
+                chroot = pkg["chroots"][c]
+                if chroot["state"] not in ["succeeded", "forked", "skipped", "failed", "canceled"]:
+                    sys.exit(0)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
