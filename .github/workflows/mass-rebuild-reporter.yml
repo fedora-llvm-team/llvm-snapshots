@@ -44,6 +44,7 @@ jobs:
               return 0;
             const issue = issues.data.items[0];
             console.log(issue);
+            console.log(issue.closed_at);
             return new Date(issue.closed_at).getTime() / 1000;
 
       - name: Check if a new rebuild has completed
