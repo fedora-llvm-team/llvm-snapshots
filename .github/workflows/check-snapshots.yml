@@ -13,52 +13,43 @@ on:
         description: 'year month day'
         required: true
         type: string
-      strategy:
-        description: 'strategy (e.g. standalone, big-merge)'
-        required: true
+      lookback_days:
+        description: "A JSON list of integers for how many days to look back. \"[0]\" means just today."
+        default: "[0]"
         type: string
+      strategy:
+          description: 'build strategy'
+          required: true
+          type: choice
+          default: all
+          options:
+          - all
+          - big-merge
+          - pgo
 
 permissions:
   # We need this in order to create or update snapshot issues
   issues: write
 
 jobs:
+  generate-matrix:
+    if: github.repository_owner == 'fedora-llvm-team'
+    runs-on: ubuntu-latest
+    outputs:
+      mymatrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/generate-matrix
+      id: set-matrix
+      with:
+        strategy: ${{ inputs.strategy }}
+        lookback_days: ${{ inputs.lookback_days }}
   check-snapshot:
+    if: github.repository_owner == 'fedora-llvm-team'
+    needs: generate-matrix
     strategy:
       fail-fast: false
-      matrix:
-        today_minus_n_days: [0, 1, 2]
-        name: [big-merge, pgo]
-        include:
-          # - name: standalone
-          #   maintainer_handle: "tbaederr"
-          #   copr_ownername: "@fedora-llvm-team"
-          #   copr_project_tpl: "llvm-snapshots-incubator-YYYYMMDD"
-          #   copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
-          #   packages: "python-lit llvm clang lld compiler-rt libomp"
-          - name: big-merge
-            maintainer_handle: "tuliom"
-            copr_ownername: "@fedora-llvm-team"
-            copr_project_tpl: "llvm-snapshots-big-merge-YYYYMMDD"
-            copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/"
-            chroot_pattern: '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)'
-            packages: "llvm"
-          - name: pgo
-            maintainer_handle: "kwk"
-            copr_ownername: "@fedora-llvm-team"
-            copr_project_tpl: "llvm-snapshots-pgo-YYYYMMDD"
-            copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/"
-            chroot_pattern: '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-|centos-stream-10)'
-            packages: "llvm"
-          # - name: bootstrap
-          #   maintainer_handle: "kwk"
-          #   copr_ownername: "@fedora-llvm-team"
-          #   copr_project_tpl: "llvm-snapshots-bootstrap-YYYYMMDD"
-          #   copr_monitor_tpl: "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-bootstrap-YYYYMMDD/monitor/"
-          #   chroot_pattern: 'fedora-39-x86_64'
-          #   packages: "llvm"
-
-
+      matrix: ${{fromJson(needs.generate-matrix.outputs.mymatrix)}}
     runs-on: ubuntu-latest
     steps:
       - name: Setup Copr config file
@@ -109,6 +100,7 @@ jobs:
             --maintainer-handle ${{matrix.maintainer_handle}} \
             --packages ${{matrix.packages}} \
             --build-strategy ${{matrix.name}} \
+            --copr-ownername ${{matrix.copr_ownername}} \
             --copr-project-tpl ${{matrix.copr_project_tpl}} \
             --copr-monitor-tpl ${{matrix.copr_monitor_tpl}} \
             --yyyymmdd $yyyymmdd

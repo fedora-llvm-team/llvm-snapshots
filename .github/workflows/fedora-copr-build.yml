@@ -6,28 +6,40 @@ on:
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
     - cron: "45 0 * * *"
 
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      strategy:
+        description: 'build strategy'
+        required: true
+        type: choice
+        default: all
+        options:
+        - all
+        - big-merge
+        - pgo
 
 jobs:
+  generate-matrix:
+    if: github.repository_owner == 'fedora-llvm-team'
+    runs-on: ubuntu-latest
+    outputs:
+      mymatrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/generate-matrix
+      id: set-matrix
+      with:
+        strategy: ${{ inputs.strategy }}
+        lookback_days: "[0]"
+
   build-on-copr:
+    if: github.repository_owner == 'fedora-llvm-team'
+    needs: generate-matrix
     strategy:
       fail-fast: false
-      matrix:
-        name: [big-merge, pgo]
-        include:
-          - name: big-merge
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD"
-            copr_target_project: "@fedora-llvm-team/llvm-snapshots"
-            clone_url_tpl: "https://src.fedoraproject.org/rpms/PKG.git"
-            clone_ref: rawhide
-          - name: pgo
-            copr_project_tpl: "@fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD"
-            copr_target_project: "@fedora-llvm-team/llvm-snapshots-pgo"
-            extra_script_file: "scripts/functions-pgo.sh"
-            clone_url_tpl: "https://src.fedoraproject.org/forks/kkleine/rpms/PKG.git"
-            clone_ref: pgo
+      matrix: ${{fromJson(needs.generate-matrix.outputs.mymatrix)}}
     runs-on: ubuntu-latest
-    container: fedora:39
+    container: fedora:41
     steps:
       - name: Setup Copr config file
         env:
@@ -61,8 +73,8 @@ jobs:
           echo "packages=$packages" >> $GITHUB_ENV
           echo "chroots=$chroots" >> $GITHUB_ENV
           echo "all_chroots=$all_chroots" >> $GITHUB_ENV
-          echo "project_today=${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/" >> $GITHUB_ENV
-          echo "project_yesterday=${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$yesterday/" >> $GITHUB_ENV
+          echo "project_today=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/" >> $GITHUB_ENV
+          echo "project_yesterday=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$yesterday/" >> $GITHUB_ENV
           echo "project_target=${{ matrix.copr_target_project }}" >> $GITHUB_ENV
 
       - name: "Check for Copr projects existence (yesterday, today, target)"
@@ -141,6 +153,15 @@ jobs:
             if [[ "$chroot" == rhel-8-* ]]; then
               copr edit-chroot --modules "swig:4.0" ${{ env.project_today }}/$chroot
             fi
+            # TODO(kwk): The python-nanobind package acceptance review is taking place here:
+            #            https://bugzilla.redhat.com/show_bug.cgi?id=2331339
+            #            Once that package is accepted in Fedora, remove the following chroot edit.
+            if [[ "$chroot" =~ fedora-(4[0-9]|rawhide) ]]; then
+              copr edit-chroot --repos "copr://kkleine/python-nanobind" ${{ env.project_today }}/$chroot
+            fi
+
+            # Dump chroot information after all modification
+            copr get-chroot ${{ env.project_today }}/$chroot
           done
 
       - name: "Create today's packages: ${{ env.packages }}"
