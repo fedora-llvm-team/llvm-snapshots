@@ -383,7 +383,7 @@ def main():
             match = re.match(r"copr://@fedora-llvm-team/llvm-snapshots-big-merge-([0-9]+)$", repo)
             if not match:
                 continue
-            print(int(datetime.datetime.fromisoformat(match.group(1)).timestamp()))
+            print(datetime.datetime.fromisoformat(match.group(1)).isoformat())
     elif args.command == "rebuild-in-progress":
         for pkg in copr_client.monitor_proxy.monitor(project_owner, project_name)["packages"]:
             for c in pkg["chroots"]:

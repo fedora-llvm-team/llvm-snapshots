@@ -45,7 +45,7 @@ jobs:
             const issue = issues.data.items[0];
             console.log(issue);
             console.log(issue.created_at);
-            return new Date(issue.created_at).getTime() / 1000;
+            return issue.created_at
 
       - name: Check if a new rebuild has completed
         id: new-rebuild
@@ -56,7 +56,10 @@ jobs:
             exit 0
           fi
 
-          if [ $(python3 .github/workflows/rebuilder.py get-snapshot-date) -gt ${{ steps.last-report.outputs.result }} ]; then
+          last_rebuild=$(date +%s -d "${{ steps.last-report.outputs.result }}")
+          current_snapshot=$(date +%s -d "$(python3 .github/workflows/rebuilder.py get-snapshot-date)")
+
+          if [ $last_rebuild -gt $current_snapshot ]; then
             echo "completed=false" >> $GITHUB_OUTPUT
           else
             echo "completed=true" >> $GITHUB_OUTPUT
