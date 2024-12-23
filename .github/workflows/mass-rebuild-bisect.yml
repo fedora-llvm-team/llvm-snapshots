@@ -30,6 +30,7 @@ jobs:
           key: bisect
       - working-directory: /root/llvm-project/
         run: |
+          git fetch origin
           bash bisect.sh ${{ inputs.pkg }}
 
       - if: always()
