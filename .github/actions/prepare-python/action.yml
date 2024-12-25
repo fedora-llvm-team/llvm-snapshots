@@ -7,11 +7,16 @@ inputs:
     description: "Where this project was checked out"
     required: false
     default: "."
+  use-system-python:
+    description: "Set to true if you want to use the python installation from the OS"
+    required: false
+    default: false
 runs:
   using: "composite"
   steps:
     - name: "Setup python"
       uses: actions/setup-python@v5
+      if: "${{ inputs.use-system-python != 'true' }}"
       with:
         python-version: 3.12
         cache: 'pip'
@@ -24,4 +29,14 @@ runs:
 
     - name: "Install python dependencies for project"
       shell: bash
-      run: pip install -r ${{ inputs.checkout-path }}/requirements.txt
+      run: |
+        pip install -r ${{ inputs.checkout-path }}/requirements.txt
+
+    # The dnf module cannot be installed by pip, so it's only possible to use
+    # it when using the system pyhton interpreter.
+    - name: Install DNF module
+      if: "${{ inputs.use-system-python == 'true' }}"
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install python3-dnf
