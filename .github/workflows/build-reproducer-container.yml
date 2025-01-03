@@ -21,6 +21,6 @@ jobs:
         run: |
           sudo apt-get -y update
           sudo apt-get -y install podman
-          podman build -t ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer containers/reproducer
+          podman build -t ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer -f Containerfile scripts/
           podman login -u ${{ github.actor }} -p $GITHUB_TOKEN ghcr.io
           podman push ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer
