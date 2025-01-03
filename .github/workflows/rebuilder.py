@@ -9,6 +9,7 @@ from typing import Set
 import copr.v3
 import dnf
 import hawkey
+from munch import Munch
 
 
 class CoprBuild(Munch):
@@ -25,20 +26,36 @@ class CoprBuild(Munch):
 
 
 class CoprPkg(Munch):
-    pass
 
     @classmethod
-    def get_packages_from_copr(cls, project_owner: str, project_name: str, copr_client: copr.v3.Client) -> list[CoprPkg]:
-    return [
-        CoprPkg(p)
-        for p in copr_client.package_proxy.get_list(
-            project_owner,
-            project_name,
-            with_latest_succeeded_build=True,
-            with_latest_build=True,
-        )
-    ]
+    def get_packages_from_copr(cls, project_owner: str, project_name: str, copr_client: copr.v3.Client) -> list["CoprPkg"]:
+        return [
+            CoprPkg(p)
+            for p in copr_client.package_proxy.get_list(
+                project_owner,
+                project_name,
+                with_latest_succeeded_build=True,
+                with_latest_build=True,
+            )
+        ]
 
+    def get_build(self, name: str) -> CoprBuild:
+        if "builds" not in self:
+            return None
+        if name not in self.builds:
+            return None
+        build = self.builds[name]
+        if not build:
+            return None
+        return CoprBuild(build)
+
+    @property
+    def latest(self) -> CoprBuild:
+        return self.get_build("latest")
+
+    @property
+    def latest_succeeded(self) -> CoprBuild:
+        return self.get_build("latest_succeeded")
 
 
 def load_tests(loader, tests, ignore):
@@ -199,7 +216,7 @@ def get_monthly_rebuild_regressions(
             continue
 
         # Don't report regressions if there are still builds in progress
-        if CoprBuild(p.latest).is_in_progres():
+        if p.latest.is_in_progress():
             continue
 
         if not p.latest_succeeded:
