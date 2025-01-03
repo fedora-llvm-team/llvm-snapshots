@@ -11,56 +11,34 @@ import dnf
 import hawkey
 
 
-class CoprBuild:
+class CoprBuild(Munch):
+    pass
 
-    def __init__(self, data: dict):
-        self.data = data
-
-    @property
-    def id(self):
-        return self.data["id"]
-
-    @property
-    def state(self):
-        return self.data["state"]
-
-    @property
-    def submitted_on(self):
-        return self.data["submitted_on"]
+    def is_in_progress(self) -> bool:
+        return self.state not in [
+            "succeeded",
+            "forked",
+            "skipped",
+            "failed",
+            "canceled",
+        ]
 
 
-class CoprPkg:
+class CoprPkg(Munch):
+    pass
 
-    def __init__(self, data: dict):
-        self.data = data
+    @classmethod
+    def get_packages_from_copr(cls, project_owner: str, project_name: str, copr_client: copr.v3.Client) -> list[CoprPkg]:
+    return [
+        CoprPkg(p)
+        for p in copr_client.package_proxy.get_list(
+            project_owner,
+            project_name,
+            with_latest_succeeded_build=True,
+            with_latest_build=True,
+        )
+    ]
 
-    @property
-    def name(self) -> str:
-        return self.data["name"]
-
-    @property
-    def latest(self) -> CoprBuild:
-        if "builds" not in self.data:
-            return None
-        builds = self.data["builds"]
-        if "latest" not in builds:
-            return None
-        latest = builds["latest"]
-        if not latest:
-            return None
-        return CoprBuild(latest)
-
-    @property
-    def latest_succeeded(self) -> CoprBuild:
-        if "builds" not in self.data:
-            return None
-        builds = self.data["builds"]
-        if "latest_succeeded" not in builds:
-            return None
-        latest_succeeded = builds["latest_succeeded"]
-        if not latest_succeeded:
-            return None
-        return CoprBuild(builds["latest_succeeded"])
 
 
 def load_tests(loader, tests, ignore):
@@ -142,20 +120,6 @@ def get_pkgs(exclusions: set[str]) -> set[set]:
     return filter_llvm_pkgs(set(pkgs)) - exclusions
 
 
-def get_builds_from_copr(
-    project_owner: str, project_name: str, copr_client: copr.v3.Client
-) -> list[CoprPkg]:
-    return [
-        CoprPkg(p)
-        for p in copr_client.package_proxy.get_list(
-            project_owner,
-            project_name,
-            with_latest_succeeded_build=True,
-            with_latest_build=True,
-        )
-    ]
-
-
 def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[CoprPkg]) -> set[str]:
     """Returns the list of packages that should be built in the next rebuild.
         It will select all the packages that built successfully during the last
@@ -235,13 +199,7 @@ def get_monthly_rebuild_regressions(
             continue
 
         # Don't report regressions if there are still builds in progress
-        if p.latest.state not in [
-            "succeeded",
-            "forked",
-            "skipped",
-            "failed",
-            "canceled",
-        ]:
+        if CoprBuild(p.latest).is_in_progres():
             continue
 
         if not p.latest_succeeded:
@@ -364,7 +322,7 @@ def main():
         print(pkgs)
         try:
             copr_client.project_proxy.get(project_owner, project_name)
-            copr_pkgs = get_builds_from_copr(project_owner, project_name, copr_client)
+            copr_pkgs = CoprPkg.get_packages_from_copr(project_owner, project_name, copr_client)
             pkgs = get_monthly_rebuild_packages(pkgs, copr_pkgs)
         except:
             create_new_project(project_owner, project_name, copr_client, target_chroots)
@@ -372,7 +330,7 @@ def main():
         start_rebuild(project_owner, project_name, copr_client, pkgs, snapshot_project)
     elif args.command == "get-regressions":
         start_time = datetime.datetime.fromisoformat(args.start_date)
-        copr_pkgs = get_builds_from_copr(project_owner, project_name, copr_client)
+        copr_pkgs = CoprPkg.get_packages_from_copr(project_owner, project_name, copr_client)
         pkg_failures = get_monthly_rebuild_regressions(
             project_owner, project_name, start_time, copr_pkgs
         )
@@ -381,14 +339,14 @@ def main():
         project = copr_client.project_proxy.get(project_owner, project_name)
         for repo in project['additional_repos']:
             match = re.match(r"copr://@fedora-llvm-team/llvm-snapshots-big-merge-([0-9]+)$", repo)
-            if not match:
-                continue
-            print(datetime.datetime.fromisoformat(match.group(1)).isoformat())
+            if match:
+                print(datetime.datetime.fromisoformat(match.group(1)).isoformat())
+                return
     elif args.command == "rebuild-in-progress":
         for pkg in copr_client.monitor_proxy.monitor(project_owner, project_name)["packages"]:
             for c in pkg["chroots"]:
-                chroot = pkg["chroots"][c]
-                if chroot["state"] not in ["succeeded", "forked", "skipped", "failed", "canceled"]:
+                build = CoprBuild(pkg["chroots"][c])
+                if build.is_in_progress():
                     sys.exit(0)
         sys.exit(1)
 
