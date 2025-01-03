@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            .github/workflows/rebuilder.py
+            scripts/rebuilder.py
           sparse-checkout-cone-mode: false
 
 
@@ -50,13 +50,13 @@ jobs:
         id: new-rebuild
         run: |
           sudo dnf install -y python3-dnf python3-copr
-          if python3 .github/workflows/rebuilder.py rebuild-in-progress; then
+          if python3 scripts/rebuilder.py rebuild-in-progress; then
             echo "completed=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           last_rebuild=$(date +%s -d "${{ steps.last-report.outputs.result }}")
-          current_snapshot=$(date +%s -d "$(python3 .github/workflows/rebuilder.py get-snapshot-date)")
+          current_snapshot=$(date +%s -d "$(python3 scripts/rebuilder.py get-snapshot-date)")
 
           echo "last_rebuild: $last_rebuild current_snapshot: $current_snapshot"
 
@@ -70,7 +70,7 @@ jobs:
         if: steps.new-rebuild.outputs.completed == 'true'
         id: regressions
         run: |
-          python3 .github/workflows/rebuilder.py get-regressions --start-date ${{ steps.last-report.outputs.result }} > regressions
+          python3 scripts/rebuilder.py get-regressions --start-date ${{ steps.last-report.outputs.result }} > regressions
           echo "REGRESSIONS=$(cat regressions)" >> $GITHUB_OUTPUT
 
       - name: Create Report

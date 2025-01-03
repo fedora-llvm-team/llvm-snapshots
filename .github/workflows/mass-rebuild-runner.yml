@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            .github/workflows/rebuilder.py
+            scripts/rebuilder.py
           sparse-checkout-cone-mode: false
 
       - name: Setup Copr config file
@@ -33,4 +33,4 @@ jobs:
       - name: Start rebuild
         run: |
           sudo dnf install -y python3-dnf python3-copr
-          python3 .github/workflows/rebuilder.py rebuild
+          python3 scripts/rebuilder.py rebuild
