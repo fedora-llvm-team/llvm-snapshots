@@ -3402,3 +3402,4 @@ date,package,chroot,build_time,state,build_id,timestamp
 2025/01/01,llvm,fedora-41-x86_64,810,failed,8459321,1735773252
 2025/01/02,llvm,fedora-41-x86_64,689,failed,8462511,1735859655
 2025/01/03,llvm,fedora-41-x86_64,694,failed,8466164,1735946048
+2025/01/04,llvm,fedora-41-x86_64,820,failed,8469725,1736032410
