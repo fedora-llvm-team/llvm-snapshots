@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   start-rebuild:
+    if: github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-24.04
     container:
       image: "registry.fedoraproject.org/fedora:41"

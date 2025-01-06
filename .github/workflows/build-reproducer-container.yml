@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   build-reproducer-container:
+    if: github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-24.04
     permissions:
       packages: write

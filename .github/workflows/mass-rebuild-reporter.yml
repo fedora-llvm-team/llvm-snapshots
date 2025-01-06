@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   check-for-rebuild:
+    if: github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-24.04
     permissions:
       issues: write
@@ -101,6 +102,7 @@ jobs:
             console.log(issue);
 
   bisect-failures:
+    if: github.repository_owner == 'fedora-llvm-team'
     needs:
       - check-for-rebuild
     strategy:

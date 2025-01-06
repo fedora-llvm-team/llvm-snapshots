@@ -19,6 +19,7 @@ on:
 
 jobs:
   mass-rebuild-bisect:
+    if: github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-24.04
     container:
       image: "ghcr.io/${{ github.repository_owner }}/llvm-snapshots-reproducer"
