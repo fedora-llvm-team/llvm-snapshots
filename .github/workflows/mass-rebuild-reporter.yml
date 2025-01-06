@@ -66,7 +66,7 @@ jobs:
           else
             echo "completed=true" >> $GITHUB_OUTPUT
           fi
-              
+
       - name: Collect Regressions
         if: steps.new-rebuild.outputs.completed == 'true'
         id: regressions
