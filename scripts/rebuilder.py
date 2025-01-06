@@ -327,7 +327,7 @@ def main():
             "rebuild",
             "get-regressions",
             "get-snapshot-date",
-            "rebuild-in-progress"
+            "rebuild-in-progress",
         ],
     )
     parser.add_argument(
@@ -360,14 +360,16 @@ def main():
         start_rebuild(project_owner, project_name, copr_client, pkgs, snapshot_project)
     elif args.command == "get-regressions":
         start_time = datetime.datetime.fromisoformat(args.start_date)
-        copr_pkgs = CoprPkg.get_packages_from_copr(project_owner, project_name, copr_client)
+        copr_pkgs = CoprPkg.get_packages_from_copr(
+            project_owner, project_name, copr_client
+        )
         pkg_failures = get_monthly_rebuild_regressions(
             project_owner, project_name, start_time, copr_pkgs
         )
         print(json.dumps(pkg_failures))
     elif args.command == "get-snapshot-date":
         project = copr_client.project_proxy.get(project_owner, project_name)
-        for repo in project['additional_repos']:
+        for repo in project["additional_repos"]:
             match = re.match(
                 r"copr://@fedora-llvm-team/llvm-snapshots-big-merge-([0-9]+)$", repo
             )
