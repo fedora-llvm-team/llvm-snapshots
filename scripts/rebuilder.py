@@ -28,7 +28,9 @@ class CoprBuild(Munch):
 class CoprPkg(Munch):
 
     @classmethod
-    def get_packages_from_copr(cls, project_owner: str, project_name: str, copr_client: copr.v3.Client) -> list["CoprPkg"]:
+    def get_packages_from_copr(
+        cls, project_owner: str, project_name: str, copr_client: copr.v3.Client
+    ) -> list["CoprPkg"]:
         return [
             CoprPkg(p)
             for p in copr_client.package_proxy.get_list(
@@ -318,7 +320,16 @@ def main():
 
     logging.basicConfig(filename="rebuilder.log", level=logging.INFO)
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", type=str, choices=["rebuild", "get-regressions", "get-snapshot-date", "rebuild-in-progress"])
+    parser.add_argument(
+        "command",
+        type=str,
+        choices=[
+            "rebuild",
+            "get-regressions",
+            "get-snapshot-date",
+            "rebuild-in-progress"
+        ],
+    )
     parser.add_argument(
         "--start-date", type=str, help="Any ISO date format is accepted"
     )
@@ -339,7 +350,9 @@ def main():
         print(pkgs)
         try:
             copr_client.project_proxy.get(project_owner, project_name)
-            copr_pkgs = CoprPkg.get_packages_from_copr(project_owner, project_name, copr_client)
+            copr_pkgs = CoprPkg.get_packages_from_copr(
+                project_owner, project_name, copr_client
+            )
             pkgs = get_monthly_rebuild_packages(pkgs, copr_pkgs)
         except:
             create_new_project(project_owner, project_name, copr_client, target_chroots)
@@ -355,12 +368,16 @@ def main():
     elif args.command == "get-snapshot-date":
         project = copr_client.project_proxy.get(project_owner, project_name)
         for repo in project['additional_repos']:
-            match = re.match(r"copr://@fedora-llvm-team/llvm-snapshots-big-merge-([0-9]+)$", repo)
+            match = re.match(
+                r"copr://@fedora-llvm-team/llvm-snapshots-big-merge-([0-9]+)$", repo
+            )
             if match:
                 print(datetime.datetime.fromisoformat(match.group(1)).isoformat())
                 return
     elif args.command == "rebuild-in-progress":
-        for pkg in copr_client.monitor_proxy.monitor(project_owner, project_name)["packages"]:
+        for pkg in copr_client.monitor_proxy.monitor(project_owner, project_name)[
+            "packages"
+        ]:
             for c in pkg["chroots"]:
                 build = CoprBuild(pkg["chroots"][c])
                 if build.is_in_progress():
