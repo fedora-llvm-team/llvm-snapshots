@@ -28,7 +28,7 @@ copr==2.0
     #   copr-cli
 copr-cli==2.0
     # via -r requirements.txt.in
-coverage==7.6.9
+coverage==7.6.10
     # via -r requirements.txt.in
 cryptography==43.0.1
     # via pyjwt
@@ -44,7 +44,7 @@ humanize==4.9.0
     # via copr-cli
 idna==3.7
     # via requests
-jinja2==3.1.4
+jinja2==3.1.5
     # via copr-cli
 markupsafe==2.1.4
     # via jinja2
