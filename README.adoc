@@ -206,13 +206,6 @@ This repository uses GitHub Actions to periodically perform rebuilds of selected
 Fedora packages.  Once a mass rebuild is complete there is also automation
 that will create a new issue with the results of the rebuild.
 
-[NOTE]
-====
-Note that this automation will run automatically when the issue
-for the previous month's mass rebuild is closed. So don't close
-the previous months issue until the next months rebuild is complete.
-===
-
 The rebuild process will attempt to automatically bisect the failures to a specific upstream
 LLVM commit.
 
