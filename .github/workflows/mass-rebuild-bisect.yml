@@ -1,0 +1,40 @@
+name: Mass Rebuild Bisect
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      pkg:
+        description: "The name of the Fedora package build that you want to bisect."
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      pkg:
+        description: "The name of the Fedora package build that you want to bisect."
+        required: true
+        type: string
+
+jobs:
+  mass-rebuild-bisect:
+    if: github.repository_owner == 'fedora-llvm-team'
+    runs-on: ubuntu-24.04
+    container:
+      image: "ghcr.io/${{ github.repository_owner }}/llvm-snapshots-reproducer"
+    steps:
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          max-size: 8G
+          key: bisect
+      - working-directory: /root/llvm-project/
+        run: |
+          git fetch origin
+          bash bisect.sh ${{ inputs.pkg }}
+
+      - if: always()
+        working-directory: /root/llvm-project
+        run: |
+          git bisect log

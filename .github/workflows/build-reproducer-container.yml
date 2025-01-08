@@ -1,0 +1,27 @@
+name: "Build Reproducer Container"
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-reproducer-container:
+    if: github.repository_owner == 'fedora-llvm-team'
+    runs-on: ubuntu-24.04
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Container
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install podman
+          podman build -t ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer -f Containerfile scripts/
+          podman login -u ${{ github.actor }} -p $GITHUB_TOKEN ghcr.io
+          podman push ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer

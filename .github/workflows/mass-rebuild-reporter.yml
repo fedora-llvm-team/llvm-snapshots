@@ -1,0 +1,115 @@
+name: "Mass Rebuild Reporter"
+
+on:
+  schedule:
+    # Hourly at minute 40, e.g. 2024-12-18 00:40:00
+    - cron: "40 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-for-rebuild:
+    if: github.repository_owner == 'fedora-llvm-team'
+    runs-on: ubuntu-24.04
+    permissions:
+      issues: write
+    container:
+      image: "registry.fedoraproject.org/fedora:41"
+    outputs:
+      regressions: ${{ steps.regressions.outputs.REGRESSIONS }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/rebuilder.py
+          sparse-checkout-cone-mode: false
+
+
+      - name: Check for last report
+        uses: actions/github-script@v7
+        id: last-report
+        with:
+          result-encoding: string
+          script: |
+            const issues = await github.rest.search.issuesAndPullRequests({
+              q: "label:mass-rebuild+is:issue",
+              sort: "created",
+              order: "desc",
+              per_page: 1
+            });
+
+            console.log(issues)
+            if (issues.data.total_count == 0)
+              return 0;
+            const issue = issues.data.items[0];
+            console.log(issue);
+            return issue.created_at
+
+      - name: Check if a new rebuild has completed
+        id: new-rebuild
+        run: |
+          sudo dnf install -y python3-dnf python3-copr
+          if python3 scripts/rebuilder.py rebuild-in-progress; then
+            echo "completed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          last_rebuild=$(date +%s -d "${{ steps.last-report.outputs.result }}")
+          current_snapshot=$(date +%s -d "$(python3 scripts/rebuilder.py get-snapshot-date)")
+
+          echo "last_rebuild: $last_rebuild current_snapshot: $current_snapshot"
+
+          if [ $last_rebuild -gt $current_snapshot ]; then
+            echo "completed=false" >> $GITHUB_OUTPUT
+          else
+            echo "completed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Collect Regressions
+        if: steps.new-rebuild.outputs.completed == 'true'
+        id: regressions
+        run: |
+          python3 scripts/rebuilder.py get-regressions --start-date ${{ steps.last-report.outputs.result }} > regressions
+          echo "REGRESSIONS=$(cat regressions)" >> $GITHUB_OUTPUT
+
+      - name: Create Report
+        if: steps.new-rebuild.outputs.completed == 'true'
+        uses: actions/github-script@v7
+        env:
+          REGRESSIONS: ${{ steps.regressions.outputs.REGRESSIONS }}
+        with:
+          script: |
+            var fs = require('fs');
+            const regressions = await JSON.parse(fs.readFileSync('./regressions'));
+            comment = "During the last mass rebuild, some packages failed:\n";
+            console.log(regressions);
+            if (regressions.length == 0)
+              return;
+            regressions.forEach(function(value){
+              comment = comment.concat('\n', value.name);
+              comment = comment.concat(': ', value.url);
+            });
+            console.log(comment);
+            const issue = await github.rest.issues.create({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               title: "Mass Rebuild Report",
+               labels: ['mass-rebuild'],
+               body: comment
+            });
+            console.log(issue);
+
+  bisect-failures:
+    if: github.repository_owner == 'fedora-llvm-team'
+    needs:
+      - check-for-rebuild
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.check-for-rebuild.outputs.regressions) }}
+    uses: ./.github/workflows/mass-rebuild-bisect.yml
+    with:
+      pkg: ${{ matrix.name }}
