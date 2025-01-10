@@ -34,7 +34,7 @@ jobs:
           result-encoding: string
           script: |
             const issues = await github.rest.search.issuesAndPullRequests({
-              q: "label:mass-rebuild+is:issue",
+              q: "repo:" + process.env.GITHUB_REPOSITORY + "+label:mass-rebuild+is:issue",
               sort: "created",
               order: "desc",
               per_page: 1
