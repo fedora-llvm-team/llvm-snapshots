@@ -10,17 +10,29 @@ on:
         description: "The name of the Fedora package build that you want to bisect."
         required: true
         type: string
+      issue:
+        description: "The id of the issue to update with the bisect results."
+        required: false
+        type: string
+        default: 0
   workflow_call:
     inputs:
       pkg:
         description: "The name of the Fedora package build that you want to bisect."
         required: true
         type: string
+      issue:
+        description: "The id of the issue to update with the bisect results."
+        required: false
+        type: string
+        default: 0
 
 jobs:
   mass-rebuild-bisect:
     if: github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-24.04
+    permissions:
+      issues: write
     container:
       image: "ghcr.io/${{ github.repository_owner }}/llvm-snapshots-reproducer"
     steps:
@@ -36,5 +48,52 @@ jobs:
 
       - if: always()
         working-directory: /root/llvm-project
+        id: result
         run: |
-          git bisect log
+          touch bisect.log
+          if ! git bisect log; then
+            touch bisect.log
+            echo "result=False Positive" >> $GITHUB_OUTPUT
+          else
+            git bisect log > bisect.log
+            echo "result=Bisect Complete" >> $GITHUB_OUTPUT
+          fi
+
+      - if: always() && inputs.issue != 0
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = await github.rest.actions.listJobsForWorkflowRunAttempt({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+              attempt_number: process.env.GITHUB_RUN_ATTEMPT
+            });
+            var fs = require('fs');
+            const bisect_log = await fs.readFileSync('/root/llvm-project/bisect.log');
+            const result_string = "${{ steps.result.outputs.result }}";
+            const package = '${{ inputs.pkg }}'
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: '${{ inputs.issue }}',
+              body: `[Bisect](${jobs.data.jobs[0].html_url}) complete for: ${package}\n\n${result_string}\n\n${bisect_log}`
+            })
+
+            if (result_string == "False Positive") {
+              issue = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: '${{ inputs.issue }}'
+              })
+
+              console.log(issue);
+              var body = issue.data.body.replace(`- [ ] [${package}]`,`- [x] [${package}]`)
+
+              github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: '${{ inputs.issue }}',
+                body: body
+              })
+            }

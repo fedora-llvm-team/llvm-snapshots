@@ -237,10 +237,21 @@ def get_monthly_rebuild_regressions(
         pkgs.append(
             {
                 "name": p.name,
+                "fail_id" : p.latest.id,
                 "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{p.latest.id}/",
+                "chroots" : p.latest.chroots,
             }
         )
     return pkgs
+
+
+def get_chroot_results(pkgs: list[dict], copr_client: copr.v3.Client) -> None:
+    for p in pkgs:
+        p['failed_chroots'] = []
+        for c in p["chroots"]:
+            result = copr_client.build_chroot_proxy.get(p["fail_id"], c)
+            if result['state'] == 'failed':
+                p['failed_chroots'].append(c)
 
 
 def start_rebuild(
@@ -369,6 +380,12 @@ def main():
         pkg_failures = get_monthly_rebuild_regressions(
             project_owner, project_name, start_time, copr_pkgs
         )
+        get_chroot_results(pkg_failures, copr_client)
+        # Delete attributes we don't need to print
+        for p in pkg_failures:
+            for k in ["fail_id", "chroots"]:
+                del p[k]
+
         print(json.dumps(pkg_failures))
     elif args.command == "get-snapshot-date":
         project = copr_client.project_proxy.get(project_owner, project_name)
