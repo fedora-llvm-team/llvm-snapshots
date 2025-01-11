@@ -88,8 +88,7 @@ jobs:
             if (regressions.length == 0)
               return;
             regressions.forEach(function(value){
-              comment = comment.concat('\n', value.name);
-              comment = comment.concat(': ', value.url);
+              comment = comment + `- [ ] [${value.name}](${value.url})\n`
             });
             console.log(comment);
             const issue = await github.rest.issues.create({
