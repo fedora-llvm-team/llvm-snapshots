@@ -231,10 +231,13 @@ def get_monthly_rebuild_regressions(
             continue
         if int(p.latest.submitted_on) < start_time.timestamp():
             continue
+        owner_url = project_owner
+        if owner_url[0] == "@":
+            owner_url = f"g/{owner_url[1:]}"
         pkgs.append(
             {
                 "name": p.name,
-                "url": f"https://copr.fedorainfracloud.org/coprs/{project_owner}/{project_name}/build/{p.latest.id}/",
+                "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{p.latest.id}/",
             }
         )
     return pkgs
