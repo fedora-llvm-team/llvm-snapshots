@@ -9,6 +9,7 @@ from typing import Set
 import copr.v3
 import dnf
 import hawkey
+import koji
 from munch import Munch
 
 
@@ -277,11 +278,22 @@ def start_rebuild(
         "background": True,
     }
     logging.info("Rebuilding", len(pkgs), "packages")
+    koji_session = koji.ClientSession("https://koji.fedoraproject.org/kojihub")
+    default_commitish = "f41"
     for p in pkgs:
         logging.info("Rebuild", p)
+        try:
+            build = koji_session.getLatestBuilds(tag = 'f41-updates', package=p)[0]
+            build_info = koji_session.getBuild(build['build_id'])
+            commitish=build_info['source'].split('#')[1]
+        except:
+            logging.warn("Could not determine git commit for latest build of {p}.  Defaulting to {default_commitish}.")
+            commitish=default_commitish
+
         copr_client.build_proxy.create_from_distgit(
-            project_owner, project_name, p, "f41", buildopts=buildopts
+            project_owner, project_name, p, commitish, buildopts=buildopts
         )
+        break
 
 
 def select_snapshot_project(
