@@ -48,6 +48,9 @@ class GithubClient:
         """
         self.config = config
         if github_token is None:
+            logging.info(
+                f"Reading Github token from this environment variable: {self.config.github_token_env}"
+            )
             github_token = os.getenv(self.config.github_token_env)
         auth = github.Auth.Token(github_token)
         self.github = github.Github(auth=auth)
