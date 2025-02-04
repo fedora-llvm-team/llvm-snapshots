@@ -2,6 +2,7 @@
 
 import datetime
 
+import pytest
 import tests.base_test as base_test
 
 import snapshot_manager.github_util as github_util
@@ -13,7 +14,13 @@ class TestTestingFarmUtil(base_test.TestBase):
         cfg = self.config
         cfg.datetime = datetime.datetime(year=2024, month=2, day=27)
         self.assertEqual("20240227", cfg.yyyymmdd)
-        gh = github_util.GithubClient(config=cfg)
+
+        try:
+            gh = github_util.GithubClient(config=cfg)
+        except github_util.MissingToken:
+            pytest.skip(
+                "Skip test because this execution doesn't have access to a Github token"
+            )
 
         issue = gh.get_todays_github_issue(
             strategy="big-merge", github_repo="fedora-llvm-team/llvm-snapshots"
