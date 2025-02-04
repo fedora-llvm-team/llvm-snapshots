@@ -38,6 +38,10 @@ class Reaction(enum.StrEnum):
     EYES = "EYES"  # Represents the :eyes: emoji.
 
 
+class MissingToken(Exception):
+    """Could not retrieve a Github token."""
+
+
 class GithubClient:
     dirname = pathlib.Path(os.path.dirname(__file__))
 
@@ -52,6 +56,10 @@ class GithubClient:
                 f"Reading Github token from this environment variable: {self.config.github_token_env}"
             )
             github_token = os.getenv(self.config.github_token_env)
+        if github_token is None or len(github_token) == 0:
+            # We can't proceed without a Github token, otherwise we'll trigger
+            # an assertion failure.
+            raise MissingToken("Could not retrieve the token")
         auth = github.Auth.Token(github_token)
         self.github = github.Github(auth=auth)
         self.gql = github_graphql.GithubGraphQL(token=github_token, raise_on_error=True)
