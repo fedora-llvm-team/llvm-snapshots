@@ -239,7 +239,7 @@ def get_monthly_rebuild_regressions(
                 "name": p.name,
                 "fail_id": p.latest.id,
                 "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{p.latest.id}/",
-                "chroots": p.latest.chroots,
+                "chroots": p.latest["chroots"],
             }
         )
     return pkgs
