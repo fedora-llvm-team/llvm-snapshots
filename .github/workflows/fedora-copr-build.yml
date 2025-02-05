@@ -48,7 +48,7 @@ jobs:
           COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
         run: |
           mkdir -p ~/.config
-          printf "$COPR_CONFIG_FILE" > ~/.config/copr
+          echo "$COPR_CONFIG_FILE" > ~/.config/copr
 
       - name: Install Copr CLI and required tools
         run: |
@@ -60,57 +60,61 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          today=`date +%Y%m%d`
-          yesterday=`date -d "${today} -1 day" +%Y%m%d`
+          today=$(date +%Y%m%d)
+          yesterday=$(date -d "${today} -1 day" +%Y%m%d)
 
-          packages="`get_packages`"
-          chroots="`get_chroots`"
+          packages="$(get_packages)"
+          chroots="$(get_chroots)"
 
           username=@fedora-llvm-team
-          echo "username=$username" >> $GITHUB_ENV
-          echo "packages=$packages" >> $GITHUB_ENV
-          echo "chroots=$chroots" >> $GITHUB_ENV
-          echo "all_chroots=$all_chroots" >> $GITHUB_ENV
-          echo "project_today=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/" >> $GITHUB_ENV
-          echo "project_yesterday=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$yesterday/" >> $GITHUB_ENV
-          echo "project_target=${{ matrix.copr_target_project }}" >> $GITHUB_ENV
+          {
+            echo "username=$username"
+            echo "packages=$packages"
+            echo "chroots=$chroots"
+            echo "all_chroots=$all_chroots"
+            echo "project_today=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/"
+            echo "project_yesterday=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$yesterday/"
+            echo "project_target=${{ matrix.copr_target_project }}"
+          } >> "$GITHUB_ENV"
 
       - name: "Check for Copr projects existence (yesterday, today, target)"
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           # Check if yesterday's project exists and all builds succeeded
-          yesterdays_project_exists=`project_exists ${{ env.project_yesterday }}`
+          yesterdays_project_exists=$(project_exists ${{ env.project_yesterday }})
           if [[ "$yesterdays_project_exists" == "true" ]]; then
             if ! has_all_good_builds ${{env.project_yesterday}}; then
               yesterdays_project_exists=false
             fi
           fi
 
-          echo "todays_project_exists=`project_exists ${{ env.project_today }}`" >> $GITHUB_ENV
-          echo "yesterdays_project_exists=$yesterdays_project_exists" >> $GITHUB_ENV
-          echo "target_project_exists=`project_exists ${{ env.project_target }}`" >> $GITHUB_ENV
+          {
+            echo "todays_project_exists=$(project_exists ${{ env.project_today }})"
+            echo "yesterdays_project_exists=$yesterdays_project_exists"
+            echo "target_project_exists=$(project_exists ${{ env.project_target }})"
+          } >> "$GITHUB_ENV"
 
       - name: "Canceling active builds (if any) in today's Copr project before recreating it: ${{ env.project_today }}"
         if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           build_ids=""
-          for build_id in `get_active_build_ids ${{ env.project_today }}`; do
+          for build_id in $(get_active_build_ids ${{ env.project_today }}); do
             echo "Canceling build with ID $build_id"
-            copr cancel $build_id
+            copr cancel "$build_id"
             build_ids="$build_ids $build_id"
           done
           if [[ "$build_ids" != "" ]]; then
             echo "Waiting for build IDs to be canceled: $build_ids"
-            copr watch-build $build_ids || true
+            copr watch-build "$build_ids" || true
           fi
 
       - name: "Deleting today's Copr project before recreating it: ${{ env.project_today }}"
@@ -118,7 +122,7 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           copr delete ${{ env.project_today }}
 
@@ -126,13 +130,13 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          chroot_opts=`for c in ${{ env.chroots }}; do echo -n " --chroot $c "; done`
+          chroot_opts=$(for c in ${{ env.chroots }}; do echo -n " --chroot $c "; done)
 
           copr create \
-            --instructions "`cat project-instructions.md`" \
-            --description  "`cat project-description.md`" \
+            --instructions "$(cat project-instructions.md)" \
+            --description  "$(cat project-description.md)" \
             --unlisted-on-hp on \
             --enable-net on \
             --runtime-repo-dependency "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/\$distname-\$releasever-\$basearch" \
@@ -140,39 +144,39 @@ jobs:
             --appstream off \
             --delete-after-days 32 \
             --module-hotfixes on \
-            $chroot_opts "${{ env.project_today }}"
+            "$chroot_opts" "${{ env.project_today }}"
 
       - name: "Enable snapshot_build build condition for all and swig:4.0 module in RHEL 8 build chroots (if any)"
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           for chroot in ${{ env.chroots }}; do
-            copr edit-chroot --rpmbuild-with "snapshot_build" ${{ env.project_today }}/$chroot
+            copr edit-chroot --rpmbuild-with "snapshot_build" "${{ env.project_today }}/$chroot"
             if [[ "$chroot" == rhel-8-* ]]; then
-              copr edit-chroot --modules "swig:4.0" ${{ env.project_today }}/$chroot
+              copr edit-chroot --modules "swig:4.0" "${{ env.project_today }}/$chroot"
             fi
 
             # Dump chroot information after all modification
-            copr get-chroot ${{ env.project_today }}/$chroot
+            copr get-chroot "${{ env.project_today }}/$chroot"
           done
 
       - name: "Create today's packages: ${{ env.packages }}"
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           for pkg in ${{ env.packages }}; do
-            clone_url=`echo "${{ matrix.clone_url_tpl }}" | sed "s/PKG/$pkg/"`
+            clone_url=$(echo "${{ matrix.clone_url_tpl }}" | sed "s/PKG/$pkg/")
             copr add-package-scm \
-              --clone-url ${clone_url} \
+              --clone-url "${clone_url}" \
               --commit ${{ matrix.clone_ref }} \
-              --spec ${pkg}.spec \
+              --spec "${pkg}.spec" \
               --type git \
               --method make_srpm \
-              --name ${pkg} \
+              --name "${pkg}" \
               "${{ env.project_today }}"
           done
 
@@ -180,7 +184,7 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ ! -z "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           for chroot in ${{ env.chroots }}; do
             # Start a new batch
@@ -192,12 +196,12 @@ jobs:
                 copr build-package \
                   --timeout $((30*3600)) \
                   --nowait \
-                  --name $pkg ${after_build_id} \
-                  --chroot ${chroot} \
+                  --name "$pkg" "${after_build_id}" \
+                  --chroot "${chroot}" \
                   ${{ env.project_today }} \
-                  | tee ${pkg}.log
+                  | tee "${pkg}.log"
 
-                after_build_id="--after-build-id `cat ${pkg}.log | grep -Po 'Created builds: \K(\d+)'`"
+                after_build_id="--after-build-id $(grep -Po 'Created builds: \K(\d+)' "${pkg}.log")"
               fi
             done
           done

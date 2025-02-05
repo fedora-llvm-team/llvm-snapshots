@@ -60,7 +60,7 @@ jobs:
           COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
         run: |
           mkdir -p ~/.config
-          printf "$COPR_CONFIG_FILE" > ~/.config/copr
+          echo "$COPR_CONFIG_FILE" > ~/.config/copr
 
       - name: Install Copr CLI
         if: github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name)
@@ -83,24 +83,24 @@ jobs:
         run: |
           extra_args=""
 
-          if [[ ! -z "${{ matrix.chroot_pattern }}" ]]; then
+          if [[ -n "${{ matrix.chroot_pattern }}" ]]; then
             extra_args="${extra_args} --chroot-pattern ${{matrix.chroot_pattern}}"
           fi
 
           if [[ "${{github.event_name}}" == "workflow_dispatch" ]]; then
             yyyymmdd=${{inputs.yyyymmdd}}
           else
-            yyyymmdd=`date --date='${{matrix.today_minus_n_days}} days ago' +%Y%m%d`
+            yyyymmdd=$(date --date='${{matrix.today_minus_n_days}} days ago' +%Y%m%d)
           fi
 
           python3 snapshot_manager/main.py \
-            --github-repo ${GITHUB_REPOSITORY} \
+            --github-repo "${GITHUB_REPOSITORY}" \
             --github-token-env GITHUB_TOKEN \
-            check ${extra_args}\
+            check "${extra_args}"\
             --maintainer-handle ${{matrix.maintainer_handle}} \
             --packages ${{matrix.packages}} \
             --build-strategy ${{matrix.name}} \
             --copr-ownername ${{matrix.copr_ownername}} \
             --copr-project-tpl ${{matrix.copr_project_tpl}} \
             --copr-monitor-tpl ${{matrix.copr_monitor_tpl}} \
-            --yyyymmdd $yyyymmdd
+            --yyyymmdd "$yyyymmdd"

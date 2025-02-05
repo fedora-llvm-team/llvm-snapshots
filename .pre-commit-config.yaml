@@ -55,4 +55,10 @@ repos:
         # https://pre-commit.com/#top_level-default_language_version
         language_version: python3.12
         force-exclude: "^snapshot_manager/tests/(test_logs|testing-farm-logs)/"
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.7
+    hooks:
+    - id: actionlint
+
 exclude: "^(snapshot_manager/tests/(test_logs|testing-farm-logs)/|media)"

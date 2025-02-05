@@ -36,7 +36,7 @@ jobs:
           COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
         run: |
           mkdir -p ~/.config
-          printf "$COPR_CONFIG_FILE" > ~/.config/copr
+          echo "$COPR_CONFIG_FILE" > ~/.config/copr
 
       - uses: actions/checkout@v4
         with:
@@ -64,9 +64,9 @@ jobs:
           create_diagrams: ${{ github.event_name == 'schedule' && true || github.event.inputs.create_diagrams }}
         run: |
           if ${{ env.get_stats }}; then
-            main/scripts/get-build-stats.py --copr-projectname llvm-snapshots-incubator-`date '+%Y%m%d'` | tee -a gh-pages/build-stats.csv
-            main/scripts/get-build-stats.py --copr-projectname llvm-snapshots-big-merge-`date '+%Y%m%d'` | tee -a gh-pages/build-stats-big-merge.csv
-            main/scripts/get-build-stats.py --copr-projectname llvm-snapshots-pgo-`date '+%Y%m%d'` | tee -a gh-pages/build-stats-pgo.csv
+            main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-incubator-$(date '+%Y%m%d')" | tee -a gh-pages/build-stats.csv
+            main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-$(date '+%Y%m%d')" | tee -a gh-pages/build-stats-big-merge.csv
+            main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-pgo-$(date '+%Y%m%d')" | tee -a gh-pages/build-stats-pgo.csv
             git -C gh-pages add build-stats.csv build-stats-big-merge.csv build-stats-pgo.csv
           fi
           if ${{ env.create_diagrams }}; then
@@ -75,6 +75,7 @@ jobs:
             mv fig-*.html gh-pages/
             git -C gh-pages add index.html fig-*.html
           fi
+          # shellcheck disable=SC2078
           if [[ ${{ env.get_stats }} || ${{ env.create_diagrams }} ]]; then
             cd gh-pages
             git commit -m "Automatically update build stats"
