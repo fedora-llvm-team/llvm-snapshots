@@ -237,9 +237,9 @@ def get_monthly_rebuild_regressions(
         pkgs.append(
             {
                 "name": p.name,
-                "fail_id" : p.latest.id,
+                "fail_id": p.latest.id,
                 "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{p.latest.id}/",
-                "chroots" : p.latest.chroots,
+                "chroots": p.latest.chroots,
             }
         )
     return pkgs
@@ -247,11 +247,11 @@ def get_monthly_rebuild_regressions(
 
 def get_chroot_results(pkgs: list[dict], copr_client: copr.v3.Client) -> None:
     for p in pkgs:
-        p['failed_chroots'] = []
+        p["failed_chroots"] = []
         for c in p["chroots"]:
             result = copr_client.build_chroot_proxy.get(p["fail_id"], c)
-            if result['state'] == 'failed':
-                p['failed_chroots'].append(c)
+            if result["state"] == "failed":
+                p["failed_chroots"].append(c)
 
 
 def start_rebuild(
