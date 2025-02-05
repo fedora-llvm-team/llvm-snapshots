@@ -198,18 +198,18 @@ def get_monthly_rebuild_regressions(
 
     Example:
 
-    >>> a = {"name" : "a", "builds" : { "latest" : { "id" : 1, "state" : "running", "submitted_on" : 1731457321 } , "latest_succeeded" : None } }
-    >>> b = {"name" : "b", "builds" : { "latest" : { "id" : 1, "state" : "succeeded", "submitted_on" : 1731457321 } , "latest_succeeded" : None } }
-    >>> c = {"name" : "c", "builds" : { "latest" : { "id" : 1, "state" : "succeeded", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } } }
-    >>> d = {"name" : "d", "builds" : { "latest" : { "id" : 2, "state" : "canceled", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } } }
-    >>> e = {"name" : "e", "builds" : { "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1 } , "latest_succeeded" : { "id" : 1 } } }
-    >>> f = {"name" : "f", "builds" : { "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1731457321 } , "latest_succeeded" : { "id" : 1 } } }
+    >>> a = {"name" : "a", "builds" : { "latest" : { "id" : 1, "state" : "running", "submitted_on" : 1731457321, "chroots" : [] } , "latest_succeeded" : None } }
+    >>> b = {"name" : "b", "builds" : { "latest" : { "id" : 1, "state" : "succeeded", "submitted_on" : 1731457321, "chroots" : [] } , "latest_succeeded" : None } }
+    >>> c = {"name" : "c", "builds" : { "latest" : { "id" : 1, "state" : "succeeded", "submitted_on" : 1731457321, "chroots" : [] } , "latest_succeeded" : { "id" : 1 } } }
+    >>> d = {"name" : "d", "builds" : { "latest" : { "id" : 2, "state" : "canceled", "submitted_on" : 1731457321, "chroots" : [] } , "latest_succeeded" : { "id" : 1 } } }
+    >>> e = {"name" : "e", "builds" : { "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1, "chroots" : [] } , "latest_succeeded" : { "id" : 1 } } }
+    >>> f = {"name" : "f", "builds" : { "latest" : { "id" : 2, "state" : "failed", "submitted_on" : 1731457321, "chroots" : ["x86_64", "ppc64le", "s390x", "aarch64"] } , "latest_succeeded" : { "id" : 1 } } }
     >>> copr_pkgs= [CoprPkg(p) for p in [ a, b, c, d, e, f ]]
     >>> project_owner = "@fedora-llvm-team"
     >>> project_name = "fedora41-clang-20"
     >>> regressions = get_monthly_rebuild_regressions(project_owner, project_name, datetime.datetime.fromisoformat("2024-11-11"), copr_pkgs)
     >>> print(regressions)
-    [{'name': 'f', 'url': 'https://copr.fedorainfracloud.org/coprs/@fedora-llvm-team/fedora41-clang-20/build/2/'}]
+    [{'name': 'f', 'fail_id' ; 2, 'url': 'https://copr.fedorainfracloud.org/coprs/@fedora-llvm-team/fedora41-clang-20/build/2/', 'chroots' : ['x86_64', 'ppc64le', 's390x', 'aarch64'}]
 
     """
     pkgs = []
@@ -239,7 +239,7 @@ def get_monthly_rebuild_regressions(
                 "name": p.name,
                 "fail_id": p.latest.id,
                 "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{p.latest.id}/",
-                "chroots": p.latest["chroots"],
+                "chroots": p.latest.chroots,
             }
         )
     return pkgs
