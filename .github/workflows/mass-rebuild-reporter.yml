@@ -145,5 +145,3 @@ jobs:
               issue_number: '${{ needs.check-for-rebuild.outputs.issue-id }}',
               body: "Bisect Complete"
             })
-
-
