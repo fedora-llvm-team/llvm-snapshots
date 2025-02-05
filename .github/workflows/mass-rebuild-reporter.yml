@@ -52,7 +52,7 @@ jobs:
         run: |
           sudo dnf install -y python3-dnf python3-copr
           if python3 scripts/rebuilder.py rebuild-in-progress; then
-            echo "completed=false" >> $GITHUB_OUTPUT
+            echo "completed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -61,10 +61,10 @@ jobs:
 
           echo "last_rebuild: $last_rebuild current_snapshot: $current_snapshot"
 
-          if [ $last_rebuild -gt $current_snapshot ]; then
-            echo "completed=false" >> $GITHUB_OUTPUT
+          if [ "$last_rebuild" -gt "$current_snapshot" ]; then
+            echo "completed=false" >> "$GITHUB_OUTPUT"
           else
-            echo "completed=true" >> $GITHUB_OUTPUT
+            echo "completed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Collect Regressions
@@ -72,7 +72,7 @@ jobs:
         id: regressions
         run: |
           python3 scripts/rebuilder.py get-regressions --start-date ${{ steps.last-report.outputs.result }} > regressions
-          echo "REGRESSIONS=$(cat regressions)" >> $GITHUB_OUTPUT
+          echo "REGRESSIONS=$(cat regressions)" >> "$GITHUB_OUTPUT"
 
       - name: Create Report
         if: steps.new-rebuild.outputs.completed == 'true'

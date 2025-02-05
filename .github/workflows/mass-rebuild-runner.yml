@@ -29,7 +29,7 @@ jobs:
           COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
         run: |
           mkdir -p ~/.config
-          printf "$COPR_CONFIG_FILE" > ~/.config/copr
+          echo "$COPR_CONFIG_FILE" > ~/.config/copr
 
       - name: Start rebuild
         run: |

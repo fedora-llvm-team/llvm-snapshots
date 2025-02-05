@@ -68,9 +68,11 @@ jobs:
     steps:
       - name: Get Chroots
         id: chroots-step
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          echo "${{ github.event.comment.body }}" | grep -Pe '^\s*/retest\s+'
-          chroots=$(echo "${{ github.event.comment.body }}" | sed 's/^\s*\/retest\s*//g')
+          echo "$COMMENT_BODY" | grep -Pe '^\s*/retest\s+'
+          chroots=$(echo "$COMMENT_BODY" | sed 's/^\s*\/retest\s*//g')
           echo "chroots=$chroots" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare-python
@@ -81,7 +83,7 @@ jobs:
           chroots: ${{ env.chroots }}
         run: |
           python3 snapshot_manager/main.py \
-            --github-repo ${GITHUB_REPOSITORY} \
+            --github-repo "${GITHUB_REPOSITORY}" \
             --github-token-env GITHUB_TOKEN \
             retest \
             --trigger-comment-id ${{ github.event.comment.id }} \
