@@ -53,10 +53,10 @@ jobs:
           touch bisect.log
           if ! git bisect log; then
             touch bisect.log
-            echo "result=False Positive" >> $GITHUB_OUTPUT
+            echo "result=False Positive" >> "$GITHUB_OUTPUT"
           else
             git bisect log > bisect.log
-            echo "result=Bisect Complete" >> $GITHUB_OUTPUT
+            echo "result=Bisect Complete" >> "$GITHUB_OUTPUT"
           fi
 
       - if: always() && inputs.issue != 0
