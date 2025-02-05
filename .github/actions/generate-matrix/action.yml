@@ -62,8 +62,8 @@ runs:
           INCLUDES="[$PGO_CONFIG]"
           NAMES='["pgo"]'
         else
-          INCLUDES="[$BIG_MERGE_CONFIG, $PGO_CONFIG]"
-          NAMES='["big-merge", "pgo"]'
+          INCLUDES="[$BIG_MERGE_CONFIG]"
+          NAMES='["big-merge"]'
         fi
 
         LOOKBACK_DAYS="${{ inputs.lookback_days }}"
