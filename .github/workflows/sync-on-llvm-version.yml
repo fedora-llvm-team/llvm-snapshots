@@ -71,33 +71,32 @@ jobs:
           else
             echo "commit_hash doesn't look like a SHA1 (maybe it is a branch or tag name). Trying to resolve it: ${commit_hash}"
             # See https://docs.github.com/de/rest/commits/commits?apiVersion=2022-11-28#list-branches-for-head-commit
-            commit_hash=`curl -L \
+            commit_hash=$(curl -L \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{env.GITHUB_TOKEN}}" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
-              https://api.github.com/repos/llvm/llvm-project/commits/${commit_hash}/branches-where-head \
-            | jq -r '.[0].commit.sha'`
+              "https://api.github.com/repos/llvm/llvm-project/commits/${commit_hash}/branches-where-head" \
+            | jq -r '.[0].commit.sha')
           fi
 
-          echo "commit_hash=${commit_hash}" >> $GITHUB_ENV
-
+          echo "commit_hash=${commit_hash}" >> "$GITHUB_ENV"
           yyyymmdd=$(date +%Y%m%d)
           versionfile=LLVMVersion.cmake
-          url=https://raw.githubusercontent.com/llvm/llvm-project/${commit_hash}/cmake/Modules/${versionfile}
+          url="https://raw.githubusercontent.com/llvm/llvm-project/${commit_hash}/cmake/Modules/${versionfile}"
           echo "Getting ${url}"
-          curl -sL -o ${versionfile} ${url}
+          curl -sL -o "${versionfile}" "${url}"
 
           echo "Version file:"
-          cat ${versionfile}
+          cat "${versionfile}"
 
-          llvm_snapshot_git_revision=${commit_hash}
-          llvm_snapshot_version=`grep -ioP 'set\(\s*LLVM_VERSION_(MAJOR|MINOR|PATCH)\s\K[0-9]+' ${versionfile} | paste -sd '.'`
+          llvm_snapshot_git_revision="${commit_hash}"
+          llvm_snapshot_version=$(grep -ioP 'set\(\s*LLVM_VERSION_(MAJOR|MINOR|PATCH)\s\K[0-9]+' "${versionfile}" | paste -sd '.')
 
-          echo "${llvm_snapshot_version}" > llvm-release-${yyyymmdd}.txt
-          echo "${llvm_snapshot_git_revision}" > llvm-git-revision-${yyyymmdd}.txt
+          echo "${llvm_snapshot_version}" > "llvm-release-${yyyymmdd}.txt"
+          echo "${llvm_snapshot_git_revision}" > "llvm-git-revision-${yyyymmdd}.txt"
 
-          echo "llvm_release=`cat llvm-release-${yyyymmdd}.txt`"
-          echo "llvm_git_revision=`cat llvm-git-revision-${yyyymmdd}.txt`"
+          echo "llvm_release=$(cat "llvm-release-${yyyymmdd}.txt")"
+          echo "llvm_git_revision=$(cat "llvm-git-revision-${yyyymmdd}.txt")"
 
           ./scripts/upload-source-snapshots.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
