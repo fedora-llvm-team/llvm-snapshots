@@ -209,7 +209,7 @@ def get_monthly_rebuild_regressions(
     >>> project_name = "fedora41-clang-20"
     >>> regressions = get_monthly_rebuild_regressions(project_owner, project_name, datetime.datetime.fromisoformat("2024-11-11"), copr_pkgs)
     >>> print(regressions)
-    [{'name': 'f', 'fail_id': 2, 'url': 'https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/fedora41-clang-20/build/2/' , 'chroots': ['x86_64', 'ppc64le', 's390x', 'aarch64']}]
+    [{'name': 'f', 'fail_id': 2, 'url': 'https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/fedora41-clang-20/build/2/', 'chroots': ['x86_64', 'ppc64le', 's390x', 'aarch64']}]
 
     """
     pkgs = []
