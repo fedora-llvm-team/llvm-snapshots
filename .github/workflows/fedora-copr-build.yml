@@ -132,7 +132,8 @@ jobs:
           source scripts/functions.sh
           [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          chroot_opts=$(for c in ${{ env.chroots }}; do echo -n " --chroot $c "; done)
+          # shellcheck disable=SC2207
+          chroot_opts=($(for c in ${{ env.chroots }}; do echo -n " --chroot $c "; done))
 
           copr create \
             --instructions "$(cat project-instructions.md)" \
@@ -144,7 +145,7 @@ jobs:
             --appstream off \
             --delete-after-days 32 \
             --module-hotfixes on \
-            "$chroot_opts" "${{ env.project_today }}"
+            "${chroot_opts[@]}" "${{ env.project_today }}"
 
       - name: "Enable snapshot_build build condition for all and swig:4.0 module in RHEL 8 build chroots (if any)"
         shell: bash -e {0}
