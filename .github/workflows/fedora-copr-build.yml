@@ -188,23 +188,19 @@ jobs:
           [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           for chroot in ${{ env.chroots }}; do
-            # Start a new batch
-            after_build_id=""
-            for pkg in ${{ env.packages }}; do
-              if ! is_package_supported_by_chroot "${pkg}" "${chroot}"; then
-                echo "Package '${pkg}' is not supported by chroot: ${chroot}";
-              else
-                copr build-package \
-                  --timeout $((30*3600)) \
-                  --nowait \
-                  --name "$pkg" "${after_build_id}" \
-                  --chroot "${chroot}" \
-                  ${{ env.project_today }} \
-                  | tee "${pkg}.log"
-
-                after_build_id="--after-build-id $(grep -Po 'Created builds: \K(\d+)' "${pkg}.log")"
-              fi
-            done
+            # Previously env.packages could store a list of packages.
+            # We know assume it has a single package.
+            if ! is_package_supported_by_chroot "${{ env.packages }}" "${chroot}"; then
+              echo "Package '${{ env.packages }}' is not supported by chroot: ${chroot}";
+            else
+              copr build-package \
+                --timeout $((30*3600)) \
+                --nowait \
+                --name "${{ env.packages }}" \
+                --chroot "${chroot}" \
+                ${{ env.project_today }} \
+                | tee "${{ env.packages }}.log"
+            fi
           done
 
       - name: "Delete target Copr project at ${{ env.project_target }} before forking to it"
