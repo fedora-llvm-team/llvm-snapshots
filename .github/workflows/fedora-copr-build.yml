@@ -65,13 +65,11 @@ jobs:
           today=$(date +%Y%m%d)
           yesterday=$(date -d "${today} -1 day" +%Y%m%d)
 
-          packages="$(get_packages)"
           chroots="$(get_chroots)"
 
           username=@fedora-llvm-team
           {
             echo "username=$username"
-            echo "packages=$packages"
             echo "chroots=$chroots"
             echo "all_chroots=$all_chroots"
             echo "project_today=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/"
@@ -163,48 +161,36 @@ jobs:
             copr get-chroot "${{ env.project_today }}/$chroot"
           done
 
-      - name: "Create today's packages: ${{ env.packages }}"
+      - name: "Create today's package"
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
           [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          for pkg in ${{ env.packages }}; do
-            clone_url=$(echo "${{ matrix.clone_url_tpl }}" | sed "s/PKG/$pkg/")
-            copr add-package-scm \
-              --clone-url "${clone_url}" \
-              --commit ${{ matrix.clone_ref }} \
-              --spec "${pkg}.spec" \
-              --type git \
-              --method make_srpm \
-              --name "${pkg}" \
-              "${{ env.project_today }}"
-          done
+          clone_url=$(echo "${{ matrix.clone_url_tpl }}" | sed "s/PKG/$pkg/")
+          copr add-package-scm \
+            --clone-url "${clone_url}" \
+            --commit ${{ matrix.clone_ref }} \
+            --spec "llvm.spec" \
+            --type git \
+            --method make_srpm \
+            --name "llvm" \
+            "${{ env.project_today }}"
 
-      - name: "Build packages in chroot batches in this order: ${{ env.packages }}"
+      - name: "Build llvm package"
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
           [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           for chroot in ${{ env.chroots }}; do
-            # Start a new batch
-            after_build_id=""
-            for pkg in ${{ env.packages }}; do
-              if ! is_package_supported_by_chroot "${pkg}" "${chroot}"; then
-                echo "Package '${pkg}' is not supported by chroot: ${chroot}";
-              else
-                copr build-package \
-                  --timeout $((30*3600)) \
-                  --nowait \
-                  --name "$pkg" "${after_build_id}" \
-                  --chroot "${chroot}" \
-                  ${{ env.project_today }} \
-                  | tee "${pkg}.log"
-
-                after_build_id="--after-build-id $(grep -Po 'Created builds: \K(\d+)' "${pkg}.log")"
-              fi
-            done
+            copr build-package \
+              --timeout $((30*3600)) \
+              --nowait \
+              --name "llvm" \
+              --chroot "${chroot}" \
+              ${{ env.project_today }} \
+              | tee "llvm.log"
           done
 
       - name: "Delete target Copr project at ${{ env.project_target }} before forking to it"

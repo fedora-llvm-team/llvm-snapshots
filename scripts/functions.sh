@@ -57,34 +57,14 @@ function get_chroots() {
   copr list-chroots | grep -P '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)' | sort |  tr '\n' ' '
 }
 
-# Prints the packages we care about
-function get_packages() {
-  echo "llvm"
-}
-
-# Returns false if a package needs special handling on certain architectures
-function is_package_supported_by_chroot() {
-  local pkg=$1
-  local chroot=$2
-
-  true
-}
-
-# Returns 0 if all packages on all* chroots have successful builds.
-#
-# *: All supported combinations of package + chroot (see is_package_supported_by_chroot).
+# Returns 0 if all llvm packages on all chroots have successful builds.
 function has_all_good_builds(){
   local project=$1
-  local extra_packages=$2
 
   copr monitor --output-format text-row --fields state,chroot,name $project | sort -k1 -k2 -k3 > /tmp/actual.txt
   truncate -s 0 /tmp/expected.txt
   for chroot in $(get_chroots); do
-    for package in $(get_packages) $extra_packages; do
-      if is_package_supported_by_chroot "$package" "$chroot"; then
-        echo "succeeded $chroot $package" >> /tmp/expected.txt
-      fi
-    done
+    echo "succeeded $chroot llvm" >> /tmp/expected.txt
   done
   sort -k1 -k2 -k3 -o /tmp/expected.txt /tmp/expected.txt
   diff -bus /tmp/expected.txt /tmp/actual.txt

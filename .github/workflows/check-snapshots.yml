@@ -98,7 +98,6 @@ jobs:
             --github-token-env GITHUB_TOKEN \
             check "${extra_args}"\
             --maintainer-handle ${{matrix.maintainer_handle}} \
-            --packages ${{matrix.packages}} \
             --build-strategy ${{matrix.name}} \
             --copr-ownername ${{matrix.copr_ownername}} \
             --copr-project-tpl ${{matrix.copr_project_tpl}} \
