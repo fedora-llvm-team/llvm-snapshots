@@ -26,7 +26,7 @@ runs:
           {
               "name": "big-merge",
               "copr_target_project": "@fedora-llvm-team/llvm-snapshots",
-              "clone_url_tpl": "https://src.fedoraproject.org/rpms/PKG.git",
+              "clone_url": "https://src.fedoraproject.org/rpms/llvm.git",
               "clone_ref": "rawhide",
               "maintainer_handle": "tuliom",
               "copr_ownername": "@fedora-llvm-team",
@@ -42,7 +42,7 @@ runs:
             "name": "pgo",
             "copr_target_project": "@fedora-llvm-team/llvm-snapshots-pgo",
             "extra_script_file": "scripts/functions-pgo.sh",
-            "clone_url_tpl": "https://src.fedoraproject.org/forks/kkleine/rpms/PKG.git",
+            "clone_url": "https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git",
             "clone_ref": "pgo",
             "maintainer_handle": "kwk",
             "copr_ownername": "@fedora-llvm-team",
