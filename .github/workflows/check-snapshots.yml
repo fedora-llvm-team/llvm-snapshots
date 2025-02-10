@@ -93,11 +93,13 @@ jobs:
             yyyymmdd=$(date --date='${{matrix.today_minus_n_days}} days ago' +%Y%m%d)
           fi
 
+          # shellcheck disable=SC2086
           python3 snapshot_manager/main.py \
             --github-repo "${GITHUB_REPOSITORY}" \
             --github-token-env GITHUB_TOKEN \
-            check "${extra_args}"\
+            check ${extra_args} \
             --maintainer-handle ${{matrix.maintainer_handle}} \
+            --packages llvm \
             --build-strategy ${{matrix.name}} \
             --copr-ownername ${{matrix.copr_ownername}} \
             --copr-project-tpl ${{matrix.copr_project_tpl}} \

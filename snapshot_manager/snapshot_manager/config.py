@@ -13,12 +13,7 @@ class Config:
 
     packages: list[str] = dataclasses.field(
         default_factory=lambda: [
-            "python-lit",
             "llvm",
-            "clang",
-            "lld",
-            "compiler-rt",
-            "libomp",
         ]
     )
     """List of packages that are relevant to you."""
