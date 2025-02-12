@@ -53,39 +53,9 @@ adjust:
     when: distro > fedora-37
 
 discover:
-    - name: clang-tests
-      how: fmf
-      url: https://src.fedoraproject.org/tests/clang.git
-      ref: main
-      filter: "tag:-spoils-installation & tag:-not-in-default"
-    - name: compiler-rt-tests
-      how: fmf
-      url: https://src.fedoraproject.org/tests/compiler-rt.git
-      ref: main
-      filter: "tag:-spoils-installation & tag:-not-in-default"
-    - name: libomp-tests
-      how: fmf
-      url: https://src.fedoraproject.org/tests/libomp.git
-      ref: main
-      filter: "tag:-spoils-installation & tag:-not-in-default"
     - name: llvm-tests
       how: fmf
       url: https://src.fedoraproject.org/tests/llvm.git
-      ref: main
-      filter: "tag:-spoils-installation & tag:-not-in-default"
-    - name: python-lit
-      how: fmf
-      url: https://src.fedoraproject.org/tests/python-lit.git
-      ref: main
-      filter: "tag:-spoils-installation & tag:-not-in-default"
-    - name: lld-tests
-      how: fmf
-      url: https://src.fedoraproject.org/tests/lld.git
-      ref: main
-      filter: "tag:-spoils-installation & tag:-not-in-default"
-    - name: lldb-tests
-      how: fmf
-      url: https://src.fedoraproject.org/tests/lldb.git
       ref: main
       filter: "tag:-spoils-installation & tag:-not-in-default"
 
