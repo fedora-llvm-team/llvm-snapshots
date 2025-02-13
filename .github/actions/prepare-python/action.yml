@@ -23,6 +23,7 @@ runs:
 
     # krb5-config is needed to build the koji module with pip
     - name: Install krb5-config
+      shell: bash
       run: |
         sudo apt-get update
         sudo apt-get install krb5-config
