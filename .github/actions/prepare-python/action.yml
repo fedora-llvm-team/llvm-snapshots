@@ -34,9 +34,11 @@ runs:
 
     # The dnf module cannot be installed by pip, so it's only possible to use
     # it when using the system pyhton interpreter.
+    # Same with python3-koji there was a buid error when I tried to build it
+    # in pip.
     - name: Install DNF module
       if: "${{ inputs.use-system-python == 'true' }}"
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install python3-dnf
+        sudo apt-get install python3-dnf python3-koji
