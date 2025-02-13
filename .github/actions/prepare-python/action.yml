@@ -34,11 +34,9 @@ runs:
 
     # The dnf module cannot be installed by pip, so it's only possible to use
     # it when using the system pyhton interpreter.
-    # Same with koji-client there was a buid error when I tried to build it
-    # in pip.
     - name: Install DNF module
       if: "${{ inputs.use-system-python == 'true' }}"
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install python3-dnf koji-client
+        sudo apt-get install python3-dnf
