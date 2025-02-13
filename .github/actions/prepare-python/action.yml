@@ -21,12 +21,12 @@ runs:
         python-version: 3.12
         cache: 'pip'
 
-    # krb5-config is needed to build the koji module with pip
-    - name: Install krb5-config
+    # libkrb5-dev is needed to build the koji module with pip
+    - name: Install libkrb5-dev
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install krb5-config
+        sudo apt-get install libkrb5-dev
 
     - name: "Install and upgrade pip"
       shell: bash
