@@ -167,9 +167,8 @@ jobs:
           source scripts/functions.sh
           [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          clone_url=$(echo "${{ matrix.clone_url_tpl }}" | sed "s/PKG/$pkg/")
           copr add-package-scm \
-            --clone-url "${clone_url}" \
+            --clone-url ${{ matrix.clone_url }} \
             --commit ${{ matrix.clone_ref }} \
             --spec "llvm.spec" \
             --type git \

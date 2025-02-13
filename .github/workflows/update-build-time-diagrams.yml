@@ -27,6 +27,7 @@ permissions:
 
 jobs:
   update-build-time-diagrams:
+    if: github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-latest
     steps:
       - name: Setup Copr config file
