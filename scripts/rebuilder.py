@@ -11,16 +11,17 @@ import dnf
 import hawkey
 from munch import Munch
 
+
 def is_tier0_package(pkg: str) -> bool:
     return pkg in [
         "dotnet6.0",
         "dotnet7.0",
         "dotnet8.0",
         "dotnet9.0",
-        "qemu-kvm", # RHEL name
-        "qemu",     # Fedora name
+        "qemu-kvm",  # RHEL name
+        "qemu",  # Fedora name
         "golang",
-        "wasi-lbc"
+        "wasi-lbc",
     ]
 
 class CoprBuild(Munch):
@@ -67,11 +68,11 @@ class CoprPkg(Munch):
         if owner_url[0] == "@":
             owner_url = f"g/{owner_url[1:]}"
         return {
-                "name": self.name,
-                "fail_id" : self.latest.id,
-                "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{self.latest.id}/",
-                "chroots" : self.latest.chroots,
-            }
+            "name": self.name,
+            "fail_id" : self.latest.id,
+            "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{self.latest.id}/",
+            "chroots" : self.latest.chroots,
+        }
 
 
     @property
