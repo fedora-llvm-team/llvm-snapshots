@@ -24,6 +24,7 @@ def is_tier0_package(pkg: str) -> bool:
         "wasi-lbc",
     ]
 
+
 class CoprBuild(Munch):
     pass
 
@@ -69,11 +70,10 @@ class CoprPkg(Munch):
             owner_url = f"g/{owner_url[1:]}"
         return {
             "name": self.name,
-            "fail_id" : self.latest.id,
+            "fail_id": self.latest.id,
             "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{self.latest.id}/",
-            "chroots" : self.latest.chroots,
+            "chroots": self.latest.chroots,
         }
-
 
     @property
     def latest(self) -> CoprBuild:
