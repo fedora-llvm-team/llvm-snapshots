@@ -63,7 +63,7 @@ class GithubClient:
         auth = github.Auth.Token(github_token)
         self.github = github.Github(auth=auth)
         self.gql = github_graphql.GithubGraphQL(token=github_token, raise_on_error=True)
-        self.__label_cache = None
+        self._label_cache = None
         self.__repo_cache = None
 
     @classmethod
@@ -108,9 +108,11 @@ class GithubClient:
         query = f"is:issue repo:{github_repo} author:{creator} label:strategy/{strategy} {self.config.yyyymmdd} in:title"
         issues = self.github.search_issues(query)
         if issues is not None and issues.totalCount > 0:
-            logging.info(f"Found today's issue: {issues[0].html_url}")
+            logging.info(
+                f"Found today's ({self.config.yyyymmdd}) issue: {issues[0].html_url}"
+            )
             return issues[0]
-        logging.info("Found no issue for today")
+        logging.info(f"Found no issue for today ({self.config.yyyymmdd})")
         return None
 
     @property
@@ -170,11 +172,13 @@ remove the aforementioned labels.
             return (issue, False)
 
         strategy = self.config.build_strategy
-        repo = self.gh_repo
         logging.info("Creating issue for today")
 
-        issue = repo.create_issue(title=self.issue_title(), body=self.initial_comment)
+        issue = self.gh_repo.create_issue(
+            title=self.issue_title(), body=self.initial_comment
+        )
         self.create_labels_for_strategies(labels=[strategy])
+
         issue.add_to_labels(f"strategy/{strategy}")
         return (issue, True)
 
@@ -188,9 +192,9 @@ remove the aforementioned labels.
         Returns:
             github.PaginatedList.PaginatedList: An enumerable list of github.Label.Label objects
         """
-        if self.__label_cache is None or refresh:
-            self.__label_cache = self.gh_repo.get_labels()
-        return self.__label_cache
+        if self._label_cache is None or refresh:
+            self._label_cache = self.gh_repo.get_labels()
+        return self._label_cache
 
     def is_label_in_cache(self, name: str, color: str) -> bool:
         """Returns True if the label exists in the cache.
@@ -239,23 +243,25 @@ remove the aforementioned labels.
                 )
         return res
 
+    @classmethod
     def get_label_names_on_issue(
-        self, issue: github.Issue.Issue, prefix: str
+        cls, issue: github.Issue.Issue, prefix: str
     ) -> list[str]:
         return [
             label.name for label in issue.get_labels() if label.name.startswith(prefix)
         ]
 
-    def get_error_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
-        return self.get_label_names_on_issue(issue, prefix="error/")
+    @classmethod
+    def get_error_label_names_on_issue(cls, issue: github.Issue.Issue) -> list[str]:
+        return cls.get_label_names_on_issue(issue, prefix="error/")
 
-    def get_build_failed_on_names_on_issue(
-        self, issue: github.Issue.Issue
-    ) -> list[str]:
-        return self.get_label_names_on_issue(issue, prefix="build_failed_on/")
+    @classmethod
+    def get_build_failed_on_names_on_issue(cls, issue: github.Issue.Issue) -> list[str]:
+        return cls.get_label_names_on_issue(issue, prefix="build_failed_on/")
 
-    def get_project_label_names_on_issue(self, issue: github.Issue.Issue) -> list[str]:
-        return self.get_label_names_on_issue(issue, prefix="project/")
+    @classmethod
+    def get_project_label_names_on_issue(cls, issue: github.Issue.Issue) -> list[str]:
+        return cls.get_label_names_on_issue(issue, prefix="project/")
 
     def create_labels_for_error_causes(
         self, labels: list[str], **kw_args
@@ -325,8 +331,9 @@ remove the aforementioned labels.
             *kw_args,
         )
 
+    @classmethod
     def get_comment(
-        self, issue: github.Issue.Issue, marker: str
+        cls, issue: github.Issue.Issue, marker: str
     ) -> github.IssueComment.IssueComment:
         """Walks through all comments associated with the `issue` and returns the first one that has the `marker` in its body.
 
@@ -342,22 +349,24 @@ remove the aforementioned labels.
                 return comment
         return None
 
+    @classmethod
     def create_or_update_comment(
-        self, issue: github.Issue.Issue, marker: str, comment_body: str
+        cls, issue: github.Issue.Issue, marker: str, comment_body: str
     ) -> github.IssueComment.IssueComment:
-        comment = self.get_comment(issue=issue, marker=marker)
+        comment = cls.get_comment(issue=issue, marker=marker)
         if comment is None:
             return issue.create_comment(body=comment_body)
         try:
             comment.edit(body=comment_body)
-        except github.GithubException.GithubException as ex:
+        except github.GithubException as ex:
             raise ValueError(
                 f"Failed to update github comment with marker {marker} and comment body: {comment_body}"
             ) from ex
         return comment
 
+    @classmethod
     def remove_labels_safe(
-        self, issue: github.Issue.Issue, label_names_to_be_removed: list[str]
+        cls, issue: github.Issue.Issue, label_names_to_be_removed: list[str]
     ):
         """Removes all of the given labels from the issue.
 
