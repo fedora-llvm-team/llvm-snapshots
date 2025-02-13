@@ -302,11 +302,13 @@ def start_rebuild(
     for p in pkgs:
         logging.info("Rebuild", p)
         try:
-            build = koji_session.getLatestBuilds(tag = 'f41-updates', package=p)[0]
-            build_info = koji_session.getBuild(build['build_id'])
-            commitish=build_info['source'].split('#')[1]
+            build = koji_session.getLatestBuilds(tag = "f41-updates", package=p)[0]
+            build_info = koji_session.getBuild(build["build_id"])
+            commitish=build_info["source"].split("#")[1]
         except:
-            logging.warn("Could not determine git commit for latest build of {p}.  Defaulting to {default_commitish}.")
+            logging.warn(
+                "Could not determine git commit for latest build of {p}.  Defaulting to {default_commitish}."
+            )
             commitish=default_commitish
 
         copr_client.build_proxy.create_from_distgit(
