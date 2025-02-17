@@ -123,7 +123,7 @@ def test_create_or_get_todays_github_issue__issue_exists(
     revision_mock, release_mock, github_client_fxt
 ):
     gh = github_client_fxt
-    # Test case in which today's issue does NOT exists:
+    # Test case in which today's issue DOES exists:
     with mock.patch.object(gh, "get_todays_github_issue", wraps=gh) as gh_mock:
         # An issue for today
         gh_mock.return_value = "foo"
