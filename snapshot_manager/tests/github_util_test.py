@@ -610,7 +610,7 @@ def test_unminimize_comment__unssupprted_type(github_client_fxt):
 def test_add_comment_reaction__with_issue_comment(github_client_fxt):
     gh = github_client_fxt
     node_id = "12345"
-    reaction = github_util.Reaction.LAUGH
+    reaction = github_util.Reaction.EYES
     issue_comment_mock = mock.MagicMock(
         spec=github.IssueComment.IssueComment
     )  # Spec parameter is important to pass isinstance()
