@@ -12,6 +12,19 @@ import hawkey
 from munch import Munch
 
 
+def is_tier0_package(pkg: str) -> bool:
+    return pkg in [
+        "dotnet6.0",
+        "dotnet7.0",
+        "dotnet8.0",
+        "dotnet9.0",
+        "qemu-kvm",  # RHEL name
+        "qemu",  # Fedora name
+        "golang",
+        "wasi-lbc",
+    ]
+
+
 class CoprBuild(Munch):
     pass
 
@@ -50,6 +63,17 @@ class CoprPkg(Munch):
         if not build:
             return None
         return CoprBuild(build)
+
+    def get_regression_info(self, project_owner, project_name):
+        owner_url = project_owner
+        if owner_url[0] == "@":
+            owner_url = f"g/{owner_url[1:]}"
+        return {
+            "name": self.name,
+            "fail_id": self.latest.id,
+            "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{self.latest.id}/",
+            "chroots": self.latest.chroots,
+        }
 
     @property
     def latest(self) -> CoprBuild:
@@ -169,6 +193,9 @@ def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[CoprPkg]) -> se
     for p in copr_pkgs:
         if p.name not in pkgs:
             continue
+        # Always build tier0 packges.
+        if is_tier0_package(p.name):
+            continue
         if not p.latest_succeeded:
             pkgs.discard(p.name)
             continue
@@ -222,6 +249,8 @@ def get_monthly_rebuild_regressions(
             continue
 
         if not p.latest_succeeded:
+            if is_tier0_package(p.name):
+                pkgs.append(p.get_regression_info(project_owner, project_name))
             continue
         if p.latest.id == p.latest_succeeded.id:
             continue
@@ -231,17 +260,7 @@ def get_monthly_rebuild_regressions(
             continue
         if int(p.latest.submitted_on) < start_time.timestamp():
             continue
-        owner_url = project_owner
-        if owner_url[0] == "@":
-            owner_url = f"g/{owner_url[1:]}"
-        pkgs.append(
-            {
-                "name": p.name,
-                "fail_id": p.latest.id,
-                "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{p.latest.id}/",
-                "chroots": p.latest.chroots,
-            }
-        )
+        pkgs.append(p.get_regression_info(project_owner, project_name))
     return pkgs
 
 
