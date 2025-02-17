@@ -666,7 +666,7 @@ def test_add_comment_reaction__with_str(github_client_fxt):
         )
 
 
-def test_add_comment_reaction__unssupprted_type(github_client_fxt):
+def test_add_comment_reaction__unsupported_type(github_client_fxt):
     obj = 0.2
     with pytest.raises(expected_exception=ValueError) as ex:
         github_client_fxt.add_comment_reaction(
