@@ -51,7 +51,7 @@ jobs:
       - name: Check if a new rebuild has completed
         id: new-rebuild
         run: |
-          sudo dnf install -y python3-dnf python3-copr
+          sudo dnf install -y python3-dnf python3-copr python3-koji
           if python3 scripts/rebuilder.py rebuild-in-progress; then
             echo "completed=false" >> "$GITHUB_OUTPUT"
             exit 0
