@@ -544,7 +544,7 @@ def test_minimize_comment_as_outdated__with_str(github_client_fxt):
         )
 
 
-def test_minimize_comment_as_outdated__unssupprted_type(github_client_fxt):
+def test_minimize_comment_as_outdated__unsupported_type(github_client_fxt):
     obj = 0.2
     with pytest.raises(expected_exception=ValueError) as ex:
         github_client_fxt.minimize_comment_as_outdated(object=obj)
@@ -600,7 +600,7 @@ def test_unminimize_comment__with_str(github_client_fxt):
         )
 
 
-def test_unminimize_comment__unssupprted_type(github_client_fxt):
+def test_unminimize_comment__unsupported_type(github_client_fxt):
     obj = 0.2
     with pytest.raises(expected_exception=ValueError) as ex:
         github_client_fxt.unminimize_comment(object=obj)
