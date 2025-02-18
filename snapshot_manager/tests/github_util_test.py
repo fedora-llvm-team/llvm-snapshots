@@ -330,9 +330,7 @@ def label_testdata(only_ids: bool = False):
     label_testdata(),
     ids=label_testdata(only_ids=True),
 )
-def test_create_labels_mix(
-    test_id, label, create_func, expected_func, github_client_fxt
-):
+def test_create_labels(test_id, label, create_func, expected_func, github_client_fxt):
     gh = github_client_fxt
     with mock.patch.object(gh, "create_labels") as create_labels_mock:
         expected = expected_func(label)
