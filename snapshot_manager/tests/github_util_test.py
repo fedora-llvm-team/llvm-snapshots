@@ -644,7 +644,7 @@ def test_add_comment_reaction__with_issue_comment(github_client_fxt):
 def test_add_comment_reaction__with_str(github_client_fxt):
     gh = github_client_fxt
     node_id = "12345"
-    reaction = github_util.Reaction.LAUGH
+    reaction = github_util.Reaction.EYES
     with mock.patch.object(
         gh.gql, "run_from_file", autospec=True
     ) as run_from_file_mock:
