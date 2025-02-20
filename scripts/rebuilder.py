@@ -385,7 +385,7 @@ def main():
     copr_client = copr.v3.Client.create_from_config_file()
 
     os_name = "fedora-41"
-    clang_version = "20"
+    clang_version = "21"
     target_arches = ["aarch64", "ppc64le", "s390x", "x86_64"]
     target_chroots = [f"{os_name}-{a}" for a in target_arches]
     project_owner = "@fedora-llvm-team"
