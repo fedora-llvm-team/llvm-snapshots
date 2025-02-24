@@ -127,12 +127,12 @@ of the LLVM (v{llvm_release}, <a href="https://github.com/llvm/llvm-project/comm
 <summary>At certain intervals the CI system will update this very comment over time to reflect the progress of builds.</summary>
 <dl>
 <dt>Log analysis</dt>
-<dd>For example if a build of the <code>llvm</code> project fails on the <code>fedora-rawhide-x86_64</code> platform,
+<dd>For example if a build fails on the <code>fedora-rawhide-x86_64</code> platform,
 we'll analyze the build log (if any) to identify the cause of the failure. The cause can be any of <code>{build_status.ErrorCause.list()}</code>.
 For each cause we will list the packages and the relevant log excerpts.</dd>
 <dt>Use of labels</dt>
 <dd>Let's assume a unit test test in upstream LLVM was broken.
-We will then add these labels to this issue: <code>error/test</code>, <code>build_failed_on/fedora-rawhide-x86_64</code>, <code>project/llvm</code>.
+We will then add these labels to this issue: <code>error/test</code>, <code>build_failed_on/fedora-rawhide-x86_64</code>.
 If you manually restart a build in Copr and can bring it to a successful state, we will automatically
 remove the aforementioned labels.
 </dd>
@@ -259,10 +259,6 @@ remove the aforementioned labels.
     def get_build_failed_on_names_on_issue(cls, issue: github.Issue.Issue) -> list[str]:
         return cls.get_label_names_on_issue(issue, prefix="build_failed_on/")
 
-    @classmethod
-    def get_project_label_names_on_issue(cls, issue: github.Issue.Issue) -> list[str]:
-        return cls.get_label_names_on_issue(issue, prefix="project/")
-
     def create_labels_for_error_causes(
         self, labels: list[str], **kw_args
     ) -> list[github.Label.Label]:
@@ -275,13 +271,6 @@ remove the aforementioned labels.
     ) -> list[github.Label.Label]:
         return self.create_labels(
             labels=labels, prefix="build_failed_on/", color="F9D0C4", **kw_args
-        )
-
-    def create_labels_for_projects(
-        self, labels: list[str], **kw_args
-    ) -> list[github.Label.Label]:
-        return self.create_labels(
-            labels=labels, prefix="project/", color="BFDADC", **kw_args
         )
 
     def create_labels_for_strategies(
