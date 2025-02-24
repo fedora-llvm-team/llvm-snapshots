@@ -439,7 +439,6 @@ class SnapshotManager:
     ):
         logging.info("Gather labels based on the errors we've found")
         error_labels = list({f"error/{err.err_cause}" for err in errors})
-        project_labels = list({f"project/{err.package_name}" for err in errors})
         build_failed_on_labels = list(
             {f"build_failed_on/{err.chroot}" for err in errors}
         )
@@ -457,7 +456,6 @@ class SnapshotManager:
         )
         self.github.create_labels_for_error_causes(error_labels)
         self.github.create_labels_for_build_failed_on(build_failed_on_labels)
-        self.github.create_labels_for_projects(project_labels)
         self.github.create_labels_for_strategies(strategy_labels)
         self.github.create_labels_for_in_testing(all_chroots)
         self.github.create_labels_for_tested_on(all_chroots)
@@ -470,13 +468,11 @@ class SnapshotManager:
 
         labels_to_be_removed: list[str] = []
         old_error_labels = self.github.get_error_label_names_on_issue(issue=issue)
-        old_project_labels = self.github.get_project_label_names_on_issue(issue=issue)
         old_build_failed_labels = self.github.get_build_failed_on_names_on_issue(
             issue=issue
         )
 
         labels_to_be_removed.extend(set(old_error_labels) - set(error_labels))
-        labels_to_be_removed.extend(set(old_project_labels) - set(project_labels))
         labels_to_be_removed.extend(
             set(old_build_failed_labels) - set(build_failed_on_labels)
         )
@@ -487,11 +483,7 @@ class SnapshotManager:
 
         # Labels must be added or removed manually in order to not remove manually added labels :/
         labels_to_add = (
-            error_labels
-            + project_labels
-            + build_failed_on_labels
-            + strategy_labels
-            + other_labels
+            error_labels + build_failed_on_labels + strategy_labels + other_labels
         )
         logging.info(f"Adding label: {labels_to_add}")
         issue.add_to_labels(*labels_to_add)

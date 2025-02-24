@@ -282,12 +282,6 @@ def label_testdata(only_ids: bool = False):
             lambda lbl: MyLabel(name=f"build_failed_on/{lbl}", color="F9D0C4"),
         ),
         (
-            "create_labels_for_projects",
-            "myproject",
-            lambda gh, labels: gh.create_labels_for_projects(labels=labels),
-            lambda lbl: MyLabel(name=f"project/{lbl}", color="BFDADC"),
-        ),
-        (
             "create_labels_for_strategies",
             "mystrategy",
             lambda gh, labels: gh.create_labels_for_strategies(labels=labels),
@@ -303,7 +297,7 @@ def label_testdata(only_ids: bool = False):
             "create_labels_for_tested_on",
             "fedora-40-x86_64",
             lambda gh, labels: gh.create_labels_for_tested_on(labels=labels),
-            lambda lbl: MyLabel(name=f"tested_on/{lbl}", color="0E8A16"),
+            lambda lbl: MyLabel(name=f"tests_succeeded_on/{lbl}", color="0E8A16"),
         ),
         (
             "create_labels_for_tests_failed_on",
@@ -349,7 +343,7 @@ def test_get_label_names_on_issue(issue_mock: mock.Mock):
     issue_mock.get_labels.return_value = [
         MyLabel(name="error/foo"),
         MyLabel(name="error/bar"),
-        MyLabel(name="project/clang"),
+        MyLabel(name="tested_on/fedora-rawhide-x86_64"),
     ]
     actual = github_util.GithubClient.get_label_names_on_issue(
         issue=issue_mock, prefix="error/"
@@ -363,7 +357,7 @@ def test_get_error_label_names_on_issue(issue_mock: mock.Mock):
     issue_mock.get_labels.return_value = [
         MyLabel(name="error/foo"),
         MyLabel(name="error/bar"),
-        MyLabel(name="project/clang"),
+        MyLabel(name="tested_on/fedora-rawhide-x86_64"),
     ]
     actual = github_util.GithubClient.get_error_label_names_on_issue(issue=issue_mock)
     expected = ["error/foo", "error/bar"]
@@ -375,24 +369,12 @@ def test_get_build_failed_on_names_on_issue(issue_mock: mock.Mock):
     issue_mock.get_labels.return_value = [
         MyLabel(name="build_failed_on/foo"),
         MyLabel(name="build_failed_on/bar"),
-        MyLabel(name="project/clang"),
+        MyLabel(name="tested_on/fedora-rawhide-x86_64"),
     ]
     actual = github_util.GithubClient.get_build_failed_on_names_on_issue(
         issue=issue_mock
     )
     expected = ["build_failed_on/foo", "build_failed_on/bar"]
-    assert actual == expected
-
-
-@mock.patch("github.Issue.Issue", autospec=True)
-def test_get_project_label_names_on_issue(issue_mock: mock.Mock):
-    issue_mock.get_labels.return_value = [
-        MyLabel(name="build_failed_on/foo"),
-        MyLabel(name="build_failed_on/bar"),
-        MyLabel(name="project/clang"),
-    ]
-    actual = github_util.GithubClient.get_project_label_names_on_issue(issue=issue_mock)
-    expected = ["project/clang"]
     assert actual == expected
 
 
@@ -487,14 +469,16 @@ def test_create_or_update_comment__edit(
 def test_remove_labels_safe(issue_mock: mock.Mock):
     issue_mock.get_labels.return_value = [
         MyLabel(name="build_failed_on/fedora-rawhide-s390x"),
-        MyLabel(name="project/clang"),
+        MyLabel(name="tested_on/fedora-rawhide-x86_64"),
     ]
 
     github_util.GithubClient.remove_labels_safe(
-        issue=issue_mock, label_names_to_be_removed=["project/clang"]
+        issue=issue_mock, label_names_to_be_removed=["tested_on/fedora-rawhide-x86_64"]
     )
 
-    issue_mock.remove_from_labels.assert_called_once_with("project/clang")
+    issue_mock.remove_from_labels.assert_called_once_with(
+        "tested_on/fedora-rawhide-x86_64"
+    )
 
 
 def test_minimize_comment_as_outdated__with_issue_comment(github_client_fxt):
@@ -688,7 +672,7 @@ def test_add_comment_reaction__unsupported_type(github_client_fxt):
         ),
         (
             "fedora-rawhide-ppc64le",
-            "tested_on/fedora-rawhide-ppc64le",
+            "tests_succeeded_on/fedora-rawhide-ppc64le",
             lambda gh: gh.label_tested_on,
         ),
     ],
@@ -706,10 +690,10 @@ def test_flip_test_label(github_client_fxt):
     new_label = f"tests_failed_on/{chroot}"
 
     issue_mock.get_labels.return_value = [
-        MyLabel(name="project/clang"),
+        MyLabel(name="error/test"),
         # This will be removed
         MyLabel(name="in_testing/fedora-rawhide-x86_64"),
-        MyLabel(name="tested_on/fedora-rawhide-ppc64le"),
+        MyLabel(name="tests_succeeded_on/fedora-rawhide-ppc64le"),
     ]
 
     github_client_fxt.flip_test_label(
@@ -730,9 +714,9 @@ def test_flip_test_label__already_present(github_client_fxt):
     new_label = f"tests_failed_on/{chroot}"
 
     issue_mock.get_labels.return_value = [
-        MyLabel(name="project/clang"),
+        MyLabel(name="error/tests"),
         MyLabel(name="tests_failed_on/fedora-rawhide-x86_64"),
-        MyLabel(name="tested_on/fedora-rawhide-ppc64le"),
+        MyLabel(name="tests_succeeded_on/fedora-rawhide-ppc64le"),
     ]
 
     github_client_fxt.flip_test_label(
