@@ -1,0 +1,15 @@
+name: "Check python code formatting with black"
+
+# See https://black.readthedocs.io/en/stable/integrations/github_actions.html
+
+on: [push, pull_request]
+
+jobs:
+  check-python-with-black:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-python
+      - uses: psf/black@stable
+        with:
+            options: "--check --diff --verbose --color --force-exclude '^snapshot_manager/tests/test_logs/'"
