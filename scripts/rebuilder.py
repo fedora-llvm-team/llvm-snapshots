@@ -314,7 +314,6 @@ def start_rebuild(
         copr_client.build_proxy.create_from_distgit(
             project_owner, project_name, p, commitish, buildopts=buildopts
         )
-        break
 
 
 def select_snapshot_project(
