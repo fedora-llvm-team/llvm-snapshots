@@ -303,7 +303,7 @@ def label_testdata(only_ids: bool = False):
             "create_labels_for_tested_on",
             "fedora-40-x86_64",
             lambda gh, labels: gh.create_labels_for_tested_on(labels=labels),
-            lambda lbl: MyLabel(name=f"tested_on/{lbl}", color="0E8A16"),
+            lambda lbl: MyLabel(name=f"tests_succeeded_on/{lbl}", color="0E8A16"),
         ),
         (
             "create_labels_for_tests_failed_on",
@@ -688,7 +688,7 @@ def test_add_comment_reaction__unsupported_type(github_client_fxt):
         ),
         (
             "fedora-rawhide-ppc64le",
-            "tested_on/fedora-rawhide-ppc64le",
+            "tests_succeeded_on/fedora-rawhide-ppc64le",
             lambda gh: gh.label_tested_on,
         ),
     ],
@@ -709,7 +709,7 @@ def test_flip_test_label(github_client_fxt):
         MyLabel(name="project/clang"),
         # This will be removed
         MyLabel(name="in_testing/fedora-rawhide-x86_64"),
-        MyLabel(name="tested_on/fedora-rawhide-ppc64le"),
+        MyLabel(name="tests_succeeded_on/fedora-rawhide-ppc64le"),
     ]
 
     github_client_fxt.flip_test_label(
@@ -732,7 +732,7 @@ def test_flip_test_label__already_present(github_client_fxt):
     issue_mock.get_labels.return_value = [
         MyLabel(name="project/clang"),
         MyLabel(name="tests_failed_on/fedora-rawhide-x86_64"),
-        MyLabel(name="tested_on/fedora-rawhide-ppc64le"),
+        MyLabel(name="tests_succeeded_on/fedora-rawhide-ppc64le"),
     ]
 
     github_client_fxt.flip_test_label(
