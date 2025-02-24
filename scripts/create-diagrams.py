@@ -127,8 +127,12 @@ def add_html_header_menu(filepath: str, plotly_div_id: str = "plotly_div_id") ->
 
     file = Path(filepath)
     header_menu = '<div id="headermenu">Build-Stats: '
-    header_menu += ' <a href="index.html">llvm (big-merge)</a>'
-    header_menu += ' | <a href="fig-pgo.html">llvm (pgo)</a>'
+    header_menu += ' <a href="index.html">big-merge (only success)</a>'
+    header_menu += (
+        ' | <a href="fig-big-merge-all-states.html">big-merge (all states)</a>'
+    )
+    # header_menu += ' | <a href="fig-pgo-succeeded.html">PGO (only success)</a>'
+    # header_menu += ' | <a href="fig-pgo-all-states.html">PGO (all states)</a>'
     header_menu += f" <small>(Last updated: {last_updated})</small>"
     header_menu += "</div>"
     header_menu += replace_me
@@ -205,12 +209,15 @@ def main() -> None:
         "plotly"  # See https://plotly.com/python/templates/#theming-and-templates
     )
 
-    # Create dataframe of llvm in "big-merge mode". The chroots are prefixed
-    # with "big-merge-" on the fly to be able to distinguish the two cases.
+    # # Create dataframe of llvm in "big-merge mode". The chroots are prefixed
+    # # with "big-merge-" on the fly to be able to distinguish the two cases.
     df_big_merge = prepare_data(filepath=args.datafile_big_merge)
     df_big_merge["chroot"] = "big-merge-" + df_big_merge["chroot"]
-    # Convert build_id column with int64's in it to an array of int64's.
+    # # Convert build_id column with int64's in it to an array of int64's.
     df_big_merge.build_id = df_big_merge.build_id.apply(lambda x: [x])
+
+    filter = df_big_merge["state"] == "succeeded"
+    df_big_merge_succeeded = df_big_merge.where(filter, inplace=False).dropna()
 
     # Create dataframe for PGO builds. The chroots are prefixed with "pgo-" on
     # the fly to be able to distinguish the two cases.
@@ -219,15 +226,30 @@ def main() -> None:
     # Convert build_id column with int64's in it to an array of int64's.
     df_pgo.build_id = df_pgo.build_id.apply(lambda x: [x])
 
+    filter = df_pgo["state"] == "succeeded"
+    df_pgo_succeeded = df_pgo.where(filter, inplace=False).dropna()
+
     # Create dedicated big-merge figure with nothing else in it.
     fig = create_figure(df=df_big_merge)
+    filepath = "fig-big-merge-all-states.html"
+    save_figure(fig=fig, filepath=filepath)
+    add_html_header_menu(filepath=filepath)
+
+    # Create dedicated big-merge figure with nothing else in it.
+    fig = create_figure(df=df_big_merge_succeeded)
     filepath = "index.html"
     save_figure(fig=fig, filepath=filepath)
     add_html_header_menu(filepath=filepath)
 
     # Create dedicated PGO figure with nothing else in it.
     fig = create_figure(df=df_pgo)
-    filepath = "fig-pgo.html"
+    filepath = "fig-pgo-all-states.html"
+    save_figure(fig=fig, filepath=filepath)
+    add_html_header_menu(filepath=filepath)
+
+    # Create dedicated PGO figure with nothing else in it.
+    fig = create_figure(df=df_pgo_succeeded)
+    filepath = "fig-pgo-succeeded.html"
     save_figure(fig=fig, filepath=filepath)
     add_html_header_menu(filepath=filepath)
 
