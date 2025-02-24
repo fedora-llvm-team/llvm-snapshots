@@ -137,11 +137,11 @@ def add_html_header_menu(filepath: str, plotly_div_id: str = "plotly_div_id") ->
 
 
 # %%
-def prepare_data(filepath: str = "build-stats-big-merge.csv") -> pd.DataFrame:
+def prepare_data(filepath: str) -> pd.DataFrame:
     """Reads in data from a given file in CSV format, sort it and removes duplicates
 
     Args:
-        filepath (str, optional): The path to the CSV file to read in. Defaults to 'build-stats-merge.csv'.
+        filepath (str, optional): The path to the CSV file to read in.
 
     Returns:
         pd.DataFrame: A prepared and ready to use dataframe
