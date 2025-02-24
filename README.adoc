@@ -10,7 +10,7 @@ image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/check
 image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/python-format-and-tests.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/python-format-and-tests.yml"]
 image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-build-time-diagrams.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-build-time-diagrams.yml"]
 image:https://img.shields.io/badge/code%20style-black-000000.svg[link="https://github.com/psf/black"]
-link:https://fedora-llvm-team.github.io/llvm-snapshots/fig-llvm.html[Build time Diagrams]
+link:https://fedora-llvm-team.github.io/llvm-snapshots/index.html[Build time Diagrams]
 image:https://coveralls.io/repos/github/fedora-llvm-team/llvm-snapshots/badge.svg[link="https://coveralls.io/github/fedora-llvm-team/llvm-snapshots"]
 
 == Maintaining the LLVM Snapshots for Fedora
