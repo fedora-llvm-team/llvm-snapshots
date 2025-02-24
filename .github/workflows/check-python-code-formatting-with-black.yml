@@ -5,7 +5,7 @@ name: "Check python code formatting with black"
 on: [push, pull_request]
 
 jobs:
-  check-python-with-black:
+  black:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

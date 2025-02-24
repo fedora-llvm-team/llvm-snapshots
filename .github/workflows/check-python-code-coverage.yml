@@ -3,8 +3,8 @@ name: "Check python code coverage"
 on: [push, pull_request]
 
 jobs:
-  run-tests:
-    name: run-tests
+  coverage:
+    name: coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
