@@ -209,11 +209,11 @@ def main() -> None:
         "plotly"  # See https://plotly.com/python/templates/#theming-and-templates
     )
 
-    # # Create dataframe of llvm in "big-merge mode". The chroots are prefixed
-    # # with "big-merge-" on the fly to be able to distinguish the two cases.
+    # Create dataframe of llvm in "big-merge mode". The chroots are prefixed
+    # with "big-merge-" on the fly to be able to distinguish the two cases.
     df_big_merge = prepare_data(filepath=args.datafile_big_merge)
     df_big_merge["chroot"] = "big-merge-" + df_big_merge["chroot"]
-    # # Convert build_id column with int64's in it to an array of int64's.
+    # Convert build_id column with int64's in it to an array of int64's.
     df_big_merge.build_id = df_big_merge.build_id.apply(lambda x: [x])
 
     filter = df_big_merge["state"] == "succeeded"
