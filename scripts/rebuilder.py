@@ -314,7 +314,6 @@ def start_rebuild(
         copr_client.build_proxy.create_from_distgit(
             project_owner, project_name, p, commitish, buildopts=buildopts
         )
-        break
 
 
 def select_snapshot_project(
@@ -385,7 +384,7 @@ def main():
     copr_client = copr.v3.Client.create_from_config_file()
 
     os_name = "fedora-41"
-    clang_version = "20"
+    clang_version = "21"
     target_arches = ["aarch64", "ppc64le", "s390x", "x86_64"]
     target_chroots = [f"{os_name}-{a}" for a in target_arches]
     project_owner = "@fedora-llvm-team"
