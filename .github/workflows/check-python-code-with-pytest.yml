@@ -1,0 +1,17 @@
+name: "Check python code with pytest"
+
+on: [push, pull_request]
+
+jobs:
+  pytest:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-python
+        with:
+          use-system-python: true
+      - name: Run pytest
+        shell: bash -e {0}
+        run: |
+          make ci-test
