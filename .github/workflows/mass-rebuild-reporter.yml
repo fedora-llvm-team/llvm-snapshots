@@ -128,7 +128,7 @@ jobs:
       issue: ${{ needs.check-for-rebuild.outputs.issue-id }}
 
   notify-bisect-complete:
-    if: always()
+    if: always() && github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-24.04
     needs:
       - check-for-rebuild
