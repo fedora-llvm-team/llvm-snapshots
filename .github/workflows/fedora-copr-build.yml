@@ -65,13 +65,9 @@ jobs:
           today=$(date +%Y%m%d)
           yesterday=$(date -d "${today} -1 day" +%Y%m%d)
 
-          chroots="$(get_chroots)"
-
           username=@fedora-llvm-team
           {
             echo "username=$username"
-            echo "chroots=$chroots"
-            echo "all_chroots=$all_chroots"
             echo "project_today=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/"
             echo "project_yesterday=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$yesterday/"
             echo "project_target=${{ matrix.copr_target_project }}"
@@ -131,7 +127,7 @@ jobs:
           [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           # shellcheck disable=SC2207
-          chroot_opts=($(for c in ${{ env.chroots }}; do echo -n " --chroot $c "; done))
+          chroot_opts=($(for c in ${{ matrix.chroots }}; do echo -n " --chroot $c "; done))
 
           copr create \
             --instructions "$(cat project-instructions.md)" \
@@ -151,7 +147,7 @@ jobs:
           source scripts/functions.sh
           [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          for chroot in ${{ env.chroots }}; do
+          for chroot in ${{ matrix.chroots }}; do
             copr edit-chroot --rpmbuild-with "snapshot_build" "${{ env.project_today }}/$chroot"
             if [[ "$chroot" == rhel-8-* ]]; then
               copr edit-chroot --modules "swig:4.0" "${{ env.project_today }}/$chroot"
@@ -182,7 +178,7 @@ jobs:
           source scripts/functions.sh
           [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
-          for chroot in ${{ env.chroots }}; do
+          for chroot in ${{ matrix.chroots }}; do
             copr build-package \
               --timeout $((30*3600)) \
               --nowait \
