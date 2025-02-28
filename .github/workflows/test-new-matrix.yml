@@ -1,0 +1,49 @@
+name: "Test iterating over chroots from matrix"
+
+on:
+  workflow_dispatch:
+    inputs:
+      strategy:
+        description: 'build strategy'
+        required: true
+        type: choice
+        default: all
+        options:
+        - all
+        - big-merge
+        - pgo
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      mymatrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/generate-matrix
+      id: set-matrix
+      env:
+        # You need to have those secrets in your repo.
+        # See also: https://copr.fedorainfracloud.org/api/.
+        COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
+      with:
+        strategy: ${{ inputs.strategy }}
+        lookback_days: "0"
+        copr_config: $COPR_CONFIG
+
+  build-on-copr:
+    needs: generate-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{fromJson(needs.generate-matrix.outputs.mymatrix)}}
+    runs-on: ubuntu-latest
+    container: fedora:41
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Loop over matrix"
+        shell: bash -e {0}
+        run: |
+          for chroot in ${{ matrix.chroots }}; do
+            echo "chroot=${chroot}"
+          done

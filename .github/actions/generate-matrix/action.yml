@@ -9,6 +9,8 @@ inputs:
   lookback_days:
     description: "A list of integers for how many days to look back separated by space. \"0\" means just today."
     default: "0 1 2"
+  copr_config:
+    description: "Pass your secrets.COPR_CONFIG here"
 outputs:
   matrix:
     description: "The build matrix to use in consequential jobs"
@@ -19,12 +21,10 @@ runs:
     - name: Setup Copr config file
       shell: bash
       env:
-        # You need to have those secrets in your repo.
-        # See also: https://copr.fedorainfracloud.org/api/.
-        COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
+        COPR_CONFIG: ${{ inputs.copr_config }}
       run: |
         mkdir -p ~/.config
-        echo "$COPR_CONFIG_FILE" > ~/.config/copr
+        echo "${{env.COPR_CONFIG}}" > ~/.config/copr
     - id: set-matrix
       shell: bash
       run: |

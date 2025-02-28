@@ -28,9 +28,14 @@ jobs:
     - uses: actions/checkout@v4
     - uses: ./.github/actions/generate-matrix
       id: set-matrix
+      env:
+        # You need to have those secrets in your repo.
+        # See also: https://copr.fedorainfracloud.org/api/.
+        COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
       with:
         strategy: ${{ inputs.strategy }}
-        lookback_days: "[0]"
+        lookback_days: "0"
+        copr_config: $COPR_CONFIG
 
   build-on-copr:
     if: github.repository_owner == 'fedora-llvm-team'
@@ -45,10 +50,10 @@ jobs:
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
-          COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
+          COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
         run: |
           mkdir -p ~/.config
-          echo "$COPR_CONFIG_FILE" > ~/.config/copr
+          echo "$COPR_CONFIG" > ~/.config/copr
 
       - name: Install Copr CLI and required tools
         run: |
