@@ -26,4 +26,5 @@ runs:
     - id: set-matrix
       shell: bash
       run: |
+        echo "myoutput=$(python3 snapshot_manager/config.py --strategy ${{ inputs.strategy }} --lookback ${{ inputs.lookback_days }})"
         echo "myoutput=$(python3 snapshot_manager/config.py --strategy ${{ inputs.strategy }} --lookback ${{ inputs.lookback_days }})" >> $GITHUB_OUTPUT
