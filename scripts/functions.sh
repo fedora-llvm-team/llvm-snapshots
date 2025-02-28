@@ -5,33 +5,6 @@ function yyyymmdd() {
   date +%Y%m%d
 }
 
-# Checks if there's an issue for a broken snapshot reported today
-function was_broken_snapshot_detected_today() {
-  local repo=$1
-  local strategy=$2
-  local d=`yyyymmdd`
-  gh --repo $repo issue list \
-    --label broken_snapshot_detected \
-    --label strategy/$strategy \
-    --state all \
-    --search "$d" \
-  | grep -P "$d" > /dev/null 2>&1
-}
-
-# Get today's issue. Make sure was_broken_snapshot_detected_today found one.
-function todays_issue_number() {
-  local repo=$1
-  local strategy=$2
-  local d=`yyyymmdd`
-  gh --repo $repo issue list \
-    --label broken_snapshot_detected \
-    --label strategy/$strategy \
-    --state all \
-    --search "$d" \
-    --json number \
-    --jq .[0].number
-}
-
 # Checks if a copr project exists
 function copr_project_exists(){
   local project=$1;
@@ -71,11 +44,3 @@ function has_all_good_builds(){
 }
 
 #endregion
-
-# This installs the gh client for Fedora as described here:
-# https://github.com/cli/cli/blob/trunk/docs/install_linux.md#fedora-centos-red-hat-enterprise-linux-dnf
-function install_gh_client() {
-  dnf install -y 'dnf-command(config-manager)'
-  dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
-  dnf install -y gh
-}
