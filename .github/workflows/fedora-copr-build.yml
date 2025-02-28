@@ -36,7 +36,7 @@ jobs:
       with:
         strategy: ${{ inputs.strategy }}
         lookback_days: "0"
-        copr_config: $COPR_CONFIG
+        copr_config: ${{ secrets.COPR_CONFIG }}
 
   build-on-copr:
     if: github.repository_owner == 'fedora-llvm-team'

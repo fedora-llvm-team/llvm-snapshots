@@ -20,11 +20,9 @@ runs:
   steps:
     - name: Setup Copr config file
       shell: bash
-      env:
-        COPR_CONFIG: ${{ inputs.copr_config }}
       run: |
         mkdir -p ~/.config
-        echo "${{env.COPR_CONFIG}}" > ~/.config/copr
+        echo "${{ inputs.copr_config }}" > ~/.config/copr
     - id: set-matrix
       shell: bash
       run: |
