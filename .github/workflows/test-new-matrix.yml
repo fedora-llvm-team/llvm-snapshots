@@ -20,6 +20,7 @@ jobs:
       mymatrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
     - uses: actions/checkout@v4
+    - uses: ./.github/actions/prepare-python
     - uses: ./.github/actions/generate-matrix
       id: set-matrix
       env:
