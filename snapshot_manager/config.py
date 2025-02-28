@@ -41,6 +41,7 @@ def get_github_matrix(
                 "copr_project_tpl": "llvm-snapshots-big-merge-YYYYMMDD",
                 "copr_monitor_tpl": "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
                 "chroot_pattern": "^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
+                "chroots": [],
             }
         )
 
@@ -58,6 +59,7 @@ def get_github_matrix(
                 "copr_project_tpl": "llvm-snapshots-pgo-YYYYMMDD",
                 "copr_monitor_tpl": "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/",
                 "chroot_pattern": "^(fedora-41)",
+                "chroots": [],
             }
         )
 

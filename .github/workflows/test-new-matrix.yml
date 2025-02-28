@@ -45,6 +45,14 @@ jobs:
       - name: "Loop over matrix"
         shell: bash -e {0}
         run: |
-          for chroot in ${{ matrix.chroots }}; do
-            echo "chroot=${chroot}"
-          done
+          echo "name = ${{matrix.name}}"
+          echo "copr_target_project = ${{matrix.copr_target_project}}"
+          echo "extra_script_file = ${{matrix.extra_script_file}}"
+          echo "clone_url = ${{matrix.clone_url}}"
+          echo "clone_ref = ${{matrix.clone_ref}}"
+          echo "maintainer_handle = ${{matrix.maintainer_handle}}"
+          echo "copr_ownername = ${{matrix.copr_ownername}}"
+          echo "copr_project_tpl = ${{matrix.copr_project_tpl}}"
+          echo "copr_monitor_tpl = ${{matrix.copr_monitor_tpl}}"
+          echo "chroot_pattern = ${{matrix.chroot_pattern}}"
+          echo "chroots = ${{matrix.chroots}}"
