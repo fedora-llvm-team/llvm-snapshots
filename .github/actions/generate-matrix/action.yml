@@ -7,8 +7,8 @@ inputs:
     description: 'build strategy'
     default: "all"
   lookback_days:
-    description: "A JSON list of integers for how many days to look back. \"[0]\" means just today."
-    default: "[0,1,2]"
+    description: "A list of integers for how many days to look back separated by space. \"0\" means just today."
+    default: "0 1 2"
 outputs:
   matrix:
     description: "The build matrix to use in consequential jobs"
@@ -16,57 +16,16 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Setup Copr config file
+      shell: bash
+      env:
+        # You need to have those secrets in your repo.
+        # See also: https://copr.fedorainfracloud.org/api/.
+        COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
+      run: |
+        mkdir -p ~/.config
+        echo "$COPR_CONFIG_FILE" > ~/.config/copr
     - id: set-matrix
       shell: bash
       run: |
-        # TODO(kwk): The JSON structures have some redundancy that we can try to
-        # avoid in a followup PR.
-
-        BIG_MERGE_CONFIG=$(jq -c <<EOF
-          {
-              "name": "big-merge",
-              "copr_target_project": "@fedora-llvm-team/llvm-snapshots",
-              "clone_url": "https://src.fedoraproject.org/rpms/llvm.git",
-              "clone_ref": "rawhide",
-              "maintainer_handle": "tuliom",
-              "copr_ownername": "@fedora-llvm-team",
-              "copr_project_tpl": "llvm-snapshots-big-merge-YYYYMMDD",
-              "copr_monitor_tpl": "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
-              "chroot_pattern": "^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)"
-          }
-        EOF
-        )
-
-        PGO_CONFIG=$(jq -c <<EOF
-          {
-            "name": "pgo",
-            "copr_target_project": "@fedora-llvm-team/llvm-snapshots-pgo",
-            "extra_script_file": "scripts/functions-pgo.sh",
-            "clone_url": "https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git",
-            "clone_ref": "pgo",
-            "maintainer_handle": "kwk",
-            "copr_ownername": "@fedora-llvm-team",
-            "copr_project_tpl": "llvm-snapshots-pgo-YYYYMMDD",
-            "copr_monitor_tpl": "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/",
-            "chroot_pattern": "^(fedora-41)"
-          }
-        EOF
-        )
-
-        if [[ '${{ inputs.strategy }}' == 'big-merge' ]]; then
-          INCLUDES="[$BIG_MERGE_CONFIG]"
-          NAMES='["big-merge"]'
-        elif [[ '${{ inputs.strategy }}' == 'pgo' ]]; then
-          INCLUDES="[$PGO_CONFIG]"
-          NAMES='["pgo"]'
-        else
-          INCLUDES="[$BIG_MERGE_CONFIG]"
-          NAMES='["big-merge"]'
-        fi
-
-        LOOKBACK_DAYS="${{ inputs.lookback_days }}"
-        if [[ $(echo "$LOOKBACK_DAYS" | tr -d '[:space:]') == "" ]]; then
-          LOOKBACK_DAYS="[0,1,2]"
-        fi
-
-        echo "myoutput=$(jq -cn --argjson includes "$INCLUDES" --argjson names "$NAMES" --argjson lookback_days "$LOOKBACK_DAYS" '{name: $names, today_minus_n_days: $lookback_days, include:$includes}')" >> $GITHUB_OUTPUT
+        echo "myoutput=$(python3 snapshot_manager/main.py --strategy ${{ inputs.strategy }} --lookback ${{ inputs.lookback_days }})" >> $GITHUB_OUTPUT

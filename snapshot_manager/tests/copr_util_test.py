@@ -1,11 +1,54 @@
 """ Tests for copr_client """
 
+import os
 import uuid
+from unittest import mock
 
 import tests.base_test as base_test
 
 import snapshot_manager.config as config
 import snapshot_manager.copr_util as copr_util
+
+
+@mock.patch("copr.v3.Client")
+def test_make_client__from_env(client_mock: mock.Mock):
+    myconfig = {
+        "COPR_URL": "myurl",
+        "COPR_LOGIN": "mylogin",
+        "COPR_TOKEN": "mytoken",
+        "COPR_USERNAME": "myusername",
+    }
+    with mock.patch.dict(os.environ, values=myconfig, clear=True):
+        copr_util.make_client()
+
+    config = {
+        "copr_url": myconfig["COPR_URL"],
+        "login": myconfig["COPR_LOGIN"],
+        "token": myconfig["COPR_TOKEN"],
+        "username": myconfig["COPR_USERNAME"],
+    }
+    client_mock.assert_called_once_with(config)
+
+
+@mock.patch("copr.v3.Client")
+def test_make_client__from_file(client_mock: mock.Mock):
+    # Missing a few parameters, so defaulting back to creation from file
+    myconfig = {"COPR_URL": "myurl"}
+    with mock.patch.dict(os.environ, values=myconfig, clear=True):
+        copr_util.make_client()
+    client_mock.create_from_config_file.assert_called_once()
+
+
+@mock.patch("copr.v3.Client")
+def test_get_all_chroots(client_mock: mock.Mock):
+    # When calling the function under test multiple times,
+    # ensure the internal get_list function is only called
+    # once. This is because the result it has to be cached.
+    # by functools.cache.
+    copr_util.get_all_chroots(client=client_mock)
+    copr_util.get_all_chroots(client=client_mock)
+    copr_util.get_all_chroots(client=client_mock)
+    client_mock.mock_chroot_proxy.get_list.assert_called_once()
 
 
 class TestCopr(base_test.TestBase):

@@ -474,3 +474,69 @@ def get_release_for_yyyymmdd(yyyymmdd: str) -> str:
     logging.info(f"Getting URL {url}")
     response = requests.get(url)
     return response.text.strip()
+
+
+def filter_chroots(chroots: list[str], pattern: str) -> list[str]:
+    """Return a sorted list of chroots filtered by the given pattern.
+
+    Args:
+        chroots (list[str]): As list of chroots to filter
+        pattern (str, optional): Regular expression e.g. `r"^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)"`
+
+    Returns:
+        list[str]: List of filtered and sorted chroots.
+
+    Examples:
+
+    >>> chroots = ["rhel-7-x86_64", "rhel-9-s390x", "fedora-rawhide-x86_64", "centos-stream-10-ppc64le"]
+    >>> filter_chroots(chroots=chroots, pattern=r"^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)")
+    ['fedora-rawhide-x86_64', 'rhel-9-s390x']
+    """
+    res: list[str] = []
+    for chroot in chroots:
+        if re.match(pattern=pattern, string=chroot) != None:
+            res.append(chroot)
+    res.sort()
+    return res
+
+
+def sanitize_chroots(chroots: list[str]) -> list[str]:
+    """Removes all s390x fedora chroots but rawhide and the latest
+    numbered version in the given list
+
+    Args:
+        chroots (list[str]): A list of chroots
+
+    Returns:
+        list[str]: The sanitized list of chroots
+
+    Example:
+
+    >>> chroots = ["fedora-40-aarch64", "fedora-40-s390x",
+    ...            "fedora-41-s390x", "fedora-41-ppc64le",
+    ...            "fedora-42-aarch64", "fedora-42-s390x",
+    ...            "fedora-rawhide-x86_64", "fedora-rawhide-s390x",
+    ...            "rhel-8-aarch64", "rhel-8-s390x",
+    ...            "rhel-8-x86_64", "rhel-9-aarch64",
+    ...            "rhel-9-s390x", "rhel-9-x86_64"]
+    >>> expected = ['fedora-40-aarch64', 'fedora-41-ppc64le',
+    ...             'fedora-42-aarch64', 'fedora-42-s390x',
+    ...             'fedora-rawhide-x86_64', 'fedora-rawhide-s390x',
+    ...             'rhel-8-aarch64', 'rhel-8-s390x',
+    ...             'rhel-8-x86_64', 'rhel-9-aarch64',
+    ...             'rhel-9-s390x', 'rhel-9-x86_64']
+    >>> actual = sanitize_chroots(chroots)
+    >>> actual == expected
+    True
+    """
+    chroots = [expect_chroot(chroot) for chroot in chroots]
+    removals = filter_chroots(chroots, r"^fedora-[0-9]+-s390x")
+    max = 0
+    for chroot in removals:
+        ver = int(chroot_version(chroot))
+        if ver > max:
+            max = ver
+    for chroot in removals:
+        if max != int(chroot_version(chroot)):
+            chroots.remove(chroot)
+    return chroots

@@ -2,6 +2,7 @@
 copr_util
 """
 
+import functools
 import logging
 import os
 import re
@@ -11,6 +12,48 @@ import munch
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.config as config
+import snapshot_manager.util as util
+
+
+def make_client() -> "copr.v3.Client":
+    """
+    Instatiates a copr client.
+
+    If the environment contains COPR_URL, COPR_LOGIN, COPR_TOKEN, and
+    COPR_USERNAME, we'll try to create a Copr client from those environment
+    variables; otherwise, A Copr API client is created from the config file
+    in ~/.config/copr. See https://copr.fedorainfracloud.org/api/ for how to
+    create such a file.
+    """
+    client = None
+    if {"COPR_URL", "COPR_LOGIN", "COPR_TOKEN", "COPR_USERNAME"} <= set(os.environ):
+        logging.debug("create copr client config from environment variables")
+        config = {
+            "copr_url": os.environ["COPR_URL"],
+            "login": os.environ["COPR_LOGIN"],
+            "token": os.environ["COPR_TOKEN"],
+            "username": os.environ["COPR_USERNAME"],
+        }
+        client = copr.v3.Client(config)
+    else:
+        logging.debug("create copr client config from file")
+        client = copr.v3.Client.create_from_config_file()
+    return client
+
+
+@functools.cache
+def get_all_chroots(client: copr.v3.Client) -> list[str]:
+    """Asks Copr to list all currently supported chroots. The response Copr will
+    give varies over time whenever a new Fedora or RHEL version for example
+    is released. But for our purposes, we let the function cache the results.
+
+    Args:
+        client (copr.v3.Client): A Copr client
+
+    Returns:
+        list[str]: All currently supported chroots on copr.
+    """
+    return client.mock_chroot_proxy.get_list().keys()
 
 
 # pylint: disable=too-few-public-methods
@@ -26,9 +69,6 @@ class CoprClient:
         if client is not None:
             self.__client = client.__client
 
-        # This acts a cache for chroots to reduce queries being made to copr
-        # TODO(kwk): Add mutex to protec this shared resource.
-        self._all_chroots = None
         self.config = config
 
     @property
@@ -38,35 +78,8 @@ class CoprClient:
         Upon first call of this function, the client is instantiated.
         """
         if not self.__client:
-            self.__client = self.__make_client()
+            self.__client = make_client()
         return self.__client
-
-    def __make_client(self) -> "copr.v3.Client":
-        """
-        Instatiates the copr client. Make sure to use the "client" property for
-        accessing the client and creating it.
-
-        If the environment contains COPR_URL, COPR_LOGIN, COPR_TOKEN, and
-        COPR_USERNAME, we'll try to create a Copr client from those environment
-        variables; otherwise, A Copr API client is created from the config file
-        in ~/.config/copr. See https://copr.fedorainfracloud.org/api/ for how to
-        create such a file.
-        """
-        client = None
-        if {"COPR_URL", "COPR_LOGIN", "COPR_TOKEN", "COPR_USERNAME"} <= set(os.environ):
-            logging.debug("create copr client config from environment variables")
-            config = {
-                "copr_url": os.environ["COPR_URL"],
-                "login": os.environ["COPR_LOGIN"],
-                "token": os.environ["COPR_TOKEN"],
-                "username": os.environ["COPR_USERNAME"],
-            }
-            client = copr.v3.Client(config)
-            assert client.config == config
-        else:
-            logging.debug("create copr client config from file")
-            client = copr.v3.Client.create_from_config_file()
-        return client
 
     def project_exists(
         self,
@@ -146,18 +159,12 @@ class CoprClient:
         Returns:
             list[str]: List of filtered and sorted chroots
         """
+        all_chroots = get_all_chroots(client=self.copr)
+
         if pattern is None:
             pattern = self.config.chroot_pattern
 
-        if self._all_chroots is None:
-            self._all_chroots = self.copr.mock_chroot_proxy.get_list().keys()
-
-        chroots = []
-        for chroot in self._all_chroots:
-            if re.match(pattern=pattern, string=chroot) != None:
-                chroots.append(chroot)
-        chroots.sort()
-        return chroots
+        return util.filter_chroots(chroots=all_chroots, pattern=pattern)
 
     def has_all_good_builds(
         self,
