@@ -62,12 +62,12 @@ def get_github_matrix(
         )
 
     # Take chroot_pattern for each strategy and translate it into a list of
-    # "sanitized" chroots. "Santized" in this case means that we'll strip out
-    # any fedora s390x chroots that are not "rawhide" or the highest numbered
-    # release in the filtered list.
+    # space separated "sanitized" chroots. "Santized" in this case means that
+    # we'll strip out any fedora s390x chroots that are not "rawhide" or the
+    # highest numbered release in the filtered list.
     for include in res["include"]:
         chroots = filter_chroots(chroots=all_chroots, pattern=include["chroot_pattern"])
-        include["chroots"] = sanitize_chroots(chroots=chroots)
+        include["chroots"] = " ".join(sanitize_chroots(chroots=chroots))
 
     return res
 
