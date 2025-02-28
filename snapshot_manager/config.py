@@ -24,13 +24,13 @@ def get_github_matrix(
     """
     res = {
         "names": [],
-        "includes": [],
+        "include": [],
         "today_minus_n_days": lookback_days,
     }
 
     if strategy in ("", "big-merge", "all"):
         res["names"].append("big-merge")
-        res["includes"].append(
+        res["include"].append(
             {
                 "name": "big-merge",
                 "copr_target_project": "@fedora-llvm-team/llvm-snapshots",
@@ -41,13 +41,12 @@ def get_github_matrix(
                 "copr_project_tpl": "llvm-snapshots-big-merge-YYYYMMDD",
                 "copr_monitor_tpl": "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
                 "chroot_pattern": "^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
-                "chroots": [],
             }
         )
 
     if strategy in ("", "pgo", "all"):
         res["names"].append("pgo")
-        res["includes"].append(
+        res["include"].append(
             {
                 "name": "pgo",
                 "copr_target_project": "@fedora-llvm-team/llvm-snapshots-pgo",
@@ -59,7 +58,6 @@ def get_github_matrix(
                 "copr_project_tpl": "llvm-snapshots-pgo-YYYYMMDD",
                 "copr_monitor_tpl": "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/",
                 "chroot_pattern": "^(fedora-41)",
-                "chroots": [],
             }
         )
 
@@ -67,7 +65,7 @@ def get_github_matrix(
     # "sanitized" chroots. "Santized" in this case means that we'll strip out
     # any fedora s390x chroots that are not "rawhide" or the highest numbered
     # release in the filtered list.
-    for include in res["includes"]:
+    for include in res["include"]:
         chroots = filter_chroots(chroots=all_chroots, pattern=include["chroot_pattern"])
         include["chroots"] = sanitize_chroots(chroots=chroots)
 
