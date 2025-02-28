@@ -56,3 +56,7 @@ jobs:
           echo "copr_monitor_tpl = ${{matrix.copr_monitor_tpl}}"
           echo "chroot_pattern = ${{matrix.chroot_pattern}}"
           echo "chroots = ${{matrix.chroots}}"
+
+          for chroot in ${{matrix.chroots}}; do
+            echo "chroot=$chroot"
+          done

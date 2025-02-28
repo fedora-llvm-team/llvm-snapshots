@@ -501,7 +501,7 @@ def filter_chroots(chroots: list[str], pattern: str) -> list[str]:
 
 
 def sanitize_chroots(chroots: list[str]) -> list[str]:
-    """Removes all s390x fedora chroots but rawhide and the latest
+    """Removes all s390x fedora chroots but rawhide and the highest
     numbered version in the given list
 
     Args:
