@@ -6,7 +6,7 @@ function get_clang_commit {
   buildid=$1
   pkg=$2
 
-  curl "https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/fedora-41-clang-20/fedora-41-x86_64/0$buildid-$pkg/root.log.gz" | gunzip |  grep -o 'clang[[:space:]]\+x86_64[[:space:]]\+[0-9a-g~pre.]\+' | cut -d 'g' -f 3
+  curl "https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/fedora-41-clang-21/fedora-41-x86_64/0$buildid-$pkg/root.log.gz" | gunzip |  grep -o 'clang[[:space:]]\+x86_64[[:space:]]\+[0-9a-g~pre.]\+' | cut -d 'g' -f 3
 }
 
 
@@ -20,7 +20,7 @@ else
 fi
 
 read -r buildid last_success_id <<<$(curl -X 'GET' \
-  "https://copr.fedorainfracloud.org/api_3/package/?ownername=%40fedora-llvm-team&projectname=fedora-41-clang-20&packagename=$pkg&with_latest_build=true&with_latest_succeeded_build=true" \
+  "https://copr.fedorainfracloud.org/api_3/package/?ownername=%40fedora-llvm-team&projectname=fedora-41-clang-21&packagename=$pkg&with_latest_build=true&with_latest_succeeded_build=true" \
   -H 'accept: application/json' | jq -r '[.builds.latest.id,.builds.latest_succeeded.id] | join(" ")' )
 
 
