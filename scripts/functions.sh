@@ -54,7 +54,18 @@ function get_active_build_ids(){
 
 # Prints the chroots we care about.
 function get_chroots() {
-  copr list-chroots | grep -P '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)' | sort |  tr '\n' ' '
+  local tmp=`mktemp`
+  copr list-chroots | grep -P '^(fedora-(rawhide|[0-9]+)|rhel-[8,9,10]+-)' > $tmp
+  # We can run at most 4 s390x builds at the same time on COPR.
+  # In order to avoid queueing too many s390x builds, we decided to test at
+  # most 2 fedora-s390x (rawhide and the latest branched version).
+  local excluded=`grep '^fedora-.*-s390x' $tmp | sort -urV | tail --lines=+3`
+  local excluded_regex=''
+  for e in $excluded; do
+    excluded_regex="$excluded_regex${excluded_regex:+|}$e"
+  done
+  grep -vE "$excluded_regex" $tmp | sort |  tr '\n' ' '
+  rm $tmp
 }
 
 # Returns 0 if all llvm packages on all chroots have successful builds.
