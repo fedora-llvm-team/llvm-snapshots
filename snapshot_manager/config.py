@@ -23,13 +23,13 @@ def get_github_matrix(
         dict: A github workflow matrix dictionary
     """
     res = {
-        "names": [],
+        "name": [],
         "include": [],
         "today_minus_n_days": lookback_days,
     }
 
     if strategy in ("", "big-merge", "all"):
-        res["names"].append("big-merge")
+        res["name"].append("big-merge")
         res["include"].append(
             {
                 "name": "big-merge",
@@ -45,7 +45,7 @@ def get_github_matrix(
         )
 
     if strategy in ("", "pgo", "all"):
-        res["names"].append("pgo")
+        res["name"].append("pgo")
         res["include"].append(
             {
                 "name": "pgo",
