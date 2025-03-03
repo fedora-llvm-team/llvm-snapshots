@@ -132,9 +132,10 @@ def delete_project(client: copr.v3.Client, ownername: str, projectname: str):
         logging.info(f"Cancelling build with ID {build['build_id']}")
         client.build_proxy.cancel(build_id=build["build_id"])
 
-    logging.info(f"Waiting for builds to be canceled")
+    logging.info(f"Waiting for cancelled builds to finish")
     wait(waitable=active_builds, timeout=0)
 
+    logging.info(f"Deleting project {ownername}/{projectname}")
     client.project_proxy.delete(ownername=ownername, projectname=projectname)
 
 
