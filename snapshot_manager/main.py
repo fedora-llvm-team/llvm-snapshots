@@ -157,8 +157,8 @@ def main():
             chroots=args.chroots,
         )
     elif args.command == "github-matrix":
+        copr_client = copr_util.make_client()
         all_chroots = copr_util.get_all_chroots(client=copr_client)
-        util.augment_config_with_chroots(config=cfg, all_chroots=all_chroots)
         config_map = config.build_config_map()
         util.augment_config_map_with_chroots(
             config_map=config_map, all_chroots=all_chroots
