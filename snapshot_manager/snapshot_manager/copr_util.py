@@ -9,6 +9,7 @@ import re
 
 import copr.v3
 import munch
+from copr.v3.helpers import wait
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.config as config
@@ -76,6 +77,65 @@ def project_exists(
     except copr.v3.CoprNoResultException:
         return False
     return True
+
+
+def get_all_builds(
+    client: copr.v3.Client,
+    ownername: str,
+    projectname: str,
+) -> list[munch.Munch]:
+    return client.build_proxy.get_list(ownername=ownername, projectname=projectname)
+
+
+def filter_builds_by_state(
+    builds: list[munch.Munch],
+    state_pattern: str,
+) -> list[munch.Munch]:
+    """Returns copr builds for the given owner/project where the state matches the given pattern.
+
+    Args:
+        builds (list[munch.Munch]): A list of builds. See `get_all_builds` to get all builds for a given owner/project
+        state_pattern (str): Regular expression to select what states of a copr build are considered active. (e.g. `r"(running|waiting|pending|importing|starting)"`)
+
+    Returns:
+        list[munch.Munch]: A list of filtered builds
+
+    >>> from snapshot_manager.build_status import CoprBuildStatus
+    >>> b1 = munch.Munch(package_name="llvm", chroot = "rhel-9-ppc64le", state = CoprBuildStatus.RUNNING)
+    >>> b2 = munch.Munch(package_name="llvm", chroot = "centos-stream-10-ppc64le", state = CoprBuildStatus.STARTING)
+    >>> b3 = munch.Munch(package_name="llvm", chroot = "fedora-rawhide-x86_64", state = CoprBuildStatus.FAILED)
+    >>> res = filter_builds_by_state(builds=[b1,b2,b3], state_pattern=r"(running|waiting|pending|importing|starting)")
+    >>> res == [b1,b2]
+    True
+    """
+    return [
+        build for build in builds if re.match(pattern=state_pattern, string=build.state)
+    ]
+
+
+def delete_project(client: copr.v3.Client, ownername: str, projectname: str):
+    """Cancels all active builds in the given project, waits for them to truely finish and then deletes the project.
+
+    Args:
+        client (copr.v3.Client): The copr client to use
+        ownername (str): The copr ownername or groupname
+        projectname (str): The copr project name
+    """
+    all_builds = get_all_builds(
+        client=client, ownername=ownername, projectname=projectname
+    )
+    active_builds = filter_builds_by_state(
+        builds=all_builds, state_pattern=r"(running|waiting|pending|importing|starting)"
+    )
+
+    for build in active_builds:
+        logging.info(f"Cancelling build with ID {build['build_id']}")
+        client.build_proxy.cancel(build_id=build["build_id"])
+
+    logging.info(f"Waiting for builds to be canceled")
+    wait(waitable=active_builds, timeout=0)
+
+    client.project_proxy.delete(ownername=ownername, projectname=projectname)
 
 
 def get_all_build_states(

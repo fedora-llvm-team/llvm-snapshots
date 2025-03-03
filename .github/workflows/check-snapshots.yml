@@ -105,5 +105,5 @@ jobs:
           python3 snapshot_manager/main.py \
             --github-repo "${GITHUB_REPOSITORY}" \
             check \
-            --build-strategy ${{matrix.name}} \
+            --strategy ${{matrix.name}} \
             --yyyymmdd "$yyyymmdd"

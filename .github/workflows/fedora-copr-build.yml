@@ -67,12 +67,11 @@ jobs:
           dnf install -y copr-cli make bzip2 rpm-build pcre2-tools jq
 
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-python
 
       - name: "Variables and functions"
         shell: bash -e {0}
         run: |
-          source scripts/functions.sh
-
           today=$(date +%Y%m%d)
           yesterday=$(date -d "${today} -1 day" +%Y%m%d)
 
@@ -103,30 +102,14 @@ jobs:
             echo "target_project_exists=$(project_exists ${{ env.project_target }})"
           } >> "$GITHUB_ENV"
 
-      - name: "Canceling active builds (if any) in today's Copr project before recreating it: ${{ env.project_today }}"
+      - name: "Canceling active builds (if any) in today's Copr project and deleting it: ${{ env.project_today }}"
         if: ${{ env.todays_project_exists == 'true' }}
         shell: bash -e {0}
         run: |
-          source scripts/functions.sh
-
-          build_ids=""
-          for build_id in $(get_active_build_ids ${{ env.project_today }}); do
-            echo "Canceling build with ID $build_id"
-            copr cancel "$build_id"
-            build_ids="$build_ids $build_id"
-          done
-          if [[ "$build_ids" != "" ]]; then
-            echo "Waiting for build IDs to be canceled: $build_ids"
-            copr watch-build "$build_ids" || true
-          fi
-
-      - name: "Deleting today's Copr project before recreating it: ${{ env.project_today }}"
-        if: ${{ env.todays_project_exists == 'true' }}
-        shell: bash -e {0}
-        run: |
-          source scripts/functions.sh
-
-          copr delete ${{ env.project_today }}
+          python3 snapshot_manager/main.py \
+            delete-project \
+            --strategy ${{matrix.name}} \
+            --yyyymmdd "$yyyymmdd"
 
       - name: "Create today's Copr project: ${{ env.project_today }}"
         shell: bash -e {0}
