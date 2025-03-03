@@ -14,8 +14,8 @@ on:
         required: true
         type: string
       lookback_days:
-        description: "A JSON list of integers for how many days to look back. \"[0]\" means just today."
-        default: "[0]"
+        description: "A space separated list of integers for how many days to look back. \"0\" means just today."
+        default: "0"
         type: string
       strategy:
           description: 'build strategy'
@@ -39,11 +39,25 @@ jobs:
       mymatrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
     - uses: actions/checkout@v4
-    - uses: ./.github/actions/generate-matrix
+    - uses: ./.github/actions/prepare-python
+    - name: Setup Copr config file
+      env:
+        # You need to have those secrets in your repo.
+        # See also: https://copr.fedorainfracloud.org/api/.
+        COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
+      run: |
+        mkdir -p ~/.config
+        echo "$COPR_CONFIG" > ~/.config/copr
+    - name: generate-matrix
       id: set-matrix
-      with:
-        strategy: ${{ inputs.strategy }}
-        lookback_days: ${{ inputs.lookback_days }}
+      run: |
+        # shellcheck disable=SC2086
+        echo "myoutput=$(python3 \
+          snapshot_manager/main.py github-matrix \
+          --strategy ${{ inputs.strategy }} \
+          --lookback-days ${{ inputs.lookback_days }} \
+        )" >> $GITHUB_OUTPUT
+
   check-snapshot:
     if: github.repository_owner == 'fedora-llvm-team'
     needs: generate-matrix
@@ -81,12 +95,6 @@ jobs:
           TESTING_FARM_API_TOKEN_PUBLIC_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_PUBLIC_RANCH }}
           TESTING_FARM_API_TOKEN_REDHAT_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_REDHAT_RANCH }}
         run: |
-          extra_args=""
-
-          if [[ -n "${{ matrix.chroot_pattern }}" ]]; then
-            extra_args="${extra_args} --chroot-pattern ${{matrix.chroot_pattern}}"
-          fi
-
           if [[ "${{github.event_name}}" == "workflow_dispatch" ]]; then
             yyyymmdd=${{inputs.yyyymmdd}}
           else
@@ -96,12 +104,6 @@ jobs:
           # shellcheck disable=SC2086
           python3 snapshot_manager/main.py \
             --github-repo "${GITHUB_REPOSITORY}" \
-            --github-token-env GITHUB_TOKEN \
-            check ${extra_args} \
-            --maintainer-handle ${{matrix.maintainer_handle}} \
-            --packages llvm \
+            check \
             --build-strategy ${{matrix.name}} \
-            --copr-ownername ${{matrix.copr_ownername}} \
-            --copr-project-tpl ${{matrix.copr_project_tpl}} \
-            --copr-monitor-tpl ${{matrix.copr_monitor_tpl}} \
             --yyyymmdd "$yyyymmdd"

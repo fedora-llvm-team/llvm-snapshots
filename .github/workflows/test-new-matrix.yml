@@ -21,16 +21,22 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: ./.github/actions/prepare-python
-    - uses: ./.github/actions/generate-matrix
-      id: set-matrix
+    - name: Setup Copr config file
       env:
         # You need to have those secrets in your repo.
         # See also: https://copr.fedorainfracloud.org/api/.
         COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
-      with:
-        strategy: ${{ inputs.strategy }}
-        lookback_days: "0"
-        copr_config: $COPR_CONFIG
+      run: |
+        mkdir -p ~/.config
+        echo "$COPR_CONFIG" > ~/.config/copr
+    - name: generate-matrix
+      id: set-matrix
+      run: |
+        # shellcheck disable=SC2086
+        echo "myoutput=$(python3 \
+          snapshot_manager/main.py github-matrix \
+          --strategy ${{ inputs.strategy }} \
+        )" >> $GITHUB_OUTPUT
 
   build-on-copr:
     needs: generate-matrix
@@ -42,12 +48,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: "Loop over matrix"
+      - name: "Print matrix"
         shell: bash -e {0}
         run: |
           echo "name = ${{matrix.name}}"
           echo "copr_target_project = ${{matrix.copr_target_project}}"
-          echo "extra_script_file = ${{matrix.extra_script_file}}"
           echo "clone_url = ${{matrix.clone_url}}"
           echo "clone_ref = ${{matrix.clone_ref}}"
           echo "maintainer_handle = ${{matrix.maintainer_handle}}"

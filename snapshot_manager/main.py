@@ -4,7 +4,9 @@ import logging
 import sys
 
 import snapshot_manager.config as config
+import snapshot_manager.copr_util as copr_util
 import snapshot_manager.snapshot_manager as snapshot_manager
+import snapshot_manager.util as util
 
 
 def main():
@@ -27,15 +29,6 @@ def main():
     )
 
     mainparser.add_argument(
-        "--github-token-env",
-        metavar="ENV_NAME",
-        type=str,
-        dest="github_token_env",
-        default=cfg.github_token_env,
-        help="Default name of the environment variable which holds the github token",
-    )
-
-    mainparser.add_argument(
         "--github-repo",
         metavar="OWNER/REPO",
         type=str,
@@ -44,18 +37,9 @@ def main():
         help="Repo where to open or update issues.",
     )
 
-    # For config file support see:
-    # https://newini.wordpress.com/2021/06/11/how-to-import-config-file-to-argparse-using-configparser/
-    # subparser_check.add_argument(
-    #     "--config-file",
-    #     type=str,
-    #     nargs="+",
-    #     dest="config_file",
-    #     help="Path to config file?",
-    #     required=False
-    # )
-
     subparsers = mainparser.add_subparsers(help="Command to run", dest="command")
+
+    # region retest
 
     subparser_retest = subparsers.add_parser(
         "retest",
@@ -89,6 +73,53 @@ def main():
         help="In what issue number did the comment appear in.",
     )
 
+    # endregion retest
+    # region get-chroots
+
+    subparser_get_chroots = subparsers.add_parser(
+        "get-chroots",
+        description="Prints a space separated list of chroots for a given strategy",
+        **parser_args,
+    )
+
+    subparser_get_chroots.add_argument(
+        "--strategy",
+        dest="strategy",
+        type=str,
+        default="",
+        help=f"Strategy to use (NOTE: 'all' is NOT supported here)",
+    )
+
+    # endregion get-chroots
+    # region github-matrix
+
+    subparser_github_matrix = subparsers.add_parser(
+        "github-matrix",
+        description="Prints the github workflow matrix for a given or all strategies",
+        **parser_args,
+    )
+
+    subparser_github_matrix.add_argument(
+        "--strategy",
+        dest="strategy",
+        type=str,
+        default="",
+        help=f"Strategy to use ('all' or not specifying a strategy or will include all strategies)",
+    )
+
+    subparser_github_matrix.add_argument(
+        "--lookback",
+        metavar="DAY",
+        type=int,
+        nargs="+",
+        dest="lookback_days",
+        default=0,
+        help="Integers for how many days to look back (0 means just today)",
+    )
+
+    # endregion github-matrix
+    # region check
+
     subparser_check = subparsers.add_parser(
         "check",
         description="Check Copr status and update today's github issue",
@@ -96,69 +127,11 @@ def main():
     )
 
     subparser_check.add_argument(
-        "--packages",
-        metavar="PKG",
-        type=str,
-        nargs="+",
-        dest="packages",
-        default=cfg.packages,
-        help="Which packages are required to build?",
-    )
-
-    subparser_check.add_argument(
-        "--chroot-pattern",
-        metavar="REGULAR_EXPRESSION",
-        type=str,
-        dest="chroot_pattern",
-        default=cfg.chroot_pattern,
-        help="Chroots regex pattern for required chroots.",
-    )
-
-    subparser_check.add_argument(
         "--build-strategy",
         type=str,
         dest="build_strategy",
         default=cfg.build_strategy,
-        help="Build strategy to look for (e.g. 'standalone', 'big-merge', 'bootstrap').",
-    )
-
-    subparser_check.add_argument(
-        "--maintainer-handle",
-        metavar="GITHUB_HANDLE_WITHOUT_AT_SIGN",
-        type=str,
-        dest="maintainer_handle",
-        default=cfg.maintainer_handle,
-        help="Maintainer handle to use for assigning issues.",
-    )
-
-    subparser_check.add_argument(
-        "--copr-ownername",
-        metavar="COPR-OWNWERNAME",
-        type=str,
-        dest="copr_ownername",
-        default=cfg.copr_ownername,
-        help="Copr ownername to check.",
-    )
-
-    subparser_check.add_argument(
-        "--copr-project-tpl",
-        metavar="COPR-PROJECT-TPL",
-        type=str,
-        dest="copr_project_tpl",
-        default=cfg.copr_project_tpl,
-        help="Copr project name to check. 'YYYYMMDD' will be replaced, so make sure you have it in there.",
-    )
-
-    subparser_check.add_argument(
-        "--copr-monitor-tpl",
-        metavar="COPR-MONITOR-TPL",
-        type=str,
-        dest="copr_monitor_tpl",
-        default=cfg.copr_monitor_tpl,
-        help="URL to the Copr monitor page. We'll use this in the issue comment's body, not for querying Copr.",
-        # See https://github.com/python/cpython/issues/113878 for when we can
-        # use the __doc__ of a dataclass field.
-        # help=config.Config.copr_monitor_tpl.__doc__
+        help="Build strategy to look for (e.g. 'big-merge', 'pgo').",
     )
 
     subparser_check.add_argument(
@@ -169,36 +142,67 @@ def main():
         help="Default day for which to check",
     )
 
-    # if args.config_file:
-    #     config = configparser.ConfigParser()
-    #     config.read(args.config_file)
-    #     defaults = {}
-    #     defaults.update(dict(config.items("Defaults")))
-    #     mainparser.set_defaults(**defaults)
-    #     args = mainparser.parse_args() # Overwrite arguments
+    # endregion check
 
     args = mainparser.parse_args()
 
-    cfg.github_token_env = args.github_token_env
-    cfg.github_repo = args.github_repo
-
     if args.command == "check":
+        cfg.github_repo = args.github_repo
         cfg.datetime = args.datetime
-        cfg.packages = args.packages
-        cfg.chroot_pattern = args.chroot_pattern
         cfg.build_strategy = args.build_strategy
-        cfg.maintainer_handle = args.maintainer_handle
-        cfg.copr_ownername = args.copr_ownername
-        cfg.copr_project_tpl = args.copr_project_tpl
-        cfg.copr_monitor_tpl = args.copr_monitor_tpl
-
         snapshot_manager.SnapshotManager(config=cfg).check_todays_builds()
-    elif args.command == "retest":
+    if args.command == "retest":
+        cfg.github_repo = args.github_repo
         snapshot_manager.SnapshotManager(config=cfg).retest(
             issue_number=args.issue_number,
             trigger_comment_id=args.trigger_comment_id,
             chroots=args.chroots,
         )
+    elif args.command == "github-matrix":
+        copr_client = copr_util.make_client()
+        all_chroots = copr_util.get_all_chroots(client=copr_client)
+        util.augment_config_with_chroots(config=cfg, all_chroots=all_chroots)
+        config_map = config.build_config_map()
+        util.augment_config_map_with_chroots(
+            config_map=config_map, all_chroots=all_chroots
+        )
+        json = util.serialize_config_map_to_github_matrix(
+            config_map=config_map,
+            strategy=args.strategy,
+            lookback_days=args.lookback_days,
+        )
+        print(json)
+
+    if args.command in ("get-chroots", "has-all-good-builds"):
+        copr_client = copr_util.make_client()
+        all_chroots = copr_util.get_all_chroots(client=copr_client)
+        config_map = config.build_config_map()
+        util.augment_config_map_with_chroots(
+            config_map=config_map, all_chroots=all_chroots
+        )
+        if args.strategy not in config_map:
+            logging.error(
+                f"No strategy with name '{args.strategy}' found in list of strategies: {config_map.keys()}"
+            )
+            sys.exit(1)
+        cfg = config_map[args.strategy]
+
+    if args.command == "get-chroots":
+        print(" ".join(cfg.chroots))
+    elif args.command == "has-all-good-builds":
+        states = copr_util.get_all_build_states(
+            client=copr_client,
+            ownername=cfg.copr_ownername,
+            projectname=cfg.copr_projectname,
+        )
+        builds_succeeded = copr_util.has_all_good_builds(
+            required_chroots=cfg.chroots,
+            required_packages=args.packages,
+            states=states,
+        )
+        if not builds_succeeded:
+            logging.warning("Not all builds were successful")
+            sys.exit(1)
     else:
         logging.error(f"Unsupported argument: {args.command}")
 

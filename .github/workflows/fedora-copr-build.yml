@@ -27,16 +27,22 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: ./.github/actions/prepare-python
-    - uses: ./.github/actions/generate-matrix
-      id: set-matrix
+    - name: Setup Copr config file
       env:
         # You need to have those secrets in your repo.
         # See also: https://copr.fedorainfracloud.org/api/.
         COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
-      with:
-        strategy: ${{ inputs.strategy }}
-        lookback_days: "0"
-        copr_config: ${{ secrets.COPR_CONFIG }}
+      run: |
+        mkdir -p ~/.config
+        echo "$COPR_CONFIG" > ~/.config/copr
+    - name: generate-matrix
+      id: set-matrix
+      run: |
+        # shellcheck disable=SC2086
+        echo "myoutput=$(python3 \
+          snapshot_manager/main.py github-matrix \
+          --strategy ${{ inputs.strategy }} \
+        )" >> $GITHUB_OUTPUT
 
   build-on-copr:
     if: github.repository_owner == 'fedora-llvm-team'
@@ -66,7 +72,6 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           today=$(date +%Y%m%d)
           yesterday=$(date -d "${today} -1 day" +%Y%m%d)
@@ -83,7 +88,6 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           # Check if yesterday's project exists and all builds succeeded
           yesterdays_project_exists=$(project_exists ${{ env.project_yesterday }})
@@ -104,7 +108,6 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           build_ids=""
           for build_id in $(get_active_build_ids ${{ env.project_today }}); do
@@ -122,7 +125,6 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           copr delete ${{ env.project_today }}
 
@@ -130,7 +132,6 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           # shellcheck disable=SC2207
           chroot_opts=($(for c in ${{ matrix.chroots }}; do echo -n " --chroot $c "; done))
@@ -151,7 +152,6 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           for chroot in ${{ matrix.chroots }}; do
             copr edit-chroot --rpmbuild-with "snapshot_build" "${{ env.project_today }}/$chroot"
@@ -167,7 +167,6 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           copr add-package-scm \
             --clone-url ${{ matrix.clone_url }} \
@@ -182,7 +181,6 @@ jobs:
         shell: bash -e {0}
         run: |
           source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
 
           for chroot in ${{ matrix.chroots }}; do
             copr build-package \
