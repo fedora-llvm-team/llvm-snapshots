@@ -144,12 +144,26 @@ def main():
 
     args = mainparser.parse_args()
 
+    if args.command in ("get-chroots", "has-all-good-builds", "delete-project"):
+        copr_client = copr_util.make_client()
+        all_chroots = copr_util.get_all_chroots(client=copr_client)
+        config_map = config.build_config_map()
+        util.augment_config_map_with_chroots(
+            config_map=config_map, all_chroots=all_chroots
+        )
+        if args.strategy not in config_map:
+            logging.error(
+                f"No strategy with name '{args.strategy}' found in list of strategies: {config_map.keys()}"
+            )
+            sys.exit(1)
+        cfg = config_map[args.strategy]
+
     if args.command == "check":
         cfg.github_repo = args.github_repo
         cfg.datetime = args.datetime
         cfg.strategy = args.strategy
         snapshot_manager.SnapshotManager(config=cfg).check_todays_builds()
-    if args.command == "retest":
+    elif args.command == "retest":
         cfg.github_repo = args.github_repo
         snapshot_manager.SnapshotManager(config=cfg).retest(
             issue_number=args.issue_number,
@@ -169,22 +183,7 @@ def main():
             lookback_days=args.lookback_days,
         )
         print(json)
-
-    if args.command in ("get-chroots", "has-all-good-builds", "delete-project"):
-        copr_client = copr_util.make_client()
-        all_chroots = copr_util.get_all_chroots(client=copr_client)
-        config_map = config.build_config_map()
-        util.augment_config_map_with_chroots(
-            config_map=config_map, all_chroots=all_chroots
-        )
-        if args.strategy not in config_map:
-            logging.error(
-                f"No strategy with name '{args.strategy}' found in list of strategies: {config_map.keys()}"
-            )
-            sys.exit(1)
-        cfg = config_map[args.strategy]
-
-    if args.command == "get-chroots":
+    elif args.command == "get-chroots":
         print(" ".join(cfg.chroots))
     elif args.command == "delete-project":
         cfg.datetime = args.datetime
@@ -209,6 +208,7 @@ def main():
             sys.exit(1)
     else:
         logging.error(f"Unsupported argument: {args.command}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
