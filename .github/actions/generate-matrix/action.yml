@@ -28,7 +28,7 @@ runs:
               "copr_target_project": "@fedora-llvm-team/llvm-snapshots",
               "clone_url": "https://src.fedoraproject.org/rpms/llvm.git",
               "clone_ref": "rawhide",
-              "maintainer_handle": "tuliom",
+              "maintainer_handle": "tbaederr",
               "copr_ownername": "@fedora-llvm-team",
               "copr_project_tpl": "llvm-snapshots-big-merge-YYYYMMDD",
               "copr_monitor_tpl": "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
