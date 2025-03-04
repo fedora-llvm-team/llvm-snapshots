@@ -35,7 +35,8 @@ jobs:
         # shellcheck disable=SC2086
         matrix="$(python3 snapshot_manager/main.py github-matrix --strategy ${{ inputs.strategy }})"
         echo "$matrix"
-        echo "myoutput=$matrix" >> "$GITHUB_OUTPUT"
+        # shellcheck disable=SC2086
+        echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
   build-on-copr:
     needs: generate-matrix

@@ -39,7 +39,7 @@ jobs:
       id: set-matrix
       run: |
         # shellcheck disable=SC2086
-        echo "myoutput=$(python3 \
+        echo "matrix=$(python3 \
           snapshot_manager/main.py github-matrix \
           --strategy ${{ inputs.strategy }} \
         )" >> $GITHUB_OUTPUT
