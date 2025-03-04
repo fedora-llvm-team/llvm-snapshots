@@ -21,9 +21,6 @@ class Config:
     )
     """List of packages that are relevant to you."""
 
-    active_build_state_pattern: str = r"(running|waiting|pending|importing|starting)"
-    """Regular expression to select what states of a copr build are considered active."""
-
     datetime: "datetime.datetime" = datetime.datetime.now()
     """Datetime of today"""
 
@@ -171,19 +168,12 @@ class Config:
 
 
 def build_config_map() -> dict[str, Config]:
-    """Builds a dictionary for each supported build strategy with the name of the build strategy as keys.
+    """Builds a dictionary for each supported build strategy with the name of the build strategy as key.
 
     Returns:
         dict: The config map with build strategies as keys and config objects as values.
     """
-    configs = {}
-
-    def add_config(configs: dict, config):
-        configs[config.build_strategy] = config
-        return configs
-
-    configs = add_config(
-        configs,
+    configs = [
         Config(
             build_strategy="big-merge",
             copr_target_project="@fedora-llvm-team/llvm-snapshots",
@@ -194,10 +184,6 @@ def build_config_map() -> dict[str, Config]:
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
             chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
         ),
-    )
-
-    configs = add_config(
-        configs,
         Config(
             build_strategy="pgo",
             copr_target_project="@fedora-llvm-team/llvm-snapshots-pgo",
@@ -208,6 +194,6 @@ def build_config_map() -> dict[str, Config]:
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/",
             chroot_pattern="(fedora-41)",
         ),
-    )
+    ]
 
-    return configs
+    return {config.build_strategy: config for config in configs}

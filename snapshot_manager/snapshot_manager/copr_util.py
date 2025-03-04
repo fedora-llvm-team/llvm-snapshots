@@ -8,8 +8,8 @@ import os
 import re
 
 import copr.v3
+import copr.v3.helpers
 import munch
-from copr.v3.helpers import wait
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.config as config
@@ -114,7 +114,7 @@ def filter_builds_by_state(
 
 
 def delete_project(client: copr.v3.Client, ownername: str, projectname: str):
-    """Cancels all active builds in the given project, waits for them to truely finish and then deletes the project.
+    """Cancells all active builds in the given project, waits for them to truely finish and then deletes the project.
 
     Args:
         client (copr.v3.Client): The copr client to use
@@ -124,16 +124,17 @@ def delete_project(client: copr.v3.Client, ownername: str, projectname: str):
     all_builds = get_all_builds(
         client=client, ownername=ownername, projectname=projectname
     )
-    active_builds = filter_builds_by_state(
-        builds=all_builds, state_pattern=r"(running|waiting|pending|importing|starting)"
-    )
+
+    # Regular expression to select what states of a copr build are considered active.
+    pattern: str = r"(running|waiting|pending|importing|starting)"
+    active_builds = filter_builds_by_state(builds=all_builds, state_pattern=pattern)
 
     for build in active_builds:
         logging.info(f"Cancelling build with ID {build['build_id']}")
         client.build_proxy.cancel(build_id=build["build_id"])
 
     logging.info(f"Waiting for cancelled builds to finish")
-    wait(waitable=active_builds, timeout=0)
+    copr.v3.helpers.wait(waitable=active_builds, timeout=0)
 
     logging.info(f"Deleting project {ownername}/{projectname}")
     client.project_proxy.delete(ownername=ownername, projectname=projectname)

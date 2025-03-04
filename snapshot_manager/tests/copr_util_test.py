@@ -9,7 +9,7 @@ import pytest
 import tests.base_test as base_test
 
 import snapshot_manager.copr_util as copr_util
-from snapshot_manager.build_status import BuildState
+from snapshot_manager.build_status import BuildState, CoprBuildStatus
 
 
 @mock.patch("copr.v3.Client")
@@ -73,6 +73,46 @@ def test_project_exists(owner: str, project: str, expected: bool):
 def test_get_all_builds(client_mock: mock.Mock):
     copr_util.get_all_builds(client=client_mock, ownername="foo", projectname="bar")
     client_mock.build_proxy.get_list.assert_called_once_with(
+        ownername="foo", projectname="bar"
+    )
+
+
+@mock.patch("copr.v3.helpers.wait")
+@mock.patch("snapshot_manager.copr_util.get_all_builds")
+@mock.patch("copr.v3.Client")
+def test_delete_project(
+    client_mock: mock.Mock, get_all_builds_mock: mock.Mock, wait_mock: mock.Mock
+):
+    # Prepare a set of builds, some "active" and some not.
+    build1 = munch.Munch(id=1, build_id=1, state=CoprBuildStatus.RUNNING)
+    build2 = munch.Munch(id=2, build_id=2, state=CoprBuildStatus.FAILED)
+    build3 = munch.Munch(id=3, build_id=3, state=CoprBuildStatus.PENDING)
+    get_all_builds_mock.return_value = [build1, build2, build3]
+
+    # The actual test call
+    copr_util.delete_project(client=client_mock, ownername="foo", projectname="bar")
+
+    # Assert that the active builds have been called
+    get_all_builds_mock.assert_called_once_with(
+        client=client_mock, ownername="foo", projectname="bar"
+    )
+
+    # Assert that build1 and build3 have been cancelled but not build2
+    assert client_mock.build_proxy.cancel.call_count == 2
+    cancel_call_list = client_mock.build_proxy.cancel.call_args_list
+    cancelled_build_ids = [call.kwargs["build_id"] for call in cancel_call_list]
+    assert build1["build_id"] in cancelled_build_ids
+    assert build2["build_id"] not in cancelled_build_ids
+    assert build3["build_id"] in cancelled_build_ids
+
+    # Assert that we waited on build1 and build3 but not on build2
+    waited_on_builds = wait_mock.call_args.kwargs["waitable"]
+    assert build1 in waited_on_builds
+    assert build2 not in waited_on_builds
+    assert build3 in waited_on_builds
+
+    # Assert that we finally deleted the project
+    client_mock.project_proxy.delete.assert_called_once_with(
         ownername="foo", projectname="bar"
     )
 
