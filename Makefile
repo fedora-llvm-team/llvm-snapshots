@@ -10,7 +10,7 @@ venv: .venv/touchfile
 
 .venv/touchfile: requirements.txt
 	rpm -q python3-devel
-	python3 -m venv .venv
+	python3 -m venv --system-site-packages .venv
 	. .venv/bin/activate \
 	&& pip install -r requirements.txt \
 	&& pip install --upgrade pip
