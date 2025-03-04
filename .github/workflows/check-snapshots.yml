@@ -89,7 +89,6 @@ jobs:
 
       - name: "Check day (today minus ${{matrix.today_minus_n_days}} days)"
         if: github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name)
-        shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TESTING_FARM_API_TOKEN_PUBLIC_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_PUBLIC_RANCH }}

@@ -90,11 +90,6 @@ class Config:
         return self.copr_project_tpl.replace("YYYYMMDD", self.yyyymmdd)
 
     @property
-    def copr_project(self) -> str:
-        """Returns the owner/project string for the current date."""
-        return f"{self.config.copr_ownername}/{self.config.copr_projectname}"
-
-    @property
     def copr_monitor_url(self) -> str:
         """Takes the copr_monitor_tpl and replaces the YYYYMMDD placeholder (if any) with a date.
 
@@ -143,7 +138,7 @@ class Config:
         ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"]
         ... ).to_github_dict())
         {'chroot_pattern': '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)',
-         'chroots': 'fedora-rawhide-x86_64 rhel-9-ppc64le'],
+         'chroots': 'fedora-rawhide-x86_64 rhel-9-ppc64le',
          'clone_ref': 'mainbranch',
          'clone_url': 'https://src.fedoraproject.org/rpms/mypackage.git',
          'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/',
