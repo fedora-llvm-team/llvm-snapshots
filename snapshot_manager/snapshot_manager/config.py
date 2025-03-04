@@ -146,7 +146,7 @@ class Config:
         ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"]
         ... ).to_github_dict())
         {'chroot_pattern': '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)',
-         'chroots': ['fedora-rawhide-x86_64', 'rhel-9-ppc64le'],
+         'chroots': 'fedora-rawhide-x86_64 rhel-9-ppc64le'],
          'clone_ref': 'mainbranch',
          'clone_url': 'https://src.fedoraproject.org/rpms/mypackage.git',
          'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/',
@@ -166,7 +166,7 @@ class Config:
             "copr_project_tpl": self.copr_project_tpl,
             "copr_monitor_tpl": self.copr_monitor_tpl,
             "chroot_pattern": self.chroot_pattern,
-            "chroots": self.chroots,
+            "chroots": " ".join(self.chroots),
         }
 
 
