@@ -612,36 +612,53 @@ def serialize_config_map_to_github_matrix(
 
     >>> strategy = "foo"
     >>> config_map = dict()
-    >>> config_map["foo"] = config.Config(build_strategy="foo", chroot_pattern=r"fedora-.*", chroots=["fedora-rawhide-x86_64"])
-    >>> config_map["bar"] = config.Config(build_strategy="bar", chroot_pattern=r"rhel-.*", chroots=["rhel-9-x86_64"])
+    >>> config_map["mybuildstrategy"] = config.Config(build_strategy="mybuildstrategy",
+    ...   copr_target_project="@mycoprgroup/mycoprproject",
+    ...   package_clone_url="https://src.fedoraproject.org/rpms/mypackage.git",
+    ...   package_clone_ref="mainbranch",
+    ...   maintainer_handle="fakeperson",
+    ...   copr_project_tpl="SomeProjectTemplate-YYYYMMDD",
+    ...   copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/",
+    ...   chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
+    ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"]
+    ... )
+    >>> config_map["mybuildstrategy2"] = config.Config(build_strategy="mybuildstrategy2",
+    ...   copr_target_project="@mycoprgroup2/mycoprproject2",
+    ...   package_clone_url="https://src.fedoraproject.org/rpms/mypackage2.git",
+    ...   package_clone_ref="mainbranch2",
+    ...   maintainer_handle="fakeperson2",
+    ...   copr_project_tpl="SomeProjectTemplate2-YYYYMMDD",
+    ...   copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate2-YYYYMMDD/monitor/",
+    ...   chroot_pattern="rhel-[8,9]",
+    ...   chroots=["rhel-9-ppc64le"]
+    ... )
     >>> s = serialize_config_map_to_github_matrix(strategy="all", config_map=config_map, lookback_days=[0,1,2,3])
     >>> obj = json.loads(s)
     >>> import pprint
     >>> pprint.pprint(obj)
-    {'include': [{'chroot_pattern': 'fedora-.*',
-                  'chroots': ['fedora-rawhide-x86_64'],
-                  'clone_ref': 'rawhide',
-                  'clone_url': 'https://src.fedoraproject.org/rpms/llvm.git',
-                  'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/',
+    {'include': [{'chroot_pattern': '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)',
+                  'chroots': 'fedora-rawhide-x86_64 rhel-9-ppc64le',
+                  'clone_ref': 'mainbranch',
+                  'clone_url': 'https://src.fedoraproject.org/rpms/mypackage.git',
+                  'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/',
                   'copr_ownername': '@fedora-llvm-team',
-                  'copr_project_tpl': 'llvm-snapshots-incubator-YYYYMMDD',
-                  'copr_target_project': '@fedora-llvm-team/llvm-snapshots',
-                  'maintainer_handle': 'kwk',
-                  'name': 'foo'},
-                 {'chroot_pattern': 'rhel-.*',
-                  'chroots': ['rhel-9-x86_64'],
-                  'clone_ref': 'rawhide',
-                  'clone_url': 'https://src.fedoraproject.org/rpms/llvm.git',
-                  'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/',
+                  'copr_project_tpl': 'SomeProjectTemplate-YYYYMMDD',
+                  'copr_target_project': '@mycoprgroup/mycoprproject',
+                  'maintainer_handle': 'fakeperson',
+                  'name': 'mybuildstrategy'},
+                 {'chroot_pattern': 'rhel-[8,9]',
+                  'chroots': 'rhel-9-ppc64le',
+                  'clone_ref': 'mainbranch2',
+                  'clone_url': 'https://src.fedoraproject.org/rpms/mypackage2.git',
+                  'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate2-YYYYMMDD/monitor/',
                   'copr_ownername': '@fedora-llvm-team',
-                  'copr_project_tpl': 'llvm-snapshots-incubator-YYYYMMDD',
-                  'copr_target_project': '@fedora-llvm-team/llvm-snapshots',
-                  'maintainer_handle': 'kwk',
-                  'name': 'bar'}],
-     'name': ['foo', 'bar'],
+                  'copr_project_tpl': 'SomeProjectTemplate2-YYYYMMDD',
+                  'copr_target_project': '@mycoprgroup2/mycoprproject2',
+                  'maintainer_handle': 'fakeperson2',
+                  'name': 'mybuildstrategy2'}],
+     'name': ['mybuildstrategy', 'mybuildstrategy2'],
      'today_minus_n_days': [0, 1, 2, 3]}
     """
-
     res = {
         "name": [],
         "include": [],

@@ -180,7 +180,7 @@ def main():
         json = util.serialize_config_map_to_github_matrix(
             config_map=config_map,
             strategy=args.strategy,
-            lookback_days=args.lookback_days,
+            # lookback_days=args.lookback_days,
         )
         print(json)
     elif args.command == "get-chroots":
