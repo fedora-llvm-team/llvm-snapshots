@@ -6,6 +6,8 @@ omit =
     */.venv/*
     # omit everything in /usr
     /usr/*
+    # Omit any file
+    *_test.py
 
 # See https://coverage.readthedocs.io/en/latest/config.html#run-data-file
 data_file=.coverage
