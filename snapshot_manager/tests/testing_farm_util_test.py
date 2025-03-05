@@ -1,4 +1,4 @@
-""" Tests for build_status """
+"""Tests for build_status"""
 
 import datetime
 

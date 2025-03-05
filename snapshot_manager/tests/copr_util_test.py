@@ -1,4 +1,4 @@
-""" Tests for copr_client """
+"""Tests for copr_client"""
 
 import uuid
 

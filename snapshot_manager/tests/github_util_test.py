@@ -1,4 +1,4 @@
-""" Tests for github_util """
+"""Tests for github_util"""
 
 import collections
 import datetime
