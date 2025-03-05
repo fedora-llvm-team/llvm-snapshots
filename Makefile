@@ -2,10 +2,6 @@ SHELL := /bin/bash
 
 temp_dir:=$(shell mktemp -d)
 
-.PHONY: clean
-clean:
-	rm -rf .venv
-
 venv: .venv/touchfile
 
 .venv/touchfile: requirements.txt
