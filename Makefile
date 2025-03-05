@@ -34,16 +34,12 @@ build-diagrams: venv
 test: venv
 	. .venv/bin/activate && pytest
 
-# Coverage options used in the CI coverage runs and the ones run locally on a
-# developer machine using a local environment
-$(eval coverage_opts:=--rcfile=.coveragerc)
-
 .PHONY: coverage
 coverage: venv
 	. .venv/bin/activate \
-	&& coverage erase $(coverage_opts) \
-	&& coverage run $(coverage_opts) -m pytest \
-	&& coverage report $(coverage_opts) --show-missing \
+	&& coverage erase \
+	&& coverage run -m pytest \
+	&& coverage report --show-missing \
 	&& coverage html
 
 # CI recipes
@@ -51,9 +47,9 @@ coverage: venv
 .PHONY: ci-coverage
 ci-coverage:
 	# Ensure previous data won't interfere with the new execution.
-	coverage erase $(coverage_opts)
-	coverage run $(coverage_opts) -m pytest
-	coverage report $(coverage_opts) --show-missing
+	coverage erase
+	coverage run -m pytest
+	coverage report --show-missing
 
 .PHONY: ci-test
 ci-test:
