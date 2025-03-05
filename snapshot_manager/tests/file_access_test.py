@@ -1,4 +1,4 @@
-""" Tests for file_access """
+"""Tests for file_access"""
 
 import tests.base_test as base_test
 

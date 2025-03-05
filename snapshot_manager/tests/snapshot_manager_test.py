@@ -1,4 +1,4 @@
-""" Tests for snapshot_manager """
+"""Tests for snapshot_manager"""
 
 import datetime
 

@@ -1,4 +1,4 @@
-""" Tests for util """
+"""Tests for util"""
 
 import tests.base_test as base_test
 

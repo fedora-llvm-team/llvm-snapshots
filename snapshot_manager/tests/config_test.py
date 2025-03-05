@@ -1,4 +1,4 @@
-""" Tests for config """
+"""Tests for config"""
 
 import datetime
 
