@@ -1,0 +1,13 @@
+[run]
+# See https://coverage.readthedocs.io/en/latest/config.html#run-omit
+omit =
+    # omit anything in a .local or .venv directory anywhere
+    */.local/*
+    */.venv/*
+    # omit everything in /usr
+    /usr/*
+    # Omit any test file
+    *_test.py
+
+# See https://coverage.readthedocs.io/en/latest/config.html#run-data-file
+data_file=.coverage
