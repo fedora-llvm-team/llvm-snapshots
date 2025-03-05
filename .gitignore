@@ -1,5 +1,10 @@
 buildroot/
 *.rpm
-.coverage
 .vscode
 __pycache__/
+# Ignore coverage
+.coverage*
+# Don't ignore coverage configuration
+!.coveragerc
+# Ignore virtual env
+.venv/

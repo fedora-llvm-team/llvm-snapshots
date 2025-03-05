@@ -10,7 +10,7 @@ venv: .venv/touchfile
 
 .venv/touchfile: requirements.txt
 	rpm -q python3-devel
-	python3 -m venv --system-site-packages .venv
+	python3 -m venv --system-site-packages --upgrade-deps .venv
 	. .venv/bin/activate \
 	&& pip install -r requirements.txt \
 	&& pip install --upgrade pip
@@ -38,12 +38,16 @@ build-diagrams: venv
 test: venv
 	. .venv/bin/activate && pytest
 
+# Coverage options used in the CI coverage runs and the ones run locally on a
+# developer machine using a local environment
+$(eval coverage_opts:=--rcfile=.coveragerc)
+
 .PHONY: coverage
-coverage:
+coverage: venv
 	. .venv/bin/activate \
-	&& coverage erase \
-	&& coverage run -m pytest \
-	&& coverage report -m \
+	&& coverage erase $(coverage_opts) \
+	&& coverage run $(coverage_opts) -m pytest \
+	&& coverage report $(coverage_opts) --show-missing \
 	&& coverage html
 
 # CI recipes
@@ -51,9 +55,9 @@ coverage:
 .PHONY: ci-coverage
 ci-coverage:
 	# Ensure previous data won't interfere with the new execution.
-	coverage erase
-	coverage run -m pytest
-	coverage report -m
+	coverage erase $(coverage_opts)
+	coverage run $(coverage_opts) -m pytest
+	coverage report $(coverage_opts) --show-missing
 
 .PHONY: ci-test
 ci-test:
