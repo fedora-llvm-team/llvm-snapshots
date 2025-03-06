@@ -11,15 +11,15 @@ class Config:
     chroot_pattern: str = r"^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)"
     """Regular expression to select chroots from all chroots currently supported on Copr."""
 
+    chroots: list[str] = None
+    """A list of chroot names. To be filled automatically for you from the chroot_pattern. See util.augment_config_with_chroots()"""
+
     packages: list[str] = dataclasses.field(
         default_factory=lambda: [
             "llvm",
         ]
     )
     """List of packages that are relevant to you."""
-
-    active_build_state_pattern: str = r"(running|waiting|pending|importing|starting)"
-    """Regular expression to select what states of a copr build are considered active."""
 
     datetime: "datetime.datetime" = datetime.datetime.now()
     """Datetime of today"""
@@ -28,9 +28,15 @@ class Config:
     """The build strategy to use a by default."""
 
     github_repo: str = "fedora-llvm-team/llvm-snapshots-test"
-    """Default github repo to use"""
+    """Default github repo to use for creating issues"""
 
-    github_token_env: str = "GH_TEST_TOKEN"
+    package_clone_url: str = "https://src.fedoraproject.org/rpms/llvm.git"
+    """The package to clone from when creating RPMs"""
+
+    package_clone_ref: str = "rawhide"
+    """The git clone ref to use for creating the RPMs"""
+
+    github_token_env: str = "GITHUB_TOKEN"
     """Default name of the environment variable which holds the github token"""
 
     update_marker: str = "<!--UPDATES_FOLLOW_HERE-->"
@@ -41,6 +47,9 @@ class Config:
 
     creator_handle: str = "github-actions[bot]"
     """The Github user that is expected to have created the daily issue (TODO(kwk): Improve documentation)"""
+
+    copr_target_project: str = "@fedora-llvm-team/llvm-snapshots"
+    """The Copr project that the daily snapshot will be converted to if all goes well"""
 
     copr_ownername: str = "@fedora-llvm-team"
     """The Copr owner name of the project to work with"""
@@ -81,11 +90,6 @@ class Config:
         return self.copr_project_tpl.replace("YYYYMMDD", self.yyyymmdd)
 
     @property
-    def copr_project(self) -> str:
-        """Returns the owner/project string for the current date."""
-        return f"{self.config.copr_ownername}/{self.config.copr_projectname}"
-
-    @property
     def copr_monitor_url(self) -> str:
         """Takes the copr_monitor_tpl and replaces the YYYYMMDD placeholder (if any) with a date.
 
@@ -113,3 +117,78 @@ class Config:
         '20240229'
         """
         return self.datetime.strftime("%Y%m%d")
+
+    def to_github_dict(self) -> dict:
+        """Returns a subset of config entries to be used in a github workflow matrix.
+
+        The keys in this dict are accessed from github workflow files using the "matrix." object.
+        For example the maintainer handle will be accessed as `${{ matrix.maintainer_handle }}`.
+
+        Examples:
+
+        >>> import pprint
+        >>> pprint.pprint(Config(build_strategy="mybuildstrategy",
+        ...   copr_target_project="@mycoprgroup/mycoprproject",
+        ...   package_clone_url="https://src.fedoraproject.org/rpms/mypackage.git",
+        ...   package_clone_ref="mainbranch",
+        ...   maintainer_handle="fakeperson",
+        ...   copr_project_tpl="SomeProjectTemplate-YYYYMMDD",
+        ...   copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/",
+        ...   chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
+        ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"]
+        ... ).to_github_dict())
+        {'chroot_pattern': '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)',
+         'chroots': 'fedora-rawhide-x86_64 rhel-9-ppc64le',
+         'clone_ref': 'mainbranch',
+         'clone_url': 'https://src.fedoraproject.org/rpms/mypackage.git',
+         'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/',
+         'copr_ownername': '@fedora-llvm-team',
+         'copr_project_tpl': 'SomeProjectTemplate-YYYYMMDD',
+         'copr_target_project': '@mycoprgroup/mycoprproject',
+         'maintainer_handle': 'fakeperson',
+         'name': 'mybuildstrategy'}
+        """
+        return {
+            "name": self.build_strategy,
+            "copr_target_project": self.copr_target_project,
+            "clone_url": self.package_clone_url,
+            "clone_ref": self.package_clone_ref,
+            "maintainer_handle": self.maintainer_handle,
+            "copr_ownername": self.copr_ownername,
+            "copr_project_tpl": self.copr_project_tpl,
+            "copr_monitor_tpl": self.copr_monitor_tpl,
+            "chroot_pattern": self.chroot_pattern,
+            "chroots": " ".join(self.chroots),
+        }
+
+
+def build_config_map() -> dict[str, Config]:
+    """Builds a dictionary for each supported build strategy with the name of the build strategy as key.
+
+    Returns:
+        dict: The config map with build strategies as keys and config objects as values.
+    """
+    configs = [
+        Config(
+            build_strategy="big-merge",
+            copr_target_project="@fedora-llvm-team/llvm-snapshots",
+            package_clone_url="https://src.fedoraproject.org/rpms/llvm.git",
+            package_clone_ref="rawhide",
+            maintainer_handle="tuliom",
+            copr_project_tpl="llvm-snapshots-big-merge-YYYYMMDD",
+            copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
+            chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
+        ),
+        Config(
+            build_strategy="pgo",
+            copr_target_project="@fedora-llvm-team/llvm-snapshots-pgo",
+            package_clone_url="https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git",
+            package_clone_ref="pgo",
+            maintainer_handle="kwk",
+            copr_project_tpl="llvm-snapshots-pgo-YYYYMMDD",
+            copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/",
+            chroot_pattern="(fedora-41)",
+        ),
+    ]
+
+    return {config.build_strategy: config for config in configs}
