@@ -26,11 +26,23 @@ jobs:
       mymatrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
     - uses: actions/checkout@v4
-    - uses: ./.github/actions/generate-matrix
+    - uses: ./.github/actions/prepare-python
+    - name: Setup Copr config file
+      env:
+        # You need to have those secrets in your repo.
+        # See also: https://copr.fedorainfracloud.org/api/.
+        COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
+      run: |
+        mkdir -p ~/.config
+        echo "$COPR_CONFIG" > ~/.config/copr
+    - name: generate-matrix
       id: set-matrix
-      with:
-        strategy: ${{ inputs.strategy }}
-        lookback_days: "[0]"
+      run: |
+        # shellcheck disable=SC2086
+        echo "matrix=$(python3 \
+          snapshot_manager/main.py github-matrix \
+          --strategy ${{ inputs.strategy }} \
+        )" >> $GITHUB_OUTPUT
 
   build-on-copr:
     if: github.repository_owner == 'fedora-llvm-team'
@@ -41,97 +53,74 @@ jobs:
     runs-on: ubuntu-latest
     container: fedora:41
     steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-python
+
       - name: Setup Copr config file
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
-          COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
+          COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
         run: |
           mkdir -p ~/.config
-          echo "$COPR_CONFIG_FILE" > ~/.config/copr
+          echo "$COPR_CONFIG" > ~/.config/copr
 
       - name: Install Copr CLI and required tools
         run: |
           dnf install -y copr-cli make bzip2 rpm-build pcre2-tools jq
 
-      - uses: actions/checkout@v4
-
-      - name: "Variables and functions"
-        shell: bash -e {0}
+      - name: "Variables"
         run: |
-          source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
-
           today=$(date +%Y%m%d)
           yesterday=$(date -d "${today} -1 day" +%Y%m%d)
-
-          chroots="$(get_chroots)"
 
           username=@fedora-llvm-team
           {
             echo "username=$username"
-            echo "chroots=$chroots"
-            echo "all_chroots=$all_chroots"
+            echo "yesterday=$yesterday"
             echo "project_today=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/"
             echo "project_yesterday=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$yesterday/"
             echo "project_target=${{ matrix.copr_target_project }}"
           } >> "$GITHUB_ENV"
 
       - name: "Check for Copr projects existence (yesterday, today, target)"
-        shell: bash -e {0}
         run: |
-          source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
+          # Checks if a copr project exists
+          function copr_project_exists(){
+            local project="$1";
+            copr get "$project" > /dev/null 2>&1
+          }
+
+          # Check general availability of projects
+          copr_project_exists ${{ env.project_today }} && todays_project_exists=yes
+          copr_project_exists ${{ env.project_yesterday }} && yesterdays_project_exists=yes
+          copr_project_exists ${{ env.project_target }} && target_project_exists=yes
 
           # Check if yesterday's project exists and all builds succeeded
-          yesterdays_project_exists=$(project_exists ${{ env.project_yesterday }})
-          if [[ "$yesterdays_project_exists" == "true" ]]; then
-            if ! has_all_good_builds ${{env.project_yesterday}}; then
-              yesterdays_project_exists=false
+          if [[ "$yesterdays_project_exists" == "yes" ]]; then
+            if ! python3 snapshot_manager/main.py has-all-good-builds --strategy ${{matrix.name}} --yyyymmdd ${{env.yesterday}}; then
+              yesterdays_project_exists=no
             fi
           fi
 
           {
-            echo "todays_project_exists=$(project_exists ${{ env.project_today }})"
+            echo "todays_project_exists=$todays_project_exists"
             echo "yesterdays_project_exists=$yesterdays_project_exists"
-            echo "target_project_exists=$(project_exists ${{ env.project_target }})"
+            echo "target_project_exists=$target_project_exists"
           } >> "$GITHUB_ENV"
 
-      - name: "Canceling active builds (if any) in today's Copr project before recreating it: ${{ env.project_today }}"
-        if: ${{ env.todays_project_exists == 'true' }}
-        shell: bash -e {0}
+      - name: "Canceling active builds (if any) in today's Copr project and deleting it: ${{ env.project_today }}"
+        if: ${{ env.todays_project_exists == 'yes' }}
         run: |
-          source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
-
-          build_ids=""
-          for build_id in $(get_active_build_ids ${{ env.project_today }}); do
-            echo "Canceling build with ID $build_id"
-            copr cancel "$build_id"
-            build_ids="$build_ids $build_id"
-          done
-          if [[ "$build_ids" != "" ]]; then
-            echo "Waiting for build IDs to be canceled: $build_ids"
-            copr watch-build "$build_ids" || true
-          fi
-
-      - name: "Deleting today's Copr project before recreating it: ${{ env.project_today }}"
-        if: ${{ env.todays_project_exists == 'true' }}
-        shell: bash -e {0}
-        run: |
-          source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
-
-          copr delete ${{ env.project_today }}
+          python3 snapshot_manager/main.py \
+            delete-project \
+            --strategy ${{matrix.name}} \
+            --yyyymmdd "$yyyymmdd"
 
       - name: "Create today's Copr project: ${{ env.project_today }}"
-        shell: bash -e {0}
         run: |
-          source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
-
           # shellcheck disable=SC2207
-          chroot_opts=($(for c in ${{ env.chroots }}; do echo -n " --chroot $c "; done))
+          chroot_opts=($(for c in ${{ matrix.chroots }}; do echo -n " --chroot $c "; done))
 
           copr create \
             --instructions "$(cat project-instructions.md)" \
@@ -146,12 +135,8 @@ jobs:
             "${chroot_opts[@]}" "${{ env.project_today }}"
 
       - name: "Enable snapshot_build build condition for all and swig:4.0 module in RHEL 8 build chroots (if any)"
-        shell: bash -e {0}
         run: |
-          source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
-
-          for chroot in ${{ env.chroots }}; do
+          for chroot in ${{ matrix.chroots }}; do
             copr edit-chroot --rpmbuild-with "snapshot_build" "${{ env.project_today }}/$chroot"
             if [[ "$chroot" == rhel-8-* ]]; then
               copr edit-chroot --modules "swig:4.0" "${{ env.project_today }}/$chroot"
@@ -162,11 +147,7 @@ jobs:
           done
 
       - name: "Create today's package"
-        shell: bash -e {0}
         run: |
-          source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
-
           copr add-package-scm \
             --clone-url ${{ matrix.clone_url }} \
             --commit ${{ matrix.clone_ref }} \
@@ -177,12 +158,8 @@ jobs:
             "${{ env.project_today }}"
 
       - name: "Build llvm package"
-        shell: bash -e {0}
         run: |
-          source scripts/functions.sh
-          [[ -n "${{ matrix.extra_script_file }}" ]] && source ${{ matrix.extra_script_file }}
-
-          for chroot in ${{ env.chroots }}; do
+          for chroot in ${{ matrix.chroots }}; do
             copr build-package \
               --timeout $((30*3600)) \
               --nowait \
@@ -193,7 +170,7 @@ jobs:
           done
 
       - name: "Delete target Copr project at ${{ env.project_target }} before forking to it"
-        if: ${{ env.yesterdays_project_exists == 'true' && env.target_project_exists == 'true' }}
+        if: ${{ env.yesterdays_project_exists == 'yes' && env.target_project_exists == 'yes' }}
         run: |
           copr delete "${{ env.project_target }}"
           # Give Copr some time to process the deletion, to avoid race conditions with forking.
@@ -201,7 +178,7 @@ jobs:
           sleep 1m
 
       - name: "Fork Copr project from ${{ env.project_yesterday }} to ${{ env.project_target }}"
-        if: ${{ env.yesterdays_project_exists == 'true' }}
+        if: ${{ env.yesterdays_project_exists == 'yes' }}
         run: |
           copr fork --confirm ${{ env.project_yesterday }} ${{ env.project_target }}
           copr modify --delete-after-days -1 --unlisted-on-hp off ${{ env.project_target }}
@@ -209,6 +186,6 @@ jobs:
       - name: "Regenerate repos for target project ${{ env.project_target }}"
         # If yesterday's project didn't exist, we haven't forked and so we don't
         # need to regenerate the repos.
-        if: ${{ env.yesterdays_project_exists == 'true' }}
+        if: ${{ env.yesterdays_project_exists == 'yes' }}
         run: |
           copr regenerate-repos ${{ env.project_target }}

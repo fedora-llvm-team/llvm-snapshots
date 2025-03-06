@@ -21,9 +21,14 @@ import snapshot_manager.util as util
 
 class SnapshotManager:
 
-    def __init__(self, config: config.Config = config.Config()):
+    def __init__(self, config: config.Config):
         self.config = config
-        self.copr = copr_util.CoprClient(config=config)
+        self.copr = copr_util.make_client()
+        # In case this wasn't done before, augment the config with a list of
+        # chroots of interest.
+        if self.config.chroots is None:
+            all_chroots = copr_util.get_all_chroots(client=self.copr)
+            util.augment_config_with_chroots(config=config, all_chroots=all_chroots)
         self.github = github_util.GithubClient(config=config)
 
     @classmethod
@@ -116,15 +121,14 @@ class SnapshotManager:
         logging.info(
             f"Checking if all given chroots are really relevant for us or even chroots"
         )
-        relevant_chroots = self.copr.get_copr_chroots()
         for chroot in chroots:
             logging.info(f"Checking chroot: {chroot}")
             if not util.is_chroot(chroot):
                 logging.info(f"Chroot {chroot} is not a valid chroot.")
                 return
-            if chroot not in relevant_chroots:
+            if chroot not in self.config.chroots:
                 logging.info(
-                    f"Chroot {chroot} is not in the list of chroots that we consider: {relevant_chroots}"
+                    f"Chroot {chroot} is not in the list of chroots that we consider: {self.config.chroots}"
                 )
                 return
 
@@ -173,13 +177,11 @@ class SnapshotManager:
         #     )
         #     return
 
-        all_chroots = self.copr.get_copr_chroots()
-
         if issue_is_newly_created:
             # The issue was newly created so we'll create comments for each
             # chroot that we care about and hide them for now. Then humanly
             # created output will always come at the end.
-            for chroot in all_chroots:
+            for chroot in self.config.chroots:
                 comment = issue.create_comment(
                     f"<!--ERRORS_FOR_CHROOT/{chroot}--> This is a placeholder for any errors that might happen for the <code>{chroot}</code> chroot."
                 )
@@ -191,15 +193,14 @@ class SnapshotManager:
             issue.add_to_assignees(self.config.maintainer_handle)
 
         logging.info("Get build states from copr")
-        states = self.copr.get_build_states_from_copr_monitor(
-            copr_ownername=self.config.copr_ownername,
-            copr_projectname=self.config.copr_projectname,
+        states = copr_util.get_all_build_states(
+            client=self.copr.copr,
+            ownername=self.config.copr_ownername,
+            projectname=self.config.copr_projectname,
         )
 
         logging.info("Filter states by chroot of interest")
-        states = [
-            state for state in states if state.chroot in self.copr.get_copr_chroots()
-        ]
+        states = [state for state in states if state.chroot in self.config.chroots]
 
         logging.info("Augment the states with information from the build logs")
         states = [state.augment_with_error() for state in states]
@@ -208,7 +209,7 @@ class SnapshotManager:
 
         logging.info("Add a build matrix")
         build_status_matrix = build_status.markdown_build_status_matrix(
-            chroots=all_chroots,
+            chroots=self.config.chroots,
             packages=self.config.packages,
             build_states=states,
         )
@@ -244,7 +245,7 @@ class SnapshotManager:
         logging.info("Filter testing-farm requests by chroot of interest")
         new_requests = dict()
         for chroot in requests:
-            if chroot in self.copr.get_copr_chroots():
+            if chroot in self.config.chroots:
                 new_requests[chroot] = requests[chroot]
         requests = new_requests
 
@@ -257,11 +258,11 @@ class SnapshotManager:
         #         f"Github only allows {max_length} characters on a comment body and we have reached {len(comment_body)} characters."
         #     )
 
-        self.handle_labels(issue=issue, all_chroots=all_chroots, errors=errors)
+        self.handle_labels(issue=issue, errors=errors)
 
         failed_test_cases: list[tf.FailedTestCase] = []
 
-        for chroot in all_chroots:
+        for chroot in self.config.chroots:
             # Create or update a comment for each chroot that has errors and render
             errors_for_this_chroot = [
                 error for error in errors if error.chroot == chroot
@@ -287,7 +288,7 @@ class SnapshotManager:
                 if comment is not None:
                     self.github.minimize_comment_as_outdated(comment)
 
-        for chroot in all_chroots:
+        for chroot in self.config.chroots:
             # Check if we can ignore the chroot because it is not supported by testing-farm
             if not tf.TestingFarmRequest.is_chroot_supported(chroot):
                 # see https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_supported_architectures
@@ -413,7 +414,7 @@ class SnapshotManager:
         ]
         required_chroot_abels = [
             "{self.config.label_prefix_tested_on}{chroot}"
-            for chroot in all_chroots
+            for chroot in self.config.chroots
             if tf.TestingFarmRequest.is_chroot_supported(chroot)
         ]
         if set(tested_chroot_labels) == set(required_chroot_abels):
@@ -434,7 +435,6 @@ class SnapshotManager:
     def handle_labels(
         self,
         issue: github.Issue.Issue,
-        all_chroots: list[str],
         errors: build_status.BuildStateList,
     ):
         logging.info("Gather labels based on the errors we've found")
@@ -457,9 +457,9 @@ class SnapshotManager:
         self.github.create_labels_for_error_causes(error_labels)
         self.github.create_labels_for_build_failed_on(build_failed_on_labels)
         self.github.create_labels_for_strategies(strategy_labels)
-        self.github.create_labels_for_in_testing(all_chroots)
-        self.github.create_labels_for_tested_on(all_chroots)
-        self.github.create_labels_for_tests_failed_on(all_chroots)
+        self.github.create_labels_for_in_testing(self.config.chroots)
+        self.github.create_labels_for_tested_on(self.config.chroots)
+        self.github.create_labels_for_tests_failed_on(self.config.chroots)
         self.github.create_labels_for_llvm_releases([llvm_release])
 
         # Remove old labels from issue if they no longer apply. This is great
