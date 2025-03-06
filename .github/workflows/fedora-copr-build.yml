@@ -78,6 +78,7 @@ jobs:
           {
             echo "username=$username"
             echo "yesterday=$yesterday"
+            echo "today=$today"
             echo "project_today=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/"
             echo "project_yesterday=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$yesterday/"
             echo "project_target=${{ matrix.copr_target_project }}"
@@ -115,7 +116,7 @@ jobs:
           python3 snapshot_manager/main.py \
             delete-project \
             --strategy ${{matrix.name}} \
-            --yyyymmdd "$yyyymmdd"
+            --yyyymmdd "${{env.today}}"
 
       - name: "Create today's Copr project: ${{ env.project_today }}"
         run: |
