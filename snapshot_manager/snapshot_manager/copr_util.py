@@ -2,272 +2,210 @@
 copr_util
 """
 
+import functools
 import logging
 import os
 import re
 
 import copr.v3
+import copr.v3.helpers
 import munch
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.config as config
+import snapshot_manager.util as util
 
 
-# pylint: disable=too-few-public-methods
-class CoprClient:
-    def __init__(
-        self, config: config.Config = config.Config(), client: "CoprClient" = None
-    ):
-        """
-        Keyword Arguments:
-            client (Client): Copr client to use.
-        """
-        self.__client = None
-        if client is not None:
-            self.__client = client.__client
+def make_client() -> "copr.v3.Client":
+    """
+    Instatiates a copr client.
 
-        # This acts a cache for chroots to reduce queries being made to copr
-        # TODO(kwk): Add mutex to protec this shared resource.
-        self._all_chroots = None
-        self.config = config
-
-    @property
-    def copr(self) -> "copr.v3.Client":
-        """
-        Property for getting the copr client.
-        Upon first call of this function, the client is instantiated.
-        """
-        if not self.__client:
-            self.__client = self.__make_client()
-        return self.__client
-
-    def __make_client(self) -> "copr.v3.Client":
-        """
-        Instatiates the copr client. Make sure to use the "client" property for
-        accessing the client and creating it.
-
-        If the environment contains COPR_URL, COPR_LOGIN, COPR_TOKEN, and
-        COPR_USERNAME, we'll try to create a Copr client from those environment
-        variables; otherwise, A Copr API client is created from the config file
-        in ~/.config/copr. See https://copr.fedorainfracloud.org/api/ for how to
-        create such a file.
-        """
-        client = None
-        if {"COPR_URL", "COPR_LOGIN", "COPR_TOKEN", "COPR_USERNAME"} <= set(os.environ):
-            logging.debug("create copr client config from environment variables")
-            config = {
-                "copr_url": os.environ["COPR_URL"],
-                "login": os.environ["COPR_LOGIN"],
-                "token": os.environ["COPR_TOKEN"],
-                "username": os.environ["COPR_USERNAME"],
-            }
-            client = copr.v3.Client(config)
-            assert client.config == config
-        else:
-            logging.debug("create copr client config from file")
-            client = copr.v3.Client.create_from_config_file()
-        return client
-
-    def project_exists(
-        self,
-        copr_ownername: str,
-        copr_projectname: str,
-    ) -> bool:
-        """Returns True if the given copr project exists; otherwise False.
-
-        Args:
-            copr_ownername (str): Copr owner name
-            copr_projectname (str): Copr project name
-
-        Returns:
-            bool: True if the project exists in copr; otherwise False.
-        """
-        try:
-            self.copr.project_proxy.get(
-                ownername=copr_ownername, projectname=copr_projectname
-            )
-        except copr.v3.CoprNoResultException:
-            return False
-        return True
-
-    def get_active_builds(
-        self,
-        copr_ownername: str,
-        copr_projectname: str,
-        state_pattern: str | None = None,
-    ) -> list[munch.Munch]:
-        """Returns copr builds for the given owner/project where the state matches the given pattern.
-
-        If no state pattern is provided, the `SnapshotManager.default_active_build_state_pattern` will be used.
-
-        Args:
-            copr_ownername (str): Copr ownername
-            copr_projectname (str): Copr project name
-            state_pattern (str|None, optional): Regular expression matching. Defaults to None.
-
-        Returns:
-            list[munch.Munch]: A list of filtered builds
-        """
-        if state_pattern is None:
-            state_pattern = self.config.active_build_state_pattern
-        builds = self.copr.build_proxy.get_list(
-            ownername=copr_ownername, projectname=copr_projectname
-        )
-
-        return [
-            build
-            for build in builds
-            if re.match(pattern=state_pattern, string=build.state)
-        ]
-
-    def get_active_copr_build_ids(
-        self,
-        copr_ownername: str,
-        copr_projectname: str,
-        state_pattern: str | None = None,
-    ) -> list[int]:
-        return [
-            build.id
-            for build in self.get_active_builds(
-                copr_ownername=copr_ownername,
-                copr_projectname=copr_projectname,
-                state_pattern=state_pattern,
-            )
-        ]
-
-    def get_copr_chroots(self, pattern: str | None = None) -> list[str]:
-        """Return sorted list of chroots we care about
-
-        If no pattern is supplied the config variable `chroot_pattern` will be used.
-
-        Args:
-            pattern (str|None, optional): Regular expression to filter chroot names by. Defaults to None.
-
-        Returns:
-            list[str]: List of filtered and sorted chroots
-        """
-        if pattern is None:
-            pattern = self.config.chroot_pattern
-
-        if self._all_chroots is None:
-            self._all_chroots = self.copr.mock_chroot_proxy.get_list().keys()
-
-        chroots = []
-        for chroot in self._all_chroots:
-            if re.match(pattern=pattern, string=chroot) != None:
-                chroots.append(chroot)
-        chroots.sort()
-        return chroots
-
-    def has_all_good_builds(
-        self,
-        copr_ownername: str,
-        copr_projectname: str,
-        required_packages: list[str],
-        required_chroots: list[str],
-        states: build_status.BuildStateList | None = None,
-    ) -> bool:
-        """Returns True if the given packages have been built in all chroots in the copr project; otherwise False is returned.
-
-        Args:
-            copr_ownername (str): Copr owner name
-            copr_projectname (str): Copr project name
-            required_packages (list[str]): List of required package names.
-            required_chroots (list[str]): List of required chroot names.
-            states (BuildStateList | None): List of states to use if already gathered before. If None, we will get the states for you.
-
-        Returns:
-            bool: True if the given copr project has successful/forked builds for all the required projects and chroots that we care about.
-
-        Example: Check with a not existing copr project
-
-        >>> CoprClient().has_all_good_builds(copr_ownername="non-existing-owner", copr_projectname="non-existing-project", required_packages=[], required_chroots=[])
-        False
-        """
-        logging.info(
-            f"Checking for all good builds in {copr_ownername}/{copr_projectname}..."
-        )
-
-        if not self.project_exists(
-            copr_ownername=copr_ownername, copr_projectname=copr_projectname
-        ):
-            logging.warning(
-                f"copr project {copr_ownername}/{copr_projectname} does not exist"
-            )
-            return False
-
-        if states is None:
-            states = self.get_build_states_from_copr_monitor(
-                copr_ownername=copr_ownername, copr_projectname=copr_projectname
-            )
-
-        # Lists of (package,chroot) tuples
-        expected: list[tuple[str, str]] = []
-        actual_set: set[tuple[str, str]] = {
-            (state.package_name, state.chroot) for state in states if state.success
+    If the environment contains COPR_URL, COPR_LOGIN, COPR_TOKEN, and
+    COPR_USERNAME, we'll try to create a Copr client from those environment
+    variables; otherwise, A Copr API client is created from the config file
+    in ~/.config/copr. See https://copr.fedorainfracloud.org/api/ for how to
+    create such a file.
+    """
+    client = None
+    if {"COPR_URL", "COPR_LOGIN", "COPR_TOKEN", "COPR_USERNAME"} <= set(os.environ):
+        logging.debug("create copr client config from environment variables")
+        config = {
+            "copr_url": os.environ["COPR_URL"],
+            "login": os.environ["COPR_LOGIN"],
+            "token": os.environ["COPR_TOKEN"],
+            "username": os.environ["COPR_USERNAME"],
         }
+        client = copr.v3.Client(config)
+    else:
+        logging.debug("create copr client config from file")
+        client = copr.v3.Client.create_from_config_file()
+    return client
 
-        for package in required_packages:
-            for chroot in required_chroots:
-                if self.is_package_supported_by_chroot(package, chroot):
-                    expected.append((package, chroot))
 
-        expected_set = set(expected)
+@functools.cache
+def get_all_chroots(client: copr.v3.Client) -> list[str]:
+    """Asks Copr to list all currently supported chroots. The response Copr will
+    give varies over time whenever a new Fedora or RHEL version for example
+    is released. But for our purposes, we let the function cache the results.
 
-        if not expected_set.issubset(actual_set):
-            diff = expected_set.difference(actual_set)
-            logging.error(
-                f"These packages were not found or weren't successfull: {diff}"
+    Args:
+        client (copr.v3.Client): Copr client to use
+
+    Returns:
+        list[str]: All currently supported chroots on copr.
+    """
+    return client.mock_chroot_proxy.get_list().keys()
+
+
+def get_all_builds(
+    client: copr.v3.Client,
+    ownername: str,
+    projectname: str,
+) -> list[munch.Munch]:
+    return client.build_proxy.get_list(ownername=ownername, projectname=projectname)
+
+
+def filter_builds_by_state(
+    builds: list[munch.Munch],
+    state_pattern: str,
+) -> list[munch.Munch]:
+    """Returns copr builds for the given owner/project where the state matches the given pattern.
+
+    Args:
+        builds (list[munch.Munch]): A list of builds. See `get_all_builds` to get all builds for a given owner/project
+        state_pattern (str): Regular expression to select what states of a copr build are considered active. (e.g. `r"(running|waiting|pending|importing|starting)"`)
+
+    Returns:
+        list[munch.Munch]: A list of filtered builds
+
+    >>> from snapshot_manager.build_status import CoprBuildStatus
+    >>> b1 = munch.Munch(package_name="llvm", chroot = "rhel-9-ppc64le", state = CoprBuildStatus.RUNNING)
+    >>> b2 = munch.Munch(package_name="llvm", chroot = "centos-stream-10-ppc64le", state = CoprBuildStatus.STARTING)
+    >>> b3 = munch.Munch(package_name="llvm", chroot = "fedora-rawhide-x86_64", state = CoprBuildStatus.FAILED)
+    >>> res = filter_builds_by_state(builds=[b1,b2,b3], state_pattern=r"(running|waiting|pending|importing|starting)")
+    >>> res == [b1,b2]
+    True
+    """
+    return [
+        build for build in builds if re.match(pattern=state_pattern, string=build.state)
+    ]
+
+
+def delete_project(client: copr.v3.Client, ownername: str, projectname: str):
+    """Cancells all active builds in the given project, waits for them to truely finish and then deletes the project.
+
+    Args:
+        client (copr.v3.Client): The copr client to use
+        ownername (str): The copr ownername or groupname
+        projectname (str): The copr project name
+    """
+    all_builds = get_all_builds(
+        client=client, ownername=ownername, projectname=projectname
+    )
+
+    # Regular expression to select what states of a copr build are considered active.
+    pattern: str = r"(running|waiting|pending|importing|starting)"
+    active_builds = filter_builds_by_state(builds=all_builds, state_pattern=pattern)
+
+    for build in active_builds:
+        logging.info(f"Cancelling build with ID {build['build_id']}")
+        client.build_proxy.cancel(build_id=build["build_id"])
+
+    logging.info(f"Waiting for cancelled builds to finish")
+    copr.v3.helpers.wait(waitable=active_builds, timeout=0)
+
+    logging.info(f"Deleting project {ownername}/{projectname}")
+    client.project_proxy.delete(ownername=ownername, projectname=projectname)
+
+
+def get_all_build_states(
+    client: copr.v3.Client,
+    ownername: str,
+    projectname: str,
+) -> build_status.BuildStateList:
+    """Queries all builds for the given project/owner and returns them as build statuses in a list.
+
+    Args:
+        client (copr.v3.Client): Copr client to use
+        ownername (str): Copr projectname
+        projectname (str): Copr ownername
+
+    Returns:
+        build_status.BuildStateList: The list of all build states for the given owner/project in copr.
+    """
+    logging.info(f"Getting all builds for copr project {ownername}/{projectname}")
+
+    states = build_status.BuildStateList()
+
+    monitor = client.monitor_proxy.monitor(
+        ownername=ownername,
+        projectname=projectname,
+        additional_fields=["url_build_log", "url_build"],
+    )
+
+    for package in monitor["packages"]:
+        for chroot_name in package["chroots"]:
+            chroot = package["chroots"][chroot_name]
+            state = build_status.BuildState(
+                build_id=chroot["build_id"],
+                package_name=package["name"],
+                chroot=chroot_name,
+                url_build_log=chroot["url_build_log"],
+                copr_build_state=chroot["state"],
+                copr_ownername=ownername,
+                copr_projectname=projectname,
             )
-            return False
-        return True
+            if "url_build" in chroot:
+                state.url_build = chroot["url_build"]
 
-    @classmethod
-    def is_package_supported_by_chroot(cls, package: str, chroot: str) -> bool:
-        """Returns true if given package is supported by given chroot
+            states.append(state)
+    return states
 
-        Args:
-            package (str): A package name (e.g. "llvm", or "clang")
-            chroot (str): A chroot name (e.g. "fedora-rawhide-x86_64")
 
-        Returns:
-            bool: True if package is supported by chroot; otherwise False
-        """
-        return True
+def has_all_good_builds(
+    required_packages: list[str],
+    required_chroots: list[str],
+    states: build_status.BuildStateList,
+) -> bool:
+    """Check for all required combinations of successful package+chroot build states.
 
-    def get_build_states_from_copr_monitor(
-        self,
-        copr_ownername: str,
-        copr_projectname: str,
-    ) -> build_status.BuildStateList:
-        states = build_status.BuildStateList()
+    Args:
+        required_packages (list[str]): List of required package names.
+        required_chroots (list[str]): List of required chroot names.
+        states (BuildStateList): List of states to use.
 
-        try:
-            monitor = self.copr.monitor_proxy.monitor(
-                ownername=copr_ownername,
-                projectname=copr_projectname,
-                additional_fields=["url_build_log", "url_build"],
-            )
-        except copr.v3.exceptions.CoprNoResultException:
-            logging.info(
-                f"Couldn't find copr project: {copr_ownername}/{copr_projectname}"
-            )
-            return states
+    Returns:
+        bool: True if all required combinations of package+chroot are in a successful state in the given `states` list.
 
-        for package in monitor["packages"]:
-            for chroot_name in package["chroots"]:
-                chroot = package["chroots"][chroot_name]
-                state = build_status.BuildState(
-                    build_id=chroot["build_id"],
-                    package_name=package["name"],
-                    chroot=chroot_name,
-                    url_build_log=chroot["url_build_log"],
-                    copr_build_state=chroot["state"],
-                    copr_ownername=copr_ownername,
-                    copr_projectname=copr_projectname,
-                )
-                if "url_build" in chroot:
-                    state.url_build = chroot["url_build"]
+    Example: Check with a not existing copr project
 
-                states.append(state)
-        return states
+    >>> from snapshot_manager.build_status import BuildState, CoprBuildStatus
+    >>> required_packages=["llvm"]
+    >>> required_chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"]
+    >>> s1 = BuildState(package_name="llvm", chroot="rhel-9-ppc64le", copr_build_state=CoprBuildStatus.FORKED)
+    >>> s2 = BuildState(package_name="llvm", chroot="fedora-rawhide-x86_64", copr_build_state=CoprBuildStatus.FAILED)
+    >>> s3 = BuildState(package_name="llvm", chroot="fedora-rawhide-x86_64", copr_build_state=CoprBuildStatus.SUCCEEDED)
+    >>> has_all_good_builds(required_packages=required_packages, required_chroots=required_chroots, states=[s1])
+    False
+    >>> has_all_good_builds(required_packages=required_packages, required_chroots=required_chroots, states=[s1,s2])
+    False
+    >>> has_all_good_builds(required_packages=required_packages, required_chroots=required_chroots, states=[s1,s2,s3])
+    True
+    """
+    # Lists of (package,chroot) tuples
+    expected: list[tuple[str, str]] = []
+    actual_set: set[tuple[str, str]] = {
+        (state.package_name, state.chroot) for state in states if state.success
+    }
+
+    for package in required_packages:
+        for chroot in required_chroots:
+            expected.append((package, chroot))
+
+    expected_set = set(expected)
+
+    if not expected_set.issubset(actual_set):
+        diff = expected_set.difference(actual_set)
+        logging.error(f"These packages were not found or weren't successfull: {diff}")
+        return False
+    return True
