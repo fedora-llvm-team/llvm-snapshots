@@ -4,6 +4,7 @@ util
 
 import datetime
 import functools
+import json
 import logging
 import os
 import pathlib
@@ -14,6 +15,7 @@ import subprocess
 import regex
 import requests
 
+import snapshot_manager.config as config
 import snapshot_manager.file_access as file_access
 
 
@@ -474,3 +476,200 @@ def get_release_for_yyyymmdd(yyyymmdd: str) -> str:
     logging.info(f"Getting URL {url}")
     response = requests.get(url)
     return response.text.strip()
+
+
+def filter_chroots(chroots: list[str], pattern: str) -> list[str]:
+    """Return a sorted list of chroots filtered by the given pattern.
+
+    Args:
+        chroots (list[str]): As list of chroots to filter
+        pattern (str, optional): Regular expression e.g. `r"^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)"`
+
+    Returns:
+        list[str]: List of filtered and sorted chroots.
+
+    Examples:
+
+    >>> chroots = ["rhel-7-x86_64", "rhel-9-s390x", "fedora-rawhide-x86_64", "centos-stream-10-ppc64le"]
+    >>> filter_chroots(chroots=chroots, pattern=r"^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)")
+    ['fedora-rawhide-x86_64', 'rhel-9-s390x']
+    """
+    res: list[str] = []
+    for chroot in chroots:
+        if re.match(pattern=pattern, string=chroot) != None:
+            res.append(chroot)
+    res.sort()
+    return res
+
+
+def sanitize_chroots(chroots: list[str]) -> list[str]:
+    """Removes all s390x fedora chroots but rawhide and the highest
+    numbered version in the given list
+
+    Args:
+        chroots (list[str]): A list of chroots
+
+    Returns:
+        list[str]: The sanitized list of chroots
+
+    Example:
+
+    >>> chroots = ["fedora-40-aarch64", "fedora-40-s390x",
+    ...            "fedora-41-s390x", "fedora-41-ppc64le",
+    ...            "fedora-42-aarch64", "fedora-42-s390x",
+    ...            "fedora-rawhide-x86_64", "fedora-rawhide-s390x",
+    ...            "rhel-8-aarch64", "rhel-8-s390x",
+    ...            "rhel-8-x86_64", "rhel-9-aarch64",
+    ...            "rhel-9-s390x", "rhel-9-x86_64"]
+    >>> expected = ['fedora-40-aarch64', 'fedora-41-ppc64le',
+    ...             'fedora-42-aarch64', 'fedora-42-s390x',
+    ...             'fedora-rawhide-x86_64', 'fedora-rawhide-s390x',
+    ...             'rhel-8-aarch64', 'rhel-8-s390x',
+    ...             'rhel-8-x86_64', 'rhel-9-aarch64',
+    ...             'rhel-9-s390x', 'rhel-9-x86_64']
+    >>> actual = sanitize_chroots(chroots)
+    >>> actual == expected
+    True
+    """
+    chroots = [expect_chroot(chroot) for chroot in chroots]
+    removals = filter_chroots(chroots, r"^fedora-[0-9]+-s390x")
+    max = 0
+    for chroot in removals:
+        ver = int(chroot_version(chroot))
+        if ver > max:
+            max = ver
+    for chroot in removals:
+        if max != int(chroot_version(chroot)):
+            chroots.remove(chroot)
+    return chroots
+
+
+def augment_config_with_chroots(config: config.Config, all_chroots: list[str]) -> None:
+    """Augments the config in place with chroots from the given chroot pattern.
+
+    Args:
+        config (config.Config) A config object
+        all_chroots (list[str]): A list of all possible chroots currently supported on Copr
+
+    Example:
+
+    >>> strategy = "foo"
+    >>> all_chroots = ["fedora-rawhide-x86_64", "rhel-9-ppc64le", "fedora-42-x86_64"]
+    >>> config = config.Config(build_strategy=strategy, chroot_pattern=r"fedora-.*")
+    >>> augment_config_with_chroots(config=config, all_chroots=all_chroots)
+    >>> config.chroots
+    ['fedora-42-x86_64', 'fedora-rawhide-x86_64']
+    """
+    chroots = filter_chroots(chroots=all_chroots, pattern=config.chroot_pattern)
+    config.chroots = sanitize_chroots(chroots=chroots)
+
+
+def augment_config_map_with_chroots(
+    config_map: dict[str, config.Config], all_chroots: list[str]
+) -> None:
+    """Augments the config_map in place with chroots from the given chroot pattern.
+
+    Args:
+        config_map (dict[str, config.Config]) A config map as returned by config.build_config_map()
+        all_chroots (list[str]): A list of all possible chroots currently supported on Copr
+
+    Example:
+
+    >>> all_chroots = ["fedora-rawhide-x86_64", "rhel-9-ppc64le", "fedora-42-x86_64"]
+    >>> config_map = dict()
+    >>> config_map["foo"] = config.Config(build_strategy="foo", chroot_pattern=r"fedora-.*")
+    >>> config_map["bar"] = config.Config(build_strategy="bar", chroot_pattern=r"rhel-.*")
+    >>> augment_config_map_with_chroots(config_map=config_map, all_chroots=all_chroots)
+    >>> config_map["foo"].chroots
+    ['fedora-42-x86_64', 'fedora-rawhide-x86_64']
+    >>> config_map["bar"].chroots
+    ['rhel-9-ppc64le']
+    """
+    for strategy in config_map:
+        augment_config_with_chroots(
+            config=config_map[strategy], all_chroots=all_chroots
+        )
+
+
+def serialize_config_map_to_github_matrix(
+    strategy: str,
+    config_map: dict[str, config.Config],
+    lookback_days: list[int] | None = None,
+) -> str:
+    """Returns a serialized JSON github workflow matrix.
+
+    See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow.
+
+    Args:
+        strategy (str): Which strategy to output for for ("" or "all" will include all strategies from the `config_map`)
+        config_map (dict[str, Config]): A config map to serialize
+        lookback_days (list[int], optional): Integer array for how many days to look back (0 means just today)
+
+    Returns:
+        str: A github workflow matrix dictionary as JSON
+
+    Example:
+
+    >>> strategy = "foo"
+    >>> config_map = dict()
+    >>> config_map["mybuildstrategy"] = config.Config(build_strategy="mybuildstrategy",
+    ...   copr_target_project="@mycoprgroup/mycoprproject",
+    ...   package_clone_url="https://src.fedoraproject.org/rpms/mypackage.git",
+    ...   package_clone_ref="mainbranch",
+    ...   maintainer_handle="fakeperson",
+    ...   copr_project_tpl="SomeProjectTemplate-YYYYMMDD",
+    ...   copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/",
+    ...   chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
+    ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"]
+    ... )
+    >>> config_map["mybuildstrategy2"] = config.Config(build_strategy="mybuildstrategy2",
+    ...   copr_target_project="@mycoprgroup2/mycoprproject2",
+    ...   package_clone_url="https://src.fedoraproject.org/rpms/mypackage2.git",
+    ...   package_clone_ref="mainbranch2",
+    ...   maintainer_handle="fakeperson2",
+    ...   copr_project_tpl="SomeProjectTemplate2-YYYYMMDD",
+    ...   copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate2-YYYYMMDD/monitor/",
+    ...   chroot_pattern="rhel-[8,9]",
+    ...   chroots=["rhel-9-ppc64le"]
+    ... )
+    >>> s = serialize_config_map_to_github_matrix(strategy="all", config_map=config_map, lookback_days=[0,1,2,3])
+    >>> obj = json.loads(s)
+    >>> import pprint
+    >>> pprint.pprint(obj)
+    {'include': [{'chroot_pattern': '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)',
+                  'chroots': 'fedora-rawhide-x86_64 rhel-9-ppc64le',
+                  'clone_ref': 'mainbranch',
+                  'clone_url': 'https://src.fedoraproject.org/rpms/mypackage.git',
+                  'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/',
+                  'copr_ownername': '@fedora-llvm-team',
+                  'copr_project_tpl': 'SomeProjectTemplate-YYYYMMDD',
+                  'copr_target_project': '@mycoprgroup/mycoprproject',
+                  'maintainer_handle': 'fakeperson',
+                  'name': 'mybuildstrategy'},
+                 {'chroot_pattern': 'rhel-[8,9]',
+                  'chroots': 'rhel-9-ppc64le',
+                  'clone_ref': 'mainbranch2',
+                  'clone_url': 'https://src.fedoraproject.org/rpms/mypackage2.git',
+                  'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate2-YYYYMMDD/monitor/',
+                  'copr_ownername': '@fedora-llvm-team',
+                  'copr_project_tpl': 'SomeProjectTemplate2-YYYYMMDD',
+                  'copr_target_project': '@mycoprgroup2/mycoprproject2',
+                  'maintainer_handle': 'fakeperson2',
+                  'name': 'mybuildstrategy2'}],
+     'name': ['mybuildstrategy', 'mybuildstrategy2'],
+     'today_minus_n_days': [0, 1, 2, 3]}
+    """
+    res = {
+        "name": [],
+        "include": [],
+    }
+
+    if lookback_days is not None:
+        res["today_minus_n_days"] = lookback_days
+
+    for strat in config_map:
+        if strategy in ("all", "", strat):
+            res["include"].append(config_map[strat].to_github_dict())
+            res["name"].append(strat)
+
+    return json.dumps(res)
