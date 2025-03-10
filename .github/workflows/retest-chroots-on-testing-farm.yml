@@ -84,7 +84,6 @@ jobs:
         run: |
           python3 snapshot_manager/main.py \
             --github-repo "${GITHUB_REPOSITORY}" \
-            --github-token-env GITHUB_TOKEN \
             retest \
             --trigger-comment-id ${{ github.event.comment.id }} \
             --issue-number ${{ github.event.issue.number }} \
