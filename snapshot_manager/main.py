@@ -226,7 +226,7 @@ def argument_parser_github_matrix(cfg: config.Config, subparsers) -> None:
     )
     add_strategy_argument(sp)
     sp.add_argument(
-        "--lookback",
+        "--lookback-days",
         metavar="DAY",
         type=int,
         nargs="+",
