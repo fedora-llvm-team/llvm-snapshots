@@ -38,11 +38,12 @@ jobs:
     - name: generate-matrix
       id: set-matrix
       run: |
-        # shellcheck disable=SC2086
+        strategy="${{ inputs.strategy }}"
+        [[ -z "$strategy" ]] && strategy="all"
         echo "matrix=$(python3 \
           snapshot_manager/main.py github-matrix \
-          --strategy ${{ inputs.strategy }} \
-        )" >> $GITHUB_OUTPUT
+          --strategy "$strategy" \
+        )" >> "$GITHUB_OUTPUT"
 
   build-on-copr:
     if: github.repository_owner == 'fedora-llvm-team'

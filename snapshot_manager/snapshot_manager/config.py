@@ -179,16 +179,16 @@ def build_config_map() -> dict[str, Config]:
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
             chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
         ),
-        Config(
-            build_strategy="pgo",
-            copr_target_project="@fedora-llvm-team/llvm-snapshots-pgo",
-            package_clone_url="https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git",
-            package_clone_ref="pgo",
-            maintainer_handle="kwk",
-            copr_project_tpl="llvm-snapshots-pgo-YYYYMMDD",
-            copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/",
-            chroot_pattern="(fedora-41)",
-        ),
+        # Config(
+        #     build_strategy="pgo",
+        #     copr_target_project="@fedora-llvm-team/llvm-snapshots-pgo",
+        #     package_clone_url="https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git",
+        #     package_clone_ref="pgo",
+        #     maintainer_handle="kwk",
+        #     copr_project_tpl="llvm-snapshots-pgo-YYYYMMDD",
+        #     copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/",
+        #     chroot_pattern="(fedora-41)",
+        # ),
     ]
 
     return {config.build_strategy: config for config in configs}
