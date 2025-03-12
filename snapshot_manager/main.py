@@ -56,7 +56,6 @@ def main():
     if cmd == "check":
         cfg.github_repo = args.github_repo
         cfg.datetime = args.datetime
-        cfg.strategy = args.strategy
         snapshot_manager.SnapshotManager(config=cfg).check_todays_builds()
     elif cmd == "retest":
         cfg.github_repo = args.github_repo
@@ -135,7 +134,7 @@ def add_strategy_argument(argparser: argparse.ArgumentParser) -> argparse.Action
         "--strategy",
         dest="strategy",
         type=str,
-        default="",
+        required=True,
         help=f"Strategy to use",
     )
 

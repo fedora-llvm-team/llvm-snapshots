@@ -632,6 +632,9 @@ def serialize_config_map_to_github_matrix(
     ...   chroot_pattern="rhel-[8,9]",
     ...   chroots=["rhel-9-ppc64le"]
     ... )
+    >>> s = serialize_config_map_to_github_matrix(strategy="", config_map=config_map, lookback_days=[0,1,2,3])
+    Traceback (most recent call last):
+    ValueError: strategy may not be empty
     >>> s = serialize_config_map_to_github_matrix(strategy="all", config_map=config_map, lookback_days=[0,1,2,3])
     >>> obj = json.loads(s)
     >>> import pprint
@@ -659,6 +662,9 @@ def serialize_config_map_to_github_matrix(
      'name': ['mybuildstrategy', 'mybuildstrategy2'],
      'today_minus_n_days': [0, 1, 2, 3]}
     """
+    if strategy.strip() == "":
+        raise ValueError(f"strategy may not be empty")
+
     res = {
         "name": [],
         "include": [],
@@ -668,7 +674,7 @@ def serialize_config_map_to_github_matrix(
         res["today_minus_n_days"] = lookback_days
 
     for strat in config_map:
-        if strategy in ("all", "", strat):
+        if strategy in ("all", strat):
             res["include"].append(config_map[strat].to_github_dict())
             res["name"].append(strat)
 

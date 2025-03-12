@@ -51,12 +51,13 @@ jobs:
     - name: generate-matrix
       id: set-matrix
       run: |
-        # shellcheck disable=SC2086
+        strategy="${{ inputs.strategy }}"
+        [[ -z "$strategy" ]] && strategy="all"
         echo "matrix=$(python3 \
           snapshot_manager/main.py github-matrix \
-          --strategy ${{ inputs.strategy }} \
+          --strategy "$strategy" \
           --lookback-days ${{ inputs.lookback_days }} \
-        )" >> $GITHUB_OUTPUT
+        )" >> "$GITHUB_OUTPUT"
 
   check-snapshot:
     if: github.repository_owner == 'fedora-llvm-team'
