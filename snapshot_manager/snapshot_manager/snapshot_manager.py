@@ -194,7 +194,7 @@ class SnapshotManager:
 
         logging.info("Get build states from copr")
         states = copr_util.get_all_build_states(
-            client=self.copr.copr,
+            client=self.copr,
             ownername=self.config.copr_ownername,
             projectname=self.config.copr_projectname,
         )
