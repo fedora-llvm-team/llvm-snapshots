@@ -51,31 +51,9 @@ jobs:
       fail-fast: false
       matrix: ${{fromJson(needs.generate-matrix.outputs.mymatrix)}}
     runs-on: ubuntu-latest
-    container: fedora:41
     steps:
       - uses: actions/checkout@v4
-      # Try to mitigate this error:
-      # Error: Unable to locate executable file: lsb_release. Please verify either the file path exists or the file can be found within a directory specified by the PATH environment variable. Also check the file mode to verify the file is executable.
-      - name: Install lsb-release
-        run: |
-          dnf install -y lsb-release
-      # libkrb5-dev is needed to build the koji module with pip
-      - name: Install krb5-devel
-        run: |
-          dnf install -y krb5-devel
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-          cache: 'pip'
-      # The dnf module cannot be installed by pip, so it's only possible to use
-      # it when using the system pyhton interpreter.
-      - name: Install dnf module
-        run: |
-          dnf install -y python3-dnf
-      - name: Install Python requirements
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - uses: ./.github/actions/prepare-python
       - name: Setup Copr config file
         env:
           # You need to have those secrets in your repo.
@@ -84,11 +62,6 @@ jobs:
         run: |
           mkdir -p ~/.config
           echo "$COPR_CONFIG" > ~/.config/copr
-
-      - name: Install Copr CLI and required tools
-        run: |
-          dnf install -y copr-cli make bzip2 rpm-build pcre2-tools jq
-
       - name: "Variables"
         run: |
           today=$(date +%Y%m%d)
@@ -109,7 +82,7 @@ jobs:
           # Checks if a copr project exists
           function copr_project_exists(){
             local project="$1";
-            copr get "$project" > /dev/null 2>&1
+            copr-cli get "$project" > /dev/null 2>&1
           }
 
           # Check general availability of projects
@@ -143,7 +116,7 @@ jobs:
           # shellcheck disable=SC2207
           chroot_opts=($(for c in ${{ matrix.chroots }}; do echo -n " --chroot $c "; done))
 
-          copr create \
+          copr-cli create \
             --instructions "$(cat project-instructions.md)" \
             --description  "$(cat project-description.md)" \
             --unlisted-on-hp on \
@@ -158,18 +131,18 @@ jobs:
       - name: "Enable snapshot_build build condition for all and swig:4.0 module in RHEL 8 build chroots (if any)"
         run: |
           for chroot in ${{ matrix.chroots }}; do
-            copr edit-chroot --rpmbuild-with "snapshot_build" "${{ env.project_today }}/$chroot"
+            copr-cli edit-chroot --rpmbuild-with "snapshot_build" "${{ env.project_today }}/$chroot"
             if [[ "$chroot" == rhel-8-* ]]; then
-              copr edit-chroot --modules "swig:4.0" "${{ env.project_today }}/$chroot"
+              copr-cli edit-chroot --modules "swig:4.0" "${{ env.project_today }}/$chroot"
             fi
 
             # Dump chroot information after all modification
-            copr get-chroot "${{ env.project_today }}/$chroot"
+            copr-cli get-chroot "${{ env.project_today }}/$chroot"
           done
 
       - name: "Create today's package"
         run: |
-          copr add-package-scm \
+          copr-cli add-package-scm \
             --clone-url ${{ matrix.clone_url }} \
             --commit ${{ matrix.clone_ref }} \
             --spec "llvm.spec" \
@@ -181,7 +154,7 @@ jobs:
       - name: "Build llvm package"
         run: |
           for chroot in ${{ matrix.chroots }}; do
-            copr build-package \
+            copr-cli build-package \
               --timeout $((30*3600)) \
               --nowait \
               --name "llvm" \
@@ -193,7 +166,7 @@ jobs:
       - name: "Delete target Copr project at ${{ env.project_target }} before forking to it"
         if: ${{ env.yesterdays_project_exists == 'yes' && env.target_project_exists == 'yes' }}
         run: |
-          copr delete "${{ env.project_target }}"
+          copr-cli delete "${{ env.project_target }}"
           # Give Copr some time to process the deletion, to avoid race conditions with forking.
           # TODO: Keep and eye on https://github.com/fedora-copr/copr/issues/2698 if there's a better way to handle this.
           sleep 1m
@@ -201,12 +174,12 @@ jobs:
       - name: "Fork Copr project from ${{ env.project_yesterday }} to ${{ env.project_target }}"
         if: ${{ env.yesterdays_project_exists == 'yes' }}
         run: |
-          copr fork --confirm ${{ env.project_yesterday }} ${{ env.project_target }}
-          copr modify --delete-after-days -1 --unlisted-on-hp off ${{ env.project_target }}
+          copr-cli fork --confirm ${{ env.project_yesterday }} ${{ env.project_target }}
+          copr-cli modify --delete-after-days -1 --unlisted-on-hp off ${{ env.project_target }}
 
       - name: "Regenerate repos for target project ${{ env.project_target }}"
         # If yesterday's project didn't exist, we haven't forked and so we don't
         # need to regenerate the repos.
         if: ${{ env.yesterdays_project_exists == 'yes' }}
         run: |
-          copr regenerate-repos ${{ env.project_target }}
+          copr-cli regenerate-repos ${{ env.project_target }}
