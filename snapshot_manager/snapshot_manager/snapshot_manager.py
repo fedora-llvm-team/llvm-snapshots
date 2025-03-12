@@ -325,9 +325,7 @@ class SnapshotManager:
                     del requests[chroot]
 
             logging.info(f"Check if all builds in chroot {chroot} have succeeded")
-            builds_succeeded = self.copr.has_all_good_builds(
-                copr_ownername=self.config.copr_ownername,
-                copr_projectname=self.config.copr_projectname,
+            builds_succeeded = copr_util.has_all_good_builds(
                 required_chroots=[chroot],
                 required_packages=self.config.packages,
                 states=states,
