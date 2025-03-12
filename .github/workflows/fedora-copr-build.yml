@@ -54,8 +54,28 @@ jobs:
     container: fedora:41
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/prepare-python
-
+      # Try to mitigate this error:
+      # Error: Unable to locate executable file: lsb_release. Please verify either the file path exists or the file can be found within a directory specified by the PATH environment variable. Also check the file mode to verify the file is executable.
+      - name: Install lsb-release
+        run: |
+          dnf install -y lsb-release
+      # libkrb5-dev is needed to build the koji module with pip
+      - name: Install krb5-devel
+        run: |
+          dnf install -y krb5-devel
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+          cache: 'pip'
+      # The dnf module cannot be installed by pip, so it's only possible to use
+      # it when using the system pyhton interpreter.
+      - name: Install dnf module
+        run: |
+          dnf install -y python3-dnf
+      - name: Install Python requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
       - name: Setup Copr config file
         env:
           # You need to have those secrets in your repo.
