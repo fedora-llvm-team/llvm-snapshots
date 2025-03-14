@@ -107,13 +107,18 @@ class GithubClient:
         # label:broken_snapshot_detected
         query = f"is:issue repo:{github_repo} author:{creator} label:strategy/{strategy} {self.config.yyyymmdd} in:title"
         issues = self.github.search_issues(query)
-        if issues is not None and issues.totalCount > 0:
+        if issues is None:
+            logging.info(f"Found no issue for today ({self.config.yyyymmdd})")
+            return None
+
+        # This is a hack: normally the PaginagedList[Issue] type handles this
+        # for us but without this hack no issue being found.
+        issues.get_page(0)
+        if issues.totalCount > 0:
             logging.info(
                 f"Found today's ({self.config.yyyymmdd}) issue: {issues[0].html_url}"
             )
             return issues[0]
-        logging.info(f"Found no issue for today ({self.config.yyyymmdd})")
-        return None
 
     @property
     def initial_comment(self) -> str:
