@@ -54,7 +54,7 @@ jobs:
         strategy="${{ inputs.strategy }}"
         [[ -z "$strategy" ]] && strategy="all"
         lookback_days="${{ inputs.lookback_days }}"
-        [[ -z "lookback_days" ]] && lookback_days="0 1 2"
+        [[ -z "$lookback_days" ]] && lookback_days="0 1 2"
 
         # We need to disable shellcheck's: "Double quote to prevent globbing and word splitting" (SC2086)
         # because we we need to pass the lookback days as single DAY arguments.
