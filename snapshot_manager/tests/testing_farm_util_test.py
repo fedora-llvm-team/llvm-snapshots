@@ -25,6 +25,7 @@ class TestTestingFarmUtil(base_test.TestBase):
         issue = gh.get_todays_github_issue(
             strategy="big-merge", github_repo="fedora-llvm-team/llvm-snapshots"
         )
+        assert issue is not None
 
         with self.assertRaises(SystemError):
             tf.TestingFarmRequest.make(
