@@ -21,6 +21,9 @@ class Config:
     )
     """List of packages that are relevant to you."""
 
+    additional_copr_buildtime_repos: list[str] = None
+    """Additional repositories that shall be passed to 'copr create' as '--repo' arguments in order to be available during build time"""
+
     datetime: "datetime.datetime" = datetime.datetime.now()
     """Datetime of today"""
 
@@ -135,9 +138,12 @@ class Config:
         ...   copr_project_tpl="SomeProjectTemplate-YYYYMMDD",
         ...   copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/",
         ...   chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
-        ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"]
+        ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"],
+        ...   additional_copr_buildtime_repos=["copr://@fedora-llvm-team/llvm-test-suite", "https://example.com"]
         ... ).to_github_dict())
-        {'chroot_pattern': '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)',
+        {'additional_copr_buildtime_repos': 'copr://@fedora-llvm-team/llvm-test-suite '
+                                            'https://example.com',
+         'chroot_pattern': '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)',
          'chroots': 'fedora-rawhide-x86_64 rhel-9-ppc64le',
          'clone_ref': 'mainbranch',
          'clone_url': 'https://src.fedoraproject.org/rpms/mypackage.git',
@@ -159,6 +165,9 @@ class Config:
             "copr_monitor_tpl": self.copr_monitor_tpl,
             "chroot_pattern": self.chroot_pattern,
             "chroots": " ".join(self.chroots),
+            "additional_copr_buildtime_repos": " ".join(
+                self.additional_copr_buildtime_repos
+            ),
         }
 
 
@@ -179,16 +188,19 @@ def build_config_map() -> dict[str, Config]:
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
             chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
         ),
-        # Config(
-        #     build_strategy="pgo",
-        #     copr_target_project="@fedora-llvm-team/llvm-snapshots-pgo",
-        #     package_clone_url="https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git",
-        #     package_clone_ref="pgo",
-        #     maintainer_handle="kwk",
-        #     copr_project_tpl="llvm-snapshots-pgo-YYYYMMDD",
-        #     copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/",
-        #     chroot_pattern="(fedora-41)",
-        # ),
+        Config(
+            build_strategy="pgo",
+            copr_target_project="@fedora-llvm-team/llvm-snapshots-pgo",
+            package_clone_url="https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git",
+            package_clone_ref="pgo",
+            maintainer_handle="kwk",
+            copr_project_tpl="llvm-snapshots-pgo-YYYYMMDD",
+            copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/",
+            chroot_pattern="^fedora-rawhide-x86_64",
+            additional_copr_buildtime_repos=[
+                "copr://@fedora-llvm-team/llvm-test-suite/"
+            ],
+        ),
     ]
 
     return {config.build_strategy: config for config in configs}
