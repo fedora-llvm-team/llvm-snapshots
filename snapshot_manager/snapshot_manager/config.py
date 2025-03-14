@@ -21,7 +21,9 @@ class Config:
     )
     """List of packages that are relevant to you."""
 
-    additional_copr_buildtime_repos: list[str] = None
+    additional_copr_buildtime_repos: list[str] = dataclasses.field(
+        default_factory=lambda: []
+    )
     """Additional repositories that shall be passed to 'copr create' as '--repo' arguments in order to be available during build time"""
 
     datetime: "datetime.datetime" = datetime.datetime.now()
