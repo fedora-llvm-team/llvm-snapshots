@@ -639,7 +639,8 @@ def serialize_config_map_to_github_matrix(
     >>> obj = json.loads(s)
     >>> import pprint
     >>> pprint.pprint(obj)
-    {'include': [{'chroot_pattern': '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)',
+    {'include': [{'additional_copr_buildtime_repos': '',
+                  'chroot_pattern': '^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)',
                   'chroots': 'fedora-rawhide-x86_64 rhel-9-ppc64le',
                   'clone_ref': 'mainbranch',
                   'clone_url': 'https://src.fedoraproject.org/rpms/mypackage.git',
@@ -649,7 +650,8 @@ def serialize_config_map_to_github_matrix(
                   'copr_target_project': '@mycoprgroup/mycoprproject',
                   'maintainer_handle': 'fakeperson',
                   'name': 'mybuildstrategy'},
-                 {'chroot_pattern': 'rhel-[8,9]',
+                 {'additional_copr_buildtime_repos': '',
+                  'chroot_pattern': 'rhel-[8,9]',
                   'chroots': 'rhel-9-ppc64le',
                   'clone_ref': 'mainbranch2',
                   'clone_url': 'https://src.fedoraproject.org/rpms/mypackage2.git',
