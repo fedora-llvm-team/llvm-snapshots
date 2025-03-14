@@ -117,12 +117,19 @@ jobs:
           # shellcheck disable=SC2207
           chroot_opts=($(for c in ${{ matrix.chroots }}; do echo -n " --chroot $c "; done))
 
+          additional_copr_buildtime_repos=""
+          for repo in ${{ matrix.additional_copr_buildtime_repos }}; do
+            additional_copr_buildtime_repos=" --repo $repo "
+          done
+
+          # shellcheck disable=SC2086
           copr-cli create \
             --instructions "$(cat project-instructions.md)" \
             --description  "$(cat project-description.md)" \
             --unlisted-on-hp on \
             --enable-net on \
             --runtime-repo-dependency "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/\$distname-\$releasever-\$basearch" \
+            $additional_copr_buildtime_repos \
             --multilib on \
             --appstream off \
             --delete-after-days 32 \
