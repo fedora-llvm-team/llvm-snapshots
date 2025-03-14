@@ -53,10 +53,16 @@ jobs:
       run: |
         strategy="${{ inputs.strategy }}"
         [[ -z "$strategy" ]] && strategy="all"
+        lookback_days="${{ inputs.lookback_days }}"
+        [[ -z "lookback_days" ]] && lookback_days="0 1 2"
+
+        # We need to disable shellcheck's: "Double quote to prevent globbing and word splitting" (SC2086)
+        # because we we need to pass the lookback days as single DAY arguments.
+        # shellcheck disable=SC2086
         echo "matrix=$(python3 \
           snapshot_manager/main.py github-matrix \
           --strategy "$strategy" \
-          --lookback-days ${{ inputs.lookback_days }} \
+          --lookback-days $lookback_days \
         )" >> "$GITHUB_OUTPUT"
 
   check-snapshot:
