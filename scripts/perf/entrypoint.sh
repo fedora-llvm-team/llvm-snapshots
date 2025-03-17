@@ -14,8 +14,8 @@ function configure_build_run {
         -DTEST_SUITE_USE_PERF=OFF \
         -DTEST_SUITE_SUBDIRS=CTMark \
         -DTEST_SUITE_RUN_BENCHMARKS=OFF \
-        -C~/test-suite/cmake/caches/O3.cmake \
-        ~/test-suite
+        -C/usr/share/llvm-test-suite/cmake/caches/O3.cmake \
+        /usr/share/llvm-test-suite
 
     # Build the test-suite
     ninja -j1
@@ -24,8 +24,12 @@ function configure_build_run {
     lit -v -o results.json . || true
 }
 
+function get_llvm_version() {
+    clang --version | grep -Po '[0-9]+\.[0-9]+\.[0-9](pre[0-9]{8}.g[0-9a-f]{14})?' | head -n1
+}
+
 # Query version information for given day
-yyyymmdd=20250317
+yyyymmdd=$(date +%Y%m%d)
 git_rev=$(curl -sL https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-git-revision-${yyyymmdd}.txt)
 git_rev_short="${git_rev:0:14}"
 llvm_release=$(curl -sL https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-release-${yyyymmdd}.txt)
@@ -52,7 +56,10 @@ dnf -y install \
     clang-libs-${rpm_suffix} \
     clang-resource-filesystem-${rpm_suffix} \
     llvm-${rpm_suffix} \
-    llvm-libs-${rpm_suffix}
+    llvm-libs-${rpm_suffix} \
+    llvm-test-suite
+
+pgo_version=$(get_llvm_version)
 
 mkdir -pv ~/pgo
 cd ~/pgo
@@ -79,7 +86,10 @@ dnf -y install \
     clang-libs-${rpm_suffix} \
     clang-resource-filesystem-${rpm_suffix} \
     llvm-${rpm_suffix} \
-    llvm-libs-${rpm_suffix}
+    llvm-libs-${rpm_suffix} \
+    llvm-test-suite
+
+big_merge_version=$(get_llvm_version)
 
 mkdir -pv ~/big-merge
 cd ~/big-merge
@@ -95,30 +105,83 @@ dnf copr disable -y @fedora-llvm-team/llvm-snapshots-big-merge-${yyyymmdd}
 ######################################################################################
 
 # Build with regular clang
-dnf install -y clang clang-libs clang-resource-filesystem llvm llvm-libs
+dnf install -y clang clang-libs clang-resource-filesystem llvm llvm-libs llvm-test-suite
+system_version=$(get_llvm_version)
 mkdir -pv ~/system
 cd ~/system
 
 configure_build_run
 
-system_llvm_release=$(clang --version | grep -Po '[0-9]+\.[0-9]+\.[0-9]' | head -n1)
-
-/root/test-suite/utils/compare.py \
+/usr/share/llvm-test-suite/utils/compare.py \
     --metric compile_time \
-    --lhs-name ${system_llvm_release} \
+    --lhs-name ${system_version} \
     --rhs-name pgo-${yyyymmdd} \
     ~/system/results.json vs ~/pgo/results.json > ~/results-system-vs-pgo.txt || true
 
-/root/test-suite/utils/compare.py \
+/usr/share/llvm-test-suite/utils/compare.py \
     --metric compile_time \
-    --lhs-name ${system_llvm_release} \
+    --lhs-name ${system_version} \
     --rhs-name big-merge-${yyyymmdd} \
     ~/system/results.json vs ~/big-merge/results.json > ~/results-system-vs-big-merge.txt || true
 
-/root/test-suite/utils/compare.py \
+/usr/share/llvm-test-suite/utils/compare.py \
     --metric compile_time \
     --lhs-name big-merge \
     --rhs-name pgo-${yyyymmdd} \
     ~/big-merge/results.json vs ~/pgo/results.json > ~/results-big-merge-vs-pgo.txt || true
 
-bash
+
+set +x
+
+function print_report() {
+    # calculate min/max for y-axis in diagram with some padding
+    a=$(grep -ioP "Geomean difference\s+\K(-)?[0-9]+\.[0-9]+" ~/results-big-merge-vs-pgo.txt)
+    b=$(grep -ioP "Geomean difference\s+\K(-)?[0-9]+\.[0-9]+" ~/results-system-vs-big-merge.txt)
+    c=$(grep -ioP "Geomean difference\s+\K(-)?[0-9]+\.[0-9]+" ~/results-system-vs-pgo.txt)
+    a=$(python3 -c "print(-1*$a)")
+    b=$(python3 -c "print(-1*$b)")
+    c=$(python3 -c "print(-1*$c)")
+    pad=5
+    min=$(python3 -c "print(min($a,$b,$c)-$pad)")
+    max=$(python3 -c "print(max($a,$b,$c)+$pad)")
+
+    redhat_release=$(cat /etc/redhat-release)
+    arch=$(uname -m)
+
+    echo '<!--BEGIN REPORT-->'
+    cat <<EOF
+\`\`\`mermaid
+xychart-beta horizontal
+    title "Compile time performance (${yyyymmdd}, ${arch}, ${redhat_release})"
+    x-axis ["PGO vs. big-merge", "PGO vs. system", "big-merge vs. system"]
+    y-axis "Geomean performance (in %)" ${min} --> ${max}
+    bar [${a}, ${c}, ${b}]
+    line [${a}, ${c}, ${b}]
+\`\`\`
+
+<details>
+<summary>Compile time results for ${yyyymmdd}</summary>
+
+<h2>big-merge (${big_merge_version}) vs. PGO (${pgo_version})</h2>
+
+\`\`\`
+$(cat ~/results-big-merge-vs-pgo.txt)
+\`\`\`
+
+<h2>System (${system_version}) vs. big-merge (${big_merge_version})</h2>
+
+\`\`\`
+$(cat ~/results-system-vs-big-merge.txt)
+\`\`\`
+
+<h2>System (${system_version}) vs. PGO (${pgo_version})</h2>
+
+\`\`\`
+$(cat ~/results-system-vs-pgo.txt)
+\`\`\`
+</details>
+EOF
+    echo '<!--END REPORT-->'
+}
+
+print_report
