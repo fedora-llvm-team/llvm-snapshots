@@ -4,20 +4,39 @@ set -x
 set -e
 
 function configure_build_run {
+    # See also https://llvm.org/docs/TestSuiteGuide.html#common-configuration-options
+    cmake_args=""
+
+    # Recommended setting for compile-time benchmarks
+    cmake_args="$cmake_args -DTEST_SUITE_SUBDIRS=CTMark"
+
+    # For PGO performance comparison we expect differences in the range of 10%
+    # and more. Therefore we don't need perf.
+    cmake_args="$cmake_args -DTEST_SUITE_USE_PERF=OFF"
+
+    # We want to measure the run-time of the compiler and therefore don't have
+    # to "run" the benchmarks. We just need to compile them.
+    cmake_args="$cmake_args -DTEST_SUITE_RUN_BENCHMARKS=OFF"
+
+    # Collect internal LLVM statistics. Appends -save-stats=obj when invoking
+    # the compiler and makes the lit runner collect and merge the statistic
+    # files.
+    cmake_args="$cmake_args -DTEST_SUITE_COLLECT_STATS=ON"
+
+    # Some programs are unsuitable for performance measurements. Setting the
+    # TEST_SUITE_BENCHMARKING_ONLY CMake option to ON will disable them.
+    cmake_args="$cmake_args -DTEST_SUITE_BENCHMARKING_ONLY=ON"
+
     # Configure the test suite
     cmake \
         -GNinja \
         -DCMAKE_C_COMPILER=/usr/bin/clang \
         -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
-        -DTEST_SUITE_BENCHMARKING_ONLY=ON \
-        -DTEST_SUITE_COLLECT_STATS=ON \
-        -DTEST_SUITE_USE_PERF=OFF \
-        -DTEST_SUITE_SUBDIRS=CTMark \
-        -DTEST_SUITE_RUN_BENCHMARKS=OFF \
+        $cmake_args \
         -C/usr/share/llvm-test-suite/cmake/caches/O3.cmake \
         /usr/share/llvm-test-suite
 
-    # Build the test-suite
+    # Build the test-suite with one job at a time for a fair comparison.
     ninja -j1
 
     # Run the tests with lit:
