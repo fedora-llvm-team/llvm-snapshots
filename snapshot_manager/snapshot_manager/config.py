@@ -198,7 +198,7 @@ def build_config_map() -> dict[str, Config]:
             maintainer_handle="kwk",
             copr_project_tpl="llvm-snapshots-pgo-YYYYMMDD",
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-pgo-YYYYMMDD/monitor/",
-            chroot_pattern="^fedora-rawhide-x86_64",
+            chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
             additional_copr_buildtime_repos=[
                 "copr://@fedora-llvm-team/llvm-test-suite/"
             ],
