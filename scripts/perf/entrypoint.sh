@@ -6,7 +6,7 @@ set -e
 function configure_build_run {
     # Configure the test suite
     cmake \
-        -DCMAKE_GENERATOR=Ninja \
+        -GNinja \
         -DCMAKE_C_COMPILER=/usr/bin/clang \
         -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
         -DTEST_SUITE_BENCHMARKING_ONLY=ON \
