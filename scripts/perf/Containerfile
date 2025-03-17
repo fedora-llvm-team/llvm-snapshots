@@ -5,7 +5,9 @@ USER root
 WORKDIR /root
 
 # Install deps to run test-suite
-RUN dnf install -y \
+RUN dnf install -y 'dnf-command(copr)' \
+    && dnf copr enable -y @fedora-llvm-team/llvm-test-suite \
+    && dnf install -y \
         clang \
         cmake \
         coreutils \
@@ -14,6 +16,7 @@ RUN dnf install -y \
         git \
         jq \
         jq \
+        llvm-test-suite \
         ninja-build \
         python3-lit \
         python3-pandas \
@@ -27,10 +30,6 @@ RUN dnf install -y \
         tcl-thread-devel \
         tcl-zlib \
         which
-
-RUN dnf install -y 'dnf-command(copr)'
-RUN dnf copr enable -y @fedora-llvm-team/llvm-test-suite
-RUN dnf install -y llvm-test-suite
 
 COPY entrypoint.sh /root/entrypoint.sh
 USER root
