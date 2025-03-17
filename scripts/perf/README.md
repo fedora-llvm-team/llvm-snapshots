@@ -1,6 +1,7 @@
 # README
 
-This container setup allows you to compare the system llvm against "big-merge" and "pgo" for the current date.
+This container setup allows you to compare compile time performance of the
+system llvm against "big-merge" (aka snapshot) and "pgo" for the current date.
 
 # How to
 
