@@ -25,7 +25,7 @@ function configure_build_run {
 }
 
 # Query version information for given day
-yyyymmdd=20240911
+yyyymmdd=20250317
 git_rev=$(curl -sL https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-git-revision-${yyyymmdd}.txt)
 git_rev_short="${git_rev:0:14}"
 llvm_release=$(curl -sL https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-release-${yyyymmdd}.txt)
