@@ -1,0 +1,36 @@
+FROM fedora:rawhide
+LABEL description="Test compilers with llvm-test-suite"
+
+USER root
+WORKDIR /root
+
+# Install deps to run test-suite
+RUN dnf install -y 'dnf-command(copr)' \
+    && dnf copr enable -y @fedora-llvm-team/llvm-test-suite \
+    && dnf install -y \
+        clang \
+        cmake \
+        coreutils \
+        envsubst \
+        fedora-packager \
+        git \
+        jq \
+        jq \
+        llvm-test-suite \
+        ninja-build \
+        python3-lit \
+        python3-pandas \
+        python3-pip \
+        python3-scipy \
+        python3-setuptools \
+        python3-virtualenv \
+        tcl \
+        tcl-devel \
+        tcl-tclreadline \
+        tcl-thread-devel \
+        tcl-zlib \
+        which
+
+COPY entrypoint.sh /root/entrypoint.sh
+USER root
+ENTRYPOINT [ "/root/entrypoint.sh" ]
