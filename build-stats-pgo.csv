@@ -3455,3 +3455,7 @@ date,package,chroot,build_time,state,build_id,timestamp
 2025/03/18,llvm,fedora-40-i386,-1,running,8783119,1742339711
 2025/03/18,llvm,fedora-40-i386,-1,running,8783119,1742339711
 2025/03/18,llvm,fedora-rawhide-x86_64,6640,succeeded,8782796,1742339711
+2025/03/19,llvm,fedora-rawhide-aarch64,-1,running,8791923,1742426165
+2025/03/19,llvm,fedora-rawhide-aarch64,-1,running,8791923,1742426165
+2025/03/19,llvm,fedora-rawhide-aarch64,-1,running,8791923,1742426165
+2025/03/19,llvm,fedora-rawhide-aarch64,-1,running,8791923,1742426165
