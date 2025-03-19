@@ -1,12 +1,23 @@
 # README
 
 This container setup allows you to compare compile time performance of the
-system llvm against "big-merge" (aka snapshot) and "pgo" for the current date.
+system llvm against "snapshot" (aka big-merge) and "pgo" for the current date.
 
 # How to
 
-Just run `make` to build and run the container image. It takes a long time to complete.
+Just run `make` to build and run the container image. Once that's done and
+everything passed you should find a newly created `results` directory which
+holds these files:
 
-Then you'll be prompted with a markdown output that you can copy and paste into a github issue.
+```
+   1. pgo.json
+   2. snapshot.json
+   3. system.json
+   4. pgo_vs_snapshot.compile_time.txt
+   5. pgo_vs_system.compile_time.txt
+   6. snapshot_vs_system.compile_time.txt
+   7. result.csv
+   8. report.md
+```
 
-The output is located between `<!--BEGIN REPORT-->` and `<!--END REPORT-->` markers.
+The `report.md` is something you can copy and paste into a github issue comment.
