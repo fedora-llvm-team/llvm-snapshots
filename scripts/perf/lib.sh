@@ -26,6 +26,7 @@ fi
 # `<RESULT_DIR>/<NAME>.json` for later comparison.
 function _configure_build_test {
     local NAME=$1
+    local N_BUILD_JOBS=$2
 
     local BUILD_DIR=builds/$NAME
 
@@ -65,7 +66,7 @@ function _configure_build_test {
         /usr/share/llvm-test-suite
 
     # Build the test-suite with one job at a time for a fair comparison.
-    ninja -j1
+    ninja -j$N_BUILD_JOBS
 
     # Run the tests with lit:
     lit -v -o ${RESULT_DIR}/${NAME}.json . || true
@@ -85,6 +86,7 @@ function _configure_build_test {
 function build_test_suite() {
     local NAME=$1
     local COPR_PROJECT=${2:-}
+    local N_BUILD_JOBS=${N_BUILD_JOBS:-$(nproc)}
 
     # The Copr owner/project to enable for installing clang
     local COPR_OWNER=${COPR_OWNER:-@fedora-llvm-team}
@@ -113,7 +115,7 @@ function build_test_suite() {
         llvm-libs${rpm_suffix} \
         llvm-test-suite
 
-    _configure_build_test $NAME
+    _configure_build_test $NAME $N_BUILD_JOBS
 
     if [[ -n "${COPR_PROJECT}" ]]; then
         # Remove packages from that repo and the repo itself
