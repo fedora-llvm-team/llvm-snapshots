@@ -58,16 +58,11 @@ prepare:
           dnf config-manager setopt "testing-farm-tag-repository.priority=999"
       fi
 
-  - name: Enable llvm-test-suite repo from copr
+  - name: Enable llvm-test-suite repo from copr and install dependencies
     how: shell
     script:
       - dnf install -y 'dnf5-command(copr)' || dnf install -y 'dnf-command(copr)'
       - dnf copr enable -y @fedora-llvm-team/llvm-test-suite $COPR_CHROOT
-
-  - name: "Install all dependencies needed to run the tests"
-    how: shell
-    order: 99
-    script:
       - dnf install -y cmake coreutils envsubst fedora-packager git jq ninja-build python3-lit python3-pandas python3-pip python3-scipy python3-setuptools python3-virtualenv tcl tcl-devel tcl-tclreadline tcl-thread-devel tcl-zlib which
 
 discover:
