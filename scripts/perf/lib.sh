@@ -40,8 +40,12 @@ function _configure_build_test {
     cmake_args="$cmake_args -DTEST_SUITE_SUBDIRS=CTMark"
 
     # For PGO performance comparison we expect differences in the range of 10%
-    # and more. Therefore we don't need perf.
-    cmake_args="$cmake_args -DTEST_SUITE_USE_PERF=OFF"
+    # and more. Therefore we don't need perf. On containers we need to turn it off
+    if [[ -n "$container" ]]; then
+        cmake_args="$cmake_args -DTEST_SUITE_USE_PERF=OFF"
+    else
+        cmake_args="$cmake_args -DTEST_SUITE_USE_PERF=ON"
+    fi
 
     # We want to measure the run-time of the compiler and therefore don't have
     # to "run" the benchmarks. We just need to compile them.

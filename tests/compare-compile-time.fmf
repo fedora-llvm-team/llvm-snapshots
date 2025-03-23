@@ -72,6 +72,7 @@ prepare:
       - git
       - jq
       - ninja-build
+      - perf
       - python3-lit
       - python3-pip
       - python3-scipy
