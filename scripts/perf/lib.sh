@@ -124,7 +124,7 @@ function build_test_suite() {
         llvm-test-suite
 
 
-    for i in $(seq 1 ${NUM_TEST_RUNS}); do
+    for i in $(seq -w 1 ${NUM_TEST_RUNS}); do
         _configure_build_test $NAME $N_BUILD_JOBS $i
     done
 
@@ -157,7 +157,7 @@ function compare_compile_time() {
     pip install "pandas>=2.2.3"
     pip install "scipy>=1.15.2"
 
-    for i in $(seq 1 ${NUM_TEST_RUNS}); do
+    for i in $(seq -w 1 ${NUM_TEST_RUNS}); do
         local LHS_DATA=$RESULT_DIR/$LHS_NAME.$i.json
         local RHS_DATA=$RESULT_DIR/$RHS_NAME.$i.json
 
@@ -207,7 +207,7 @@ function _csv() {
 
     local total_geomean_diff=0
 
-    for i in $(seq 1 ${NUM_TEST_RUNS}); do
+    for i in $(seq -w 1 ${NUM_TEST_RUNS}); do
         # Output of comparison script
         local INPUT_PATH=$RESULT_DIR/$NAME.${KIND}.${i}.txt
 
