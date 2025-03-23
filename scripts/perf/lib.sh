@@ -12,6 +12,9 @@ set -x
 RESULT_DIR=${TMT_PLAN_DATA:-/tmp}
 YYYYMMDD=${YYYYMMDD:-$(date +%Y%m%d)}
 
+# How many times do we want to run a test and later take the average mean?
+NUM_TEST_RUNS=${NUM_TEST_RUNS:-10}
+
 # Construct chroot if needed
 CHROOT=${COPR_CHROOT:-}
 if [[ -z "$CHROOT" ]]; then
@@ -27,6 +30,7 @@ fi
 function _configure_build_test {
     local NAME=$1
     local N_BUILD_JOBS=$2
+    local ITH_BUILD=$3
 
     local BUILD_DIR=builds/$NAME
 
@@ -73,7 +77,7 @@ function _configure_build_test {
     ninja -j$N_BUILD_JOBS
 
     # Run the tests with lit:
-    lit -v -o ${RESULT_DIR}/${NAME}.json . || true
+    lit -v -o ${RESULT_DIR}/${NAME}.${ITH_BUILD}.json . || true
 
     popd
 
@@ -119,7 +123,10 @@ function build_test_suite() {
         llvm-libs${rpm_suffix} \
         llvm-test-suite
 
-    _configure_build_test $NAME $N_BUILD_JOBS
+
+    for i in $(seq 1 ${NUM_TEST_RUNS}); do
+        _configure_build_test $NAME $N_BUILD_JOBS $i
+    done
 
     if [[ -n "${COPR_PROJECT}" ]]; then
         # Remove packages from that repo and the repo itself
@@ -140,8 +147,6 @@ function compare_compile_time() {
     local LHS_NAME=$1
     local RHS_NAME=$2
     local OUTPUT_CSV_HEADER=${3:-}
-    local LHS_DATA=$RESULT_DIR/$LHS_NAME.json
-    local RHS_DATA=$RESULT_DIR/$RHS_NAME.json
 
     rpm -q llvm-test-suite || dnf install -y llvm-test-suite
 
@@ -152,11 +157,16 @@ function compare_compile_time() {
     pip install "pandas>=2.2.3"
     pip install "scipy>=1.15.2"
 
-    .venv/bin/python3 /usr/share/llvm-test-suite/utils/compare.py \
-        --metric compile_time \
-        --lhs-name $LHS_NAME \
-        --rhs-name $RHS_NAME \
-        $LHS_DATA vs $RHS_DATA | tee ${RESULT_DIR}/${LHS_NAME}_vs_${RHS_NAME}.compile_time.txt
+    for i in $(seq 1 ${NUM_TEST_RUNS}); do
+        local LHS_DATA=$RESULT_DIR/$LHS_NAME.$i.json
+        local RHS_DATA=$RESULT_DIR/$RHS_NAME.$i.json
+
+        .venv/bin/python3 /usr/share/llvm-test-suite/utils/compare.py \
+            --metric compile_time \
+            --lhs-name $LHS_NAME \
+            --rhs-name $RHS_NAME \
+            $LHS_DATA vs $RHS_DATA | tee ${RESULT_DIR}/${LHS_NAME}_vs_${RHS_NAME}.compile_time.$i.txt
+    done
 
     deactivate
 
@@ -189,21 +199,28 @@ function _csv() {
     # Name used in the CSV entry to say what was compared
     local NAME=${LHS_NAME}_vs_${RHS_NAME}
 
-    # Output of comparison script
-    local INPUT_PATH=$RESULT_DIR/$NAME.${KIND}.txt
-
-    # Grep the geomean difference line from the "compare.py" output above
-    local geomean_diff=$(get_geomean_difference ${INPUT_PATH})
-    #local geomean_diff=$(python3 -c "print(-1*${geomean_diff})")
-
     # Not to mix with YYYYMMDD!
     local current_timestamp=$(date +%s)
 
     # Correctly formatted date string for easy consumption with plotly
     local date_string=$(python3 -c "import datetime; print(datetime.datetime.strptime('${YYYYMMDD}', '%Y%m%d').strftime('%Y/%m/%d'))")
 
+    local total_geomean_diff=0
+
+    for i in $(seq 1 ${NUM_TEST_RUNS}); do
+        # Output of comparison script
+        local INPUT_PATH=$RESULT_DIR/$NAME.${KIND}.${i}.txt
+
+        # Grep the geomean difference line from the "compare.py" output above
+        local geomean_diff=$(get_geomean_difference ${INPUT_PATH})
+
+        total_geomean_diff=$(python3 -c "print(${total_geomean_diff} + ${geomean_diff})")
+    done
+
+    total_geomean_diff=$(python3 -c "print(${total_geomean_diff} / float(${NUM_TEST_RUNS}))")
+
     if [[ -n "${OUTPUT_CSV_HEADER}" ]]; then
         echo "date,package,chroot,name,kind,geomean_diff,timestamp" | tee -a $RESULT_DIR/results.csv
     fi
-    echo "${date_string},llvm,${CHROOT},${NAME},${KIND},${geomean_diff},${current_timestamp}" | tee -a $RESULT_DIR/results.csv
+    echo "${date_string},llvm,${CHROOT},${NAME},${KIND},${total_geomean_diff},${current_timestamp}" | tee -a $RESULT_DIR/results.csv
 }
