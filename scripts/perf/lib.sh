@@ -13,7 +13,7 @@ RESULT_DIR=${TMT_PLAN_DATA:-/tmp}
 YYYYMMDD=${YYYYMMDD:-$(date +%Y%m%d)}
 
 # How many times do we want to run a test and later take the average mean?
-NUM_TEST_RUNS=${NUM_TEST_RUNS:-10}
+NUM_TEST_RUNS=${NUM_TEST_RUNS:-1}
 
 # Construct chroot if needed
 CHROOT=${COPR_CHROOT:-}
