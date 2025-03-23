@@ -58,11 +58,12 @@ prepare:
           dnf config-manager setopt "testing-farm-tag-repository.priority=999"
       fi
 
-  - name: Enable llvm-test-suite repo from copr
+  - name: Enable llvm-test-suite and compat packages repos from COPR
     how: shell
     script:
       - dnf install -y 'dnf5-command(copr)' || dnf install -y 'dnf-command(copr)'
       - dnf copr enable -y @fedora-llvm-team/llvm-test-suite $COPR_CHROOT
+      - dnf copr enable -y @fedora-llvm-team/llvm-compat-packages $COPR_CHROOT
 
   - name: Install dependencies for all OSes
     how: install
