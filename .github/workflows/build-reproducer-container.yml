@@ -12,6 +12,13 @@ jobs:
   build-reproducer-container:
     if: github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        arch:
+          - aarch64
+          - ppc64le
+          - s390x
+          - x86_64
     permissions:
       packages: write
     steps:
@@ -20,8 +27,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
+          podman_platform="linux/${{ matrix.arch }}"
+          case "${{ matrix.arch }}" in
+            aarch64)
+              llvm_container_arch="arm64v8"
+              podman_platform="linux/arm64"
+              ;;
+            x86_64)
+              llvm_container_arch="amd64"
+              podman_platform="linux/amd64"
+              ;;
+          esac
+
+          if [ -n "$llvm_container_arch" ]; then
+            extra_args="--build-arg optimized_llvm=ghcr.io/llvm/$llvm_container_arch/ci-ubuntu-22.04:9f919661dd2f --build-arg llvm_sysroot=/opt/llvm/"
+          fi
+
           sudo apt-get -y update
-          sudo apt-get -y install podman
-          podman build -t "ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer" -f Containerfile.mass-rebuild scripts/
+          sudo apt-get -y install podman qemu-user-static
+          # shellcheck disable=SC2086
+          podman build  --platform "$podman_platform" $extra_args -t "ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer:${{ matrix.arch }}" -f Containerfile.mass-rebuild scripts/
           podman login -u ${{ github.actor }} -p "$GITHUB_TOKEN" ghcr.io
-          podman push "ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer"
+          podman push "ghcr.io/$GITHUB_REPOSITORY_OWNER/llvm-snapshots-reproducer:${{ matrix.arch }}"
