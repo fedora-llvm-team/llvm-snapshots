@@ -64,28 +64,32 @@ prepare:
       - dnf install -y 'dnf5-command(copr)' || dnf install -y 'dnf-command(copr)'
       - dnf copr enable -y @fedora-llvm-team/llvm-test-suite $COPR_CHROOT
 
-  - name: Install dependencies
+  - name: Install dependencies for all OSes
     how: install
     package:
       - cmake
       - coreutils
-      - envsubst
-      - fedora-packager
       - git
       - jq
       - ninja-build
       - python3-lit
-      - python3-pandas
       - python3-pip
       - python3-scipy
       - python3-setuptools
-      - python3-virtualenv
-      - tcl
       - tcl-devel
-      - tcl-tclreadline
-      - tcl-thread-devel
-      - tcl-zlib
+      - tcl
       - which
+
+      # The following list of packages needed are probably not available on RHEL
+      # so we need to find a different way to work around them by iteratively
+      # checking if they are really required or not:
+      #
+      # - tcl-tclreadline
+      # - tcl-thread-devel
+      # - tcl-zlib
+      #
+      # See also:
+      # https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/package_manifest/repositories
 
 discover:
   how: shell
