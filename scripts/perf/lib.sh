@@ -101,8 +101,8 @@ function build_test_suite() {
     if [[ -n "${COPR_PROJECT}" ]]; then
         dnf copr enable -y ${COPR_OWNER}/${COPR_PROJECT}
         local repo_file=$(dnf repoinfo --json *${COPR_PROJECT}* | jq -r ".[0].repo_file_path")
-        distname=$(rpm --eval "%{?fedora:fedora}%{?rhel:rhel}") envsubst '$distname' < $repo_file > /tmp/new_repo_file
-        cat /tmp/new_repo_file > $repo_file
+        distname=$(rpm --eval "%{?fedora:fedora}%{?rhel:rhel}")
+        sed -i "s/\$distname/$distname/g" $repo_file
 
         # Query version information for given day
         local git_rev=$(curl -sL https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-git-revision-${YYYYMMDD}.txt)
