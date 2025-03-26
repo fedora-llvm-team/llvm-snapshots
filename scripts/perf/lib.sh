@@ -75,7 +75,7 @@ function _configure_build_test {
     # Run the tests with lit:
     lit -v -o ${RESULT_DIR}/${NAME}.json . || true
 
-    decativate
+    deactivate
 
     popd
 
