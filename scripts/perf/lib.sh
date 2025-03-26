@@ -147,7 +147,7 @@ function compare_compile_time() {
     source ./.venv/bin/activate
     pip install "pandas>=2.2.3"
 
-    /usr/share/llvm-test-suite/utils/compare.py \
+    .venv/bin/python3 /usr/share/llvm-test-suite/utils/compare.py \
         --metric compile_time \
         --lhs-name $LHS_NAME \
         --rhs-name $RHS_NAME \
