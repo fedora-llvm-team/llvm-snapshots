@@ -26,14 +26,14 @@
 #
 #   $ testing-farm request \
 #     --compose Fedora-Rawhide \
-#     --git-url https://github.com/kwk/llvm-snapshots \
-#     --git-ref compile-time-perf \
+#     --git-url https://github.com/fedora-llvm-team/llvm-snapshots \
+#     --git-ref main \
 #     --arch x86_64 \
 #     --plan /tests/compare-compile-time \
 #     --context distro=fedora-rawhide \
 #     --context arch=x86_64 \
 #     --environment COPR_CHROOT=fedora-rawhide-x86_64 \
-#     --environment YYYYMMDD=20250317
+#     --environment YYYYMMDD=$(date +%Y%m%d)
 #
 # What's really necessary to pass is the `YYYYMMDD` environment variable in
 # order to pick the right copr repos and the `COPR_CHROOT` environment variable
