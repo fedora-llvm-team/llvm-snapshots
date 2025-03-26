@@ -31,11 +31,7 @@ function _configure_build_test {
     local BUILD_DIR=builds/$NAME
 
     mkdir -pv $BUILD_DIR
-    python3 -m venv $BUILD_DIR/venv
     pushd $BUILD_DIR
-
-    source ./venv/bin/activate
-    pip install "pandas>=2.2.3"
 
     # See also https://llvm.org/docs/TestSuiteGuide.html#common-configuration-options
     local cmake_args=""
@@ -74,8 +70,6 @@ function _configure_build_test {
 
     # Run the tests with lit:
     lit -v -o ${RESULT_DIR}/${NAME}.json . || true
-
-    deactivate
 
     popd
 
@@ -147,11 +141,19 @@ function compare_compile_time() {
 
     rpm -q llvm-test-suite || dnf install -y llvm-test-suite
 
+    if [[ ! -d .venv ]]; then
+        python3 -m venv .venv
+    fi
+    source ./.venv/bin/activate
+    pip install "pandas>=2.2.3"
+
     /usr/share/llvm-test-suite/utils/compare.py \
         --metric compile_time \
         --lhs-name $LHS_NAME \
         --rhs-name $RHS_NAME \
         $LHS_DATA vs $RHS_DATA | tee ${RESULT_DIR}/${LHS_NAME}_vs_${RHS_NAME}.compile_time.txt
+
+    deactivate
 
     _csv compile_time $LHS_NAME $RHS_NAME $OUTPUT_CSV_HEADER
 }
