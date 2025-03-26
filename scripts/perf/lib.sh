@@ -31,7 +31,11 @@ function _configure_build_test {
     local BUILD_DIR=builds/$NAME
 
     mkdir -pv $BUILD_DIR
+    python3 -m venv $BUILD_DIR/venv
     pushd $BUILD_DIR
+
+    source ./venv/bin/activate
+    pip install "pandas>=2.2.3"
 
     # See also https://llvm.org/docs/TestSuiteGuide.html#common-configuration-options
     local cmake_args=""
@@ -70,6 +74,8 @@ function _configure_build_test {
 
     # Run the tests with lit:
     lit -v -o ${RESULT_DIR}/${NAME}.json . || true
+
+    decativate
 
     popd
 
