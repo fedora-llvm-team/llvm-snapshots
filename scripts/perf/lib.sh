@@ -41,10 +41,14 @@ function _configure_build_test {
     local cmake_args=""
 
     # Recommended setting for compile-time benchmarks
+    #
+    # TODO(kwk): Should we test for performance criterias other than compile
+    # time, we might need to adjust this.
     cmake_args="$cmake_args -DTEST_SUITE_SUBDIRS=CTMark"
 
     # For PGO performance comparison we expect differences in the range of 10%
-    # and more. Therefore we don't need perf. On containers we need to turn it off
+    # and more. Therefore we don't necessarily need perf. On containers we need
+    # to turn it off.
     if [[ -n "$container" ]]; then
         cmake_args="$cmake_args -DTEST_SUITE_USE_PERF=OFF"
     else
