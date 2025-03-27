@@ -125,8 +125,8 @@ function build_test_suite() {
         clang-resource-filesystem${rpm_suffix} \
         llvm${rpm_suffix} \
         llvm-libs${rpm_suffix} \
-        llvm-test-suite
-
+        llvm-test-suite \
+        perf
 
     for i in $(seq -w 1 ${NUM_TEST_RUNS}); do
         _configure_build_test $NAME $N_BUILD_JOBS $i
