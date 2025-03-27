@@ -13,7 +13,7 @@ RESULT_DIR=${TMT_PLAN_DATA:-/tmp}
 YYYYMMDD=${YYYYMMDD:-$(date +%Y%m%d)}
 
 # How many times do we want to run a test and later take the average mean?
-NUM_TEST_RUNS=${NUM_TEST_RUNS:-1}
+NUM_TEST_RUNS=${NUM_TEST_RUNS:-10}
 
 # Construct chroot if needed
 CHROOT=${COPR_CHROOT:-}
@@ -135,14 +135,14 @@ function build_test_suite() {
     if [[ -n "${COPR_PROJECT}" ]]; then
         # Remove packages from that repo and the repo itself
         local repo_pkgs_installed=$(dnf repoquery --installed --queryformat ' %{name} %{from_repo} ' | grep -Po "[^ ]+ [^ ]+${COPR_PROJECT}" | awk '{print $1}')
-        dnf -y remove $repo_pkgs_installed;
+        dnf -y remove $repo_pkgs_installed
         dnf copr disable -y ${COPR_OWNER}/${COPR_PROJECT}
     fi
 
     # Remove packages from the llvm-compat-packages repo; otherwise llvm20-libs
     # remains installed and conflicts with llvm-libs upon next run.
     local repo_pkgs_installed=$(dnf repoquery --installed --queryformat ' %{name} %{from_repo} ' | grep -Po "[^ ]+ [^ ]+llvm-compat-packages" | awk '{print $1}')
-    dnf -y remove $repo_pkgs_installed;
+    [[ -n "$repo_pkgs_installed" ]] && dnf -y remove $repo_pkgs_installed
 }
 
 # This function compares two JSON files produced by `_configure_build_test()`.
