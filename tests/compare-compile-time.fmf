@@ -105,8 +105,8 @@ discover:
     - name: snapshot
       test: . $TMT_TREE/scripts/perf/lib.sh && build_test_suite ${TMT_TEST_NAME:1} llvm-snapshots-big-merge-$YYYYMMDD
 
-    # - name: system
-    #   test: . $TMT_TREE/scripts/perf/lib.sh && build_test_suite ${TMT_TEST_NAME:1}
+    - name: system
+      test: . $TMT_TREE/scripts/perf/lib.sh && build_test_suite ${TMT_TEST_NAME:1}
 
     ################################################################
     # Compare build strategies
@@ -114,11 +114,11 @@ discover:
     - name: pgo snapshot
       test: . $TMT_TREE/scripts/perf/lib.sh && compare_compile_time ${TMT_TEST_NAME:1} show_csv_header
 
-    # - name: pgo system
-    #   test: . $TMT_TREE/scripts/perf/lib.sh && compare_compile_time ${TMT_TEST_NAME:1}
+    - name: pgo system
+      test: . $TMT_TREE/scripts/perf/lib.sh && compare_compile_time ${TMT_TEST_NAME:1}
 
-    # - name: snapshot system
-    #   test: . $TMT_TREE/scripts/perf/lib.sh && compare_compile_time ${TMT_TEST_NAME:1}
+    - name: snapshot system
+      test: . $TMT_TREE/scripts/perf/lib.sh && compare_compile_time ${TMT_TEST_NAME:1}
 
 execute:
     how: tmt
