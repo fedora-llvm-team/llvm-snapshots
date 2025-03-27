@@ -214,7 +214,11 @@ function _csv() {
     # Correctly formatted date string for easy consumption with plotly
     local date_string=$(python3 -c "import datetime; print(datetime.datetime.strptime('${YYYYMMDD}', '%Y%m%d').strftime('%Y/%m/%d'))")
 
-    local total_geomean_diff=0
+    if [[ -n "${OUTPUT_CSV_HEADER}" ]]; then
+        echo "date,package,chroot,name,kind,geomean_diff,run,total_runs,timestamp,lscpu" | tee -a $RESULT_DIR/results.csv
+    fi
+
+    lscpu_base64=$(lscpu --json | base64 --wrap=0)
 
     for i in $(seq -w 1 ${NUM_TEST_RUNS}); do
         # Output of comparison script
@@ -223,13 +227,6 @@ function _csv() {
         # Grep the geomean difference line from the "compare.py" output above
         local geomean_diff=$(get_geomean_difference ${INPUT_PATH})
 
-        total_geomean_diff=$(python3 -c "print(${total_geomean_diff} + ${geomean_diff})")
+        echo "${date_string},llvm,${CHROOT},${NAME},${KIND},${total_geomean_diff},${i},${NUM_TEST_RUNS},${current_timestamp},${lscpu_base64}" | tee -a $RESULT_DIR/results.csv
     done
-
-    total_geomean_diff=$(python3 -c "print(${total_geomean_diff} / float(${NUM_TEST_RUNS}))")
-
-    if [[ -n "${OUTPUT_CSV_HEADER}" ]]; then
-        echo "date,package,chroot,name,kind,geomean_diff,timestamp" | tee -a $RESULT_DIR/results.csv
-    fi
-    echo "${date_string},llvm,${CHROOT},${NAME},${KIND},${total_geomean_diff},${current_timestamp}" | tee -a $RESULT_DIR/results.csv
 }
