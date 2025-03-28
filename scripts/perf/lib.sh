@@ -14,7 +14,7 @@ YYYYMMDD=${YYYYMMDD:-$(date +%Y%m%d)}
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # How many times do we want to run a test and later take the average mean?
-NUM_TEST_RUNS=${NUM_TEST_RUNS:-1}
+NUM_TEST_RUNS=${NUM_TEST_RUNS:-5}
 
 # Construct chroot if needed
 CHROOT=${COPR_CHROOT:-}
