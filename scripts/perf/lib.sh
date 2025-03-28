@@ -142,7 +142,9 @@ function build_test_suite() {
     # Remove packages from the llvm-compat-packages repo; otherwise llvm20-libs
     # remains installed and conflicts with llvm-libs upon next run.
     local repo_pkgs_installed=$(dnf repoquery --installed --queryformat ' %{name} %{from_repo} ' | grep -Po "[^ ]+ [^ ]+llvm-compat-packages" | awk '{print $1}')
-    [[ -n "$repo_pkgs_installed" ]] && dnf -y remove $repo_pkgs_installed
+    if [[ -n "$repo_pkgs_installed" ]]; then
+        dnf -y remove $repo_pkgs_installed
+    fi
 }
 
 # This function compares two JSON files produced by `_configure_build_test()`.
