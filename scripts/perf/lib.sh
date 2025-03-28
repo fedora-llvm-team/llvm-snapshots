@@ -216,11 +216,64 @@ function _csv() {
     # Correctly formatted date string for easy consumption with plotly
     local date_string=$(python3 -c "import datetime; print(datetime.datetime.strptime('${YYYYMMDD}', '%Y%m%d').strftime('%Y/%m/%d'))")
 
-    if [[ -n "${OUTPUT_CSV_HEADER}" ]]; then
-        echo "date,package,chroot,name,kind,geomean_diff,run,total_runs,timestamp,lscpu" | tee -a $RESULT_DIR/results.csv
-    fi
+    # Gather CPU info
+    lscpu_out=$(mktemp)
+    lscpu --hierarchic=never --json --bytes > $lscpu_out
 
-    lscpu_base64=$(lscpu --json | base64 --wrap=0)
+    fields=()
+    fields+=("Address sizes:")
+    fields+=("Architecture:")
+    fields+=("BogoMIPS:")
+    fields+=("Byte Order:")
+    fields+=("Core(s) per socket:")
+    fields+=("CPU family:")
+    fields+=("CPU max MHz:")
+    fields+=("CPU min MHz:")
+    fields+=("CPU op-mode(s):")
+    fields+=("CPU(s):")
+    fields+=("Flags:")
+    fields+=("L1d cache:")
+    fields+=("L1i cache:")
+    fields+=("L2 cache:")
+    fields+=("L3 cache:")
+    fields+=("Model name:")
+    fields+=("Model:")
+    fields+=("Numa node(s):")
+    fields+=("NUMA node0 CPU(s):")
+    fields+=("On-line CPU(s) list:")
+    fields+=("Socket(s):")
+    fields+=("Thread(s) per core:")
+    fields+=("Vendor ID:")
+    fields+=("Virtualization:")
+    fields+=("Vulnerability Gather data sampling:"   )
+    fields+=("Vulnerability Itlb multihit:")
+    fields+=("Vulnerability L1tf:")
+    fields+=("Vulnerability Mds:")
+    fields+=("Vulnerability Meltdown:")
+    fields+=("Vulnerability Mmio stale data:")
+    fields+=("Vulnerability Reg file data sampling:")
+    fields+=("Vulnerability Retbleed:")
+    fields+=("Vulnerability Spec rstack overflow:")
+    fields+=("Vulnerability Spec store bypass:")
+    fields+=("Vulnerability Spectre v1:")
+    fields+=("Vulnerability Spectre v2:")
+
+    cpu_header_line=""
+    cpu_line=""
+    for field in "${fields[@]}"; do
+        if [[ -n "$cpu_line" ]]; then
+            cpu_line="$cpu_line,"
+        fi
+        if [[ -n "$cpu_header_line" ]]; then
+            cpu_header_line="$cpu_header_line,"
+        fi
+        cpu_header_line="${cpu_header_line}$(echo -n "$field" | tr -d ':' | tr [:space:] _ | tr -c -d '[:alnum:]_' | tr [:upper:] [:lower:])"
+        cpu_line="${cpu_line}$(jq --arg myfield "$field" '.lscpu[] | select(.field==$myfield) | .data' < $lscpu_out)"
+    done
+
+    if [[ -n "${OUTPUT_CSV_HEADER}" ]]; then
+        echo "date,package,chroot,name,kind,geomean_diff,run,total_runs,timestamp,$cpu_header_line" | tee -a $RESULT_DIR/results.csv
+    fi
 
     for i in $(seq -w 1 ${NUM_TEST_RUNS}); do
         # Output of comparison script
@@ -229,6 +282,6 @@ function _csv() {
         # Grep the geomean difference line from the "compare.py" output above
         local geomean_diff=$(get_geomean_difference ${INPUT_PATH})
 
-        echo "${date_string},llvm,${CHROOT},${NAME},${KIND},${total_geomean_diff},${i},${NUM_TEST_RUNS},${current_timestamp},${lscpu_base64}" | tee -a $RESULT_DIR/results.csv
+        echo "${date_string},llvm,${CHROOT},${NAME},${KIND},${total_geomean_diff},${i},${NUM_TEST_RUNS},${current_timestamp},${cpu_line}" | tee -a $RESULT_DIR/results.csv
     done
 }
