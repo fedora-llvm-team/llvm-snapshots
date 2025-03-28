@@ -11,6 +11,7 @@ set -x
 # (For TMT_PLAN_DATA see https://tmt.readthedocs.io/en/stable/overview.html#step-variables)
 RESULT_DIR=${TMT_PLAN_DATA:-/tmp}
 YYYYMMDD=${YYYYMMDD:-$(date +%Y%m%d)}
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # How many times do we want to run a test and later take the average mean?
 NUM_TEST_RUNS=${NUM_TEST_RUNS:-1}
@@ -165,8 +166,7 @@ function compare_compile_time() {
         python3 -m venv .venv
     fi
     source ./.venv/bin/activate
-    pip install "pandas>=2.2.3"
-    pip install "scipy>=1.15.2"
+    pip install -r ${SCRIPT_DIR}/requirements.txt
 
     for i in $(seq -w 1 ${NUM_TEST_RUNS}); do
         local LHS_DATA=$RESULT_DIR/$LHS_NAME.$i.json
