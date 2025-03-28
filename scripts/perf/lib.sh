@@ -272,7 +272,7 @@ function _csv() {
     done
 
     if [[ -n "${OUTPUT_CSV_HEADER}" ]]; then
-        echo "date,package,chroot,name,kind,geomean_diff,run,total_runs,timestamp,$cpu_header_line" | tee -a $RESULT_DIR/results.csv
+        echo "date,package,chroot,name,kind,geomean_diff,iteration,total_iterations,timestamp,$cpu_header_line" | tee -a $RESULT_DIR/results.csv
     fi
 
     for i in $(seq -w 1 ${NUM_TEST_RUNS}); do
@@ -282,6 +282,6 @@ function _csv() {
         # Grep the geomean difference line from the "compare.py" output above
         local geomean_diff=$(get_geomean_difference ${INPUT_PATH})
 
-        echo "${date_string},llvm,${CHROOT},${NAME},${KIND},${total_geomean_diff},${i},${NUM_TEST_RUNS},${current_timestamp},${cpu_line}" | tee -a $RESULT_DIR/results.csv
+        echo "${date_string},llvm,${CHROOT},${NAME},${KIND},${geomean_diff},${i},${NUM_TEST_RUNS},${current_timestamp},${cpu_line}" | tee -a $RESULT_DIR/results.csv
     done
 }
