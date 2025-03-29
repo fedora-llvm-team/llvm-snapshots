@@ -9,6 +9,71 @@ function get_clang_commit {
   curl "https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/fedora-41-clang-21/fedora-41-x86_64/0$buildid-$pkg/root.log.gz" | gunzip |  grep -o 'clang[[:space:]]\+x86_64[[:space:]]\+[0-9a-g~pre.]\+' | cut -d 'g' -f 3
 }
 
+function get_clang_copr_project {
+  buildid=$1
+  pkg=$2
+  arch=$(rpm --eval %{_arch})
+
+  date=$(curl "https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/fedora-41-clang-21/fedora-41-$arch/0$buildid-$pkg/root.log.gz" | gunzip |  grep -o "clang[[:space:]]\+$arch[[:space:]]\+[0-9.]\+~pre[0-9]\+" | cut -d '~' -f 2 | sed 's/pre//g')
+  echo "@fedora-llvm-team/llvm-snapshots-big-merge-$date"
+}
+
+function configure_llvm {
+
+  if [ -n "$LLVM_SYSROOT" ] -a [ -e "$LLVM_SYSROOT/bin/clang" ]; then
+    cc=$LLVM_SYSROOT/bin/clang
+    cxx=$LLVM_SYSROOT/bin/clang++
+  else
+    cc=clang
+    cxx=clang++
+  fi
+
+  cmake -G Ninja -B build -S llvm -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD=Native -DLLVM_BINUTILS_INCDIR=/usr/include/ -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER=$cxx -DCMAKE_C_COMPILER=$cc
+
+}
+
+function copr_project_exists {
+  project=$1
+  owner=$(echo $project | cut -d '/' -f 1)
+  name=$(echo $project | cut -d '/' -f 2)
+
+  curl -f -X 'GET' "https://copr.fedorainfracloud.org/api_3/project/?ownername=$owner&projectname=$name"   -H 'accept: application/json'
+}
+
+function test_with_copr_builds {
+  copr_project=$1
+  srpm_name=$2
+
+  dnf remove -y clang
+  dnf copr enable -y $copr_project
+  dnf install --best -y clang
+  dnf builddep -y $srpm_name
+  if ! rpmbuild -D '%toolchain clang' -rb $srpm_name; then
+    return 1
+  fi
+  # Clean up
+  dnf copr disable $good_copr_project
+  dnf remove -y clang
+}
+
+function test_copr_or_commit {
+  copr_project=$1
+  commit=$2
+  srpm_name=$3
+
+  if copr_project_exists $copr_project; then
+    if ! test_with_copr_builds $copr_project $srpm_name; then
+      return 1
+    fi
+  else
+    git checkout $commit
+    configure_llvm
+    if ! ./git-bisect-script.sh $srpm_name; then
+      return 1
+    fi
+  fi
+}
+
 
 pkg_or_buildid=$1
 
@@ -34,27 +99,33 @@ srpm_url=$(curl -X 'GET' "https://copr.fedorainfracloud.org/api_3/build/$buildid
 curl -O -L $srpm_url
 srpm_name=$(basename $srpm_url)
 
+
+# Enable the compat libraries so we can install a clang snapshot.
+# We need to do this because the runtime repo dependencies from
+# the snapshot copr projects is not resolved when using dnf5 see:
+# https://github.com/fedora-copr/copr/issues/3387
+dnf copr enable -y @fedora-llvm-team/llvm-compat-packages
+
+# Test if the good commit still succeeds. A failure may indicate an
+# intermittent failure or an issue that is unrelated to LLVM. In either case,
+# this is not a "good commit".
+good_copr_project=$(get_clang_copr_project $last_success_id $pkg)
+
+if ! test_copr_or_commit $good_copr_project $good_commit $srpm_name; then
+  echo "False Positive."
+  exit 1
+fi
+
+# Test the bad commit to see if this a false positive.
+bad_copr_project=$(get_clang_copr_project $buildid $pkg)
+if test_copr_or_commit $bad_copr_project $bad_commit $srpm_name; then
+  echo "False Positive."
+  exit 1
+fi
+
 dnf builddep -y $srpm_name
-
-# Test the good commit to see if this a false positive
-git checkout $good_commit
-
-cmake -G Ninja -B build -S llvm -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD=Native -DLLVM_BINUTILS_INCDIR=/usr/include/ -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER=/opt/llvm/bin/clang++ -DCMAKE_C_COMPILER=/opt/llvm/bin/clang
-
-if ! ./git-bisect-script.sh $srpm_name; then
-  echo "False Positive."
-  exit 1
-fi
-
-git checkout $bad_commit
-# Test the bad commit to see if this a false positive
-if ./git-bisect-script.sh $srpm_name; then
-  echo "False Positive."
-  exit 1
-fi
-
 git bisect start
 git bisect good $good_commit
 git bisect bad $bad_commit
-
+configure_llvm
 git bisect run ./git-bisect-script.sh $srpm_name
