@@ -267,7 +267,8 @@ function _csv() {
         if [[ -n "$cpu_header_line" ]]; then
             cpu_header_line="$cpu_header_line,"
         fi
-        cpu_header_line="${cpu_header_line}$(echo -n "$field" | tr -d ':' | tr [:space:] _ | tr -c -d '[:alnum:]_' | tr [:upper:] [:lower:])"
+        column_title=cpu_info_$(echo -n "$field" | tr -d ':' | tr [:space:] _ | tr -c -d '[:alnum:]_' | tr [:upper:] [:lower:])
+        cpu_header_line="${cpu_header_line}"
         cpu_line="${cpu_line}$(jq --arg myfield "$field" '.lscpu[] | select(.field==$myfield) | .data' < $lscpu_out)"
     done
 
