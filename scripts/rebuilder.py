@@ -368,7 +368,8 @@ def extract_date_from_project(project_name: str) -> datetime.date:
     return datetime.datetime.fromisoformat(m.group(0)).date()
 
 
-def find_midpoint_project(copr_client: copr.v3.Client, good: str, bad: str, chroot: str
+def find_midpoint_project(
+    copr_client: copr.v3.Client, good: str, bad: str, chroot: str
 ):
     good_date = extract_date_from_project(good)
     bad_date = extract_date_from_project(bad)
@@ -387,7 +388,7 @@ def find_midpoint_project(copr_client: copr.v3.Client, good: str, bad: str, chro
                     return mid_project
         except:
             pass
-        
+
         increment = increment * -1
         if increment < 0:
             increment -= 1
