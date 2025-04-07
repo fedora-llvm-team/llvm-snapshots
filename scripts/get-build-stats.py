@@ -5,7 +5,7 @@ import calendar
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from copr.v3 import Client, CoprNoResultException
 
@@ -49,7 +49,10 @@ def gather_build_stats(
                 ended_on = build["ended_on"]
                 started_on = build["started_on"]
                 submitted_on = build["submitted_on"]
-                yyyymmdd = datetime.utcfromtimestamp(submitted_on).strftime("%Y/%m/%d")
+                yyyymmdd = datetime.fromtimestamp(submitted_on, timezone.utc).strftime(
+                    "%Y/%m/%d"
+                )
+
                 if ended_on is not None and started_on is not None:
                     build_time = int(ended_on) - int(started_on)
                 print(
