@@ -361,6 +361,7 @@ def create_new_project(
             with_opts=["toolchain_clang", "clang_lto"],
         )
 
+
 def extract_date_from_project(project_name: str) -> datetime.date:
     m = re.search("[0-9]+$", project_name)
     if not m:
