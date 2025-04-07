@@ -368,11 +368,7 @@ def extract_date_from_project(project_name: str) -> datetime.date:
     return datetime.datetime.fromisoformat(m.group(0)).date()
 
 
-def find_midpoint_project(
-    copr_client: copr.v3.Client,
-    good: str,
-    bad: str,
-    chroot: str
+def find_midpoint_project(copr_client: copr.v3.Client, good: str, bad: str, chroot: str
 ):
     good_date = extract_date_from_project(good)
     bad_date = extract_date_from_project(bad)
@@ -381,11 +377,13 @@ def find_midpoint_project(
     increment = 0
     while mid_date != good_date and mid_date != bad_date:
         mid_project = re.sub("[0-9]+$", mid_date.strftime("%Y%m%d"), good)
-        owner = mid_project.split('/')[0]
-        project = mid_project.split('/')[1]
+        owner = mid_project.split("/")[0]
+        project = mid_project.split("/")[1]
         try:
-            for builds in copr_client.build_proxy.get_list(owner, project, 'llvm', "succeeded"):
-                if chroot in builds['chroots']:
+            for builds in copr_client.build_proxy.get_list(
+                owner, project, "llvm", "succeeded"
+            ):
+                if chroot in builds["chroots"]:
                     return mid_project
         except:
             pass
@@ -412,21 +410,15 @@ def main():
             "get-regressions",
             "get-snapshot-date",
             "rebuild-in-progress",
-            "bisect"
+            "bisect",
         ],
     )
     parser.add_argument(
         "--start-date", type=str, help="Any ISO date format is accepted"
     )
-    parser.add_argument(
-        "--chroot", type=str
-    )
-    parser.add_argument(
-        "--good", type=str
-    )
-    parser.add_argument(
-        "--bad", type=str
-    )
+    parser.add_argument("--chroot", type=str)
+    parser.add_argument("--good", type=str)
+    parser.add_argument("--bad", type=str)
 
     args = parser.parse_args()
     copr_client = copr.v3.Client.create_from_config_file()
