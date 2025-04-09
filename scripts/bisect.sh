@@ -98,6 +98,16 @@ srpm_url=$(curl -X 'GET' "https://copr.fedorainfracloud.org/api_3/build/$buildid
 curl -O -L $srpm_url
 srpm_name=$(basename $srpm_url)
 
+# We are downloading an SRPM prepared for x86, so we need to rebuild it on the
+# host arch in case there are arch specific depedencies.
+#
+# HACK: There seems to be a bug in `rpmbuild -rs` where it won't create all the
+# necessary  rpmbuild directories, so we need to run some other command first to
+# make sure the directories are created.  `rpmbuild -rp` does the least
+# of all the commands which is why we are using it to 'create' the directories.
+rpmbuild --nodeps -rp $srpm_name &>/dev/null || true
+rpmbuild -rs $srpm_name
+srpm_name=$(find $(rpm --eval %{_srcrpmdir}) -iname '*.src.rpm')
 
 # Enable the compat libraries so we can install a clang snapshot.
 # We need to do this because the runtime repo dependencies from
