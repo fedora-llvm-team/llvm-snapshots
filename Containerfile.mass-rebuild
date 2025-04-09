@@ -9,9 +9,7 @@ ENV LLVM_SYSROOT=${llvm_sysroot} \
     AR=llvm-ar \
     RANLIB=llvm-ranlib
 
-RUN dnf -y copr enable tstellar/fedora-clang-default-cc
-
-RUN dnf -y install jq cmake ninja-build git binutils-devel clang fedora-clang-default-cc rpmbuild ccache
+RUN dnf -y install jq cmake ninja-build git binutils-devel clang rpmbuild ccache
 
 WORKDIR /root
 
