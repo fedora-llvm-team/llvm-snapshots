@@ -362,6 +362,44 @@ def create_new_project(
         )
 
 
+def extract_date_from_project(project_name: str) -> datetime.date:
+    m = re.search("[0-9]+$", project_name)
+    if not m:
+        raise Exception(f"Invalid project name: {project_name}")
+    return datetime.datetime.fromisoformat(m.group(0)).date()
+
+
+def find_midpoint_project(
+    copr_client: copr.v3.Client, good: str, bad: str, chroot: str
+):
+    good_date = extract_date_from_project(good)
+    bad_date = extract_date_from_project(bad)
+    days = (bad_date - good_date).days
+    mid_date = good_date + datetime.timedelta(days=days / 2)
+    increment = 0
+    while mid_date != good_date and mid_date != bad_date:
+        mid_project = re.sub("[0-9]+$", mid_date.strftime("%Y%m%d"), good)
+        owner = mid_project.split("/")[0]
+        project = mid_project.split("/")[1]
+        try:
+            for builds in copr_client.build_proxy.get_list(
+                owner, project, "llvm", "succeeded"
+            ):
+                if chroot in builds["chroots"]:
+                    return mid_project
+        except:
+            pass
+
+        increment = increment * -1
+        if increment < 0:
+            increment -= 1
+        else:
+            increment += 1
+        mid_date += datetime.timedelta(days=increment)
+
+    return good
+
+
 def main():
 
     logging.basicConfig(filename="rebuilder.log", level=logging.INFO)
@@ -374,11 +412,15 @@ def main():
             "get-regressions",
             "get-snapshot-date",
             "rebuild-in-progress",
+            "bisect",
         ],
     )
     parser.add_argument(
         "--start-date", type=str, help="Any ISO date format is accepted"
     )
+    parser.add_argument("--chroot", type=str)
+    parser.add_argument("--good", type=str)
+    parser.add_argument("--bad", type=str)
 
     args = parser.parse_args()
     copr_client = copr.v3.Client.create_from_config_file()
@@ -437,6 +479,8 @@ def main():
                 if build.is_in_progress():
                     sys.exit(0)
         sys.exit(1)
+    elif args.command == "bisect":
+        print(find_midpoint_project(copr_client, args.good, args.bad, args.chroot))
 
 
 if __name__ == "__main__":
