@@ -48,12 +48,11 @@ function test_with_copr_builds {
   dnf copr enable -y $copr_project
   dnf install --best -y clang llvm
   dnf builddep -y $srpm_name
+  # Disable project so future installs don't use it.
+  dnf copr disable $copr_project
   if ! rpmbuild -D '%toolchain clang' -rb $srpm_name; then
     return 1
   fi
-  # Clean up
-  dnf copr disable $good_copr_project
-  dnf remove -y clang
 }
 
 function test_copr_or_commit {
@@ -99,6 +98,16 @@ srpm_url=$(curl -X 'GET' "https://copr.fedorainfracloud.org/api_3/build/$buildid
 curl -O -L $srpm_url
 srpm_name=$(basename $srpm_url)
 
+# We are downloading an SRPM prepared for x86, so we need to rebuild it on the
+# host arch in case there are arch specific depedencies.
+#
+# HACK: There seems to be a bug in `rpmbuild -rs` where it won't create all the
+# necessary  rpmbuild directories, so we need to run some other command first to
+# make sure the directories are created.  `rpmbuild -rp` does the least
+# of all the commands which is why we are using it to 'create' the directories.
+rpmbuild --nodeps -rp $srpm_name &>/dev/null || true
+rpmbuild -rs $srpm_name
+srpm_name=$(find $(rpm --eval %{_srcrpmdir}) -iname '*.src.rpm')
 
 # Enable the compat libraries so we can install a clang snapshot.
 # We need to do this because the runtime repo dependencies from
@@ -122,6 +131,30 @@ if test_copr_or_commit $bad_copr_project $bad_commit $srpm_name; then
   echo "False Positive."
   exit 1
 fi
+
+# First attempt to bisect using prebuilt binaries.
+chroot="fedora-$(rpm --eval %{fedora})-$(rpm --eval %{_arch})"
+good=$good_copr_project
+bad=$bad_copr_project
+
+while [ True ]; do
+  test_project=$(python3 rebuilder.py bisect --chroot $chroot --good $good --bad $bad)
+  echo "Trying $test_project"
+
+  if [ "$test_project" = "$good_copr_project" ] || [ "$test_project" = "$bad_copr_project" ]; then
+    break
+  fi
+
+  if test_with_copr_builds $test_project $srpm_name; then
+    good=$test_project
+    good_commit=$(dnf info --installed clang | grep '^Version' | cut -d 'g' -f 2)
+    echo "GOOD"
+  else
+    bad=$test_project
+    bad_commit=$(dnf info --installed clang | grep '^Version' | cut -d 'g' -f 2)
+    echo "BAD"
+  fi
+done
 
 dnf builddep -y $srpm_name
 git bisect start
