@@ -44,9 +44,9 @@ function test_with_copr_builds {
   copr_project=$1
   srpm_name=$2
 
-  dnf remove -y clang
+  dnf remove -y clang llvm
   dnf copr enable -y $copr_project
-  dnf install --best -y clang
+  dnf install --best -y clang llvm
   dnf builddep -y $srpm_name
   # Disable project so future installs don't use it.
   dnf copr disable $copr_project
