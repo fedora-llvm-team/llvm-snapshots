@@ -13,11 +13,17 @@ RUN dnf -y copr enable tstellar/fedora-clang-default-cc
 
 RUN dnf -y install jq cmake ninja-build git binutils-devel clang fedora-clang-default-cc rpmbuild ccache
 
-WORKDIR /root
+RUN useradd -m rebuild-user
+
+RUN echo 'rebuild-user ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+USER rebuild-user
+
+WORKDIR /home/rebuild-user
 
 RUN git clone https://github.com/llvm/llvm-project
 
-WORKDIR /root/llvm-project
+WORKDIR /home/rebuild-user/llvm-project
 
 ADD bisect.sh git-bisect-script.sh .
 
