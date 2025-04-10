@@ -1,12 +1,19 @@
 import argparse
 import datetime
 import logging
+import os
 import sys
+
+import github
 
 import snapshot_manager.config as config
 import snapshot_manager.copr_util as copr_util
-import snapshot_manager.snapshot_manager as snapshot_manager
 import snapshot_manager.util as util
+from snapshot_manager.snapshot_manager import (  # isort:skip_file
+    SnapshotManager,
+    run_performance_comparison,
+    collect_performance_comparison_results,
+)
 
 # This shows the default value of arguments in the help text.
 # See https://docs.python.org/3/library/argparse.html#argparse.ArgumentDefaultsHelpFormatter
@@ -38,6 +45,8 @@ def main():
         "has-all-good-builds",
         "delete-project",
         "github-matrix",
+        "run-perf-comparison",
+        "collect-perf-comparison-results",
     ):
         copr_client = copr_util.make_client()
         all_chroots = copr_util.get_all_chroots(client=copr_client)
@@ -56,10 +65,10 @@ def main():
     if cmd == "check":
         cfg.github_repo = args.github_repo
         cfg.datetime = args.datetime
-        snapshot_manager.SnapshotManager(config=cfg).check_todays_builds()
+        SnapshotManager(config=cfg).check_todays_builds()
     elif cmd == "retest":
         cfg.github_repo = args.github_repo
-        snapshot_manager.SnapshotManager(config=cfg).retest(
+        SnapshotManager(config=cfg).retest(
             issue_number=args.issue_number,
             trigger_comment_id=args.trigger_comment_id,
             chroots=args.chroots,
@@ -97,6 +106,57 @@ def main():
             logging.warning("Not all builds were successful")
             sys.exit(1)
         logging.info("All required builds were successful")
+    elif cmd == "run-perf-comparison":
+        github_token = os.getenv(config.Config().github_token_env)
+        if github_token is None or len(github_token) == 0:
+            logging.error(
+                f"Could not retrieve github token from environment variable with name '{config.Config().github_token_env}'"
+            )
+            sys.exit(1)
+        auth = github.Auth.Token(github_token)
+        github_client = github.Github(auth=auth)
+        if args.strategy_a not in config_map or args.strategy_b not in config_map:
+            logging.error(
+                f"'{args.strategy_a}' and '{args.strategy_b}' need to be a named configuration but currently only these configurations exist: {config_map.keys()}"
+            )
+            sys.exit(1)
+        conf_a = config_map[args.strategy_a]
+        conf_b = config_map[args.strategy_b]
+        conf_a.datetime = args.datetime
+        conf_b.datetime = args.datetime
+        run_performance_comparison(
+            conf_a=conf_a,
+            conf_b=conf_b,
+            github_repo=args.github_repo,
+            copr_client=copr_client,
+            github_client=github_client,
+        )
+    elif cmd == "collect-perf-results":
+        github_token = os.getenv(config.Config().github_token_env)
+        if github_token is None or len(github_token) == 0:
+            logging.error(
+                f"Could not retrieve github token from environment variable with name '{config.Config().github_token_env}'"
+            )
+            sys.exit(1)
+        auth = github.Auth.Token(github_token)
+        github_client = github.Github(auth=auth)
+        if args.strategy_a not in config_map or args.strategy_b not in config_map:
+            logging.error(
+                f"'{args.strategy_a}' and '{args.strategy_b}' need to be a named configuration but currently only these configurations exist: {config_map.keys()}"
+            )
+            sys.exit(1)
+        conf_a = config_map[args.strategy_a]
+        conf_b = config_map[args.strategy_b]
+        conf_a.datetime = args.datetime
+        conf_b.datetime = args.datetime
+        collect_performance_comparison_results(
+            conf_a=conf_a,
+            conf_b=conf_b,
+            github_repo=args.github_repo,
+            github_client=github_client,
+            csv_file_out=args.csv_file_out,
+            csv_file_in=args.csv_file_in,
+        )
     else:
         logging.error(f"Unsupported command: {cmd}")
         sys.exit(1)
@@ -125,6 +185,8 @@ def build_argument_parser(cfg: config.Config) -> argparse.ArgumentParser:
     argument_parser_github_matrix(cfg, subparsers=subparsers)
     argument_parser_check(cfg=cfg, subparsers=subparsers)
     argument_parser_has_all_good_builds(cfg=cfg, subparsers=subparsers)
+    argument_parser_perf_comparison(cfg=cfg, subparsers=subparsers)
+    argument_parser_collect_perf_comparison_results(cfg=cfg, subparsers=subparsers)
 
     return mainparser
 
@@ -152,7 +214,7 @@ def add_yyyymmdd_argument(argparser: argparse.ArgumentParser) -> argparse.Action
 def argument_parser_has_all_good_builds(cfg: config.Config, subparsers) -> None:
     sp = subparsers.add_parser(
         "has-all-good-builds",
-        description="Checks if the given ",
+        description="Checks if the given packages were successfully built ",
         **ARG_PARSE_SHOW_DEFAULT_VALUE,
     )
     sp.add_argument(
@@ -165,6 +227,76 @@ def argument_parser_has_all_good_builds(cfg: config.Config, subparsers) -> None:
         help="Which packages check (e.g. llvm)",
     )
     add_strategy_argument(sp)
+    add_yyyymmdd_argument(sp)
+
+
+def argument_parser_perf_comparison(cfg: config.Config, subparsers) -> None:
+    sp = subparsers.add_parser(
+        "start-perf-comparison",
+        description="Run a performance comparison between two strategies A and B on testing-farm",
+        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+    )
+
+    sp.add_argument(
+        "--strategy-a",
+        dest="strategy_a",
+        type=str,
+        required=True,
+        help=f"Strategy A",
+    )
+
+    sp.add_argument(
+        "--strategy-b",
+        dest="strategy_b",
+        type=str,
+        required=True,
+        help=f"Strategy B",
+    )
+
+    add_yyyymmdd_argument(sp)
+
+
+def argument_parser_collect_perf_comparison_results(
+    cfg: config.Config, subparsers
+) -> None:
+    sp = subparsers.add_parser(
+        "collect-perf-results",
+        description="Collect performance comparison results",
+        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+    )
+
+    sp.add_argument(
+        "--strategy-a",
+        dest="strategy_a",
+        type=str,
+        required=True,
+        help=f"Strategy A",
+    )
+
+    sp.add_argument(
+        "--strategy-b",
+        dest="strategy_b",
+        type=str,
+        required=True,
+        help=f"Strategy B",
+    )
+
+    sp.add_argument(
+        "--csv-file-in",
+        dest="csv_file_in",
+        type=str,
+        required="results-in.csv",
+        help="CSV file to load and merge with all the collected performance CSV results files",
+    )
+
+    sp.add_argument(
+        "--csv-file-out",
+        dest="csv_file_out",
+        type=str,
+        required="results-out.csv",
+        help="Where to write the collected performance CSV results file",
+    )
+
     add_yyyymmdd_argument(sp)
 
 
