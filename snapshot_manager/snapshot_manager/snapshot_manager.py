@@ -2,20 +2,20 @@
 SnapshotManager
 """
 
-import datetime
 import logging
-import re
+import pathlib
 
-import github.GithubException
+import copr.v3
+import github
 import github.Issue
-import github.Reaction
+import pandas as pd
+import testing_farm as tf
+import testing_farm.tfutil as tfutil
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.config as config
 import snapshot_manager.copr_util as copr_util
-import snapshot_manager.github_graphql as ghgql
 import snapshot_manager.github_util as github_util
-import snapshot_manager.testing_farm_util as tf
 import snapshot_manager.util as util
 
 
@@ -30,28 +30,6 @@ class SnapshotManager:
             all_chroots = copr_util.get_all_chroots(client=self.copr)
             util.augment_config_with_chroots(config=config, all_chroots=all_chroots)
         self.github = github_util.GithubClient(config=config)
-
-    @classmethod
-    def remove_chroot_html_comment(cls, comment_body: str, chroot: str):
-        """
-        >>> chroot="fedora-40-aarch64"
-        >>> req1 = f'<!--TESTING_FARM:{chroot}/68b70645-221d-4391-a918-06db7f414a48/7320315,7320317,7320318,7320316,7320314,7320231,7320313-->'
-        >>> req2 = '<!--TESTING_FARM:fedora-40-ppc64le/eee0e5d5-2d7a-4cbd-9b7d-7d60a10c40fe/7320327,7320329,7320330,7320328,7320326,7320231,7320325-->'
-        >>> input = f'''foo
-        ... {req1}
-        ... {req2}
-        ... bar'''
-        >>> expected = f'''foo
-        ...
-        ... {req2}
-        ... bar'''
-        >>> actual = SnapshotManager.remove_chroot_html_comment(comment_body=input, chroot=chroot)
-        >>> actual == expected
-        True
-        """
-        util.expect_chroot(chroot)
-        pattern = re.compile(rf"<!--TESTING_FARM:\s*{chroot}/.*?-->")
-        return re.sub(pattern=pattern, repl="", string=comment_body)
 
     def retest(
         self, issue_number: int, trigger_comment_id: str, chroots: list[str]
@@ -140,7 +118,7 @@ class SnapshotManager:
         # successful.
         new_comment_body = issue.body
         for chroot in chroots:
-            new_comment_body = self.remove_chroot_html_comment(
+            new_comment_body = tf.remove_chroot_html_comment(
                 comment_body=new_comment_body, chroot=chroot
             )
         issue.edit(
@@ -171,11 +149,6 @@ class SnapshotManager:
         issue, issue_is_newly_created = self.github.create_or_get_todays_github_issue(
             creator=self.config.creator_handle,
         )
-        # if issue.state == "closed":
-        #     logging.info(
-        #         f"Issue {issue.html_url} was already closed. Not doing anything."
-        #     )
-        #     return
 
         if issue_is_newly_created:
             # The issue was newly created so we'll create comments for each
@@ -218,18 +191,16 @@ class SnapshotManager:
         errors = build_status.list_only_errors(states=states)
 
         logging.info("Recover testing-farm requests")
-        requests = tf.TestingFarmRequest.parse(comment_body)
-        if requests is None:
-            requests = dict()
+        requests = tf.Request.parse(comment_body)
 
         # Migrate recovered requests without build IDs.
         # Just assign the build IDs of the current chroot respectively.
-        for chroot in requests:
-            if requests[chroot].copr_build_ids == []:
+        for req in requests:
+            if req.copr_build_ids == []:
                 logging.info(
-                    f"Migrating request ID {requests[chroot].request_id} to get copr build IDs"
+                    f"Migrating request ID {req.request_id} to get copr build IDs"
                 )
-                requests[chroot].copr_build_ids = [
+                req.copr_build_ids = [
                     state.build_id for state in states if state.chroot == chroot
                 ]
 
@@ -238,16 +209,12 @@ class SnapshotManager:
         comment_body = f"""
 {self.github.initial_comment}
 {build_status_matrix}
-{tf.TestingFarmRequest.dict_to_html_comment(requests)}
+{tf.requests_to_html_comment(requests)}
 """
         issue.edit(body=comment_body, title=self.github.issue_title())
 
-        logging.info("Filter testing-farm requests by chroot of interest")
-        new_requests = dict()
-        for chroot in requests:
-            if chroot in self.config.chroots:
-                new_requests[chroot] = requests[chroot]
-        requests = new_requests
+        logging.info("Filter testing-farm requests by chroots of interest")
+        requests = [req for req in requests if req.chroot in self.config.chroots]
 
         # logging.info(f"Update the issue comment body")
         # # See https://github.com/fedora-llvm-team/llvm-snapshots/issues/205#issuecomment-1902057639
@@ -290,7 +257,7 @@ class SnapshotManager:
 
         for chroot in self.config.chroots:
             # Check if we can ignore the chroot because it is not supported by testing-farm
-            if not tf.TestingFarmRequest.is_chroot_supported(chroot):
+            if not tf.is_chroot_supported_by_ranch(chroot):
                 # see https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_supported_architectures
                 logging.debug(
                     f"Ignoring chroot {chroot} because testing-farm doesn't support it."
@@ -361,14 +328,14 @@ class SnapshotManager:
                         )
                     )
                     self.github.flip_test_label(issue, chroot, failed_on)
-                elif watch_result == tf.TestingFarmWatchResult.TESTS_PASSED:
+                elif watch_result == tf.WatchResult.TESTS_PASSED:
                     self.github.flip_test_label(issue, chroot, tested_on)
                 else:
                     self.github.flip_test_label(issue, chroot, in_testing)
             else:
                 logging.info(f"Starting tests for chroot {chroot}")
                 try:
-                    request = tf.TestingFarmRequest.make(
+                    request = tf.make_snapshot_gating_request(
                         chroot=chroot,
                         config=self.config,
                         issue=issue,
@@ -399,7 +366,7 @@ class SnapshotManager:
         comment_body = f"""
 {self.github.initial_comment}
 {build_status_matrix}
-{tf.TestingFarmRequest.dict_to_html_comment(requests)}
+{tf.requests_to_html_comment(requests)}
 """
         issue.edit(body=comment_body, title=self.github.issue_title())
 
@@ -413,7 +380,7 @@ class SnapshotManager:
         required_chroot_abels = [
             "{self.config.label_prefix_tested_on}{chroot}"
             for chroot in self.config.chroots
-            if tf.TestingFarmRequest.is_chroot_supported(chroot)
+            if tf.Request.is_chroot_supported_by_ranch(chroot)
         ]
         if set(tested_chroot_labels) == set(required_chroot_abels):
             msg = f"@{self.config.maintainer_handle}, all required packages have been successfully built and tested on all required chroots. We'll close this issue for you now as completed. Congratulations!"
