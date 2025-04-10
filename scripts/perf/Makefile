@@ -1,3 +1,6 @@
+YYYYMMDD?=$(shell date +%Y%m%d)
+RESULTS_DIR?=$(PWD)/results
+
 .PHONY: all
 all: setup run
 
@@ -7,4 +10,9 @@ setup:
 
 .PHONY: run
 run:
-	podman run -it --rm evaluation
+	mkdir -pv $(RESULTS_DIR)
+	podman run -it --rm \
+		-e YYYYMMDD=$(YYYYMMDD) \
+		-e TMT_PLAN_DATA=/results \
+		-v $(RESULTS_DIR):/results:Z \
+		evaluation
