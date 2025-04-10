@@ -485,3 +485,256 @@ class SnapshotManager:
         )
         logging.info(f"Adding label: {labels_to_add}")
         issue.add_to_labels(*labels_to_add)
+
+
+def run_performance_comparison(
+    conf_a: config.Config,
+    conf_b: config.Config,
+    github_repo: str,
+    copr_client: copr.v3.Client,
+    github_client: github.Github,
+) -> bool:
+    """Runs a performance test for the two given configurations.
+
+    NOTE: We will only run tests for the those chroots that are shared by both configurations.
+
+    A github issue will be created that contains links and hidden HTML comments
+    testing-farm request info for all chroot configs that were tested.
+
+    If such a github issue already exists, this function will return immediately.
+
+    Args:
+        conf_a (config.Config): Configuration for build strategy A that we want to test
+        conf_b (config.Config): Configuration for build strategy B that we want to test
+        github_repo (str): Which repo to use for creating the the new issue for tracking the performance
+        copr_client (copr.v3.Client): Copr client to use for inspecting which chroots are ready to be compared
+        github_client (github.Github): Github client to use when creating issue for tracking the performance
+
+    Returns:
+        bool: If the operation was successful or not
+    """
+    # Check if we already have a performance issue for this combination
+    issue = get_performance_github_issue(
+        github_client=github_client,
+        github_repo=github_repo,
+        conf_a=conf_a,
+        conf_b=conf_b,
+    )
+    if issue is not None:
+        logging.info(
+            f"Not starting new performance tests. Performance issue found: {issue.html_url}"
+        )
+        return False
+
+    # Determine overlapping chroots of strategy A and B
+    chroots_overlap = set(conf_a.chroots).intersection(set(conf_b.chroots))
+    if chroots_overlap == None or len(chroots_overlap) == 0:
+        logging.error(
+            f"There are no overlapping chroots in for both strategies: {conf_a.build_strategy} ({conf_a.chroots}) and {conf_b.build_strategy} ({conf_b.chroots}"
+        )
+        return False
+
+    states_a = copr_util.get_all_build_states(
+        client=copr_client,
+        ownername=conf_a.copr_ownername,
+        projectname=conf_a.copr_projectname,
+    )
+
+    states_b = copr_util.get_all_build_states(
+        client=copr_client,
+        ownername=conf_b.copr_ownername,
+        projectname=conf_b.copr_projectname,
+    )
+
+    # Make testing farm requests for each overlapping chroot with good builds.
+    reqs: list[tf.Request] = []
+    for chroot in chroots_overlap:
+        # Only run performance comparison if both build strategies have
+        # successful builds for the respective chroot
+        successful_a = [
+            state.package_name
+            for state in states_a
+            if state.chroot == chroot and state.copr_build_state.success
+        ]
+        successful_b = [
+            state.package_name
+            for state in states_b
+            if state.chroot == chroot and state.copr_build_state.success
+        ]
+        if (len(successful_a) == 0 or len(successful_b) == 0) or (
+            set(successful_a) != set(successful_b)
+        ):
+            logging.info(
+                f"Skipping performance test for chroot {chroot} because not all builds were ready"
+            )
+            continue
+
+        # TODO(kwk): Only run performance comparison if not already run.
+        logging.info(f"Making performance request for chroot {chroot}")
+        reqs.append(
+            tf.make_compare_compile_time_request(
+                conf_a=conf_a, config_b=conf_b, chroot=chroot
+            )
+        )
+
+    if len(reqs) == 0:
+        logging.info("No performance requests were made")
+        return False
+
+    # Create the performance issue
+    comment_body = f"""
+This issue exists to store the testing-farm request IDs that are later used for
+fetching the artifacts of the performance runs.
+
+{tf.requests_to_html_list(reqs)}
+
+{tf.requests_to_html_comment(reqs)}
+"""
+    repo = github_client.get_repo(github_repo)
+    issue = repo.create_issue(
+        title=f"Performance comparison: {conf_a.build_strategy} vs. {conf_b.build_strategy} - {conf_a.yyyymmdd}",
+        assignees=[conf_a.maintainer_handle, conf_b.maintainer_handle],
+        labels=[
+            f"strategy/{conf_a.build_strategy}",
+            f"strategy/{conf_b.build_strategy}",
+            "performance-comparison",
+        ],
+        body=comment_body,
+    )
+
+    logging.info(f"Performance issue created: {issue.html_url}")
+
+    return True
+
+
+def collect_performance_comparison_results(
+    conf_a: config.Config,
+    conf_b: config.Config,
+    github_repo: str,
+    github_client: github.Github,
+    csv_file_in: pathlib.Path | str,
+    csv_file_out: pathlib.Path | str,
+) -> bool:
+    """Collect performance comparison results from testing-farm.
+
+    If a "performance issue" was found in the given github repository we
+    will recover any testing-farm requests from the issue's comment body.
+
+    For every testing-farm request we're going to download the "results.csv"
+    file from the overall test plan's artifact ("data/") directory.
+
+    These "results.csv" files will be merged with the data in "csv_file_in"
+    and then written to the "csv_file_out" file.
+
+    Args:
+        conf_a (config.Config): Configuration for build strategy A
+        conf_b (config.Config): Configuration for build strategy B
+        github_repo (str): Which repo to use for searching for the the issue that was created to track testing-farm request IDs
+        github_client (github.Github): Github client to use when searching for the issue that was created to track testing-farm request IDs
+        csv_file_in (pathlib.Path | str): Path to a CSV file that you want to merge with all the results coming in
+        csv_file_out (pathlib.Path | str): Path to a CSV file that the merged result is written to.
+
+    Returns:
+        bool: If the operation was successful or not
+    """
+
+    # Check that we have a performance issue for this combination
+    issue = get_performance_github_issue(
+        github_client=github_client,
+        github_repo=github_repo,
+        conf_a=conf_a,
+        conf_b=conf_b,
+    )
+    if issue is None:
+        logging.info(
+            f"Performance issue not found for {conf_a.build_strategy} vs {conf_b.build_strategy} - {conf_a.yyyymmdd}"
+        )
+        return False
+
+    # Read the CSV file (if any) to which we want to append:
+    df = pd.DataFrame()
+
+    if isinstance(csv_file_in, str):
+        csv_file_in = pathlib.Path(csv_file_in)
+    if isinstance(csv_file_out, str):
+        csv_file_out = pathlib.Path(csv_file_out)
+
+    if csv_file_in.exists():
+        df = pd.read_csv(csv_file_in)
+
+    # Get list of requests
+    requests = tf.Request.parse(issue.body)
+
+    logging.info(requests)
+    for req in requests:
+        req_file = tf.get_request_file(req.request_id)
+        xunit_file = tf.get_xunit_file_from_request_file(
+            request_file=req_file, request_id=req.request_id
+        )
+        if xunit_file is None:
+            # This is not necessarily an error. It could b that the xuint URL
+            # points to inside Red Hat.
+            continue
+        data_url = tf.get_testsuite_data_url_from_xunit_file(xunit_file=xunit_file)
+        if data_url == "":
+            logging.info("No data URL found in xunit file.")
+            continue
+        # Finally download the CSV file
+
+        results_url = data_url + "/results.csv"
+        logging.info(f"Downloading CSV file from {results_url}")
+        if not tfutil._IN_TEST_MODE:
+            csv_filepath = util.read_url_response_into_file(results_url)
+        else:
+            csv_filepath = tfutil._test_path(f"{req.request_id}/results.csv")
+
+        # Append CSV rows from just downloaded CSV file to dataframe
+        df_new = pd.read_csv(csv_filepath)
+        df = pd.concat(objs=[df, df_new])
+
+    # Write CSV file
+    logging.info(f"Writing merged CSV file to {csv_file_out}")
+    df.to_csv(csv_file_out, index=False)
+
+    return True
+
+
+def get_performance_github_issue(
+    github_client: github.Github,
+    github_repo: str,
+    conf_a: config.Config,
+    conf_b: config.Config,
+    creator: str = "github-actions[bot]",
+) -> github.Issue.Issue | None:
+    """Search the github repo for a performance issue for the given configurations.
+
+    run_performance_comparison() creates the performance issue and this function
+    aims to retrieve it.
+
+    Args:
+        github_client (github.Github): The github client to use when searching
+        github_repo (str): The repository to search
+        conf_a (config.Config): The configuration for strategy A
+        conf_b (config.Config): The configuration for strategy B
+        creator (str, optional): The original creator of the github issue. Defaults to "github-actions[bot]".
+
+    Returns:
+        github.Issue.Issue | None: The performance issue or None if nothing was found.
+    """
+
+    repo = github_client.get_repo(github_repo)
+
+    # See https://docs.github.com/en/search-github/searching-on-github/searching-issues-and-pull-requests
+    # label:broken_snapshot_detected
+    query = f"is:issue repo:{github_repo} author:{creator} label:strategy/{conf_a.build_strategy} label:strategy/{conf_b.build_strategy} label:performance-comparison {conf_a.yyyymmdd} in:title"
+    issues = github_client.search_issues(query)
+    if issues is None:
+        logging.info(f"Found no issue for query ({query})")
+        return None
+
+    # This is a hack: normally the PaginagedList[Issue] type handles this
+    # for us but without this hack no issue being found.
+    issues.get_page(0)
+    if issues.totalCount > 0:
+        return issues[0]
+    return None
