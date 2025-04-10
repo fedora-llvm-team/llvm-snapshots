@@ -1,4 +1,4 @@
-name: "Update build time diagrams"
+name: "Update diagrams"
 
 on:
   schedule:
@@ -58,26 +58,39 @@ jobs:
           git config --global user.name "Github Actions Bot"
           git config --global user.email "<>"
 
-      - name: "Update build stats and re-generate diagrams"
+      - name: "Update stats and re-generate diagrams"
         shell: bash -e {0}
         env:
           get_stats: ${{ github.event_name == 'schedule' && true || github.event.inputs.get_stats }}
           create_diagrams: ${{ github.event_name == 'schedule' && true || github.event.inputs.create_diagrams }}
         run: |
+          today=$(date +%Y%m%d)
+          yesterday=$(date -d "${today} -1 day" +%Y%m%d)
+
           if ${{ env.get_stats }}; then
-            main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-$(date '+%Y%m%d')" | tee -a gh-pages/build-stats-big-merge.csv
-            main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-pgo-$(date '+%Y%m%d')" | tee -a gh-pages/build-stats-pgo.csv
-            git -C gh-pages add build-stats-big-merge.csv build-stats-pgo.csv
+            main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-${today}" | tee -a gh-pages/build-stats-big-merge.csv
+            main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-pgo-${today}" | tee -a gh-pages/build-stats-pgo.csv
+            python3 ./main/snapshot_manager/main.py collect-perf-results \
+              --strategy-a pgo \
+              --strategy-b big-merge \
+              --csv-file-in gh-pages/perf-results.csv \
+              --csv-file-out gh-pages/perf-results.csv \
+              --yyyymmdd "${yesterday}"
+            git -C gh-pages add build-stats-big-merge.csv build-stats-pgo.csv perf-results.csv
           fi
           if ${{ env.create_diagrams }}; then
-            main/scripts/create-diagrams.py --datafile-big-merge gh-pages/build-stats-big-merge.csv --datafile-pgo gh-pages/build-stats-pgo.csv
+            main/scripts/create-build-time-diagrams.py --datafile-big-merge gh-pages/build-stats-big-merge.csv --datafile-pgo gh-pages/build-stats-pgo.csv
             mv index.html gh-pages/index.html
             mv fig-*.html gh-pages/
-            git -C gh-pages add index.html fig-*.html
+            python3 ./main/snapshot_manager/main.py perf-diagrams --datafile gh-pages/perf-results.csv
+            mkdir -p gh-pages/perf-results
+            mv index.html gh-pages/perf-results/index.html
+            mv fig-*.html gh-pages/perf-results/
+            git -C gh-pages add index.html fig-*.html perf-results/index.html perf-results/fig-*.html
           fi
           # shellcheck disable=SC2078
           if [[ ${{ env.get_stats }} || ${{ env.create_diagrams }} ]]; then
             cd gh-pages
-            git commit -m "Automatically update build stats"
+            git commit -m "Automatically update build and performance stats"
             git push origin HEAD:gh-pages
           fi
