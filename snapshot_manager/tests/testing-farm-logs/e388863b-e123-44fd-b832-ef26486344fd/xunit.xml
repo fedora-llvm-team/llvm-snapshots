@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites overall-result="passed">
+ <properties>
+  <property name="baseosci.overall-result" value="passed"/>
+ </properties>
+ <testsuite name="/tests/compare-compile-time" result="passed" tests="6" stage="complete">
+  <logs>
+   <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/a7f794e7-771f-4b6e-8200-bdba1dec3f08-artemis-guest-log.yaml" name="Guest event log"/>
+   <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/console-a7f794e7-771f-4b6e-8200-bdba1dec3f08.log" name="console log"/>
+   <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/data" name="data"/>
+   <log guest-setup-stage="pre_artifact_installation" href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/guest-setup-a7f794e7-771f-4b6e-8200-bdba1dec3f08/guest-setup-output-pre-artifact-installation.txt" name="guest setup" schedule-stage="guest-setup"/>
+   <log guest-setup-stage="post_artifact_installation" href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/guest-setup-a7f794e7-771f-4b6e-8200-bdba1dec3f08/guest-setup-output-post-artifact-installation.txt" name="guest setup" schedule-stage="guest-setup"/>
+   <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tmt-run.log" name="tmt-log"/>
+   <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tmt-reproducer.sh" name="tmt-reproducer"/>
+   <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/log.txt" name="tmt-verbose-log"/>
+   <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf" name="workdir"/>
+  </logs>
+  <properties>
+   <property name="baseosci.result" value="passed"/>
+  </properties>
+  <testcase name="/pgo" result="passed" time="364" start-time="2025-04-01T06:18:24.367510+00:00" end-time="2025-04-01T06:24:28.602542+00:00">
+   <properties>
+    <property name="baseosci.arch" value="aarch64"/>
+    <property name="baseosci.connectable_host" value="18.117.126.26"/>
+    <property name="baseosci.distro" value="Fedora-Rawhide"/>
+    <property name="baseosci.status" value="Complete"/>
+    <property name="baseosci.testcase.source.url" value=""/>
+    <property name="baseosci.variant" value=""/>
+   </properties>
+   <logs>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/pgo-1/data" name="data" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/pgo-1" name="log_dir" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/pgo-1/output.txt" name="testout.log" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+   </logs>
+   <testing-environment name="requested">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+   <testing-environment name="provisioned">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+  </testcase>
+  <testcase name="/snapshot" result="passed" time="470" start-time="2025-04-01T06:24:29.187108+00:00" end-time="2025-04-01T06:32:20.183281+00:00">
+   <properties>
+    <property name="baseosci.arch" value="aarch64"/>
+    <property name="baseosci.connectable_host" value="18.117.126.26"/>
+    <property name="baseosci.distro" value="Fedora-Rawhide"/>
+    <property name="baseosci.status" value="Complete"/>
+    <property name="baseosci.testcase.source.url" value=""/>
+    <property name="baseosci.variant" value=""/>
+   </properties>
+   <logs>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/snapshot-2/data" name="data" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/snapshot-2" name="log_dir" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/snapshot-2/output.txt" name="testout.log" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+   </logs>
+   <testing-environment name="requested">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+   <testing-environment name="provisioned">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+  </testcase>
+  <testcase name="/system" result="passed" time="461" start-time="2025-04-01T06:32:20.773037+00:00" end-time="2025-04-01T06:40:02.532759+00:00">
+   <properties>
+    <property name="baseosci.arch" value="aarch64"/>
+    <property name="baseosci.connectable_host" value="18.117.126.26"/>
+    <property name="baseosci.distro" value="Fedora-Rawhide"/>
+    <property name="baseosci.status" value="Complete"/>
+    <property name="baseosci.testcase.source.url" value=""/>
+    <property name="baseosci.variant" value=""/>
+   </properties>
+   <logs>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/system-3/data" name="data" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/system-3" name="log_dir" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/system-3/output.txt" name="testout.log" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+   </logs>
+   <testing-environment name="requested">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+   <testing-environment name="provisioned">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+  </testcase>
+  <testcase name="/pgo snapshot" result="passed" time="21" start-time="2025-04-01T06:40:03.122198+00:00" end-time="2025-04-01T06:40:24.481358+00:00">
+   <properties>
+    <property name="baseosci.arch" value="aarch64"/>
+    <property name="baseosci.connectable_host" value="18.117.126.26"/>
+    <property name="baseosci.distro" value="Fedora-Rawhide"/>
+    <property name="baseosci.status" value="Complete"/>
+    <property name="baseosci.testcase.source.url" value=""/>
+    <property name="baseosci.variant" value=""/>
+   </properties>
+   <logs>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/pgo-snapshot-4/data" name="data" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/pgo-snapshot-4" name="log_dir" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/pgo-snapshot-4/output.txt" name="testout.log" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+   </logs>
+   <testing-environment name="requested">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+   <testing-environment name="provisioned">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+  </testcase>
+  <testcase name="/pgo system" result="passed" time="5" start-time="2025-04-01T06:40:25.057369+00:00" end-time="2025-04-01T06:40:30.585015+00:00">
+   <properties>
+    <property name="baseosci.arch" value="aarch64"/>
+    <property name="baseosci.connectable_host" value="18.117.126.26"/>
+    <property name="baseosci.distro" value="Fedora-Rawhide"/>
+    <property name="baseosci.status" value="Complete"/>
+    <property name="baseosci.testcase.source.url" value=""/>
+    <property name="baseosci.variant" value=""/>
+   </properties>
+   <logs>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/pgo-system-5/data" name="data" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/pgo-system-5" name="log_dir" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/pgo-system-5/output.txt" name="testout.log" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+   </logs>
+   <testing-environment name="requested">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+   <testing-environment name="provisioned">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+  </testcase>
+  <testcase name="/snapshot system" result="passed" time="5" start-time="2025-04-01T06:40:31.161490+00:00" end-time="2025-04-01T06:40:36.688567+00:00">
+   <properties>
+    <property name="baseosci.arch" value="aarch64"/>
+    <property name="baseosci.connectable_host" value="18.117.126.26"/>
+    <property name="baseosci.distro" value="Fedora-Rawhide"/>
+    <property name="baseosci.status" value="Complete"/>
+    <property name="baseosci.testcase.source.url" value=""/>
+    <property name="baseosci.variant" value=""/>
+   </properties>
+   <logs>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/snapshot-system-6/data" name="data" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/snapshot-system-6" name="log_dir" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+    <log href="https://artifacts.dev.testing-farm.io/e388863b-e123-44fd-b832-ef26486344fd/work-compare-compile-timewt7dlmkf/tests/compare-compile-time/execute/data/guest/default-0/snapshot-system-6/output.txt" name="testout.log" schedule-entry="Fedora-Rawhide:aarch64:/tests/compare-compile-time" schedule-stage="running"/>
+   </logs>
+   <testing-environment name="requested">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+   <testing-environment name="provisioned">
+    <property name="arch" value="aarch64"/>
+    <property name="compose" value="Fedora-Rawhide"/>
+    <property name="snapshots" value="False"/>
+   </testing-environment>
+  </testcase>
+  <testing-environment name="requested">
+   <property name="arch" value="aarch64"/>
+   <property name="compose" value="Fedora-Rawhide"/>
+   <property name="snapshots" value="False"/>
+  </testing-environment>
+  <testing-environment name="provisioned">
+   <property name="arch" value="aarch64"/>
+   <property name="compose" value="Fedora-Rawhide"/>
+   <property name="snapshots" value="False"/>
+  </testing-environment>
+ </testsuite>
+</testsuites>
