@@ -6,7 +6,24 @@ import pytest
 import tests.base_test as base_test
 
 import snapshot_manager.github_util as github_util
-import snapshot_manager.testing_farm_util as tf
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "TESTING_FARM_API_TOKEN_PUBLIC_RANCH": "public",
+        "TESTING_FARM_API_TOKEN_REDHAT_RANCH": "redhat",
+    },
+    clear=True,
+)
+def test_adjust_token_env():
+    os.getenv("TESTING_FARM_API_TOKEN") is None
+
+    adjust_token_env("fedora-rawhide-x86_64")
+    assert os.environ["TESTING_FARM_API_TOKEN"] == "public"
+
+    adjust_token_env("rhel-9-x86_64")
+    assert os.environ["TESTING_FARM_API_TOKEN"] == "redhat"
 
 
 class TestTestingFarmUtil(base_test.TestBase):
