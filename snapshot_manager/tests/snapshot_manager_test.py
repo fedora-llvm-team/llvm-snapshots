@@ -6,7 +6,6 @@ import datetime
 import uuid
 import difflib
 import filecmp
-import sys
 from unittest import mock
 
 import pytest
@@ -17,8 +16,6 @@ import testing_farm.tfutil as tfutil
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.config as config
-import snapshot_manager.github_util as github_util
-import snapshot_manager.snapshot_manager as snapshot_manager
 from snapshot_manager.snapshot_manager import (
     collect_performance_comparison_results,
     run_performance_comparison,
