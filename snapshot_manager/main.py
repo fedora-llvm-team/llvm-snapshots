@@ -106,7 +106,7 @@ def main():
             logging.warning("Not all builds were successful")
             sys.exit(1)
         logging.info("All required builds were successful")
-    elif cmd == "run-perf-comparison":
+    elif cmd in ("run-perf-comparison", "collect-perf-results"):
         github_token = os.getenv(config.Config().github_token_env)
         if github_token is None or len(github_token) == 0:
             logging.error(
@@ -124,39 +124,24 @@ def main():
         conf_b = config_map[args.strategy_b]
         conf_a.datetime = args.datetime
         conf_b.datetime = args.datetime
-        run_performance_comparison(
-            conf_a=conf_a,
-            conf_b=conf_b,
-            github_repo=args.github_repo,
-            copr_client=copr_client,
-            github_client=github_client,
-        )
-    elif cmd == "collect-perf-results":
-        github_token = os.getenv(config.Config().github_token_env)
-        if github_token is None or len(github_token) == 0:
-            logging.error(
-                f"Could not retrieve github token from environment variable with name '{config.Config().github_token_env}'"
+
+        if cmd == "run-perf-comparison":
+            run_performance_comparison(
+                conf_a=conf_a,
+                conf_b=conf_b,
+                github_repo=args.github_repo,
+                copr_client=copr_client,
+                github_client=github_client,
             )
-            sys.exit(1)
-        auth = github.Auth.Token(github_token)
-        github_client = github.Github(auth=auth)
-        if args.strategy_a not in config_map or args.strategy_b not in config_map:
-            logging.error(
-                f"'{args.strategy_a}' and '{args.strategy_b}' need to be a named configuration but currently only these configurations exist: {config_map.keys()}"
+        elif cmd == "collect-perf-results":
+            collect_performance_comparison_results(
+                conf_a=conf_a,
+                conf_b=conf_b,
+                github_repo=args.github_repo,
+                github_client=github_client,
+                csv_file_out=args.csv_file_out,
+                csv_file_in=args.csv_file_in,
             )
-            sys.exit(1)
-        conf_a = config_map[args.strategy_a]
-        conf_b = config_map[args.strategy_b]
-        conf_a.datetime = args.datetime
-        conf_b.datetime = args.datetime
-        collect_performance_comparison_results(
-            conf_a=conf_a,
-            conf_b=conf_b,
-            github_repo=args.github_repo,
-            github_client=github_client,
-            csv_file_out=args.csv_file_out,
-            csv_file_in=args.csv_file_in,
-        )
     else:
         logging.error(f"Unsupported command: {cmd}")
         sys.exit(1)
