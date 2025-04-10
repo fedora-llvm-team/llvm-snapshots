@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 import sys
+import pathlib
 
 import github
 
@@ -14,12 +15,20 @@ from snapshot_manager.snapshot_manager import (  # isort:skip_file
     run_performance_comparison,
     collect_performance_comparison_results,
 )
+from snapshot_manager.performance_diagrams import build_performance_diagrams
 
 # This shows the default value of arguments in the help text.
 # See https://docs.python.org/3/library/argparse.html#argparse.ArgumentDefaultsHelpFormatter
 ARG_PARSE_SHOW_DEFAULT_VALUE = {
     "formatter_class": argparse.ArgumentDefaultsHelpFormatter
 }
+
+
+def file_path(path) -> pathlib.Path:
+    if os.path.isfile(path):
+        return pathlib.Path(path)
+    else:
+        raise argparse.ArgumentTypeError(f"{path} is not a valid file")
 
 
 def main():
@@ -157,6 +166,8 @@ def main():
             csv_file_out=args.csv_file_out,
             csv_file_in=args.csv_file_in,
         )
+    elif cmd == "perf-diagrams":
+        build_performance_diagrams(datafile=args.datafile)
     else:
         logging.error(f"Unsupported command: {cmd}")
         sys.exit(1)
@@ -179,14 +190,15 @@ def build_argument_parser(cfg: config.Config) -> argparse.ArgumentParser:
 
     subparsers = mainparser.add_subparsers(help="Command to run", dest="command")
 
-    argument_parser_retest(cfg, subparsers=subparsers)
-    argument_parser_get_chroots(cfg, subparsers=subparsers)
-    argument_parser_delete_project(cfg, subparsers=subparsers)
-    argument_parser_github_matrix(cfg, subparsers=subparsers)
-    argument_parser_check(cfg=cfg, subparsers=subparsers)
-    argument_parser_has_all_good_builds(cfg=cfg, subparsers=subparsers)
-    argument_parser_perf_comparison(cfg=cfg, subparsers=subparsers)
-    argument_parser_collect_perf_comparison_results(cfg=cfg, subparsers=subparsers)
+    argument_parser_retest(subparsers)
+    argument_parser_get_chroots(subparsers)
+    argument_parser_delete_project(subparsers)
+    argument_parser_github_matrix(subparsers)
+    argument_parser_check(subparsers)
+    argument_parser_has_all_good_builds(subparsers)
+    argument_parser_perf_comparison(subparsers)
+    argument_parser_collect_perf_comparison_results(subparsers)
+    argument_parser_performance_diagrams(subparsers)
 
     return mainparser
 
@@ -211,7 +223,7 @@ def add_yyyymmdd_argument(argparser: argparse.ArgumentParser) -> argparse.Action
     )
 
 
-def argument_parser_has_all_good_builds(cfg: config.Config, subparsers) -> None:
+def argument_parser_has_all_good_builds(subparsers) -> None:
     sp = subparsers.add_parser(
         "has-all-good-builds",
         description="Checks if the given packages were successfully built ",
@@ -230,7 +242,7 @@ def argument_parser_has_all_good_builds(cfg: config.Config, subparsers) -> None:
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_perf_comparison(cfg: config.Config, subparsers) -> None:
+def argument_parser_perf_comparison(subparsers) -> None:
     sp = subparsers.add_parser(
         "start-perf-comparison",
         description="Run a performance comparison between two strategies A and B on testing-farm",
@@ -256,9 +268,7 @@ def argument_parser_perf_comparison(cfg: config.Config, subparsers) -> None:
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_collect_perf_comparison_results(
-    cfg: config.Config, subparsers
-) -> None:
+def argument_parser_collect_perf_comparison_results(subparsers) -> None:
     sp = subparsers.add_parser(
         "collect-perf-results",
         description="Collect performance comparison results",
@@ -300,7 +310,23 @@ def argument_parser_collect_perf_comparison_results(
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_retest(cfg: config.Config, subparsers) -> None:
+def argument_parser_performance_diagrams(subparsers) -> None:
+    sp = subparsers.add_parser(
+        "perf-diagrams",
+        description="Create performance diagrams for a given CSV file",
+        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+    )
+
+    sp.add_argument(
+        "--datafile",
+        dest="datafile",
+        type=file_path,
+        required=True,
+        help=f"perf-results.csv",
+    )
+
+
+def argument_parser_retest(subparsers) -> None:
     sp = subparsers.add_parser(
         "retest",
         description="Issues a new testing-farm request for one or more chroots",
@@ -331,7 +357,7 @@ def argument_parser_retest(cfg: config.Config, subparsers) -> None:
     )
 
 
-def argument_parser_get_chroots(cfg: config.Config, subparsers) -> None:
+def argument_parser_get_chroots(subparsers) -> None:
     sp = subparsers.add_parser(
         "get-chroots",
         description="Prints a space separated list of chroots for a given strategy",
@@ -340,7 +366,7 @@ def argument_parser_get_chroots(cfg: config.Config, subparsers) -> None:
     add_strategy_argument(sp)
 
 
-def argument_parser_delete_project(cfg: config.Config, subparsers) -> None:
+def argument_parser_delete_project(subparsers) -> None:
     sp = subparsers.add_parser(
         "delete-project",
         description="Deletes a project for the given day and strategy",
@@ -350,7 +376,7 @@ def argument_parser_delete_project(cfg: config.Config, subparsers) -> None:
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_github_matrix(cfg: config.Config, subparsers) -> None:
+def argument_parser_github_matrix(subparsers) -> None:
     sp = subparsers.add_parser(
         "github-matrix",
         description="Prints the github workflow matrix for a given or all strategies",
@@ -368,7 +394,7 @@ def argument_parser_github_matrix(cfg: config.Config, subparsers) -> None:
     )
 
 
-def argument_parser_check(cfg: config.Config, subparsers) -> None:
+def argument_parser_check(subparsers) -> None:
     sp = subparsers.add_parser(
         "check",
         description="Check Copr status and update today's github issue",
