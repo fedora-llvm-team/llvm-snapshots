@@ -1,0 +1,26 @@
+name: "Start performance comparison"
+
+on:
+  schedule:
+    # Everyday at 00:45am
+    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
+    - cron: "45 0 * * *"
+
+  workflow_dispatch:
+
+jobs:
+  start-performance-comparison:
+    if: github.repository_owner == 'fedora-llvm-team'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-python
+      - name: "start-performance-comparison"
+        run: |
+          today=$(date +%Y%m%d)
+          yesterday=$(date -d "${today} -1 day" +%Y%m%d)
+
+          python3 ./snapshot_manager/main.py start-perf-comparison \
+            --strategy-a pgo \
+            --strategy-b big-merge \
+            --yyyymmdd "$yesterday"
