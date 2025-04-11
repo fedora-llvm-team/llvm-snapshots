@@ -6,6 +6,7 @@ import dataclasses
 import enum
 import logging
 import pathlib
+import urllib
 
 import snapshot_manager.util as util
 
@@ -101,9 +102,11 @@ class BuildState:
 
     def render_as_markdown(self) -> str:
         """Return an HTML string representation of this Build State to be used in a github issue"""
-        link = f'<a href="{self.build_log_url}">build log</a>, <a href="https://logdetective.com/contribute/copr/{self.build_id:08}/{self.chroot}">contribute to log-detective</a>'
+        quoted_build_log_link=urllib.parse.quote(self.build_log_url)
+        link = f'<a href="{self.build_log_url}">build log</a>, <a href="https://logdetective.com/contribute/copr/{self.build_id:08}/{self.chroot}">contribute to log-detective</a>, <a href="https://log-detective.com/explain?url={quoted_build_log_link}">Ask AI</a>'
         if self.url_build_log is None:
             link = f'<a href="{self.build_page_url}">build page</a>'
+
         return f"""
 <details>
 <summary>
