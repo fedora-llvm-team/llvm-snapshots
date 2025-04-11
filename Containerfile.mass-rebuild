@@ -1,6 +1,11 @@
-FROM registry.fedoraproject.org/fedora:41
+ARG base_image=registry.fedoraproject.org/fedora:41
+ARG optimized_llvm=${base_image}
+FROM ${optimized_llvm} as optimized-llvm
+FROM ${base_image}
+# Hack to copy nothing from the optimized-llvm image.
+ARG llvm_sysroot=/tmp
 
-ENV LLVM_SYSROOT=/opt/llvm \
+ENV LLVM_SYSROOT=${llvm_sysroot} \
     AR=llvm-ar \
     RANLIB=llvm-ranlib
 
@@ -16,4 +21,4 @@ WORKDIR /root/llvm-project
 
 ADD bisect.sh git-bisect-script.sh .
 
-COPY --from=ghcr.io/llvm/ci-ubuntu-22.04:1734145213 $LLVM_SYSROOT $LLVM_SYSROOT
+COPY --from=optimized-llvm $LLVM_SYSROOT $LLVM_SYSROOT
