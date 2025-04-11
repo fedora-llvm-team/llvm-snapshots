@@ -103,7 +103,7 @@ class TestErrorCauseAndBuildStatus(base_test.TestBase):
         expected = """
 <details>
 <summary>
-<code>foo</code> on <code>fedora-40-x86_64</code> (see <a href="https://example.com/url_build_log">build log</a>, <a href="https://logdetective.com/contribute/copr/00001234/fedora-40-x86_64">contribute to log-detective</a>)
+<code>foo</code> on <code>fedora-40-x86_64</code> (see <a href="https://example.com/url_build_log">build log</a>, <a href="https://logdetective.com/contribute/copr/00001234/fedora-40-x86_64">Teach AI</a>, <a href="https://log-detective.com/explain?url=https%3A//example.com/url_build_log">Ask AI</a>)
 </summary>
 This is the context for the error
 </details>
@@ -154,42 +154,42 @@ class TestErrorList(base_test.TestBase):
         expected = """<ul><li><b>network_issue</b><ol><li>
 <details>
 <summary>
-<code>package-a</code> on <code>chroot-a</code> (see <a href="http://e1">build log</a>, <a href="https://logdetective.com/contribute/copr/00000111/chroot-a">contribute to log-detective</a>)
+<code>package-a</code> on <code>chroot-a</code> (see <a href="http://e1">build log</a>, <a href="https://logdetective.com/contribute/copr/00000111/chroot-a">Teach AI</a>, <a href="https://log-detective.com/explain?url=http%3A//e1">Ask AI</a>)
 </summary>
 e1
 </details>
 </li><li>
 <details>
 <summary>
-<code>package-b</code> on <code>chroot-a</code> (see <a href="http://e2">build log</a>, <a href="https://logdetective.com/contribute/copr/00000222/chroot-a">contribute to log-detective</a>)
+<code>package-b</code> on <code>chroot-a</code> (see <a href="http://e2">build log</a>, <a href="https://logdetective.com/contribute/copr/00000222/chroot-a">Teach AI</a>, <a href="https://log-detective.com/explain?url=http%3A//e2">Ask AI</a>)
 </summary>
 e2
 </details>
 </li><li>
 <details>
 <summary>
-<code>package-c</code> on <code>chroot-a</code> (see <a href="http://e3">build log</a>, <a href="https://logdetective.com/contribute/copr/00000333/chroot-a">contribute to log-detective</a>)
+<code>package-c</code> on <code>chroot-a</code> (see <a href="http://e3">build log</a>, <a href="https://logdetective.com/contribute/copr/00000333/chroot-a">Teach AI</a>, <a href="https://log-detective.com/explain?url=http%3A//e3">Ask AI</a>)
 </summary>
 e3
 </details>
 </li></ol></li><li><b>test</b><ol><li>
 <details>
 <summary>
-<code>package-a</code> on <code>chroot-c</code> (see <a href="http://e4">build log</a>, <a href="https://logdetective.com/contribute/copr/00000444/chroot-c">contribute to log-detective</a>)
+<code>package-a</code> on <code>chroot-c</code> (see <a href="http://e4">build log</a>, <a href="https://logdetective.com/contribute/copr/00000444/chroot-c">Teach AI</a>, <a href="https://log-detective.com/explain?url=http%3A//e4">Ask AI</a>)
 </summary>
 e4
 </details>
 </li><li>
 <details>
 <summary>
-<code>package-b</code> on <code>chroot-c</code> (see <a href="http://e5">build log</a>, <a href="https://logdetective.com/contribute/copr/00000555/chroot-c">contribute to log-detective</a>)
+<code>package-b</code> on <code>chroot-c</code> (see <a href="http://e5">build log</a>, <a href="https://logdetective.com/contribute/copr/00000555/chroot-c">Teach AI</a>, <a href="https://log-detective.com/explain?url=http%3A//e5">Ask AI</a>)
 </summary>
 e5
 </details>
 </li><li>
 <details>
 <summary>
-<code>package-c</code> on <code>chroot-c</code> (see <a href="http://e6">build log</a>, <a href="https://logdetective.com/contribute/copr/00000666/chroot-c">contribute to log-detective</a>)
+<code>package-c</code> on <code>chroot-c</code> (see <a href="http://e6">build log</a>, <a href="https://logdetective.com/contribute/copr/00000666/chroot-c">Teach AI</a>, <a href="https://log-detective.com/explain?url=http%3A//e6">Ask AI</a>)
 </summary>
 e6
 </details>
