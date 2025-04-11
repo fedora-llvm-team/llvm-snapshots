@@ -102,7 +102,7 @@ class BuildState:
 
     def render_as_markdown(self) -> str:
         """Return an HTML string representation of this Build State to be used in a github issue"""
-        quoted_build_log_link=urllib.parse.quote(self.build_log_url)
+        quoted_build_log_link = urllib.parse.quote(self.build_log_url)
         link = f'<a href="{self.build_log_url}">build log</a>, <a href="https://logdetective.com/contribute/copr/{self.build_id:08}/{self.chroot}">Teach AI</a>, <a href="https://log-detective.com/explain?url={quoted_build_log_link}">Ask AI</a>'
         if self.url_build_log is None:
             link = f'<a href="{self.build_page_url}">build page</a>'
