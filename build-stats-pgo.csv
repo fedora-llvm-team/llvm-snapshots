@@ -3555,3 +3555,7 @@ date,package,chroot,build_time,state,build_id,timestamp
 2025/04/12,llvm,fedora-rawhide-x86_64,6005,succeeded,8893559,1744499695
 2025/04/12,llvm,fedora-rawhide-ppc64le,50,failed,8893558,1744499695
 2025/04/12,llvm,fedora-rawhide-aarch64,32638,succeeded,8893557,1744499695
+2025/04/13,llvm,rhel-9-x86_64,-1,running,8898473,1744586183
+2025/04/13,llvm,fedora-rawhide-x86_64,8200,succeeded,8896472,1744586183
+2025/04/13,llvm,fedora-rawhide-ppc64le,26899,succeeded,8896471,1744586183
+2025/04/13,llvm,fedora-rawhide-aarch64,33826,succeeded,8896470,1744586183
