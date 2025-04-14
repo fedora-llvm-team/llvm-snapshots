@@ -78,7 +78,7 @@ function _configure_build_test {
         -C/usr/share/llvm-test-suite/cmake/caches/O3.cmake \
         /usr/share/llvm-test-suite
 
-    # Build the test-suite with one job at a time for a fair comparison.
+    # Build the test-suite
     ninja -j$N_BUILD_JOBS
 
     # Run the tests with lit:

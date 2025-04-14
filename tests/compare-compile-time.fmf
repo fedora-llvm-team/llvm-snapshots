@@ -79,7 +79,7 @@ prepare:
       - tcl
       - which
 
-      # The following list of packages needed are probably not available on RHEL
+      # TODO(kwk): The following list of packages needed are probably not available on RHEL
       # so we need to find a different way to work around them by iteratively
       # checking if they are really required or not:
       #
