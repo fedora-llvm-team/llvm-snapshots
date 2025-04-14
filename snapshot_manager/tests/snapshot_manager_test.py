@@ -124,7 +124,7 @@ def test_run_performance_comparison__overlap_but_no_successful_match(
     states_b = get_build_states(config_fxt_b, build_status.CoprBuildStatus.SUCCEEDED)
     copr_util_mock.get_all_build_states.side_effect = [states_a, states_b]
 
-    # Pretend there's a performance issue yet
+    # Pretend there's no performance issue yet
     get_performance_github_issue_mock.return_value = None
 
     github_repo_name = "foo/bar"
