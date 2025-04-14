@@ -503,8 +503,12 @@ def filter_chroots(chroots: list[str], pattern: str) -> list[str]:
 
 
 def sanitize_chroots(chroots: list[str]) -> list[str]:
-    """Removes all s390x fedora chroots but rawhide and the highest
-    numbered version in the given list
+    """Removes all s390x chroots but these:
+
+    fedora-rawhide-s390x
+    centos-stream-10-s390x
+    rhel-8-s390x
+    centos-stream-9-s390x
 
     Args:
         chroots (list[str]): A list of chroots
@@ -514,34 +518,42 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
 
     Example:
 
-    >>> chroots = ["fedora-40-aarch64", "fedora-40-s390x",
-    ...            "fedora-41-s390x", "fedora-41-ppc64le",
-    ...            "fedora-42-aarch64", "fedora-42-s390x",
-    ...            "fedora-rawhide-x86_64", "fedora-rawhide-s390x",
-    ...            "rhel-8-aarch64", "rhel-8-s390x",
-    ...            "rhel-8-x86_64", "rhel-9-aarch64",
-    ...            "rhel-9-s390x", "rhel-9-x86_64"]
-    >>> expected = ['fedora-40-aarch64', 'fedora-41-ppc64le',
-    ...             'fedora-42-aarch64', 'fedora-42-s390x',
-    ...             'fedora-rawhide-x86_64', 'fedora-rawhide-s390x',
-    ...             'rhel-8-aarch64', 'rhel-8-s390x',
-    ...             'rhel-8-x86_64', 'rhel-9-aarch64',
-    ...             'rhel-9-s390x', 'rhel-9-x86_64']
+    >>> chroots = [
+    ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le", "centos-stream-10-s390x",
+    ...   "centos-stream-10-x86_64", "centos-stream-9-aarch64", "centos-stream-9-ppc64le",
+    ...   "centos-stream-9-s390x", "centos-stream-9-x86_64", "fedora-40-aarch64",
+    ...   "fedora-40-i386", "fedora-40-ppc64le", "fedora-40-s390x", "fedora-40-x86_64",
+    ...   "fedora-41-aarch64", "fedora-41-i386", "fedora-41-ppc64le", "fedora-41-s390x",
+    ...   "fedora-41-x86_64", "fedora-42-aarch64", "fedora-42-i386", "fedora-42-ppc64le",
+    ...   "fedora-42-s390x", "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
+    ...   "fedora-rawhide-ppc64le", "fedora-rawhide-s390x", "fedora-rawhide-x86_64",
+    ...   "rhel-8-aarch64", "rhel-8-s390x", "rhel-8-x86_64" ]
+    >>> expected = [
+    ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le", "centos-stream-10-s390x",
+    ...   "centos-stream-10-x86_64", "centos-stream-9-aarch64", "centos-stream-9-ppc64le",
+    ...   "centos-stream-9-s390x", "centos-stream-9-x86_64", "fedora-40-aarch64",
+    ...   "fedora-40-i386", "fedora-40-ppc64le",                    "fedora-40-x86_64",
+    ...   "fedora-41-aarch64", "fedora-41-i386", "fedora-41-ppc64le",
+    ...   "fedora-41-x86_64", "fedora-42-aarch64", "fedora-42-i386", "fedora-42-ppc64le",
+    ...                      "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
+    ...   "fedora-rawhide-ppc64le", "fedora-rawhide-s390x", "fedora-rawhide-x86_64",
+    ...   "rhel-8-aarch64", "rhel-8-s390x", "rhel-8-x86_64" ]
     >>> actual = sanitize_chroots(chroots)
     >>> actual == expected
     True
     """
-    chroots = [expect_chroot(chroot) for chroot in chroots]
-    removals = filter_chroots(chroots, r"^fedora-[0-9]+-s390x")
-    max = 0
-    for chroot in removals:
-        ver = int(chroot_version(chroot))
-        if ver > max:
-            max = ver
-    for chroot in removals:
-        if max != int(chroot_version(chroot)):
-            chroots.remove(chroot)
-    return chroots
+    return [
+        expect_chroot(chroot)
+        for chroot in chroots
+        if chroot_arch(chroot) != "s390x"
+        or chroot
+        in (
+            "fedora-rawhide-s390x",
+            "centos-stream-10-s390x",
+            "centos-stream-9-s390x",
+            "rhel-8-s390x",
+        )
+    ]
 
 
 def augment_config_with_chroots(config: config.Config, all_chroots: list[str]) -> None:
