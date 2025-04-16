@@ -108,14 +108,14 @@ jobs:
             @fedora-llvm-team/clang-monthly-fedora-rebuild \
             || true
 
-  create-report: 
+  create-report:
     name: "Create Report"
     runs-on: ubuntu-22.04
     permissions:
       issues: write
     needs:
       - rebuild-failures
-      - check-for-rebuild 
+      - check-for-rebuild
     container:
       image: "registry.fedoraproject.org/fedora:41"
     outputs:
