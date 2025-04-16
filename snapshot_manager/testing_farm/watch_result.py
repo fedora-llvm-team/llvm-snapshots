@@ -99,13 +99,13 @@ class WatchResult(enum.StrEnum):
 
     @classmethod
     def is_watch_result(cls, string: str) -> bool:
-        """_summary_
+        """Returns True if the given string is a valid what result.
 
         Args:
-            string (str): _description_
+            string (str): The string to be tested
 
         Returns:
-            bool: _description_
+            bool: True if the string is a watch result.
 
         Examples:
 
