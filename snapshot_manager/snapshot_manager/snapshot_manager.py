@@ -280,16 +280,15 @@ class SnapshotManager:
             # But if a package was re-build and failed, the old request ID for that chroot is invalid.
             # To compensate for this scenario that we saw on April 1st 2024 btw., we're gonna
             # delete any request that has a different set of Copr build IDs associated with it.
-            if chroot in requests:
-                recovered_request = requests[chroot]
-                if set(recovered_request.copr_build_ids) != set(current_copr_build_ids):
+            if request in requests:
+                if set(request.copr_build_ids) != set(current_copr_build_ids):
                     logging.info(
-                        f"Recovered request ({recovered_request.request_id}) invalid (build IDs changed):\\nRecovered: {recovered_request.copr_build_ids}\\nCurrent: {current_copr_build_ids}"
+                        f"Recovered request ({request.request_id}) invalid (build IDs changed):\\nRecovered: {request.copr_build_ids}\\nCurrent: {current_copr_build_ids}"
                     )
                     self.github.flip_test_label(
                         issue=issue, chroot=chroot, new_label=None
                     )
-                    del requests[chroot]
+                    requests.remove(request)
 
             logging.info(f"Check if all builds in chroot {chroot} have succeeded")
             builds_succeeded = copr_util.has_all_good_builds(
