@@ -16,11 +16,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare-python
       - name: "start-performance-comparison"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           today=$(date +%Y%m%d)
           yesterday=$(date -d "${today} -1 day" +%Y%m%d)
 
-          python3 ./snapshot_manager/main.py start-perf-comparison \
+          python3 ./snapshot_manager/main.py run-perf-comparison \
             --strategy-a pgo \
             --strategy-b big-merge \
             --yyyymmdd "$yesterday"
