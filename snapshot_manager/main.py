@@ -229,7 +229,7 @@ def argument_parser_has_all_good_builds(subparsers) -> None:
 
 def argument_parser_perf_comparison(subparsers) -> None:
     sp = subparsers.add_parser(
-        "start-perf-comparison",
+        "run-perf-comparison",
         description="Run a performance comparison between two strategies A and B on testing-farm",
         **ARG_PARSE_SHOW_DEFAULT_VALUE,
     )
