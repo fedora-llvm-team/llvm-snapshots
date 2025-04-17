@@ -63,6 +63,7 @@ jobs:
         env:
           get_stats: ${{ github.event_name == 'schedule' && true || github.event.inputs.get_stats }}
           create_diagrams: ${{ github.event_name == 'schedule' && true || github.event.inputs.create_diagrams }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           today=$(date +%Y%m%d)
           yesterday=$(date -d "${today} -1 day" +%Y%m%d)
