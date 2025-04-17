@@ -119,6 +119,7 @@ class GithubClient:
                 f"Found today's ({self.config.yyyymmdd}) issue: {issues[0].html_url}"
             )
             return issues[0]
+        return None
 
     @property
     def initial_comment(self) -> str:

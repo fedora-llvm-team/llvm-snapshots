@@ -1,12 +1,34 @@
-"""Tests for build_status"""
-
 import datetime
+import os
+from unittest import mock
 
 import pytest
+import testing_farm as tf
+import testing_farm.tfutil as tfutil
 import tests.base_test as base_test
+from testing_farm.failed_test_case import FailedTestCase
+from testing_farm.request import Request
+from testing_farm.tfutil import adjust_token_env
 
 import snapshot_manager.github_util as github_util
-import snapshot_manager.testing_farm_util as tf
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "TESTING_FARM_API_TOKEN_PUBLIC_RANCH": "public",
+        "TESTING_FARM_API_TOKEN_REDHAT_RANCH": "redhat",
+    },
+    clear=True,
+)
+def test_adjust_token_env():
+    os.getenv("TESTING_FARM_API_TOKEN") is None
+
+    adjust_token_env("fedora-rawhide-x86_64")
+    assert os.environ["TESTING_FARM_API_TOKEN"] == "public"
+
+    adjust_token_env("rhel-9-x86_64")
+    assert os.environ["TESTING_FARM_API_TOKEN"] == "redhat"
 
 
 class TestTestingFarmUtil(base_test.TestBase):
@@ -28,7 +50,7 @@ class TestTestingFarmUtil(base_test.TestBase):
         assert issue is not None
 
         with self.assertRaises(SystemError):
-            tf.TestingFarmRequest.make(
+            tf.make_snapshot_gating_request(
                 chroot="fedora-900-x86_64",
                 config=self.config,
                 issue=issue,
@@ -36,21 +58,22 @@ class TestTestingFarmUtil(base_test.TestBase):
             )
 
     def test_fetch_failed_test_cases_from_file(self):
+        tfutil._IN_TEST_MODE = True
+
         request_id = "1f25b0df-71f1-4a13-a4b8-c066f6f5f116"
         chroot = "fedora-39-x86_64"
-        req = tf.TestingFarmRequest(
+        req = Request(
             request_id=request_id,
             chroot=chroot,
             copr_build_ids=[11, 22, 33],
-            _in_test_mode=True,
         )
         actual = req.get_failed_test_cases_from_xunit_file(
-            xunit_file=self.abspath(f"testing-farm-logs/results_{request_id}.xml"),
+            xunit_file=self.abspath(f"testing-farm-logs/{request_id}/xunit.xml"),
             artifacts_url_origin="https://example.com",
         )
 
         expected = [
-            tf.FailedTestCase(
+            FailedTestCase(
                 test_name="/compiler-rt-tests/cross-compile-i686",
                 request_id=request_id,
                 chroot=chroot,
@@ -75,9 +98,9 @@ def load_tests(loader, tests, ignore):
     """
     import doctest
 
-    import snapshot_manager.testing_farm_util
+    import testing_farm
 
-    tests.addTests(doctest.DocTestSuite(snapshot_manager.testing_farm_util))
+    tests.addTests(doctest.DocTestSuite(testing_farm))
     return tests
 
 

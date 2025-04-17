@@ -1,0 +1,121 @@
+# This test plan compares three versions of LLVM and their compile time.
+#
+# Those three versions are called "A", "B" and "system". "system" stands
+# for whatever LLVM version can be installed on a machine without
+# enabling any additional COPR repositories. "A" and "B" on the other side
+# can be any build strategy for which a COPR repository exists.
+# At the time of writing this test plan "A" refers to "pgo" and "B" was
+# "big-merge" as the two big competetitors we want to compare in compile
+# time.
+#
+# NOTE: The comparison happens on the same machine for each chroot to reach a
+#       fair comparison at least for each day. Day-to-day comparisons need to
+#       be taken with a pinch of salt!
+#
+# We store all comparison results in the test plans artifact directory (see
+# `TMT_PLAN_DATA` in
+# https://tmt.readthedocs.io/en/stable/overview.html#step-variables).
+# The "results.csv" is the collection of all the information we need when
+# proceeding with drawing diagrams for performance metrics.
+#
+# In order to run this test plan on testing-farm you need to make a request like
+# so:
+#
+#   $ testing-farm request \
+#     --compose Fedora-Rawhide \
+#     --git-url https://github.com/fedora-llvm-team/llvm-snapshots \
+#     --git-ref main \
+#     --arch x86_64 \
+#     --plan /tests/compare-compile-time \
+#     --context distro=fedora-rawhide \
+#     --context arch=x86_64 \
+#     --environment COPR_CHROOT=fedora-rawhide-x86_64 \
+#     --environment YYYYMMDD=$(date +%Y%m%d) \
+#     --environment CONFIG_A=pgo \
+#     --environment CONFIG_B=big-merge \
+#     --environment CONFIG_A_PROJECT_NAME=llvm-snapshots-pgo-$(date +%Y%m%d) \
+#     --environment CONFIG_B_PROJECT_NAME=llvm-snapshots-big-merge-$(date +%Y%m%d).
+#
+# NOTE: This plan was designed to be flexible enough to re-use it for testing
+#       i.e. BOLT performance improvements, once we have a copr repo which
+#       enables it.
+#
+# Docs for this file format: https://tmt.readthedocs.io/en/stable/
+
+summary: LLVM compare compile time
+prepare:
+  # Lower the priority of the testing-farm-tag-repository so that our copr repo is picked up.
+  # See: https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_tag_repository
+  - name: Set testing-farm-tag-repository priority
+    how: shell
+    script: |
+      if dnf repolist | grep -q testing-farm-tag-repository; then
+        dnf install -y 'dnf5-command(config-manager)' || dnf install -y 'dnf-command(config-manager)'
+        dnf config-manager --save --setopt="testing-farm-tag-repository.priority=999" || \
+          dnf config-manager setopt "testing-farm-tag-repository.priority=999"
+      fi
+
+  - name: Enable llvm-test-suite and compat packages repos from COPR
+    how: shell
+    script:
+      - dnf install -y 'dnf5-command(copr)' || dnf install -y 'dnf-command(copr)'
+      - dnf copr enable -y @fedora-llvm-team/llvm-test-suite $COPR_CHROOT
+      - dnf copr enable -y @fedora-llvm-team/llvm-compat-packages $COPR_CHROOT
+
+  - name: Install dependencies for all OSes
+    how: install
+    package:
+      - cmake
+      - coreutils
+      - git
+      - jq
+      - ninja-build
+      - perf
+      - python3-lit
+      - python3-pip
+      - python3-scipy
+      - python3-setuptools
+      - tcl-devel
+      - tcl
+      - which
+
+      # TODO(kwk): The following list of packages needed are probably not available on RHEL
+      # so we need to find a different way to work around them by iteratively
+      # checking if they are really required or not:
+      #
+      # - tcl-tclreadline
+      # - tcl-thread-devel
+      # - tcl-zlib
+      #
+      # See also:
+      # https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/package_manifest/repositories
+
+discover:
+  how: shell
+  tests:
+    ################################################################
+    # Build and test llvm-test-suite for each build strategy
+    ################################################################
+    - name: A
+      test: . $TMT_TREE/scripts/perf/lib.sh && build_test_suite $CONFIG_A $CONFIG_A_PROJECT_NAME
+
+    - name: B
+      test: . $TMT_TREE/scripts/perf/lib.sh && build_test_suite $CONFIG_B $CONFIG_B_PROJECT_NAME
+
+    - name: system
+      test: . $TMT_TREE/scripts/perf/lib.sh && build_test_suite system
+
+    ################################################################
+    # Compare build strategies
+    ################################################################
+    - name: A B
+      test: . $TMT_TREE/scripts/perf/lib.sh && compare_compile_time $CONFIG_A $CONFIG_B show_csv_header
+
+    - name: A system
+      test: . $TMT_TREE/scripts/perf/lib.sh && compare_compile_time $CONFIG_A system
+
+    - name: B system
+      test: . $TMT_TREE/scripts/perf/lib.sh && compare_compile_time $CONFIG_B system
+
+execute:
+    how: tmt

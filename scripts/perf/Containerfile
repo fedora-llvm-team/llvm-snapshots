@@ -8,15 +8,12 @@ WORKDIR /root
 RUN dnf install -y 'dnf-command(copr)' \
     && dnf copr enable -y @fedora-llvm-team/llvm-test-suite \
     && dnf install -y \
-        clang \
         cmake \
         coreutils \
         envsubst \
         fedora-packager \
         git \
         jq \
-        jq \
-        llvm-test-suite \
         ninja-build \
         python3-lit \
         python3-pandas \
@@ -31,6 +28,7 @@ RUN dnf install -y 'dnf-command(copr)' \
         tcl-zlib \
         which
 
+COPY lib.sh /root/lib.sh
 COPY entrypoint.sh /root/entrypoint.sh
 USER root
 ENTRYPOINT [ "/root/entrypoint.sh" ]
