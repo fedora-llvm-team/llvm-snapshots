@@ -280,16 +280,16 @@ class SnapshotManager:
             # But if a package was re-build and failed, the old request ID for that chroot is invalid.
             # To compensate for this scenario that we saw on April 1st 2024 btw., we're gonna
             # delete any request that has a different set of Copr build IDs associated with it.
-            if chroot in requests:
-                recovered_request = requests[chroot]
-                if set(recovered_request.copr_build_ids) != set(current_copr_build_ids):
+            request = get_req_for_chroot(requests=requests, chroot=chroot)
+            if request is not None:
+                if set(request.copr_build_ids) != set(current_copr_build_ids):
                     logging.info(
-                        f"Recovered request ({recovered_request.request_id}) invalid (build IDs changed):\\nRecovered: {recovered_request.copr_build_ids}\\nCurrent: {current_copr_build_ids}"
+                        f"Recovered request ({request.request_id}) invalid (build IDs changed):\\nRecovered: {request.copr_build_ids}\\nCurrent: {current_copr_build_ids}"
                     )
                     self.github.flip_test_label(
                         issue=issue, chroot=chroot, new_label=None
                     )
-                    del requests[chroot]
+                    requests.remove(request)
 
             logging.info(f"Check if all builds in chroot {chroot} have succeeded")
             builds_succeeded = copr_util.has_all_good_builds(
@@ -304,8 +304,8 @@ class SnapshotManager:
             logging.info(f"All builds in chroot {chroot} have succeeded!")
 
             # Check for current status of testing-farm request
-            if chroot in requests:
-                request = requests[chroot]
+            request = get_req_for_chroot(requests=requests, chroot=chroot)
+            if request is not None:
                 watch_result, artifacts_url = request.watch()
                 if watch_result is None and artifacts_url is None:
                     continue
@@ -349,7 +349,7 @@ class SnapshotManager:
                     logging.info(
                         f"testing-farm request ID for {chroot}: {request.request_id}"
                     )
-                    requests[chroot] = request
+                    requests.append(request)
                     self.github.flip_test_label(issue, chroot, in_testing)
 
             # Create or update a comment for testing-farm results display
@@ -572,6 +572,22 @@ fetching the artifacts of the performance runs.
     logging.info(f"Performance issue created: {issue.html_url}")
 
     return True
+
+
+def get_req_for_chroot(requests: list[tf.Request], chroot: str) -> tf.Request | None:
+    """Returns the first request in the list that was made for the given chroot or None if no such request exists.
+
+    Args:
+        requests (list[tf.Request]): A list of requests to search
+        chroot (str): A chroot to look for
+
+    Returns:
+        tf.Request|None: The first request that was made for the given chroot or None.
+    """
+    for req in requests:
+        if req.chroot == chroot:
+            return req
+    return None
 
 
 def collect_performance_comparison_results(
