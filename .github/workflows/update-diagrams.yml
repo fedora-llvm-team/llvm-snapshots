@@ -71,7 +71,9 @@ jobs:
           if ${{ env.get_stats }}; then
             main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-${today}" | tee -a gh-pages/build-stats-big-merge.csv
             main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-pgo-${today}" | tee -a gh-pages/build-stats-pgo.csv
-            python3 ./main/snapshot_manager/main.py collect-perf-results \
+            python3 ./main/snapshot_manager/main.py \
+              --github-repo "${GITHUB_REPOSITORY}" \
+              collect-perf-results \
               --strategy-a pgo \
               --strategy-b big-merge \
               --csv-file-in gh-pages/perf-results.csv \

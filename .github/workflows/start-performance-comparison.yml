@@ -22,7 +22,9 @@ jobs:
           today=$(date +%Y%m%d)
           yesterday=$(date -d "${today} -1 day" +%Y%m%d)
 
-          python3 ./snapshot_manager/main.py run-perf-comparison \
+          python3 ./snapshot_manager/main.py \
+            --github-repo "${GITHUB_REPOSITORY}" \
+            run-perf-comparison \
             --strategy-a pgo \
             --strategy-b big-merge \
             --yyyymmdd "$yesterday"
