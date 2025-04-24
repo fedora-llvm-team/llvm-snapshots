@@ -45,13 +45,18 @@ class MissingToken(Exception):
 class GithubClient:
     dirname = pathlib.Path(os.path.dirname(__file__))
 
-    def __init__(self, config: config.Config, github_token: str = None, **kwargs):
+    def __init__(
+        self,
+        config: config.Config,
+        github_token: str | None = None,
+        **kwargs: typing.Any,
+    ):
         """
         Keyword Arguments:
             github_token (str, optional): github personal access token.
         """
         self.config = config
-        if github_token is None:
+        if github_token != "" or github_token is not None:
             logging.info(
                 f"Reading Github token from this environment variable: {self.config.github_token_env}"
             )
@@ -64,11 +69,11 @@ class GithubClient:
         self.github = github.Github(auth=auth)
         self.gql = github_graphql.GithubGraphQL(token=github_token, raise_on_error=True)
         self._label_cache = None
-        self.__repo_cache = None
+        self.__repo_cache: github.Repository.Repository | None = None
 
     @classmethod
-    def abspath(cls, p: tuple[str, pathlib.Path]) -> pathlib.Path:
-        return cls.dirname.joinpath(p)
+    def abspath(cls, p: str | pathlib.Path) -> pathlib.Path:
+        return cls.dirname.joinpath(str(p))
 
     @property
     def gh_repo(self) -> github.Repository.Repository:
@@ -155,11 +160,11 @@ remove the aforementioned labels.
     def last_updated_html(cls) -> str:
         return f"<p><b>Last updated: {datetime.datetime.now().isoformat()}</b></p>"
 
-    def issue_title(self, strategy: str = None, yyyymmdd: str = None) -> str:
+    def issue_title(self, strategy: str = "", yyyymmdd: str = "") -> str:
         """Constructs the issue title we want to use"""
-        if strategy is None:
+        if strategy == "":
             strategy = self.config.build_strategy
-        if yyyymmdd is None:
+        if yyyymmdd == "":
             yyyymmdd = self.config.yyyymmdd
         llvm_release = util.get_release_for_yyyymmdd(yyyymmdd)
         llvm_git_revision = util.get_git_revision_for_yyyymmdd(yyyymmdd)
@@ -226,10 +231,9 @@ remove the aforementioned labels.
         """Iterates over the given labels and creates or edits each label in the list
         with the given prefix and color."""
         if labels is None or len(labels) == 0:
-            return None
+            return []
 
-        labels = set(labels)
-        labels = list(labels)
+        labels = list(set(labels))
         labels.sort()
         res = []
         for label in labels:
@@ -266,70 +270,79 @@ remove the aforementioned labels.
         return cls.get_label_names_on_issue(issue, prefix="build_failed_on/")
 
     def create_labels_for_error_causes(
-        self, labels: list[str], **kw_args
+        self,
+        labels: list[str],
     ) -> list[github.Label.Label]:
         return self.create_labels(
-            labels=labels, prefix="error/", color="FBCA04", **kw_args
+            labels=labels,
+            prefix="error/",
+            color="FBCA04",
         )
 
     def create_labels_for_build_failed_on(
-        self, labels: list[str], **kw_args
+        self,
+        labels: list[str],
     ) -> list[github.Label.Label]:
         return self.create_labels(
-            labels=labels, prefix="build_failed_on/", color="F9D0C4", **kw_args
+            labels=labels,
+            prefix="build_failed_on/",
+            color="F9D0C4",
         )
 
     def create_labels_for_strategies(
-        self, labels: list[str], **kw_args
+        self,
+        labels: list[str],
     ) -> list[github.Label.Label]:
         return self.create_labels(
-            labels=labels, prefix="strategy/", color="FFFFFF", *kw_args
+            labels=labels,
+            prefix="strategy/",
+            color="FFFFFF",
         )
 
     def create_labels_for_in_testing(
-        self, labels: list[str], **kw_args
+        self,
+        labels: list[str],
     ) -> list[github.Label.Label]:
         return self.create_labels(
             labels=labels,
             prefix=self.config.label_prefix_in_testing,
             color="FEF2C0",
-            *kw_args,
         )
 
     def create_labels_for_tested_on(
-        self, labels: list[str], **kw_args
+        self,
+        labels: list[str],
     ) -> list[github.Label.Label]:
         return self.create_labels(
             labels=labels,
             prefix=self.config.label_prefix_tested_on,
             color="0E8A16",
-            *kw_args,
         )
 
     def create_labels_for_tests_failed_on(
-        self, labels: list[str], **kw_args
+        self,
+        labels: list[str],
     ) -> list[github.Label.Label]:
         return self.create_labels(
             labels=labels,
             prefix=self.config.label_prefix_tests_failed_on,
             color="D93F0B",
-            *kw_args,
         )
 
     def create_labels_for_llvm_releases(
-        self, labels: list[str], **kw_args
+        self,
+        labels: list[str],
     ) -> list[github.Label.Label]:
         return self.create_labels(
             labels=labels,
             prefix=self.config.label_prefix_llvm_release,
             color="2F3950",
-            *kw_args,
         )
 
     @classmethod
     def get_comment(
         cls, issue: github.Issue.Issue, marker: str
-    ) -> github.IssueComment.IssueComment:
+    ) -> github.IssueComment.IssueComment | None:
         """Walks through all comments associated with the `issue` and returns the first one that has the `marker` in its body.
 
         Args:
@@ -362,7 +375,7 @@ remove the aforementioned labels.
     @classmethod
     def remove_labels_safe(
         cls, issue: github.Issue.Issue, label_names_to_be_removed: list[str]
-    ):
+    ) -> None:
         """Removes all of the given labels from the issue.
 
         Args:
@@ -377,36 +390,30 @@ remove the aforementioned labels.
             logging.info(f"Removing label '{label}' from issue: {issue.title}")
             issue.remove_from_labels(label)
 
-    @typing.overload
-    def minimize_comment_as_outdated(
-        self, comment: github.IssueComment.IssueComment
-    ) -> bool: ...
-
-    @typing.overload
-    def minimize_comment_as_outdated(self, node_id: str) -> bool: ...
-
     def minimize_comment_as_outdated(
         self,
-        object: str | github.IssueComment.IssueComment,
+        issue_comment_or_node_id: github.IssueComment.IssueComment | str,
     ) -> bool:
-        """Minimizes a comment identified by the `object` argument with the reason `OUTDATED`.
+        """Minimizes a comment identified by the `issue_comment_or_node_id` argument with the reason `OUTDATED`.
 
         Args:
-            object (str | github.IssueComment.IssueComment): The comment to minimize
+            issue_comment_or_node_id (str | github.IssueComment.IssueComment): The comment object or its node ID to add minimize.
 
         Raises:
-            ValueError: If the `object` has a wrong type.
+            ValueError: If the `issue_comment_or_node_id` has a wrong type.
 
         Returns:
             bool: True if the comment was properly minimized.
         """
         node_id = ""
-        if isinstance(object, github.IssueComment.IssueComment):
-            node_id = object.raw_data["node_id"]
-        elif isinstance(object, str):
-            node_id = object
+        if isinstance(issue_comment_or_node_id, github.IssueComment.IssueComment):
+            node_id = issue_comment_or_node_id.raw_data["node_id"]
+        elif isinstance(issue_comment_or_node_id, str):
+            node_id = issue_comment_or_node_id
         else:
-            raise ValueError(f"invalid comment object passed: {object}")
+            raise ValueError(
+                f"invalid comment object passed: {issue_comment_or_node_id}"
+            )
 
         res = self.gql.run_from_file(
             variables={
@@ -422,32 +429,31 @@ remove the aforementioned labels.
             )
         )
 
-    @typing.overload
-    def unminimize_comment(self, comment: github.IssueComment.IssueComment) -> bool: ...
-
-    @typing.overload
-    def unminimize_comment(self, node_id: str) -> bool: ...
-
     def unminimize_comment(
         self,
-        object: str | github.IssueComment.IssueComment,
+        issue_comment_or_node_id: github.IssueComment.IssueComment | str,
     ) -> bool:
-        """Unminimizes a comment with the given `node_id`.
+        """Unminimizes a comment with the given `issue_comment_or_node_id`.
 
         Args:
-            node_id (str): A comment's `node_id`.
+            issue_comment_or_node_id (str): The comment object or its node ID to add unminimize.
+
+        Raises:
+            ValueError: If the `issue_comment_or_node_id` has a wrong type.
 
         Returns:
             bool: True if the comment was unminimized
         """
 
         node_id = ""
-        if isinstance(object, github.IssueComment.IssueComment):
-            node_id = object.raw_data["node_id"]
-        elif isinstance(object, str):
-            node_id = object
+        if isinstance(issue_comment_or_node_id, github.IssueComment.IssueComment):
+            node_id = issue_comment_or_node_id.raw_data["node_id"]
+        elif isinstance(issue_comment_or_node_id, str):
+            node_id = issue_comment_or_node_id
         else:
-            raise ValueError(f"invalid comment object passed: {object}")
+            raise ValueError(
+                f"invalid comment object passed: {issue_comment_or_node_id}"
+            )
 
         res = self.gql.run_from_file(
             variables={
@@ -461,38 +467,32 @@ remove the aforementioned labels.
         )
         return not is_minimized
 
-    @typing.overload
-    def add_comment_reaction(
-        self, comment: github.IssueComment.IssueComment, reaction: Reaction
-    ) -> bool: ...
-
-    @typing.overload
-    def add_comment_reaction(self, node_id: str, reaction: Reaction) -> bool: ...
-
     def add_comment_reaction(
         self,
-        object: str | github.IssueComment.IssueComment,
+        issue_comment_or_node_id: github.IssueComment.IssueComment | str,
         reaction: Reaction,
     ) -> bool:
         """Adds a reaction to a comment with the given emoji name
 
         Args:
-            object (str | github.IssueComment.IssueComment): The comment object or node ID to add reaction to.
+            issue_comment_or_node_id (github.IssueComment.IssueComment|str): The comment object or its node ID to add reaction to.
             reaction (Reaction): The name of the reaction.
 
         Raises:
-            ValueError: If the the `object` has a wrong type.
+            ValueError: If the the `issue_comment_or_node_id` has a wrong type.
 
         Returns:
             bool: True if the comment reaction was added successfully.
         """
         node_id = ""
-        if isinstance(object, github.IssueComment.IssueComment):
-            node_id = object.raw_data["node_id"]
-        elif isinstance(object, str):
-            node_id = object
+        if isinstance(issue_comment_or_node_id, github.IssueComment.IssueComment):
+            node_id = issue_comment_or_node_id.raw_data["node_id"]
+        elif isinstance(issue_comment_or_node_id, str):
+            node_id = issue_comment_or_node_id
         else:
-            raise ValueError(f"invalid comment object passed: {object}")
+            raise ValueError(
+                f"invalid comment object passed: {issue_comment_or_node_id}"
+            )
 
         res = self.gql.run_from_file(
             variables={
@@ -507,7 +507,9 @@ remove the aforementioned labels.
         )
         actual_comment_id = fnc.get("data.addReaction.subject.id", res, default=None)
 
-        return actual_reaction == str(reaction) and actual_comment_id == node_id
+        return str(actual_reaction) == str(reaction) and str(actual_comment_id) == str(
+            node_id
+        )
 
     def label_in_testing(self, chroot: str) -> str:
         return f"{self.config.label_prefix_in_testing}{chroot}"
@@ -520,7 +522,7 @@ remove the aforementioned labels.
 
     def flip_test_label(
         self, issue: github.Issue.Issue, chroot: str, new_label: str | None
-    ):
+    ) -> None:
         """Let's you change the label on an issue for a specific chroot.
 
          If `new_label` is `None`, then all test labels will be removed.

@@ -13,9 +13,9 @@ import unittest
 import snapshot_manager.config as config
 
 
-def run_tests():
+def run_tests() -> None:
     """Call this from wherever you want to run the tests"""
-    unittest.main(failfast=True, durations=0, verbosity=5, tb_locals=True)
+    unittest.main(failfast=True, durations=None, verbosity=5, tb_locals=True)
 
 
 class TestBase(unittest.TestCase):
@@ -41,8 +41,8 @@ class TestBase(unittest.TestCase):
         )
 
     @classmethod
-    def abspath(cls, p: tuple[str, pathlib.Path]) -> pathlib.Path:
-        return cls.dirname.joinpath(p)
+    def abspath(cls, p: str | pathlib.Path) -> pathlib.Path:
+        return cls.dirname.joinpath(str(p))
 
     @contextlib.contextmanager
     def get_text_file(self, text: str) -> typing.Generator[pathlib.Path, None, None]:

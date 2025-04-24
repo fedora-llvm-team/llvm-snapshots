@@ -61,4 +61,12 @@ repos:
     hooks:
     - id: actionlint
 
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.15.0'
+    hooks:
+    - id: mypy
+      args: [--strict, --ignore-missing-imports]
+      additional_dependencies:
+        - types-requests
+
 exclude: "^(snapshot_manager/tests/(test_logs|testing-farm-logs)/|media)"

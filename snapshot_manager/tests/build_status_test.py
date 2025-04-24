@@ -8,7 +8,7 @@ from snapshot_manager.build_status import ErrorCause
 
 
 class TestErrorCauseAndBuildStatus(base_test.TestBase):
-    def test_get_cause_from_build_log(self):
+    def test_get_cause_from_build_log(self) -> None:
         """Get cause from build log"""
 
         causes = [e.value for e in ErrorCause]
@@ -36,7 +36,7 @@ class TestErrorCauseAndBuildStatus(base_test.TestBase):
 
                 self.assertEqual(actualCtx, expectedCtxFile.read_text())
 
-    def test_markdown_build_matrix(self):
+    def test_markdown_build_matrix(self) -> None:
         """Creates and then updates a build matrix"""
         all_copr_states = build_status.CoprBuildStatus.all_states()
         packages = ["stupefy", "alohomora"]
@@ -86,7 +86,7 @@ class TestErrorCauseAndBuildStatus(base_test.TestBase):
 </details>"""
         self.assertEqual(expected_result, matrix)
 
-    def test_render_as_markdown(self):
+    def test_render_as_markdown(self) -> None:
         """Test HTML string representation of a BuildState"""
         state = build_status.BuildState(
             err_cause=build_status.ErrorCause.ISSUE_NETWORK,
@@ -112,7 +112,7 @@ This is the context for the error
 
 
 class TestErrorList(base_test.TestBase):
-    def test_sort(self):
+    def test_sort(self) -> None:
         """Test sorting of errors in an array works as expected"""
         # fmt: off
         e1 = build_status.BuildState(err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-a")
@@ -133,16 +133,15 @@ class TestErrorList(base_test.TestBase):
 
         self.assertEqual(sorted, resorted)
 
-    def test_render_as_markdown(self):
+    def test_render_as_markdown(self) -> None:
         """Test that a list of errors is rendered properly to HTML"""
         # fmt: off
-        kwargs = {"copr_ownername": "foo", "copr_projectname": "bar"}
-        e1 = build_status.BuildState(build_id=111, url_build_log="http://e1", err_ctx="e1", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-a", **kwargs)
-        e2 = build_status.BuildState(build_id=222, url_build_log="http://e2", err_ctx="e2", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-b", **kwargs)
-        e3 = build_status.BuildState(build_id=333, url_build_log="http://e3", err_ctx="e3", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-c", **kwargs)
-        e4 = build_status.BuildState(build_id=444, url_build_log="http://e4", err_ctx="e4", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-a", **kwargs)
-        e5 = build_status.BuildState(build_id=555, url_build_log="http://e5", err_ctx="e5", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-b", **kwargs)
-        e6 = build_status.BuildState(build_id=666, url_build_log="http://e6", err_ctx="e6", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-c", **kwargs)
+        e1 = build_status.BuildState(build_id=111, url_build_log="http://e1", err_ctx="e1", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-a", copr_ownername="foo", copr_projectname="bar")
+        e2 = build_status.BuildState(build_id=222, url_build_log="http://e2", err_ctx="e2", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-b", copr_ownername="foo", copr_projectname="bar")
+        e3 = build_status.BuildState(build_id=333, url_build_log="http://e3", err_ctx="e3", err_cause=build_status.ErrorCause.ISSUE_NETWORK, chroot="chroot-a", package_name="package-c", copr_ownername="foo", copr_projectname="bar")
+        e4 = build_status.BuildState(build_id=444, url_build_log="http://e4", err_ctx="e4", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-a", copr_ownername="foo", copr_projectname="bar")
+        e5 = build_status.BuildState(build_id=555, url_build_log="http://e5", err_ctx="e5", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-b", copr_ownername="foo", copr_projectname="bar")
+        e6 = build_status.BuildState(build_id=666, url_build_log="http://e6", err_ctx="e6", err_cause=build_status.ErrorCause.ISSUE_TEST, chroot="chroot-c", package_name="package-c", copr_ownername="foo", copr_projectname="bar")
         # fmt: on
         unsorted: build_status.BuildStateList = [e3, e6, e1, e5, e4, e2]
 
@@ -197,7 +196,7 @@ e6
         self.assertEqual(expected, actual)
 
 
-def load_tests(loader, tests, ignore):
+def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol

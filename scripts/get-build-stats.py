@@ -67,7 +67,7 @@ def gather_build_stats(
                 )
 
 
-def main():
+def main() -> None:
     defaut_yyyymmdd = datetime.today().strftime("%Y%m%d")
     default_copr_ownername = "@fedora-llvm-team"
     default_copr_projectname = f"llvm-snapshots-incubator-{defaut_yyyymmdd}"

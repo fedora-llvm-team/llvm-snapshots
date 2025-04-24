@@ -261,7 +261,7 @@ def build_performance_diagrams(datafile: pathlib.Path | str) -> None:
     pio.templates.default = "plotly"
 
     if isinstance(datafile, str):
-        datafile = filepath.Path(datafile)
+        datafile = pathlib.Path(datafile)
 
     df = prepare_data(filepath=datafile)
 

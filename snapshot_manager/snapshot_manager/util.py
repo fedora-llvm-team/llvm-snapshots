@@ -11,6 +11,8 @@ import pathlib
 import re
 import shlex
 import subprocess
+import uuid
+from typing import Any
 
 import regex
 import requests
@@ -93,7 +95,7 @@ def grep_file(
     return run_cmd(cmd)
 
 
-def run_cmd(cmd: str, timeout_secs: int = 5) -> tuple[int, str, str]:
+def run_cmd(cmd: str, timeout_secs: int | None = 5) -> tuple[int, str, str]:
     """Runs the given command and returns the output (stdout and stderr) if any.
 
     Args:
@@ -123,7 +125,7 @@ def run_cmd(cmd: str, timeout_secs: int = 5) -> tuple[int, str, str]:
     return exit_code, stdout, stderr
 
 
-def read_url_response_into_file(url: str, **kw_args) -> pathlib.Path:
+def read_url_response_into_file(url: str, **kw_args: Any) -> pathlib.Path:
     """Fetch the given URL and store it in a temporary file whose name is returned.
 
     Args:
@@ -134,18 +136,22 @@ def read_url_response_into_file(url: str, **kw_args) -> pathlib.Path:
     """
     logging.info(f"Getting URL {url}")
     response = requests.get(url)
-    return file_access.write_to_temp_file(response.content, **kw_args)
+    prefix: str | None = None
+    if "prefix" in kw_args:
+        prefix = kw_args.get("prefix", None)
+    return file_access.write_to_temp_file(response.content, prefix=prefix)
 
 
-def gunzip(f: tuple[str, pathlib.Path]) -> pathlib.Path:
+def gunzip(f: str | pathlib.Path) -> pathlib.Path:
     """Unzip log file on the fly if we need to"""
-    if str(f).endswith(".gz"):
-        unzipped_file = str(f).removesuffix(".gz")
-        retcode, stdout, stderr = run_cmd(cmd=f"gunzip -kf {f}")
+    f_str = str(f)
+    if f_str.endswith(".gz"):
+        unzipped_file = f_str.removesuffix(".gz")
+        retcode, stdout, stderr = run_cmd(cmd=f"gunzip -kf {f_str}")
         if retcode != 0:
-            raise Exception(f"Failed to gunzip build log '{f}': {stderr}")
-        f = unzipped_file
-    return pathlib.Path(str(f))
+            raise Exception(f"Failed to gunzip build log '{f_str}': {stderr}")
+        f_str = unzipped_file
+    return pathlib.Path(f_str)
 
 
 def shorten_text(text: str, max_length: int = 3000) -> str:
@@ -200,7 +206,7 @@ def get_yyyymmdd_from_string(string: str) -> str:
       ...
     ValueError: title doesn't appear to reference a snapshot issue: Foo
     """
-    issue_datetime: datetime = None
+    issue_datetime: datetime.date
     year_month_day = re.search("([0-9]{4})([0-9]{2})([0-9]{2})", string)
     if year_month_day is None:
         raise ValueError(
@@ -353,7 +359,9 @@ def chroot_name(chroot: str) -> str:
     """
     expect_chroot(chroot)
     match = re.search(pattern=rf"^{allowed_os_names_as_regex_str()}", string=chroot)
-    return str(match[0])
+    if match is not None:
+        return str(match[0])
+    return ""
 
 
 def chroot_version(chroot: str) -> str:
@@ -385,7 +393,9 @@ def chroot_version(chroot: str) -> str:
     match = re.search(
         pattern=rf"(-){allowed_os_versions_as_regex_str()}(-)", string=chroot
     )
-    return str(match.groups()[1])
+    if match is not None:
+        return str(match.groups()[1])
+    return ""
 
 
 def chroot_os(chroot: str) -> str:
@@ -421,8 +431,9 @@ def chroot_os(chroot: str) -> str:
         pattern=rf"{allowed_os_names_as_regex_str()}-{allowed_os_versions_as_regex_str()}",
         string=chroot,
     )
-
-    return str(match[0])
+    if match is not None:
+        return str(match[0])
+    return ""
 
 
 def chroot_arch(chroot: str) -> str:
@@ -679,7 +690,7 @@ def serialize_config_map_to_github_matrix(
     if strategy.strip() == "":
         raise ValueError(f"strategy may not be empty")
 
-    res = {
+    res: dict[str, Any] = {
         "name": [],
         "include": [],
     }
@@ -693,3 +704,46 @@ def serialize_config_map_to_github_matrix(
             res["name"].append(strat)
 
     return json.dumps(res)
+
+
+def sanitize_uuid(id: str | uuid.UUID | None) -> uuid.UUID:
+    """Sanitizes an ID by ensuring that it is a UUID.
+
+    Args:
+        id (str | uuid.UUID|None): An ID object to sanitize
+
+    Raises:
+        ValueError: if the given string is not in the right format or None
+
+    Returns:
+        uuid.UUID: the uuid object that matched the pattern
+
+    Examples:
+
+    >>> sanitize_uuid(id="271a79e8-fc9a-4e1d-95fe-567cc9d62ad4")
+    UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad4')
+
+    >>> import uuid
+    >>> sanitize_uuid(uuid.UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad5'))
+    UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad5')
+
+    >>> sanitize_uuid(id="; cat /etc/passwd")
+    Traceback (most recent call last):
+     ...
+    ValueError: string is not a valid UUID: badly formed hexadecimal UUID string
+
+    >>> sanitize_uuid(id=None)
+    Traceback (most recent call last):
+     ...
+    ValueError: ID cannot be None
+    """
+    if id is None:
+        raise ValueError(f"ID cannot be None")
+    if isinstance(id, uuid.UUID):
+        return id
+    res: uuid.UUID
+    try:
+        res = uuid.UUID(id)
+    except Exception as e:
+        raise ValueError(f"string is not a valid UUID: {e}")
+    return res

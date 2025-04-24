@@ -54,14 +54,18 @@ def get_all_chroots(client: copr.v3.Client) -> list[str]:
     Returns:
         list[str]: All currently supported chroots on copr.
     """
-    return client.mock_chroot_proxy.get_list().keys()
+    res: list[str] = client.mock_chroot_proxy.get_list().keys()
+    return res
+
+
+from copr.v3.helpers import List
 
 
 def get_all_builds(
     client: copr.v3.Client,
     ownername: str,
     projectname: str,
-) -> list[munch.Munch]:
+) -> List | munch.Munch:
     return client.build_proxy.get_list(ownername=ownername, projectname=projectname)
 
 
@@ -91,7 +95,7 @@ def filter_builds_by_state(
     ]
 
 
-def delete_project(client: copr.v3.Client, ownername: str, projectname: str):
+def delete_project(client: copr.v3.Client, ownername: str, projectname: str) -> None:
     """Cancells all active builds in the given project, waits for them to truely finish and then deletes the project.
 
     Args:

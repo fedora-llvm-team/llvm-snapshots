@@ -5,19 +5,12 @@ file_access
 import logging
 import pathlib
 import tempfile
-import typing
-
-
-@typing.overload
-def write_to_temp_file(content: bytes, **kw_args) -> pathlib.Path: ...
-
-
-@typing.overload
-def write_to_temp_file(text: str, **kw_args) -> pathlib.Path: ...
+from typing import Any, overload
 
 
 def write_to_temp_file(
-    content: str | bytes, prefix: str = "snapshot-builder-"
+    content: str | bytes,
+    prefix: str | None = "snapshot-builder-",
 ) -> pathlib.Path:
     """Creates a named temporary file that isn't deleted and writes content to it.
 

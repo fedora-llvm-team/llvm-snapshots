@@ -7,6 +7,7 @@ import enum
 import logging
 import pathlib
 import urllib
+from typing import Any
 
 import snapshot_manager.util as util
 
@@ -28,6 +29,16 @@ class CoprBuildStatus(enum.StrEnum):
 
     @classmethod
     def all_states(cls) -> list["CoprBuildStatus"]:
+        """
+        >>> all_states = CoprBuildStatus.all_states()
+        >>> all_states.sort()
+        >>> all_states # doctest: +NORMALIZE_WHITESPACE
+        [<CoprBuildStatus.CANCELED: 'canceled'>, <CoprBuildStatus.FAILED: 'failed'>,
+        <CoprBuildStatus.FORKED: 'forked'>, <CoprBuildStatus.IMPORTING: 'importing'>,
+        <CoprBuildStatus.PENDING: 'pending'>, <CoprBuildStatus.RUNNING: 'running'>,
+        <CoprBuildStatus.SKIPPED: 'skipped'>, <CoprBuildStatus.STARTING: 'starting'>,
+        <CoprBuildStatus.SUCCEEDED: 'succeeded'>, <CoprBuildStatus.WAITING: 'waiting'>]
+        """
         return [s for s in CoprBuildStatus]
 
     @property
@@ -81,21 +92,31 @@ class ErrorCause(enum.StrEnum):
     ISSUE_UNKNOWN = "unknown"
 
     @classmethod
-    def list(cls):
-        return list(map(lambda c: c.value, cls))
+    def list(cls) -> list[str]:
+        """
+        Returns a list of strings with all possible error causes.
+
+        >>> causes = ErrorCause.list()
+        >>> causes.sort()
+        >>> causes # doctest: +NORMALIZE_WHITESPACE
+        ['cmake_error', 'copr_timeout', 'dependency_issue', 'downstream_patch_application',
+        'network_issue', 'rpm__directory_not_found', 'rpm__file_not_found',
+        'rpm__installed_but_unpackaged_files_found', 'srpm_build_issue', 'test', 'unknown']
+        """
+        return list(map(lambda c: str(c), cls))
 
 
 @dataclasses.dataclass(kw_only=True, order=True)
 class BuildState:
     """A BuildState holds information about a package build on Copr in a particular chroot."""
 
-    err_cause: ErrorCause = None
+    err_cause: ErrorCause | None = None
     package_name: str = ""
     chroot: str = ""
     url_build_log: str = ""
     url_build: str = ""
     build_id: int = -1
-    copr_build_state: CoprBuildStatus = None
+    copr_build_state: CoprBuildStatus | None = None
     err_ctx: str = ""
     copr_ownername: str = ""
     copr_projectname: str = ""
@@ -143,11 +164,11 @@ class BuildState:
         return CoprBuildStatus(str(self.copr_build_state)).success
 
     @property
-    def os(self):
+    def os(self) -> str:
         return util.chroot_os(self.chroot)
 
     @property
-    def arch(self):
+    def arch(self) -> str:
         return util.chroot_arch(self.chroot)
 
     @property
@@ -455,7 +476,9 @@ you'll find all occurrences here together with the preceding lines.
 BuildStateList = list[BuildState]
 
 
-def lookup_state(states: BuildStateList, package: str, chroot: str) -> BuildState:
+def lookup_state(
+    states: BuildStateList, package: str, chroot: str
+) -> BuildState | None:
     for state in states:
         if state.package_name == package and state.chroot == chroot:
             return state
@@ -516,9 +539,10 @@ def markdown_build_status_matrix(
         for p in packages:
             state = lookup_state(states=build_states, package=p, chroot=c)
             if state is not None:
-                cols.append(
-                    f"[{CoprBuildStatus(state.copr_build_state).to_icon()}]({state.build_page_url})"
-                )
+                if state.copr_build_state is not None:
+                    cols.append(
+                        f"[{state.copr_build_state.to_icon()}]({state.build_page_url})"
+                    )
             else:
                 cols.append(init_state)
         # fmt: off
@@ -527,10 +551,10 @@ def markdown_build_status_matrix(
 
     if add_legend:
         table += "<details><summary>Build status legend</summary><ul>"
-        states = [state for state in CoprBuildStatus]
-        states.sort()
-        for state in states:
-            table += f"<li>{CoprBuildStatus(state).to_icon()} : {state}</li>"
+        copr_build_states = [state for state in CoprBuildStatus.all_states()]
+        copr_build_states.sort()
+        for copr_build_state in copr_build_states:
+            table += f"<li>{copr_build_state.to_icon()} : {copr_build_state}</li>"
         table += f"<li>:grey_question: : unknown</li>"
         table += f"<li>:warning: : pipeline error (only relevant to testing-farm)</li>"
         table += "</ul></details>\n"

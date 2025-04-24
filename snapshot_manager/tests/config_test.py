@@ -8,7 +8,7 @@ import snapshot_manager.config as config
 
 
 class TestConfig(base_test.TestBase):
-    def test_yyyymmdd(self):
+    def test_yyyymmdd(self) -> None:
         self.assertEqual(
             "20240227",
             config.Config(
@@ -17,7 +17,7 @@ class TestConfig(base_test.TestBase):
         )
 
 
-def load_tests(loader, tests, ignore):
+def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol

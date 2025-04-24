@@ -20,19 +20,18 @@ import snapshot_manager.util as util
 
 
 class SnapshotManager:
-
     def __init__(self, config: config.Config):
         self.config = config
         self.copr = copr_util.make_client()
         # In case this wasn't done before, augment the config with a list of
         # chroots of interest.
-        if self.config.chroots is None:
+        if len(self.config.chroots) == 0:
             all_chroots = copr_util.get_all_chroots(client=self.copr)
             util.augment_config_with_chroots(config=config, all_chroots=all_chroots)
         self.github = github_util.GithubClient(config=config)
 
     def retest(
-        self, issue_number: int, trigger_comment_id: str, chroots: list[str]
+        self, issue_number: int, trigger_comment_id: int, chroots: list[str]
     ) -> None:
         """Causes testing-farm tests to (re-)run for a day.
 
@@ -48,7 +47,7 @@ class SnapshotManager:
 
         Args:
             issue_number (int): The issue for the day a retest is requested
-            trigger_comment_id (str): The ID of the comment in which the user requested a retest
+            trigger_comment_id (int): The ID of the comment in which the user requested a retest
             chroots (list[str]): The list of chroots for which to run retests.
         """
         # Get repo
@@ -73,7 +72,7 @@ class SnapshotManager:
             return
 
         # Get strategy from issue
-        strategy: str = None
+        strategy: str | None = None
         labels = issue.get_labels()
         for label in labels:
             if label.name.startswith("strategy/"):
@@ -310,7 +309,9 @@ class SnapshotManager:
                 if watch_result is None and artifacts_url is None:
                     continue
 
-                html = tf.render_html(request, watch_result, artifacts_url)
+                html = ""
+                if watch_result is not None:
+                    html = tf.render_html(request, watch_result, artifacts_url)
                 build_status_matrix = build_status_matrix.replace(
                     chroot,
                     f"{chroot}<br />{html}",
@@ -320,7 +321,7 @@ class SnapshotManager:
                     f"Chroot {chroot} testing-farm watch result: {watch_result} (URL: {artifacts_url})"
                 )
 
-                if watch_result.is_error:
+                if watch_result is not None and watch_result.is_error:
                     # Fetch all failed test cases for this request
                     failed_test_cases.extend(
                         request.fetch_failed_test_cases(
@@ -380,7 +381,7 @@ class SnapshotManager:
         required_chroot_abels = [
             "{self.config.label_prefix_tested_on}{chroot}"
             for chroot in self.config.chroots
-            if tf.Request.is_chroot_supported_by_ranch(chroot)
+            if tfutil.is_chroot_supported_by_ranch(chroot=chroot)
         ]
         if set(tested_chroot_labels) == set(required_chroot_abels):
             msg = f"@{self.config.maintainer_handle}, all required packages have been successfully built and tested on all required chroots. We'll close this issue for you now as completed. Congratulations!"
@@ -401,7 +402,7 @@ class SnapshotManager:
         self,
         issue: github.Issue.Issue,
         errors: build_status.BuildStateList,
-    ):
+    ) -> None:
         logging.info("Gather labels based on the errors we've found")
         error_labels = list({f"error/{err.err_cause}" for err in errors})
         build_failed_on_labels = list(
@@ -540,7 +541,7 @@ def run_performance_comparison(
         logging.info(f"Making performance request for chroot {chroot}")
         reqs.append(
             tf.make_compare_compile_time_request(
-                conf_a=conf_a, config_b=conf_b, chroot=chroot
+                config_a=conf_a, config_b=conf_b, chroot=chroot
             )
         )
 
@@ -650,9 +651,9 @@ def collect_performance_comparison_results(
 
     logging.info(requests)
     for req in requests:
-        req_file = tf.get_request_file(req.request_id)
+        req_file = tf.get_request_file(tfutil.sanitize_request_id(req.request_id))
         xunit_file = tf.get_xunit_file_from_request_file(
-            request_file=req_file, request_id=req.request_id
+            request_file=req_file, request_id=tfutil.sanitize_request_id(req.request_id)
         )
         if xunit_file is None:
             # This is not necessarily an error. It could b that the xuint URL

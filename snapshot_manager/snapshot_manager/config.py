@@ -11,7 +11,7 @@ class Config:
     chroot_pattern: str = r"^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)"
     """Regular expression to select chroots from all chroots currently supported on Copr."""
 
-    chroots: list[str] = None
+    chroots: list[str] = dataclasses.field(default_factory=list)
     """A list of chroot names. To be filled automatically for you from the chroot_pattern. See util.augment_config_with_chroots()"""
 
     packages: list[str] = dataclasses.field(
@@ -123,7 +123,7 @@ class Config:
         """
         return self.datetime.strftime("%Y%m%d")
 
-    def to_github_dict(self) -> dict:
+    def to_github_dict(self) -> dict[str, object]:
         """Returns a subset of config entries to be used in a github workflow matrix.
 
         The keys in this dict are accessed from github workflow files using the "matrix." object.

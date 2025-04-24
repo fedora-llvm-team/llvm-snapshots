@@ -1,6 +1,7 @@
 import dataclasses
 import datetime
 import re
+import uuid
 
 import testing_farm.tfutil as tfutil
 
@@ -10,10 +11,10 @@ class FailedTestCase:
     """The FailedTestCase class represents a test from the testing-farm artifacts page"""
 
     test_name: str
-    request_id: str
+    request_id: str | uuid.UUID
     chroot: str
     log_output_url: str
-    log_output: str = None
+    log_output: str | None = None
     artifacts_url: str
 
     @classmethod
@@ -37,7 +38,7 @@ class FailedTestCase:
 </summary>
 
 ```
-{self.shorten_test_output(self.log_output)}
+{self.shorten_test_output(str(self.log_output))}
 ```
 
 </details>

@@ -10,7 +10,7 @@ class TestFileAccess(base_test.TestBase):
     pass
 
 
-def load_tests(loader, tests, ignore):
+def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol

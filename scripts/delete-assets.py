@@ -60,7 +60,7 @@ def delete_assets(
     return True
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Delete assets from today and older than a week (by default)."
     )

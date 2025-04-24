@@ -6,7 +6,7 @@ import snapshot_manager.util as util
 
 
 class TestUtil(base_test.TestBase):
-    def test_grep_file(self):
+    def test_grep_file(self) -> None:
         """Grep file"""
         with self.get_text_file("foo") as log_file:
             with self.assertRaises(ValueError) as ex:
@@ -36,7 +36,7 @@ class TestUtil(base_test.TestBase):
             )
 
 
-def load_tests(loader, tests, ignore):
+def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol

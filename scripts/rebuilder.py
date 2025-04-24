@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import sys
-from typing import Set
+from typing import Any, Set
 
 import copr.v3
 import dnf
@@ -26,7 +26,7 @@ def is_tier0_package(pkg: str) -> bool:
     ]
 
 
-class CoprBuild(Munch):
+class CoprBuild(Munch):  # type: ignore[misc]
     pass
 
     def is_in_progress(self) -> bool:
@@ -39,7 +39,7 @@ class CoprBuild(Munch):
         ]
 
 
-class CoprPkg(Munch):
+class CoprPkg(Munch):  # type: ignore[misc]
 
     @classmethod
     def get_packages_from_copr(
@@ -55,7 +55,7 @@ class CoprPkg(Munch):
             )
         ]
 
-    def get_build(self, name: str) -> CoprBuild:
+    def get_build(self, name: str) -> CoprBuild | None:
         if "builds" not in self:
             return None
         if name not in self.builds:
@@ -65,27 +65,32 @@ class CoprPkg(Munch):
             return None
         return CoprBuild(build)
 
-    def get_regression_info(self, project_owner, project_name):
+    def get_regression_info(
+        self, project_owner: str, project_name: str
+    ) -> dict[str, Any] | None:
         owner_url = project_owner
         if owner_url[0] == "@":
             owner_url = f"g/{owner_url[1:]}"
-        return {
-            "name": self.name,
-            "fail_id": self.latest.id,
-            "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{self.latest.id}/",
-            "chroots": self.latest.chroots,
-        }
+        latest = self.latest
+        if latest is not None:
+            return {
+                "name": self.name,
+                "fail_id": latest.id,
+                "url": f"https://copr.fedorainfracloud.org/coprs/{owner_url}/{project_name}/build/{latest.id}/",
+                "chroots": latest.chroots,
+            }
+        return None
 
     @property
-    def latest(self) -> CoprBuild:
+    def latest(self) -> CoprBuild | None:
         return self.get_build("latest")
 
     @property
-    def latest_succeeded(self) -> CoprBuild:
+    def latest_succeeded(self) -> CoprBuild | None:
         return self.get_build("latest_succeeded")
 
 
-def load_tests(loader, tests, ignore):
+def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol
@@ -140,7 +145,7 @@ def get_exclusions() -> set[str]:
     return set()
 
 
-def get_pkgs(exclusions: set[str]) -> set[set]:
+def get_pkgs(exclusions: set[str]) -> set[str]:
     base = dnf.Base()
     conf = base.conf
     for c in "AppStream", "BaseOS", "CRB", "Extras":
@@ -200,7 +205,7 @@ def get_monthly_rebuild_packages(pkgs: set[str], copr_pkgs: list[CoprPkg]) -> se
         if not p.latest_succeeded:
             pkgs.discard(p.name)
             continue
-        if p.latest.id != p.latest_succeeded.id:
+        if p.latest is not None and p.latest.id != p.latest_succeeded.id:
             pkgs.discard(p.name)
     return pkgs
 
@@ -210,7 +215,7 @@ def get_monthly_rebuild_regressions(
     project_name: str,
     start_time: datetime.datetime,
     copr_pkgs: list[CoprPkg],
-) -> set[str]:
+) -> list[dict[str, Any] | None]:
     """Returns the list of packages that failed to build in the most recent
        rebuild, but built successfully in the previous rebuild.
 
@@ -265,8 +270,12 @@ def get_monthly_rebuild_regressions(
     return pkgs
 
 
-def get_chroot_results(pkgs: list[dict], copr_client: copr.v3.Client) -> None:
+def get_chroot_results(
+    pkgs: list[dict[str, Any] | None], copr_client: copr.v3.Client
+) -> None:
     for p in pkgs:
+        if p is None:
+            continue
         p["failed_chroots"] = []
         for c in p["chroots"]:
             result = copr_client.build_chroot_proxy.get(p["fail_id"], c)
@@ -280,7 +289,7 @@ def start_rebuild(
     copr_client: copr.v3.Client,
     pkgs: set[str],
     snapshot_project_name: str,
-):
+) -> None:
 
     print("START", pkgs, "END")
     # Update the rebuild project to use the latest snapshot
@@ -350,7 +359,7 @@ def create_new_project(
     project_name: str,
     copr_client: copr.v3.Client,
     target_chroots: list[str],
-):
+) -> None:
     copr_client.project_proxy.add(project_owner, project_name, chroots=target_chroots)
     for c in target_chroots:
         copr_client.project_chroot_proxy.edit(
@@ -371,7 +380,7 @@ def extract_date_from_project(project_name: str) -> datetime.date:
 
 def find_midpoint_project(
     copr_client: copr.v3.Client, good: str, bad: str, chroot: str
-):
+) -> str:
     good_date = extract_date_from_project(good)
     bad_date = extract_date_from_project(bad)
     days = (bad_date - good_date).days
@@ -400,7 +409,7 @@ def find_midpoint_project(
     return good
 
 
-def main():
+def main() -> None:
 
     logging.basicConfig(filename="rebuilder.log", level=logging.INFO)
     parser = argparse.ArgumentParser()
@@ -445,7 +454,10 @@ def main():
         except:
             create_new_project(project_owner, project_name, copr_client, target_chroots)
         snapshot_project = select_snapshot_project(copr_client, target_chroots)
-        start_rebuild(project_owner, project_name, copr_client, pkgs, snapshot_project)
+        if snapshot_project is not None:
+            start_rebuild(
+                project_owner, project_name, copr_client, pkgs, snapshot_project
+            )
     elif args.command == "get-regressions":
         start_time = datetime.datetime.fromisoformat(args.start_date)
         copr_pkgs = CoprPkg.get_packages_from_copr(
@@ -454,9 +466,11 @@ def main():
         pkg_failures = get_monthly_rebuild_regressions(
             project_owner, project_name, start_time, copr_pkgs
         )
-        get_chroot_results(pkg_failures, copr_client)
+        get_chroot_results(list(pkg_failures), copr_client)
         # Delete attributes we don't need to print
         for p in pkg_failures:
+            if p is None:
+                continue
             for k in ["fail_id", "chroots"]:
                 del p[k]
 

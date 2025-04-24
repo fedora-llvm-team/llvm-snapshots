@@ -8,7 +8,7 @@ from glob import glob
 from github import Github, UnknownObjectException
 
 
-def main(args) -> None:
+def main(args: argparse.Namespace) -> None:
     g = Github(login_or_token=args.token)
     repo = g.get_repo(args.project)
 
