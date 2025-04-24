@@ -521,12 +521,12 @@ def run_performance_comparison(
         successful_a = [
             state.package_name
             for state in states_a
-            if state.chroot == chroot and state.copr_build_state.success
+            if state.chroot == chroot and state.success
         ]
         successful_b = [
             state.package_name
             for state in states_b
-            if state.chroot == chroot and state.copr_build_state.success
+            if state.chroot == chroot and state.success
         ]
         if (len(successful_a) == 0 or len(successful_b) == 0) or (
             set(successful_a) != set(successful_b)
