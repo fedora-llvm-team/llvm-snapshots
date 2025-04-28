@@ -40,7 +40,6 @@ class CoprBuild(Munch):  # type: ignore[misc]
 
 
 class CoprPkg(Munch):  # type: ignore[misc]
-
     @classmethod
     def get_packages_from_copr(
         cls, project_owner: str, project_name: str, copr_client: copr.v3.Client
@@ -290,7 +289,6 @@ def start_rebuild(
     pkgs: set[str],
     snapshot_project_name: str,
 ) -> None:
-
     print("START", pkgs, "END")
     # Update the rebuild project to use the latest snapshot
     copr_client.project_proxy.edit(
@@ -314,8 +312,8 @@ def start_rebuild(
             build = koji_session.getLatestBuilds(tag="f41-updates", package=p)[0]
             build_info = koji_session.getBuild(build["build_id"])
             commitish = build_info["source"].split("#")[1]
-        except:
-            logging.warn(
+        except:  # noqa: E722
+            logging.warning(
                 "Could not determine git commit for latest build of {p}.  Defaulting to {default_commitish}."
             )
             commitish = default_commitish
@@ -348,9 +346,9 @@ def select_snapshot_project(
             if all(t in chroots for t in target_chroots):
                 logging.info("PASS", project_name)
                 return project_name
-        except:
+        except:  # noqa: E722
             continue
-    logging.warn("FAIL")
+    logging.warning("FAIL")
     return None
 
 
@@ -396,7 +394,7 @@ def find_midpoint_project(
             ):
                 if chroot in builds["chroots"]:
                     return mid_project
-        except:
+        except:  # noqa: E722
             pass
 
         increment = increment * -1
@@ -410,7 +408,6 @@ def find_midpoint_project(
 
 
 def main() -> None:
-
     logging.basicConfig(filename="rebuilder.log", level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -451,7 +448,7 @@ def main() -> None:
                 project_owner, project_name, copr_client
             )
             pkgs = get_monthly_rebuild_packages(pkgs, copr_pkgs)
-        except:
+        except:  # noqa: E722
             create_new_project(project_owner, project_name, copr_client, target_chroots)
         snapshot_project = select_snapshot_project(copr_client, target_chroots)
         if snapshot_project is not None:

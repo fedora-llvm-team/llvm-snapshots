@@ -145,7 +145,7 @@ class Request:
         tfutil.adjust_token_env(self.chroot)
 
         request_id = tfutil.sanitize_request_id(request_id=self.request_id)
-        cmd = f"testing-farm watch --no-wait --id {self.request_id}"
+        cmd = f"testing-farm watch --no-wait --id {request_id}"
         # We ignore the exit code because in case of a test error, 1 is the exit code
         try:
             logging.info(f"Watching for testing-farm request: {cmd}")
@@ -163,12 +163,11 @@ class Request:
     def fetch_failed_test_cases(
         self, artifacts_url_origin: str
     ) -> list["FailedTestCase"]:
-        request_file = tfutil.get_request_file(
-            request_id=tfutil.sanitize_request_id(self.request_id)
-        )
+        request_id = tfutil.sanitize_request_id(request_id=self.request_id)
+        request_file = tfutil.get_request_file(request_id=request_id)
         xunit_file = tfutil.get_xunit_file_from_request_file(
             request_file=request_file,
-            request_id=tfutil.sanitize_request_id(self.request_id),
+            request_id=request_id,
         )
         # The xunit file is None, if it is only available internally.
         if xunit_file is None:

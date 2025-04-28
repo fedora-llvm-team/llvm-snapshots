@@ -247,7 +247,7 @@ remove the aforementioned labels.
             )
             try:
                 res.append(self.gh_repo.create_label(color=color, name=labelname))
-            except:
+            except:  # noqa: E722
                 self.gh_repo.get_label(name=labelname).edit(
                     name=labelname, color=color, description=""
                 )

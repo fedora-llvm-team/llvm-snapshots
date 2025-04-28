@@ -82,7 +82,9 @@ def test_get_todays_issue_search_query(github_client_fxt) -> None:  # type: igno
     return_value="f5421dcb36572616e8061e51b333196f363a8732",
     autospec=True,
 )
-def test_initial_comment(revision_mock: mock.Mock, release_mock: mock.Mock, github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_initial_comment(  # type: ignore[no-untyped-def]
+    revision_mock: mock.Mock, release_mock: mock.Mock, github_client_fxt
+) -> None:
     comment = github_client_fxt.initial_comment
     assert github_client_fxt.config.update_marker in comment
     assert release_mock.return_value in comment
@@ -95,7 +97,9 @@ def test_initial_comment(revision_mock: mock.Mock, release_mock: mock.Mock, gith
     "get_git_revision_for_yyyymmdd",
     return_value="f5421dcb36572616e8061e51b333196f363a8732",
 )
-def test_issue_title(revision_mock: mock.Mock, release_mock: mock.Mock, github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_issue_title(  # type: ignore[no-untyped-def]
+    revision_mock: mock.Mock, release_mock: mock.Mock, github_client_fxt
+) -> None:
     gh = github_client_fxt
     strategy = "myownstrategy"
     yyyymmdd = "20241203"
@@ -216,10 +220,10 @@ def test_label_in_cache(github_client_fxt) -> None:  # type: ignore[no-untyped-d
         MyLabel(name="Red", color="red"),
         MyLabel(name="Blue", color="blue"),
     ]
-    assert gh.is_label_in_cache(name="Red", color="red") == True
-    assert gh.is_label_in_cache(name="Blue", color="blue") == True
-    assert gh.is_label_in_cache(name="Blue", color="blueish") == False
-    assert gh.is_label_in_cache(name="Green", color="green") == False
+    assert gh.is_label_in_cache(name="Red", color="red")
+    assert gh.is_label_in_cache(name="Blue", color="blue")
+    assert not gh.is_label_in_cache(name="Blue", color="blueish")
+    assert not gh.is_label_in_cache(name="Green", color="green")
 
 
 def test_create_labels__empty_list(label_cache_fxt) -> None:  # type: ignore[no-untyped-def]
@@ -250,7 +254,6 @@ def test_create_labels__not_in_cache(label_cache_fxt) -> None:  # type: ignore[n
 def test_create_labels__exception(label_cache_fxt) -> None:  # type: ignore[no-untyped-def]
     gh = label_cache_fxt
     with mock.patch.object(gh.gh_repo, "create_label") as create_label_mock:
-
         # Simulate the label is not in cache (aka. not loaded) but exists
         create_label_mock.side_effect = Exception("Boom")
 
@@ -324,7 +327,9 @@ def label_testdata(only_ids: bool = False):  # type: ignore[no-untyped-def]
     label_testdata(),
     ids=label_testdata(only_ids=True),
 )
-def test_create_labels(test_id, label, create_func, expected_func, github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_create_labels(  # type: ignore[no-untyped-def]
+    test_id, label, create_func, expected_func, github_client_fxt
+) -> None:
     gh = github_client_fxt
     with mock.patch.object(gh, "create_labels") as create_labels_mock:
         expected = expected_func(label)
@@ -435,7 +440,7 @@ def test_create_or_update_comment__edit_fails(
 
     # Run
     with pytest.raises(expected_exception=ValueError) as ex:
-        actual = github_util.GithubClient.create_or_update_comment(
+        _ = github_util.GithubClient.create_or_update_comment(
             issue=issue_mock, marker=marker, comment_body=comment_body
         )
     get_comment_mock.return_value.edit.assert_called_once_with(body=comment_body)
@@ -502,7 +507,7 @@ def test_minimize_comment_as_outdated__with_issue_comment(github_client_fxt) -> 
                 issue_comment_or_node_id=issue_comment_mock
             )
 
-            assert actual == True
+            assert actual
             run_from_file_mock.assert_called_once_with(
                 variables={"classifier": "OUTDATED", "id": node_id},
                 filename=gh.abspath("graphql/minimize_comment.gql"),
@@ -521,7 +526,7 @@ def test_minimize_comment_as_outdated__with_str(github_client_fxt) -> None:  # t
 
         actual = gh.minimize_comment_as_outdated(issue_comment_or_node_id=node_id)
 
-        assert actual == True
+        assert actual
         run_from_file_mock.assert_called_once_with(
             variables={"classifier": "OUTDATED", "id": node_id},
             filename=gh.abspath("graphql/minimize_comment.gql"),
@@ -556,7 +561,7 @@ def test_unminimize_comment__with_issue_comment(github_client_fxt) -> None:  # t
 
             actual = gh.unminimize_comment(issue_comment_or_node_id=issue_comment_mock)
 
-            assert actual == True
+            assert actual
             run_from_file_mock.assert_called_once_with(
                 variables={"id": node_id},
                 filename=gh.abspath("graphql/unminimize_comment.gql"),
@@ -577,7 +582,7 @@ def test_unminimize_comment__with_str(github_client_fxt) -> None:  # type: ignor
 
         actual = gh.unminimize_comment(issue_comment_or_node_id=node_id)
 
-        assert actual == True
+        assert actual
         run_from_file_mock.assert_called_once_with(
             variables={"id": node_id},
             filename=gh.abspath("graphql/unminimize_comment.gql"),
@@ -618,7 +623,7 @@ def test_add_comment_reaction__with_issue_comment(github_client_fxt) -> None:  #
                 issue_comment_or_node_id=issue_comment_mock, reaction=reaction
             )
 
-            assert actual == True
+            assert actual
             run_from_file_mock.assert_called_once_with(
                 variables={"comment_id": node_id, "reaction": reaction},
                 filename=gh.abspath("graphql/add_comment_reaction.gql"),
@@ -645,7 +650,7 @@ def test_add_comment_reaction__with_str(github_client_fxt) -> None:  # type: ign
             issue_comment_or_node_id=node_id, reaction=reaction
         )
 
-        assert actual == True
+        assert actual
         run_from_file_mock.assert_called_once_with(
             variables={"comment_id": node_id, "reaction": reaction},
             filename=gh.abspath("graphql/add_comment_reaction.gql"),

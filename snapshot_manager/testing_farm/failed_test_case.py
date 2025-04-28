@@ -66,5 +66,5 @@ Some (if not all) results from testing-farm are in. This comment will be updated
 
 <h2>Failed testing-farm test cases</h2>
 
-{"".join([ test_case.render_as_markdown() for test_case in test_cases ])}
+{"".join([test_case.render_as_markdown() for test_case in test_cases])}
 """

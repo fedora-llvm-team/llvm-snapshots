@@ -91,7 +91,7 @@ def grep_file(
     if extra_args is None:
         extra_args = ""
 
-    cmd = f"{grep_bin} {" ".join(opts)} {extra_args} '{pattern}' {filepath}"
+    cmd = f"{grep_bin} {' '.join(opts)} {extra_args} '{pattern}' {filepath}"
     return run_cmd(cmd)
 
 
