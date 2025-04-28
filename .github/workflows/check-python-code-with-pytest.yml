@@ -13,5 +13,7 @@ jobs:
           use-system-python: true
       - name: Run pytest
         shell: bash -e {0}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           make ci-test
