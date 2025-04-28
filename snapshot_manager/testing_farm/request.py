@@ -187,6 +187,11 @@ class Request:
         failed_testcases = root.findall('./testsuite/testcase[@result="failed"]')
 
         for failed_testcase in failed_testcases:
+            distro = ""
+            arch = ""
+            log_output_url = ""
+            log_output = ""
+
             distro_ele = failed_testcase.find(
                 './properties/property[@name="baseosci.distro"]'
             )
@@ -211,14 +216,17 @@ class Request:
 
             log_file: pathlib.Path
             if not tfutil._IN_TEST_MODE:
-                log_file = util.read_url_response_into_file(log_output_url)
+                if log_output_url != "":
+                    log_file = util.read_url_response_into_file(log_output_url)
+                    log_output = log_file.read_text()
             else:
                 p = tfutil._test_path(f"{self.request_id}/failed_test_cases.txt")
                 log_file = pathlib.Path(p)
+                log_output = log_file.read_text()
             tc = FailedTestCase(
                 test_name=str(failed_testcase.get("name")),
                 log_output_url=log_output_url,
-                log_output=log_file.read_text(),
+                log_output=log_output,
                 request_id=tfutil.sanitize_request_id(self.request_id),
                 chroot=f"{distro.lower()}-{arch}",
                 artifacts_url=artifacts_url_origin,
