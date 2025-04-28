@@ -2,15 +2,12 @@
 GithubGraphQL
 """
 
-import logging
-import os
 import pathlib
 from types import TracebackType
-from typing import Any, Union
+from typing import Any
 
 import fnc
 from requests import Session
-from requests.structures import CaseInsensitiveDict
 
 
 class GithubGraphQL:

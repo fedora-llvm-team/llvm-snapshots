@@ -18,7 +18,7 @@ def main(args: argparse.Namespace) -> None:
     print(f"uploading assets for yyyymmdd='{yyyymmdd}'")
     try:
         release = repo.get_release(release_name)
-    except UnknownObjectException as ex:
+    except UnknownObjectException:
         print(f"release '{release_name}' not found but creating it now")
         release = repo.create_git_release(
             prerelease=True,

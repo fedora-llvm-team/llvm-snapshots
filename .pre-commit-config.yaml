@@ -69,4 +69,24 @@ repos:
       additional_dependencies:
         - types-requests
 
+  # autoflake removes unused imports and unused variables from Python code.
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
+    hooks:
+    - id: autoflake
+      args:
+        # remove all unused imports (not just those from the standard library)
+        - --remove-all-unused-imports
+        # exclude __init__.py when removing unused imports
+        - --ignore-init-module-imports
+        # expand wildcard star imports with undefined names; this only triggers
+        # if there is only one star import in the file; this is skipped if there
+        # are any uses of `__all__` or `del` in the file
+        - --expand-star-imports
+        # make changes to files instead of printing diffs
+        - --in-place
+        - --remove-unused-variables
+        - --remove-duplicate-keys
+
+
 exclude: "^(snapshot_manager/tests/(test_logs|testing-farm-logs)/|media)"

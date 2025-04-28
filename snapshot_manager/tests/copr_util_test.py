@@ -1,12 +1,10 @@
 """Tests for copr_client"""
 
 import os
-import uuid
 from typing import Any
 from unittest import mock
 
 import munch
-import pytest
 import tests.base_test as base_test
 
 import snapshot_manager.copr_util as copr_util

@@ -38,7 +38,6 @@ class TestErrorCauseAndBuildStatus(base_test.TestBase):
 
     def test_markdown_build_matrix(self) -> None:
         """Creates and then updates a build matrix"""
-        all_copr_states = build_status.CoprBuildStatus.all_states()
         packages = ["stupefy", "alohomora"]
         chroots = ["fedora-rawhide-x86_64", "fedora-40-ppc64le"]
 

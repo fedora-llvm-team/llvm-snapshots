@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import sys
-from typing import Any, Set
+from typing import Any
 
 import copr.v3
 import dnf

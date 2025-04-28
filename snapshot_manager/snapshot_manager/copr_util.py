@@ -12,8 +12,6 @@ import copr.v3.helpers
 import munch
 
 import snapshot_manager.build_status as build_status
-import snapshot_manager.config as config
-import snapshot_manager.util as util
 
 
 def make_client() -> "copr.v3.Client":

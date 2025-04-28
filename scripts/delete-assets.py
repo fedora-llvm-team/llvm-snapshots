@@ -30,7 +30,7 @@ def delete_assets(
     )
     try:
         release = repo.get_release(release_name)
-    except UnknownObjectException as ex:
+    except UnknownObjectException:
         print(
             "release '{}' not found and so there's nothing to delete".format(
                 release_name

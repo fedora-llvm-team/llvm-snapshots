@@ -5,7 +5,6 @@ file_access
 import logging
 import pathlib
 import tempfile
-from typing import Any, overload
 
 
 def write_to_temp_file(

@@ -7,7 +7,6 @@ import enum
 import logging
 import pathlib
 import urllib
-from typing import Any
 
 import snapshot_manager.util as util
 
@@ -339,7 +338,6 @@ def get_cause_from_build_log(
         case_insensitive=False,
     )
     if ret == 0:
-        test_details = ""
         new_ctx = ""
         for failing_test in ctx.split("\x00"):
             if not failing_test:

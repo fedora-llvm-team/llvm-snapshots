@@ -266,9 +266,6 @@ def test_create_labels__exception(label_cache_fxt) -> None:  # type: ignore[no-u
             )
 
 
-from collections.abc import Callable
-
-
 def label_testdata(only_ids: bool = False):  # type: ignore[no-untyped-def]
     # (testid, label, lambda function to create label, lambda function to create expected label)
     testdata = [

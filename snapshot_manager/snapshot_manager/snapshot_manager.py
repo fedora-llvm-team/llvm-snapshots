@@ -705,9 +705,6 @@ def get_performance_github_issue(
     Returns:
         github.Issue.Issue | None: The performance issue or None if nothing was found.
     """
-
-    repo = github_client.get_repo(github_repo)
-
     # See https://docs.github.com/en/search-github/searching-on-github/searching-issues-and-pull-requests
     # label:broken_snapshot_detected
     query = f"is:issue repo:{github_repo} author:{creator} label:strategy/{conf_a.build_strategy} label:strategy/{conf_b.build_strategy} label:performance-comparison {conf_a.yyyymmdd} in:title"
@@ -720,5 +717,6 @@ def get_performance_github_issue(
     # for us but without this hack no issue being found.
     issues.get_page(0)
     if issues.totalCount > 0:
-        return issues[0]
+        issue: github.Issue.Issue = issues[0]
+        return issue
     return None

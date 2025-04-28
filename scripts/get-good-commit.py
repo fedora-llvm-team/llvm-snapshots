@@ -2,7 +2,6 @@
 
 import argparse
 import logging
-import sys
 
 from github import Github
 
