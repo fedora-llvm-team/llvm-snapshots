@@ -7,7 +7,7 @@ repos:
       - id: isort
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: check-ast
       - id: check-case-conflict
@@ -31,7 +31,7 @@ repos:
       - id: requirements-txt-fixer
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.2
+    rev: v3.19.1
     hooks:
       - id: pyupgrade
         args:
@@ -39,7 +39,7 @@ repos:
 
   # See https://tmt.readthedocs.io/en/latest/guide.html#checking-data-validity
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.32.2
+    rev: 1.47.0
     hooks:
       - id: tmt-lint
 
