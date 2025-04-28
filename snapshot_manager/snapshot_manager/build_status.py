@@ -553,8 +553,8 @@ def markdown_build_status_matrix(
         copr_build_states.sort()
         for copr_build_state in copr_build_states:
             table += f"<li>{copr_build_state.to_icon()} : {copr_build_state}</li>"
-        table += f"<li>:grey_question: : unknown</li>"
-        table += f"<li>:warning: : pipeline error (only relevant to testing-farm)</li>"
+        table += "<li>:grey_question: : unknown</li>"
+        table += "<li>:warning: : pipeline error (only relevant to testing-farm)</li>"
         table += "</ul></details>\n"
 
     table += "</details>"

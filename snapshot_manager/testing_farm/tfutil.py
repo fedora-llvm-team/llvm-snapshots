@@ -142,10 +142,10 @@ def is_arch_supported_by_ranch(arch: str, ranch: str) -> bool:
     if arch == "i386":
         return False
     if ranch == "public":
-        if not arch in ("x86_64", "aarch64"):
+        if arch not in ("x86_64", "aarch64"):
             return False
     elif ranch == "redhat":
-        if not arch in ("x86_64", "aarch64", "ppc64le", "s390x"):
+        if arch not in ("x86_64", "aarch64", "ppc64le", "s390x"):
             return False
     else:
         raise ValueError(f"unknown ranch: {ranch}")
@@ -268,7 +268,7 @@ def is_redhat_reachable() -> bool:
     reachable = False
     try:
         reachable = requests.options("https://artifacts.osci.redhat.com").ok
-    except:
+    except:  # noqa: E722
         pass
     return reachable
 

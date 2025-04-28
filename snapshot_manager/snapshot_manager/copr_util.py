@@ -10,6 +10,7 @@ import re
 import copr.v3
 import copr.v3.helpers
 import munch
+from copr.v3.helpers import List
 
 import snapshot_manager.build_status as build_status
 
@@ -54,9 +55,6 @@ def get_all_chroots(client: copr.v3.Client) -> list[str]:
     """
     res: list[str] = client.mock_chroot_proxy.get_list().keys()
     return res
-
-
-from copr.v3.helpers import List
 
 
 def get_all_builds(
@@ -113,7 +111,7 @@ def delete_project(client: copr.v3.Client, ownername: str, projectname: str) -> 
         logging.info(f"Cancelling build with ID {build['build_id']}")
         client.build_proxy.cancel(build_id=build["build_id"])
 
-    logging.info(f"Waiting for cancelled builds to finish")
+    logging.info("Waiting for cancelled builds to finish")
     copr.v3.helpers.wait(waitable=active_builds, timeout=0)
 
     logging.info(f"Deleting project {ownername}/{projectname}")

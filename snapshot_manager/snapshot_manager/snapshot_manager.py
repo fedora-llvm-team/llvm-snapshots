@@ -96,7 +96,7 @@ class SnapshotManager:
             return
 
         logging.info(
-            f"Checking if all given chroots are really relevant for us or even chroots"
+            "Checking if all given chroots are really relevant for us or even chroots"
         )
         for chroot in chroots:
             logging.info(f"Checking chroot: {chroot}")
@@ -496,7 +496,7 @@ def run_performance_comparison(
 
     # Determine overlapping chroots of strategy A and B
     chroots_overlap = set(conf_a.chroots).intersection(set(conf_b.chroots))
-    if chroots_overlap == None or len(chroots_overlap) == 0:
+    if chroots_overlap is None or len(chroots_overlap) == 0:
         logging.error(
             f"There are no overlapping chroots in for both strategies: {conf_a.build_strategy} ({conf_a.chroots}) and {conf_b.build_strategy} ({conf_b.chroots}"
         )

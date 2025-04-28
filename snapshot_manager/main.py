@@ -190,7 +190,7 @@ def add_strategy_argument(argparser: argparse.ArgumentParser) -> argparse.Action
         dest="strategy",
         type=str,
         required=True,
-        help=f"Strategy to use",
+        help="Strategy to use",
     )
 
 
@@ -237,7 +237,7 @@ def argument_parser_perf_comparison(subparsers) -> None:  # type: ignore[no-unty
         dest="strategy_a",
         type=str,
         required=True,
-        help=f"Strategy A",
+        help="Strategy A",
     )
 
     sp.add_argument(
@@ -245,7 +245,7 @@ def argument_parser_perf_comparison(subparsers) -> None:  # type: ignore[no-unty
         dest="strategy_b",
         type=str,
         required=True,
-        help=f"Strategy B",
+        help="Strategy B",
     )
 
     add_yyyymmdd_argument(sp)
@@ -263,7 +263,7 @@ def argument_parser_collect_perf_comparison_results(subparsers) -> None:  # type
         dest="strategy_a",
         type=str,
         required=True,
-        help=f"Strategy A",
+        help="Strategy A",
     )
 
     sp.add_argument(
@@ -271,7 +271,7 @@ def argument_parser_collect_perf_comparison_results(subparsers) -> None:  # type
         dest="strategy_b",
         type=str,
         required=True,
-        help=f"Strategy B",
+        help="Strategy B",
     )
 
     sp.add_argument(
@@ -305,7 +305,7 @@ def argument_parser_performance_diagrams(subparsers) -> None:  # type: ignore[no
         dest="datafile",
         type=file_path,
         required=True,
-        help=f"perf-results.csv",
+        help="perf-results.csv",
     )
 
 

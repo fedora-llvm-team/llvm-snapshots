@@ -71,10 +71,10 @@ def grep_file(
         raise ValueError(f"pattern is invalid:{pattern}")
 
     if lines_before is None or lines_before < 0:
-        raise ValueError(f"lines_before must be zero or a positive integer")
+        raise ValueError("lines_before must be zero or a positive integer")
 
     if lines_after is None or lines_after < 0:
-        raise ValueError(f"lines_after must be zero or a positive integer")
+        raise ValueError("lines_after must be zero or a positive integer")
 
     opts = []
     if case_insensitive:
@@ -324,7 +324,7 @@ def is_chroot(chroot: str) -> bool:
     """
     try:
         expect_chroot(chroot=chroot)
-    except:
+    except ValueError:
         return False
     return True
 
@@ -507,7 +507,7 @@ def filter_chroots(chroots: list[str], pattern: str) -> list[str]:
     """
     res: list[str] = []
     for chroot in chroots:
-        if re.match(pattern=pattern, string=chroot) != None:
+        if re.match(pattern=pattern, string=chroot) is not None:
             res.append(chroot)
     res.sort()
     return res
@@ -688,7 +688,7 @@ def serialize_config_map_to_github_matrix(
      'today_minus_n_days': [0, 1, 2, 3]}
     """
     if strategy.strip() == "":
-        raise ValueError(f"strategy may not be empty")
+        raise ValueError("strategy may not be empty")
 
     res: dict[str, Any] = {
         "name": [],
@@ -738,7 +738,7 @@ def sanitize_uuid(id: str | uuid.UUID | None) -> uuid.UUID:
     ValueError: ID cannot be None
     """
     if id is None:
-        raise ValueError(f"ID cannot be None")
+        raise ValueError("ID cannot be None")
     if isinstance(id, uuid.UUID):
         return id
     res: uuid.UUID

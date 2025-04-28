@@ -352,9 +352,9 @@ def test_collect_performance_comparison_results__end_to_end(  # type: ignore[no-
     assert log_contains(
         info_log_mock, f"Reading request file for request ID {request_id}"
     )
-    assert log_contains(info_log_mock, f"Fetching xunit URL from URL")
-    assert log_contains(info_log_mock, f"Downloading CSV file from")
-    assert log_contains(info_log_mock, f"Writing merged CSV file to")
+    assert log_contains(info_log_mock, "Fetching xunit URL from URL")
+    assert log_contains(info_log_mock, "Downloading CSV file from")
+    assert log_contains(info_log_mock, "Writing merged CSV file to")
 
 
 def assert_files_match(actual: pathlib.Path, expected: pathlib.Path) -> None:

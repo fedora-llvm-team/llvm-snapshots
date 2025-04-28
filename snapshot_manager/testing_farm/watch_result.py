@@ -166,7 +166,7 @@ class WatchResult(enum.StrEnum):
                 return (watch_result, "")
             url_match = re.search(pattern=r"artifacts http[s]?://.*", string=string)
             if not url_match:
-                raise ValueError(f"expected an artifacts URL but couldn't find one")
+                raise ValueError("expected an artifacts URL but couldn't find one")
             artifact_match = re.search(pattern=r"http[s]?://.*", string=url_match[0])
             artifacts_url = ""
             if artifact_match is not None:
