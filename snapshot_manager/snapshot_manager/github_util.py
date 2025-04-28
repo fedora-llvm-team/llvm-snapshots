@@ -7,7 +7,6 @@ import enum
 import logging
 import os
 import pathlib
-import typing
 
 import fnc
 import github
@@ -49,10 +48,10 @@ class GithubClient:
         self,
         config: config.Config,
         github_token: str | None = None,
-        **kwargs: typing.Any,
     ):
         """
         Keyword Arguments:
+            config (config.Config): A config object to be used to get the name of the github token environment variable.
             github_token (str, optional): github personal access token.
         """
         self.config = config
