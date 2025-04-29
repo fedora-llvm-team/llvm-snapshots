@@ -54,7 +54,7 @@ iniconfig==2.0.0
     # via pytest
 jinja2==3.1.6
     # via copr-cli
-koji==1.35.2
+koji==1.35.3
     # via -r requirements.txt.in
 markupsafe==2.1.4
     # via jinja2
