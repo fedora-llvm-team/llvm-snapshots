@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import sys
+import unittest
 from typing import Any
 
 import copr.v3
@@ -89,7 +90,9 @@ class CoprPkg(Munch):  # type: ignore[misc]
         return self.get_build("latest_succeeded")
 
 
-def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
+def load_tests(
+    loader: unittest.TestLoader, standard_tests: unittest.TestSuite, pattern: str
+) -> unittest.TestSuite:
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol
@@ -97,8 +100,8 @@ def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
     """
     import doctest
 
-    tests.addTests(doctest.DocTestSuite())
-    return tests
+    standard_tests.addTests(doctest.DocTestSuite())
+    return standard_tests
 
 
 def filter_llvm_pkgs(pkgs: set[str]) -> set[str]:
