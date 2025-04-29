@@ -27,6 +27,7 @@ def is_tier0_package(pkg: str) -> bool:
     ]
 
 
+# In order to remove the type: ignore[misc] check for this ticket: see https://github.com/Infinidat/munch/issues/84
 class CoprBuild(Munch):  # type: ignore[misc]
     pass
 
@@ -40,6 +41,7 @@ class CoprBuild(Munch):  # type: ignore[misc]
         ]
 
 
+# In order to remove the type: ignore[misc] check for this ticket: see https://github.com/Infinidat/munch/issues/84
 class CoprPkg(Munch):  # type: ignore[misc]
     @classmethod
     def get_packages_from_copr(
