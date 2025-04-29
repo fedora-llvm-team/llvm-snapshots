@@ -146,7 +146,6 @@ def test_create_or_get_todays_github_issue__issue_exists(
         gh_mock.return_value = "foo"
         actual = gh.create_or_get_todays_github_issue()
         expected = ("foo", False)
-        assert actual.count == expected.count
         assert list(actual) == list(expected)
         gh_mock.assert_called_once_with(
             strategy=gh.config.build_strategy,
@@ -210,7 +209,7 @@ def test_label_cache__not_empty(github_client_fxt: github_util.GithubClient) -> 
     with mock.patch.object(github_client_fxt, "_label_cache", return_value=[1, 2, 3]):
         actual = github_client_fxt.label_cache
         expected = [1, 2, 3]
-        assert actual.totalCount == len(expected)
+        assert len(list(actual)) == len(expected)
         for idx, ele in enumerate(actual):
             assert ele == expected[idx]
 
@@ -224,7 +223,7 @@ def test_label_cache__empty(github_client_fxt: github_util.GithubClient) -> None
         gh.gh_repo, "get_labels", return_value=[2, 3, 4]
     ) as mock_get_labels:
         actual = gh.label_cache
-        assert actual.totalCount == len(expected)
+        assert len(list(actual)) == len(expected)
         for idx, ele in enumerate(actual):
             assert ele == expected[idx]
         mock_get_labels.assert_called_once()
