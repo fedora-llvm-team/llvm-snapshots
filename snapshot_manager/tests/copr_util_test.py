@@ -1,6 +1,7 @@
 """Tests for copr_client"""
 
 import os
+import unittest
 from typing import Any
 from unittest import mock
 
@@ -171,7 +172,9 @@ def test_get_all_build_states(client_mock: mock.Mock) -> None:
     assert actual == expected
 
 
-def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
+def load_tests(
+    loader: unittest.TestLoader, standard_tests: unittest.TestSuite, pattern: str
+) -> unittest.TestSuite:
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol
@@ -181,8 +184,8 @@ def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
 
     import snapshot_manager.copr_util
 
-    tests.addTests(doctest.DocTestSuite(snapshot_manager.copr_util))
-    return tests
+    standard_tests.addTests(doctest.DocTestSuite(snapshot_manager.copr_util))
+    return standard_tests
 
 
 if __name__ == "__main__":

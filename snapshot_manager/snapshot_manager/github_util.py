@@ -67,7 +67,7 @@ class GithubClient:
         auth = github.Auth.Token(github_token)
         self.github = github.Github(auth=auth)
         self.gql = github_graphql.GithubGraphQL(token=github_token, raise_on_error=True)
-        self._label_cache = None
+        self._label_cache: github.PaginatedList
         self.__repo_cache: github.Repository.Repository | None = None
 
     @classmethod
@@ -101,7 +101,7 @@ class GithubClient:
         Returns:
             github.Issue.Issue|None: The found issue or None.
         """
-        if not strategy:
+        if not strategy or strategy.strip() == "":
             raise ValueError("parameter 'strategy' must not be empty")
 
         if github_repo is None:

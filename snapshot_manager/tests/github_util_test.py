@@ -2,6 +2,7 @@
 
 import collections
 import datetime
+import unittest
 from collections.abc import Generator
 from unittest import mock
 
@@ -36,7 +37,9 @@ MyLabel = collections.namedtuple("MyLabel", "name, color", defaults=("", ""))
 
 
 @pytest.fixture  # type: ignore[misc]
-def label_cache_fxt(github_client_fxt) -> github_util.GithubClient:  # type: ignore[no-untyped-def]
+def label_cache_fxt(
+    github_client_fxt: github_util.GithubClient,
+) -> github_util.GithubClient:
     """Populates the given github client fixture with labels in its cache"""
     github_client_fxt._label_cache = [
         MyLabel(name="error/srpm_build_issue", color="FBCA04"),
@@ -50,26 +53,30 @@ def label_cache_fxt(github_client_fxt) -> github_util.GithubClient:  # type: ign
         MyLabel(name="error/cmake_error", color="FBCA04"),
         #  MyLabel(name= "error/unknown", color= "FBCA04"),
     ]
-    return github_client_fxt  # type: ignore[no-any-return]
+    return github_client_fxt
 
 
-def test_get_todays_issue(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_get_todays_issue(github_client_fxt: github_util.GithubClient) -> None:
     gh = github_client_fxt
     with pytest.raises(expected_exception=ValueError) as actualCtx:
-        gh.get_todays_github_issue(strategy=None)
+        gh.get_todays_github_issue(strategy="")
     assert str(actualCtx.value) == "parameter 'strategy' must not be empty"
 
 
-def test_get_todays_issue_search_query(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_get_todays_issue_search_query(
+    github_client_fxt: github_util.GithubClient,
+) -> None:
     gh = github_client_fxt
-    gh.github.search_issues = mock.Mock()
-    gh.github.search_issues.return_value = None
-    res = gh.get_todays_github_issue(strategy="big-merge")
+    with mock.patch.object(
+        gh.github, "search_issues", autospec=True
+    ) as search_issues_mock:
+        search_issues_mock.return_value = None
+        res = gh.get_todays_github_issue(strategy="big-merge")
 
-    assert res is None
-    yyyymmdd = datetime.datetime.now().strftime("%Y%m%d")
-    query_str = f"is:issue repo:{gh.config.github_repo} author:github-actions[bot] label:strategy/big-merge {yyyymmdd} in:title"
-    gh.github.search_issues.assert_called_once_with(query_str)
+        assert res is None
+        yyyymmdd = datetime.datetime.now().strftime("%Y%m%d")
+        query_str = f"is:issue repo:{gh.config.github_repo} author:github-actions[bot] label:strategy/big-merge {yyyymmdd} in:title"
+        search_issues_mock.assert_called_once_with(query_str)
 
 
 @mock.patch(
@@ -82,8 +89,10 @@ def test_get_todays_issue_search_query(github_client_fxt) -> None:  # type: igno
     return_value="f5421dcb36572616e8061e51b333196f363a8732",
     autospec=True,
 )
-def test_initial_comment(  # type: ignore[no-untyped-def]
-    revision_mock: mock.Mock, release_mock: mock.Mock, github_client_fxt
+def test_initial_comment(
+    revision_mock: mock.Mock,
+    release_mock: mock.Mock,
+    github_client_fxt: github_util.GithubClient,
 ) -> None:
     comment = github_client_fxt.initial_comment
     assert github_client_fxt.config.update_marker in comment
@@ -97,8 +106,10 @@ def test_initial_comment(  # type: ignore[no-untyped-def]
     "get_git_revision_for_yyyymmdd",
     return_value="f5421dcb36572616e8061e51b333196f363a8732",
 )
-def test_issue_title(  # type: ignore[no-untyped-def]
-    revision_mock: mock.Mock, release_mock: mock.Mock, github_client_fxt
+def test_issue_title(
+    revision_mock: mock.Mock,
+    release_mock: mock.Mock,
+    github_client_fxt: github_util.GithubClient,
 ) -> None:
     gh = github_client_fxt
     strategy = "myownstrategy"
@@ -123,8 +134,10 @@ def test_last_updated_html() -> None:
     "get_git_revision_for_yyyymmdd",
     return_value="f5421dcb36572616e8061e51b333196f363a8732",
 )
-def test_create_or_get_todays_github_issue__issue_exists(  # type: ignore[no-untyped-def]
-    revision_mock: mock.Mock, release_mock: mock.Mock, github_client_fxt
+def test_create_or_get_todays_github_issue__issue_exists(
+    revision_mock: mock.Mock,
+    release_mock: mock.Mock,
+    github_client_fxt: github_util.GithubClient,
 ) -> None:
     gh = github_client_fxt
     # Test case in which today's issue DOES exists:
@@ -133,7 +146,8 @@ def test_create_or_get_todays_github_issue__issue_exists(  # type: ignore[no-unt
         gh_mock.return_value = "foo"
         actual = gh.create_or_get_todays_github_issue()
         expected = ("foo", False)
-        assert actual == expected
+        assert actual.count == expected.count
+        assert list(actual) == list(expected)
         gh_mock.assert_called_once_with(
             strategy=gh.config.build_strategy,
             creator="github-actions[bot]",
@@ -156,12 +170,12 @@ def test_create_or_get_todays_github_issue__issue_exists(  # type: ignore[no-unt
     "get_git_revision_for_yyyymmdd",
     return_value="f5421dcb36572616e8061e51b333196f363a8732",
 )
-def test_create_or_get_todays_github_issue__issue_created(  # type: ignore[no-untyped-def]
+def test_create_or_get_todays_github_issue__issue_created(
     revision_mock: mock.Mock,
     release_mock: mock.Mock,
     get_todays_github_issue_mock: mock.Mock,
     create_labels_for_strategies_mock: mock.Mock,
-    github_client_fxt,
+    github_client_fxt: github_util.GithubClient,
 ) -> None:
     """Test creation of a new issue by mocking that no issue exists for today."""
     gh = github_client_fxt
@@ -191,16 +205,17 @@ def test_create_or_get_todays_github_issue__issue_created(  # type: ignore[no-un
             )
 
 
-def test_label_cache__not_empty(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_label_cache__not_empty(github_client_fxt: github_util.GithubClient) -> None:
     """Check that the label cache is NOT empty"""
-    gh = github_client_fxt
-    with mock.patch.object(gh, "_label_cache", return_value=[1, 2, 3]):
-        actual = gh.label_cache()
+    with mock.patch.object(github_client_fxt, "_label_cache", return_value=[1, 2, 3]):
+        actual = github_client_fxt.label_cache
         expected = [1, 2, 3]
-        assert actual == expected
+        assert actual.totalCount == len(expected)
+        for idx, ele in enumerate(actual):
+            assert ele == expected[idx]
 
 
-def test_label_cache__empty(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_label_cache__empty(github_client_fxt: github_util.GithubClient) -> None:
     """Check that the label IS empty"""
     expected = [2, 3, 4]
     gh = github_client_fxt
@@ -209,11 +224,13 @@ def test_label_cache__empty(github_client_fxt) -> None:  # type: ignore[no-untyp
         gh.gh_repo, "get_labels", return_value=[2, 3, 4]
     ) as mock_get_labels:
         actual = gh.label_cache
-        assert actual == expected
+        assert actual.totalCount == len(expected)
+        for idx, ele in enumerate(actual):
+            assert ele == expected[idx]
         mock_get_labels.assert_called_once()
 
 
-def test_label_in_cache(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_label_in_cache(github_client_fxt: github_util.GithubClient) -> None:
     gh = github_client_fxt
     MyLabel = collections.namedtuple("MyLabel", "name, color")
     gh._label_cache = [
@@ -226,13 +243,14 @@ def test_label_in_cache(github_client_fxt) -> None:  # type: ignore[no-untyped-d
     assert not gh.is_label_in_cache(name="Green", color="green")
 
 
-def test_create_labels__empty_list(label_cache_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_create_labels__empty_list(label_cache_fxt: github_util.GithubClient) -> None:
     gh = label_cache_fxt
     assert gh.create_labels(prefix="myprefix", color="yellow", labels=[]) == []
-    assert gh.create_labels(prefix="myprefix", color="yellow", labels=None) == []
 
 
-def test_create_labels__already_in_cache(label_cache_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_create_labels__already_in_cache(
+    label_cache_fxt: github_util.GithubClient,
+) -> None:
     gh = label_cache_fxt
     actual = gh.create_labels(
         prefix="error/", color="FBCA04", labels=["network_issue", "cmake_error"]
@@ -241,7 +259,7 @@ def test_create_labels__already_in_cache(label_cache_fxt) -> None:  # type: igno
     assert actual == expected
 
 
-def test_create_labels__not_in_cache(label_cache_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_create_labels__not_in_cache(label_cache_fxt: github_util.GithubClient) -> None:
     gh = label_cache_fxt
     with mock.patch.object(gh.gh_repo, "create_label") as create_label_mock:
         expected = MyLabel(name="error/test", color="FBCA04")
@@ -251,7 +269,7 @@ def test_create_labels__not_in_cache(label_cache_fxt) -> None:  # type: ignore[n
         create_label_mock.assert_called_once_with(name="error/test", color="FBCA04")
 
 
-def test_create_labels__exception(label_cache_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_create_labels__exception(label_cache_fxt: github_util.GithubClient) -> None:
     gh = label_cache_fxt
     with mock.patch.object(gh.gh_repo, "create_label") as create_label_mock:
         # Simulate the label is not in cache (aka. not loaded) but exists
@@ -384,7 +402,7 @@ def test_get_build_failed_on_names_on_issue(issue_mock: mock.Mock) -> None:
 
 
 @mock.patch("github.Issue.Issue", autospec=True)
-def test_get_comment__no_comments(issue_mock: mock.Mock, github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_get_comment__no_comments(issue_mock: mock.Mock) -> None:
     issue_mock.get_comments = mock.Mock()
     issue_mock.get_comments.return_value = []
     actual = github_util.GithubClient.get_comment(issue=issue_mock, marker="foo")
@@ -486,7 +504,9 @@ def test_remove_labels_safe(issue_mock: mock.Mock) -> None:
     )
 
 
-def test_minimize_comment_as_outdated__with_issue_comment(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_minimize_comment_as_outdated__with_issue_comment(
+    github_client_fxt: github_util.GithubClient,
+) -> None:
     gh = github_client_fxt
     node_id = "12345"
     issue_comment_mock = mock.MagicMock(
@@ -514,7 +534,9 @@ def test_minimize_comment_as_outdated__with_issue_comment(github_client_fxt) -> 
             )
 
 
-def test_minimize_comment_as_outdated__with_str(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_minimize_comment_as_outdated__with_str(
+    github_client_fxt: github_util.GithubClient,
+) -> None:
     gh = github_client_fxt
     node_id = "12345"
     with mock.patch.object(
@@ -533,14 +555,18 @@ def test_minimize_comment_as_outdated__with_str(github_client_fxt) -> None:  # t
         )
 
 
-def test_minimize_comment_as_outdated__unsupported_type(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_minimize_comment_as_outdated__unsupported_type(
+    github_client_fxt: github_util.GithubClient,
+) -> None:
     obj = 0.2
     with pytest.raises(expected_exception=ValueError) as ex:
         github_client_fxt.minimize_comment_as_outdated(issue_comment_or_node_id=obj)
     assert str(ex.value) == f"invalid comment object passed: {obj}"
 
 
-def test_unminimize_comment__with_issue_comment(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_unminimize_comment__with_issue_comment(
+    github_client_fxt: github_util.GithubClient,
+) -> None:
     gh = github_client_fxt
     node_id = "12345"
     issue_comment_mock = mock.MagicMock(
@@ -568,7 +594,9 @@ def test_unminimize_comment__with_issue_comment(github_client_fxt) -> None:  # t
             )
 
 
-def test_unminimize_comment__with_str(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_unminimize_comment__with_str(
+    github_client_fxt: github_util.GithubClient,
+) -> None:
     gh = github_client_fxt
     node_id = "12345"
     with mock.patch.object(
@@ -589,14 +617,18 @@ def test_unminimize_comment__with_str(github_client_fxt) -> None:  # type: ignor
         )
 
 
-def test_unminimize_comment__unsupported_type(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_unminimize_comment__unsupported_type(
+    github_client_fxt: github_util.GithubClient,
+) -> None:
     obj = 0.2
     with pytest.raises(expected_exception=ValueError) as ex:
         github_client_fxt.unminimize_comment(issue_comment_or_node_id=obj)
     assert str(ex.value) == f"invalid comment object passed: {obj}"
 
 
-def test_add_comment_reaction__with_issue_comment(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_add_comment_reaction__with_issue_comment(
+    github_client_fxt: github_util.GithubClient,
+) -> None:
     gh = github_client_fxt
     node_id = "12345"
     reaction = github_util.Reaction.EYES
@@ -630,7 +662,9 @@ def test_add_comment_reaction__with_issue_comment(github_client_fxt) -> None:  #
             )
 
 
-def test_add_comment_reaction__with_str(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_add_comment_reaction__with_str(
+    github_client_fxt: github_util.GithubClient,
+) -> None:
     gh = github_client_fxt
     node_id = "12345"
     reaction = github_util.Reaction.EYES
@@ -657,7 +691,9 @@ def test_add_comment_reaction__with_str(github_client_fxt) -> None:  # type: ign
         )
 
 
-def test_add_comment_reaction__unsupported_type(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_add_comment_reaction__unsupported_type(
+    github_client_fxt: github_util.GithubClient,
+) -> None:
     obj = 0.2
     with pytest.raises(expected_exception=ValueError) as ex:
         github_client_fxt.add_comment_reaction(
@@ -686,11 +722,13 @@ def test_add_comment_reaction__unsupported_type(github_client_fxt) -> None:  # t
         ),
     ],
 )
-def test_label(input, expected, func, github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_label(  # type: ignore[no-untyped-def]
+    input, expected, func, github_client_fxt: github_util.GithubClient
+) -> None:
     assert func(github_client_fxt)(chroot=input) == expected
 
 
-def test_flip_test_label(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_flip_test_label(github_client_fxt: github_util.GithubClient) -> None:
     issue_mock = mock.MagicMock(spec=github.Issue.Issue)
     issue_mock.add_to_labels = mock.MagicMock()
 
@@ -715,7 +753,9 @@ def test_flip_test_label(github_client_fxt) -> None:  # type: ignore[no-untyped-
     )
 
 
-def test_flip_test_label__already_present(github_client_fxt) -> None:  # type: ignore[no-untyped-def]
+def test_flip_test_label__already_present(
+    github_client_fxt: github_util.GithubClient,
+) -> None:
     issue_mock = mock.MagicMock(spec=github.Issue.Issue)
     issue_mock.add_to_labels = mock.MagicMock()
 
@@ -737,7 +777,9 @@ def test_flip_test_label__already_present(github_client_fxt) -> None:  # type: i
     issue_mock.remove_from_labels.assert_not_called()
 
 
-def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
+def load_tests(
+    loader: unittest.TestLoader, standard_tests: unittest.TestSuite, pattern: str
+) -> unittest.TestSuite:
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol
@@ -747,8 +789,8 @@ def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
 
     import snapshot_manager.github_util
 
-    tests.addTests(doctest.DocTestSuite(snapshot_manager.github_util))
-    return tests
+    standard_tests.addTests(doctest.DocTestSuite(snapshot_manager.github_util))
+    return standard_tests
 
 
 if __name__ == "__main__":

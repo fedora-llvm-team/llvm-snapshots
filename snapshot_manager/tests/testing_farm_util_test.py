@@ -1,5 +1,6 @@
 import datetime
 import os
+import unittest
 import uuid
 from unittest import mock
 
@@ -91,7 +92,9 @@ class TestTestingFarmUtil(base_test.TestBase):
         self.assertEqual(actual, expected)
 
 
-def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
+def load_tests(
+    loader: unittest.TestLoader, standard_tests: unittest.TestSuite, pattern: str
+) -> unittest.TestSuite:
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol
@@ -101,8 +104,8 @@ def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
 
     import testing_farm
 
-    tests.addTests(doctest.DocTestSuite(testing_farm))
-    return tests
+    standard_tests.addTests(doctest.DocTestSuite(testing_farm))
+    return standard_tests
 
 
 if __name__ == "__main__":

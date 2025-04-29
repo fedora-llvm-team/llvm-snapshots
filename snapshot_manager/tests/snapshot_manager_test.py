@@ -3,6 +3,7 @@ isort:skip_file
 """
 
 import datetime
+import unittest
 import uuid
 import difflib
 import filecmp
@@ -69,12 +70,12 @@ def config_fxt_b() -> config.Config:
 @mock.patch("snapshot_manager.snapshot_manager.get_performance_github_issue")
 @mock.patch("github.Github")
 @mock.patch("copr.v3.Client")
-def test_run_performance_comparison__no_chroot_overlap_in_strategies(  # type: ignore[no-untyped-def]
+def test_run_performance_comparison__no_chroot_overlap_in_strategies(
     copr_client_mock: mock.Mock,
     github_client_mock: mock.Mock,
     get_performance_github_issue_mock: mock.Mock,
-    config_fxt_a,
-    config_fxt_b,
+    config_fxt_a: config.Config,
+    config_fxt_b: config.Config,
 ) -> None:
     get_performance_github_issue_mock.return_value = None
 
@@ -110,15 +111,15 @@ def get_build_states(
 @mock.patch("github.Github")
 @mock.patch("copr.v3.Client")
 @mock.patch("snapshot_manager.snapshot_manager.copr_util")
-def test_run_performance_comparison__overlap_but_no_successful_match(  # type: ignore[no-untyped-def]
+def test_run_performance_comparison__overlap_but_no_successful_match(
     copr_util_mock: mock.Mock,
     copr_client_mock: mock.Mock,
     github_client_mock: mock.Mock,
     make_compare_compile_time_request_mock: mock.Mock,
     get_performance_github_issue_mock: mock.Mock,
     info_log_mock: mock.Mock,
-    config_fxt_a,
-    config_fxt_b,
+    config_fxt_a: config.Config,
+    config_fxt_b: config.Config,
 ) -> None:
     states_a = get_build_states(config_fxt_a, build_status.CoprBuildStatus.FAILED)
     states_b = get_build_states(config_fxt_b, build_status.CoprBuildStatus.SUCCEEDED)
@@ -145,13 +146,13 @@ def test_run_performance_comparison__overlap_but_no_successful_match(  # type: i
 @mock.patch("github.Github")
 @mock.patch("copr.v3.Client")
 @mock.patch("snapshot_manager.snapshot_manager.copr_util")
-def test_run_performance_comparison__full(  # type: ignore[no-untyped-def]
+def test_run_performance_comparison__full(
     copr_util_mock: mock.Mock,
     copr_client_mock: mock.Mock,
     github_client_mock: mock.Mock,
     make_compare_compile_time_request_mock: mock.Mock,
-    config_fxt_a,
-    config_fxt_b,
+    config_fxt_a: config.Config,
+    config_fxt_b: config.Config,
 ) -> None:
     # Simulate successful COPR builds
     states_a = get_build_states(config_fxt_a, build_status.CoprBuildStatus.SUCCEEDED)
@@ -233,15 +234,15 @@ def test_run_performance_comparison__full(  # type: ignore[no-untyped-def]
 @mock.patch("github.Github")
 @mock.patch("copr.v3.Client")
 @mock.patch("snapshot_manager.snapshot_manager.copr_util")
-def test_run_performance_comparison__already_got_an_issue(  # type: ignore[no-untyped-def]
+def test_run_performance_comparison__already_got_an_issue(
     copr_util_mock: mock.Mock,
     copr_client_mock: mock.Mock,
     github_client_mock: mock.Mock,
     make_compare_compile_time_request_mock: mock.Mock,
     get_performance_github_issue_mock: mock.Mock,
     info_log_mock: mock.Mock,
-    config_fxt_a,
-    config_fxt_b,
+    config_fxt_a: config.Config,
+    config_fxt_b: config.Config,
 ) -> None:
     # Pretend there's already a performance issue
     get_performance_github_issue_mock.return_value = mock.Mock()
@@ -267,15 +268,15 @@ def test_run_performance_comparison__already_got_an_issue(  # type: ignore[no-un
 @mock.patch("github.Github")
 @mock.patch("copr.v3.Client")
 @mock.patch("snapshot_manager.snapshot_manager.copr_util")
-def test_collect_performance_comparison_results__no_issue_found(  # type: ignore[no-untyped-def]
+def test_collect_performance_comparison_results__no_issue_found(
     copr_util_mock: mock.Mock,
     copr_client_mock: mock.Mock,
     github_client_mock: mock.Mock,
     make_compare_compile_time_request_mock: mock.Mock,
     get_performance_github_issue_mock: mock.Mock,
     info_log_mock: mock.Mock,
-    config_fxt_a,
-    config_fxt_b,
+    config_fxt_a: config.Config,
+    config_fxt_b: config.Config,
 ) -> None:
     # Pretend there's no performance issue yet
     get_performance_github_issue_mock.return_value = None
@@ -302,15 +303,15 @@ def test_collect_performance_comparison_results__no_issue_found(  # type: ignore
 @mock.patch("github.Github")
 @mock.patch("copr.v3.Client")
 @mock.patch("snapshot_manager.snapshot_manager.copr_util")
-def test_collect_performance_comparison_results__end_to_end(  # type: ignore[no-untyped-def]
+def test_collect_performance_comparison_results__end_to_end(
     copr_util_mock: mock.Mock,
     copr_client_mock: mock.Mock,
     github_client_mock: mock.Mock,
     make_compare_compile_time_request_mock: mock.Mock,
     get_performance_github_issue_mock: mock.Mock,
     info_log_mock: mock.Mock,
-    config_fxt_a,
-    config_fxt_b,
+    config_fxt_a: config.Config,
+    config_fxt_b: config.Config,
 ) -> None:
     # Allow gathering of performance results from cached responses
     tfutil._IN_TEST_MODE = True
@@ -376,7 +377,9 @@ def log_contains(log_mock: mock.Mock, needle: str) -> bool:
     return False
 
 
-def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
+def load_tests(
+    loader: unittest.TestLoader, standard_tests: unittest.TestSuite, pattern: str
+) -> unittest.TestSuite:
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol
@@ -386,8 +389,8 @@ def load_tests(loader, tests, ignore):  # type: ignore[no-untyped-def]
 
     import snapshot_manager.snapshot_manager
 
-    tests.addTests(doctest.DocTestSuite(snapshot_manager.snapshot_manager))
-    return tests
+    standard_tests.addTests(doctest.DocTestSuite(snapshot_manager.snapshot_manager))
+    return standard_tests
 
 
 if __name__ == "__main__":
