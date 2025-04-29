@@ -67,7 +67,6 @@ class GithubClient:
         auth = github.Auth.Token(github_token)
         self.github = github.Github(auth=auth)
         self.gql = github_graphql.GithubGraphQL(token=github_token, raise_on_error=True)
-        self._label_cache: github.PaginatedList
         self.__repo_cache: github.Repository.Repository | None = None
 
     @classmethod
@@ -192,19 +191,13 @@ remove the aforementioned labels.
         issue.add_to_labels(f"strategy/{strategy}")
         return (issue, True)
 
-    @property
-    def label_cache(self, refresh: bool = False) -> github.PaginatedList.PaginatedList:
-        """Will query the labels of a github repo only once and return it afterwards.
-
-        Args:
-            refresh (bool, optional): The cache will be emptied. Defaults to False.
+    def get_labels(self) -> github.PaginatedList.PaginatedList[github.Label.Label]:
+        """Returns the labels of a github repo.
 
         Returns:
             github.PaginatedList.PaginatedList: An enumerable list of github.Label.Label objects
         """
-        if self._label_cache is None or refresh:
-            self._label_cache = self.gh_repo.get_labels()
-        return self._label_cache
+        return self.gh_repo.get_labels()
 
     def is_label_in_cache(self, name: str, color: str) -> bool:
         """Returns True if the label exists in the cache.
@@ -216,7 +209,7 @@ remove the aforementioned labels.
         Returns:
             bool: True if the label is in the cache
         """
-        for label in self.label_cache:
+        for label in self.get_labels():
             if label.name == name and label.color == color:
                 return True
         return False

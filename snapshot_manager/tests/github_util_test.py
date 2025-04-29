@@ -39,21 +39,26 @@ MyLabel = collections.namedtuple("MyLabel", "name, color", defaults=("", ""))
 @pytest.fixture  # type: ignore[misc]
 def label_cache_fxt(
     github_client_fxt: github_util.GithubClient,
-) -> github_util.GithubClient:
+) -> Generator[github_util.GithubClient]:
     """Populates the given github client fixture with labels in its cache"""
-    github_client_fxt._label_cache = [
-        MyLabel(name="error/srpm_build_issue", color="FBCA04"),
-        MyLabel(name="error/copr_timeout", color="FBCA04"),
-        MyLabel(name="error/network_issue", color="FBCA04"),
-        MyLabel(name="error/dependency_issue", color="FBCA04"),
-        #  MyLabel(name= "error/test", color= "FBCA04"),
-        MyLabel(name="error/downstream_patch_application", color="FBCA04"),
-        MyLabel(name="error/rpm__installed_but_unpackaged_files_found", color="FBCA04"),
-        MyLabel(name="error/rpm__file_not_found", color="FBCA04"),
-        MyLabel(name="error/cmake_error", color="FBCA04"),
-        #  MyLabel(name= "error/unknown", color= "FBCA04"),
-    ]
-    return github_client_fxt
+    with mock.patch.object(
+        github_client_fxt, "get_labels", autospec=True
+    ) as get_labels:
+        get_labels.return_value = [
+            MyLabel(name="error/srpm_build_issue", color="FBCA04"),
+            MyLabel(name="error/copr_timeout", color="FBCA04"),
+            MyLabel(name="error/network_issue", color="FBCA04"),
+            MyLabel(name="error/dependency_issue", color="FBCA04"),
+            #  MyLabel(name= "error/test", color= "FBCA04"),
+            MyLabel(name="error/downstream_patch_application", color="FBCA04"),
+            MyLabel(
+                name="error/rpm__installed_but_unpackaged_files_found", color="FBCA04"
+            ),
+            MyLabel(name="error/rpm__file_not_found", color="FBCA04"),
+            MyLabel(name="error/cmake_error", color="FBCA04"),
+            #  MyLabel(name= "error/unknown", color= "FBCA04"),
+        ]
+        yield github_client_fxt
 
 
 def test_get_todays_issue(github_client_fxt: github_util.GithubClient) -> None:
@@ -206,40 +211,24 @@ def test_create_or_get_todays_github_issue__issue_created(
 
 def test_label_cache__not_empty(github_client_fxt: github_util.GithubClient) -> None:
     """Check that the label cache is NOT empty"""
-    with mock.patch.object(github_client_fxt, "_label_cache", return_value=[1, 2, 3]):
-        actual = github_client_fxt.label_cache
+    with mock.patch.object(github_client_fxt, "get_labels", return_value=[1, 2, 3]):
+        actual = github_client_fxt.get_labels()
         expected = [1, 2, 3]
-        assert len(list(actual)) == len(expected)
-        for idx, ele in enumerate(actual):
-            assert ele == expected[idx]
-
-
-def test_label_cache__empty(github_client_fxt: github_util.GithubClient) -> None:
-    """Check that the label IS empty"""
-    expected = [2, 3, 4]
-    gh = github_client_fxt
-    gh._label_cache = None
-    with mock.patch.object(
-        gh.gh_repo, "get_labels", return_value=[2, 3, 4]
-    ) as mock_get_labels:
-        actual = gh.label_cache
-        assert len(list(actual)) == len(expected)
-        for idx, ele in enumerate(actual):
-            assert ele == expected[idx]
-        mock_get_labels.assert_called_once()
+        assert list(actual) == expected
 
 
 def test_label_in_cache(github_client_fxt: github_util.GithubClient) -> None:
     gh = github_client_fxt
     MyLabel = collections.namedtuple("MyLabel", "name, color")
-    gh._label_cache = [
-        MyLabel(name="Red", color="red"),
-        MyLabel(name="Blue", color="blue"),
-    ]
-    assert gh.is_label_in_cache(name="Red", color="red")
-    assert gh.is_label_in_cache(name="Blue", color="blue")
-    assert not gh.is_label_in_cache(name="Blue", color="blueish")
-    assert not gh.is_label_in_cache(name="Green", color="green")
+    with mock.patch.object(github_client_fxt, "get_labels") as get_labels_mock:
+        get_labels_mock.return_value = [
+            MyLabel(name="Red", color="red"),
+            MyLabel(name="Blue", color="blue"),
+        ]
+        assert gh.is_label_in_cache(name="Red", color="red")
+        assert gh.is_label_in_cache(name="Blue", color="blue")
+        assert not gh.is_label_in_cache(name="Blue", color="blueish")
+        assert not gh.is_label_in_cache(name="Green", color="green")
 
 
 def test_create_labels__empty_list(label_cache_fxt: github_util.GithubClient) -> None:
