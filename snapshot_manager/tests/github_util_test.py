@@ -335,8 +335,12 @@ def label_testdata_ids() -> list[str]:
     label_testdata(),
     ids=label_testdata_ids(),
 )
-def test_create_labels(  # type: ignore[no-untyped-def]
-    test_id, label, create_func, expected_func, github_client_fxt
+def test_create_labels(
+    test_id: str,
+    label: str,
+    create_func: Callable[[Any, Any], Any],
+    expected_func: Callable[[Any], MyLabel],
+    github_client_fxt: github_util.GithubClient,
 ) -> None:
     gh = github_client_fxt
     with mock.patch.object(gh, "create_labels") as create_labels_mock:
