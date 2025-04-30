@@ -93,11 +93,6 @@ class GithubGraphQL:
     def __enter__(self) -> "GithubGraphQL":
         return self
 
-    # @property
-    # def session_headers(self) -> CaseInsensitiveDict:
-    #     """Returns the HTTP headers used for the session."""
-    #     return self.__session.headers
-
     def __exit__(
         self,
         exc_type: type[BaseException] | None,
