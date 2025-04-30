@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import pathlib
+from types import GenericAlias
 
 import github
 
@@ -16,6 +17,13 @@ from snapshot_manager.snapshot_manager import (  # isort:skip_file
     collect_performance_comparison_results,
 )
 from snapshot_manager.performance_diagrams import build_performance_diagrams
+
+# We want to type annotate subparsers parameters below.
+# This is a hack taken from https://github.com/python/typeshed/issues/7539#issuecomment-1076640854
+setattr(argparse._SubParsersAction, "__class_getitem__", classmethod(GenericAlias))
+_SubparserType = argparse._SubParsersAction[
+    argparse.ArgumentParser
+]  # hey look, _SubParsersAction is now generic!
 
 
 def file_path(path: str) -> pathlib.Path:
@@ -204,8 +212,8 @@ def add_yyyymmdd_argument(argparser: argparse.ArgumentParser) -> argparse.Action
     )
 
 
-def argument_parser_has_all_good_builds(  # type: ignore[no-untyped-def]
-    subparsers,
+def argument_parser_has_all_good_builds(
+    subparsers: _SubparserType,
 ) -> None:
     sp = subparsers.add_parser(
         "has-all-good-builds",
@@ -225,7 +233,9 @@ def argument_parser_has_all_good_builds(  # type: ignore[no-untyped-def]
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_perf_comparison(subparsers) -> None:  # type: ignore[no-untyped-def]
+def argument_parser_perf_comparison(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "run-perf-comparison",
         description="Run a performance comparison between two strategies A and B on testing-farm",
@@ -251,7 +261,9 @@ def argument_parser_perf_comparison(subparsers) -> None:  # type: ignore[no-unty
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_collect_perf_comparison_results(subparsers) -> None:  # type: ignore[no-untyped-def]
+def argument_parser_collect_perf_comparison_results(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "collect-perf-results",
         description="Collect performance comparison results",
@@ -293,7 +305,9 @@ def argument_parser_collect_perf_comparison_results(subparsers) -> None:  # type
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_performance_diagrams(subparsers) -> None:  # type: ignore[no-untyped-def]
+def argument_parser_performance_diagrams(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "perf-diagrams",
         description="Create performance diagrams for a given CSV file",
@@ -309,7 +323,9 @@ def argument_parser_performance_diagrams(subparsers) -> None:  # type: ignore[no
     )
 
 
-def argument_parser_retest(subparsers) -> None:  # type: ignore[no-untyped-def]
+def argument_parser_retest(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "retest",
         description="Issues a new testing-farm request for one or more chroots",
@@ -340,7 +356,9 @@ def argument_parser_retest(subparsers) -> None:  # type: ignore[no-untyped-def]
     )
 
 
-def argument_parser_get_chroots(subparsers) -> None:  # type: ignore[no-untyped-def]
+def argument_parser_get_chroots(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "get-chroots",
         description="Prints a space separated list of chroots for a given strategy",
@@ -349,7 +367,9 @@ def argument_parser_get_chroots(subparsers) -> None:  # type: ignore[no-untyped-
     add_strategy_argument(sp)
 
 
-def argument_parser_delete_project(subparsers) -> None:  # type: ignore[no-untyped-def]
+def argument_parser_delete_project(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "delete-project",
         description="Deletes a project for the given day and strategy",
@@ -359,7 +379,9 @@ def argument_parser_delete_project(subparsers) -> None:  # type: ignore[no-untyp
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_github_matrix(subparsers) -> None:  # type: ignore[no-untyped-def]
+def argument_parser_github_matrix(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "github-matrix",
         description="Prints the github workflow matrix for a given or all strategies",
@@ -377,7 +399,9 @@ def argument_parser_github_matrix(subparsers) -> None:  # type: ignore[no-untype
     )
 
 
-def argument_parser_check(subparsers) -> None:  # type: ignore[no-untyped-def]
+def argument_parser_check(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "check",
         description="Check Copr status and update today's github issue",
