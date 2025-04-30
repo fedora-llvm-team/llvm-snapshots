@@ -3,7 +3,8 @@
 import collections
 import datetime
 import unittest
-from collections.abc import Generator
+from collections.abc import Callable, Generator
+from typing import Any
 from unittest import mock
 
 import github.GithubException
@@ -275,9 +276,11 @@ def test_create_labels__exception(label_cache_fxt: github_util.GithubClient) -> 
             )
 
 
-def label_testdata(only_ids: bool = False):  # type: ignore[no-untyped-def]
+def label_testdata() -> (
+    list[tuple[str, str, Callable[[Any, Any], Any], Callable[[Any], MyLabel]]]
+):
     # (testid, label, lambda function to create label, lambda function to create expected label)
-    testdata = [
+    return [
         (
             "create_labels_for_error_causes",
             "myerror",
@@ -322,16 +325,15 @@ def label_testdata(only_ids: bool = False):  # type: ignore[no-untyped-def]
         ),
     ]
 
-    if only_ids:
-        return [t[0] for t in testdata]
 
-    return testdata
+def label_testdata_ids() -> list[str]:
+    return [str(list(t)[0]) for t in label_testdata()]
 
 
 @pytest.mark.parametrize(  # type: ignore[misc]
     "test_id, label, create_func, expected_func",
     label_testdata(),
-    ids=label_testdata(only_ids=True),
+    ids=label_testdata_ids(),
 )
 def test_create_labels(  # type: ignore[no-untyped-def]
     test_id, label, create_func, expected_func, github_client_fxt
