@@ -163,14 +163,12 @@ def get_all_build_states(
 
 
 def has_all_good_builds(
-    required_packages: list[str],
     required_chroots: list[str],
     states: build_status.BuildStateList,
 ) -> bool:
     """Check for all required combinations of successful package+chroot build states.
 
     Args:
-        required_packages (list[str]): List of required package names.
         required_chroots (list[str]): List of required chroot names.
         states (BuildStateList): List of states to use.
 
@@ -180,16 +178,15 @@ def has_all_good_builds(
     Example: Check with a not existing copr project
 
     >>> from snapshot_manager.build_status import BuildState, CoprBuildStatus
-    >>> required_packages=["llvm"]
     >>> required_chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"]
     >>> s1 = BuildState(package_name="llvm", chroot="rhel-9-ppc64le", copr_build_state=CoprBuildStatus.FORKED)
     >>> s2 = BuildState(package_name="llvm", chroot="fedora-rawhide-x86_64", copr_build_state=CoprBuildStatus.FAILED)
     >>> s3 = BuildState(package_name="llvm", chroot="fedora-rawhide-x86_64", copr_build_state=CoprBuildStatus.SUCCEEDED)
-    >>> has_all_good_builds(required_packages=required_packages, required_chroots=required_chroots, states=[s1])
+    >>> has_all_good_builds(required_chroots=required_chroots, states=[s1])
     False
-    >>> has_all_good_builds(required_packages=required_packages, required_chroots=required_chroots, states=[s1,s2])
+    >>> has_all_good_builds(required_chroots=required_chroots, states=[s1,s2])
     False
-    >>> has_all_good_builds(required_packages=required_packages, required_chroots=required_chroots, states=[s1,s2,s3])
+    >>> has_all_good_builds(required_chroots=required_chroots, states=[s1,s2,s3])
     True
     """
     # Lists of (package,chroot) tuples
@@ -198,9 +195,8 @@ def has_all_good_builds(
         (state.package_name, state.chroot) for state in states if state.success
     }
 
-    for package in required_packages:
-        for chroot in required_chroots:
-            expected.append((package, chroot))
+    for chroot in required_chroots:
+        expected.append(("llvm", chroot))
 
     expected_set = set(expected)
 
