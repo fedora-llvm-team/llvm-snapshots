@@ -182,7 +182,6 @@ class SnapshotManager:
         logging.info("Add a build matrix")
         build_status_matrix = build_status.markdown_build_status_matrix(
             chroots=self.config.chroots,
-            packages=self.config.packages,
             build_states=states,
         )
 

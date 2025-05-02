@@ -515,7 +515,6 @@ def render_as_markdown(states: BuildStateList) -> str:
 
 def markdown_build_status_matrix(
     chroots: list[str],
-    packages: list[str],
     build_states: BuildStateList,
     init_state: str = ":grey_question:",
     add_legend: bool = True,
@@ -527,22 +526,19 @@ def markdown_build_status_matrix(
     """
 
     table = "<details open><summary>Build Matrix</summary>\n"
-    package_header = "|".join(packages)
-    table += f"\n| |{package_header}|\n"
-    table_header_border = "|".join([":---:" for package in packages])
-    table += f"|:---|{table_header_border}|\n"
+    table += "\n|chroot|llvm|\n"
+    table += "|:---|:---:|\n"
 
     for c in chroots:
         cols = []
-        for p in packages:
-            state = lookup_state(states=build_states, package=p, chroot=c)
-            if state is not None:
-                if state.copr_build_state is not None:
-                    cols.append(
-                        f"[{state.copr_build_state.to_icon()}]({state.build_page_url})"
-                    )
-            else:
-                cols.append(init_state)
+        state = lookup_state(states=build_states, package="llvm", chroot=c)
+        if state is not None:
+            if state.copr_build_state is not None:
+                cols.append(
+                    f"[{state.copr_build_state.to_icon()}]({state.build_page_url})"
+                )
+        else:
+            cols.append(init_state)
         # fmt: off
         table += f"|{c}|{" | ".join(cols)}|\n"
         # fmt: on

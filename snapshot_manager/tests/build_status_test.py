@@ -40,49 +40,34 @@ class TestErrorCauseAndBuildStatus(base_test.TestBase):
 
     def test_markdown_build_matrix(self) -> None:
         """Creates and then updates a build matrix"""
-        packages = ["stupefy", "alohomora"]
-        chroots = ["fedora-rawhide-x86_64", "fedora-40-ppc64le"]
+        chroot = "fedora-rawhide-x86_64"
 
         self.maxDiff = None
 
         # Let's say these are the actual builds currently in the copr project.
         # Only three should show up in the matrix.
         s1 = build_status.BuildState(
-            package_name="not-in-list", chroot=chroots[0], build_id=11
+            package_name="not-in-list", chroot=chroot, build_id=11
         )
         s2 = build_status.BuildState(
-            package_name="stupefy",
-            chroot="fedora-rawhide-x86_64",
-            copr_build_state=build_status.CoprBuildStatus.IMPORTING,
-            build_id=22,
-        )
-        s3 = build_status.BuildState(
-            package_name="stupefy",
-            chroot="fedora-40-ppc64le",
-            copr_build_state=build_status.CoprBuildStatus.SUCCEEDED,
-            build_id=33,
-        )
-        s4 = build_status.BuildState(
-            package_name="alohomora",
-            chroot="fedora-rawhide-x86_64",
+            package_name="llvm",
+            chroot=chroot,
             copr_build_state=build_status.CoprBuildStatus.FAILED,
             build_id=44,
         )
 
-        build_states = [s1, s2, s3, s4]
+        build_states = [s1, s2]
 
         matrix = build_status.markdown_build_status_matrix(
-            chroots=chroots,
-            packages=packages,
+            chroots=[chroot],
             add_legend=True,
             build_states=build_states,
         )
         expected_result = f"""<details open><summary>Build Matrix</summary>
 
-| |stupefy|alohomora|
-|:---|:---:|:---:|
-|fedora-rawhide-x86_64|[{build_status.CoprBuildStatus.IMPORTING.to_icon()}](https://copr.fedorainfracloud.org/coprs/build/22) | [{build_status.CoprBuildStatus.FAILED.to_icon()}](https://copr.fedorainfracloud.org/coprs/build/44)|
-|fedora-40-ppc64le|[{build_status.CoprBuildStatus.SUCCEEDED.to_icon()}](https://copr.fedorainfracloud.org/coprs/build/33) | :grey_question:|
+|chroot|llvm|
+|:---|:---:|
+|fedora-rawhide-x86_64|[{build_status.CoprBuildStatus.FAILED.to_icon()}](https://copr.fedorainfracloud.org/coprs/build/44)|
 <details><summary>Build status legend</summary><ul><li>:o: : canceled</li><li>:x: : failed</li><li>:ballot_box_with_check: : forked</li><li>:inbox_tray: : importing</li><li>:soon: : pending</li><li>:running: : running</li><li>:no_entry_sign: : skipped</li><li>:star: : starting</li><li>:white_check_mark: : succeeded</li><li>:hourglass: : waiting</li><li>:grey_question: : unknown</li><li>:warning: : pipeline error (only relevant to testing-farm)</li></ul></details>
 </details>"""
         self.assertEqual(expected_result, matrix)
