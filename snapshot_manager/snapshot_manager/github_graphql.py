@@ -2,14 +2,12 @@
 GithubGraphQL
 """
 
-import logging
-import os
 import pathlib
-from typing import Any, Union
+from types import TracebackType
+from typing import Any
 
 import fnc
 from requests import Session
-from requests.structures import CaseInsensitiveDict
 
 
 class GithubGraphQL:
@@ -30,7 +28,7 @@ class GithubGraphQL:
         self,
         token: str = "",
         endpoint: str = "https://api.github.com/graphql",
-        **kwargs,
+        raise_on_error: bool = False,
     ):
         """
         Creates a session with the given bearer `token` and `endpoint`.
@@ -38,12 +36,12 @@ class GithubGraphQL:
         Args:
             token (str): Your personal access token in Github (see https://github.com/settings/tokens)
             endpoint (str): The endpoint to query GraphQL from
-            **kwargs: key-value pairs (e.g. {raise_on_error=True})
+            raise_on_error (bool): If you want to raise an exception in case of an error
         """
         self.__endpoint = endpoint
         self.__token = token
         self.__encoding = "utf-8"
-        self.__raise_on_error = kwargs.get("raise_on_error", None)
+        self.__raise_on_error = raise_on_error
         self.__session = Session()
         self.__session.headers.update(
             {
@@ -67,13 +65,14 @@ class GithubGraphQL:
         return self.__encoding
 
     def run_from_file(
-        self, filename: str, variables: dict[str, str | int] = None, **kwargs
+        self,
+        filename: pathlib.Path | str,
+        variables: dict[str, str | int] = dict(),
+        raise_on_error: bool = False,
     ) -> Any:
         """
         Read the query/mutation from the given file and execute it with the variables
-        applied. If not requested otherwise the plain result is returned. If you
-        want to raise an exception in case of an error you can set
-        `raise_on_error` to `True`.
+        applied. If not requested otherwise the plain result is returned.
 
         See also:
         https://docs.github.com/en/graphql/guides/forming-calls-with-graphql
@@ -82,28 +81,36 @@ class GithubGraphQL:
         Args:
             filename (str): The filename of the query/mutation file.
             variables (dict): The variables to be applied to the query/mutation.
-            **kwargs: key-value pairs (e.g. {raise_on_error=True})
+            raise_on_error (bool): If you want to raise an exception in case of an error
         """
         with open(file=filename, encoding=self.encoding) as file_handle:
             query = file_handle.read()
-        return self.run(query, variables, **kwargs)
+        return self.run(
+            query,
+            variables,
+        )
 
-    def __enter__(self):
+    def __enter__(self) -> "GithubGraphQL":
         return self
 
-    @property
-    def session_headers(self) -> CaseInsensitiveDict:
-        """Returns the HTTP headers used for the session."""
-        return self.__session.headers
-
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
         self.close()
 
-    def close(self):
+    def close(self) -> None:
         """Closes the session."""
         self.__session.close()
 
-    def run(self, query: str, variables: dict[str, str | int] = None, **kwargs) -> dict:
+    def run(
+        self,
+        query: str,
+        variables: dict[str, str | int] = dict(),
+        raise_on_error: bool = False,
+    ) -> dict[Any, Any]:
         """
         Execute the query with the variables applied. If not requested otherwise
         the plain result is returned. If you want to raise an exception in case
@@ -112,10 +119,10 @@ class GithubGraphQL:
         Args:
             query (str): The GraphQL query.
             variables (dict): The variables to be applied to the query.
-            **kwargs: key-value pairs (e.g. {raise_on_error=True})
+            raise_on_error (bool): If you want to raise an exception in case of an error
 
         Raises:
-            RuntimeError: In case of an error when `raise` is `True`.
+            RuntimeError: In case of an error when `raise_on_error` is `True`.
 
         Returns:
             Result: The result of the query. Inspect the result for errors!
@@ -125,7 +132,7 @@ class GithubGraphQL:
         )
         req.raise_for_status()
         res = dict(req.json())
-        if "errors" in res and kwargs.get("raise_on_error", self.__raise_on_error):
+        if "errors" in res and (raise_on_error or self.__raise_on_error):
             raise RuntimeError(
                 str(fnc.get("errors[0].message", res, default="GraphQL Error"))
             )

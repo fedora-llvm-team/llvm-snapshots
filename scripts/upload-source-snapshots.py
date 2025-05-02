@@ -8,7 +8,7 @@ from glob import glob
 from github import Github, UnknownObjectException
 
 
-def main(args) -> None:
+def main(args: argparse.Namespace) -> None:
     g = Github(login_or_token=args.token)
     repo = g.get_repo(args.project)
 
@@ -18,7 +18,7 @@ def main(args) -> None:
     print(f"uploading assets for yyyymmdd='{yyyymmdd}'")
     try:
         release = repo.get_release(release_name)
-    except UnknownObjectException as ex:
+    except UnknownObjectException:
         print(f"release '{release_name}' not found but creating it now")
         release = repo.create_git_release(
             prerelease=True,

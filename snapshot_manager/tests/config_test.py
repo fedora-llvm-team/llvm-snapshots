@@ -1,6 +1,7 @@
 """Tests for config"""
 
 import datetime
+import unittest
 
 import tests.base_test as base_test
 
@@ -8,7 +9,7 @@ import snapshot_manager.config as config
 
 
 class TestConfig(base_test.TestBase):
-    def test_yyyymmdd(self):
+    def test_yyyymmdd(self) -> None:
         self.assertEqual(
             "20240227",
             config.Config(
@@ -17,7 +18,9 @@ class TestConfig(base_test.TestBase):
         )
 
 
-def load_tests(loader, tests, ignore):
+def load_tests(
+    loader: unittest.TestLoader, standard_tests: unittest.TestSuite, pattern: str
+) -> unittest.TestSuite:
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol
@@ -27,8 +30,8 @@ def load_tests(loader, tests, ignore):
 
     import snapshot_manager.config
 
-    tests.addTests(doctest.DocTestSuite(snapshot_manager.config))
-    return tests
+    standard_tests.addTests(doctest.DocTestSuite(snapshot_manager.config))
+    return standard_tests
 
 
 if __name__ == "__main__":

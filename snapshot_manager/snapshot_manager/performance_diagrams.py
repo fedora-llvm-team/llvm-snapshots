@@ -235,7 +235,7 @@ def prepare_data(filepath: pathlib.Path) -> pd.DataFrame:
     df.reset_index(inplace=True)
 
     df["legend_name"] = df.apply(
-        lambda row: f"{row["name"].replace("_", " ").upper().replace("VS", "vs.")} ({row["chroot"]})",
+        lambda row: f"{row['name'].replace('_', ' ').upper().replace('VS', 'vs.')} ({row['chroot']})",
         axis=1,
     )
 
@@ -261,7 +261,7 @@ def build_performance_diagrams(datafile: pathlib.Path | str) -> None:
     pio.templates.default = "plotly"
 
     if isinstance(datafile, str):
-        datafile = filepath.Path(datafile)
+        datafile = pathlib.Path(datafile)
 
     df = prepare_data(filepath=datafile)
 

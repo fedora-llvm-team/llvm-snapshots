@@ -2,7 +2,6 @@
 
 import argparse
 import logging
-import sys
 
 from github import Github
 
@@ -39,7 +38,7 @@ Required checks: {required_checks}
 """
     )
 
-    required_checks = {(check, "success") for check in required_checks}
+    required_checks_set = {(check, "success") for check in required_checks}
     for i in range(0, max_tries):
         commit = repo.get_commit(sha=next_sha)
         commit_url = f"https://github.com/{project}/commit/{commit.sha}"
@@ -53,21 +52,21 @@ Required checks: {required_checks}
         actual_checks = {
             (status.context, status.state) for status in commit.get_statuses()
         }
-        if not required_checks.issubset(actual_checks):
+        if not required_checks_set.issubset(actual_checks):
             logging.warning(
-                f"- Ignoring commit because of missing or failed check(s): {required_checks - actual_checks}"
+                f"- Ignoring commit because of missing or failed check(s): {required_checks_set - actual_checks}"
             )
             continue
 
         logging.info(f"Found good commit: {commit_url}")
-        return commit.sha
+        return str(commit.sha)
 
     sha = repo.get_commit(sha=start_ref).sha
     logging.info(f"No good commit found, using the initial one: {start_ref}, aka {sha}")
-    return sha
+    return str(sha)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Find the latest commit that passed tests or return the start-ref commit sha"
     )

@@ -7,7 +7,7 @@ repos:
       - id: isort
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: check-ast
       - id: check-case-conflict
@@ -31,7 +31,7 @@ repos:
       - id: requirements-txt-fixer
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.2
+    rev: v3.19.1
     hooks:
       - id: pyupgrade
         args:
@@ -39,7 +39,7 @@ repos:
 
   # See https://tmt.readthedocs.io/en/latest/guide.html#checking-data-validity
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.32.2
+    rev: 1.47.0
     hooks:
       - id: tmt-lint
 
@@ -54,11 +54,48 @@ repos:
         # pre-commit's default_language_version, see
         # https://pre-commit.com/#top_level-default_language_version
         language_version: python3.12
-        force-exclude: "^snapshot_manager/tests/(test_logs|testing-farm-logs)/"
 
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.7
     hooks:
     - id: actionlint
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.15.0'
+    hooks:
+    - id: mypy
+      args: [--strict, --ignore-missing-imports]
+      additional_dependencies:
+        - types-requests
+
+  # autoflake removes unused imports and unused variables from Python code.
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
+    hooks:
+    - id: autoflake
+      args:
+        # remove all unused imports (not just those from the standard library)
+        - --remove-all-unused-imports
+        # exclude __init__.py when removing unused imports
+        - --ignore-init-module-imports
+        # expand wildcard star imports with undefined names; this only triggers
+        # if there is only one star import in the file; this is skipped if there
+        # are any uses of `__all__` or `del` in the file
+        - --expand-star-imports
+        # make changes to files instead of printing diffs
+        - --in-place
+        - --remove-unused-variables
+        - --remove-duplicate-keys
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.11.7
+    hooks:
+      # Run the linter.
+      - id: ruff
+        args: [ --fix ]
+      # Run the formatter (currently conflicts with black check).
+      # - id: ruff-format
+
 
 exclude: "^(snapshot_manager/tests/(test_logs|testing-farm-logs)/|media)"

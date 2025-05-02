@@ -13,7 +13,7 @@ import plotly.io as pio
 
 
 # %%
-def create_figure(df: pd.DataFrame, package_name: str = None) -> go.Figure:
+def create_figure(df: pd.DataFrame, package_name: str = "") -> go.Figure:
     """Creates a figure for a particular package name
 
     When no package_name is specified, the whole dataframe is used.
@@ -26,7 +26,7 @@ def create_figure(df: pd.DataFrame, package_name: str = None) -> go.Figure:
         go.Figure: A line figure with all chroots in one graph
     """
     title = "Build times for the package(s): {}"
-    if package_name is not None:
+    if package_name != "":
         df = df[df.package == package_name]
         title = title.format(package_name)
     else:

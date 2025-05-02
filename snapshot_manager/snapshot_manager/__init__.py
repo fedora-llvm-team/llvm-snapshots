@@ -13,4 +13,4 @@ __all__ = [
     "snapshot_manager",
     "util",
 ]
-from snapshot_manager.snapshot_manager import SnapshotManager
+from snapshot_manager.snapshot_manager import SnapshotManager  # noqa: F401

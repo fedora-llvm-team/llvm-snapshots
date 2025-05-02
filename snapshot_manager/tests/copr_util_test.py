@@ -1,11 +1,11 @@
 """Tests for copr_client"""
 
 import os
-import uuid
+import unittest
+from typing import Any
 from unittest import mock
 
 import munch
-import pytest
 import tests.base_test as base_test
 
 import snapshot_manager.copr_util as copr_util
@@ -13,7 +13,7 @@ from snapshot_manager.build_status import BuildState, CoprBuildStatus
 
 
 @mock.patch("copr.v3.Client")
-def test_make_client__from_env(client_mock: mock.Mock):
+def test_make_client__from_env(client_mock: mock.Mock) -> None:
     myconfig = {
         "COPR_URL": "myurl",
         "COPR_LOGIN": "mylogin",
@@ -33,7 +33,7 @@ def test_make_client__from_env(client_mock: mock.Mock):
 
 
 @mock.patch("copr.v3.Client")
-def test_make_client__from_file(client_mock: mock.Mock):
+def test_make_client__from_file(client_mock: mock.Mock) -> None:
     # Missing a few parameters, so defaulting back to creation from file
     myconfig = {"COPR_URL": "myurl"}
     with mock.patch.dict(os.environ, values=myconfig, clear=True):
@@ -42,7 +42,7 @@ def test_make_client__from_file(client_mock: mock.Mock):
 
 
 @mock.patch("copr.v3.Client")
-def test_get_all_chroots(client_mock: mock.Mock):
+def test_get_all_chroots(client_mock: mock.Mock) -> None:
     # When calling the function under test multiple times,
     # ensure the internal get_list function is only called
     # once. This is because the result it has to be cached.
@@ -54,7 +54,7 @@ def test_get_all_chroots(client_mock: mock.Mock):
 
 
 @mock.patch("copr.v3.Client")
-def test_get_all_builds(client_mock: mock.Mock):
+def test_get_all_builds(client_mock: mock.Mock) -> None:
     copr_util.get_all_builds(client=client_mock, ownername="foo", projectname="bar")
     client_mock.build_proxy.get_list.assert_called_once_with(
         ownername="foo", projectname="bar"
@@ -66,7 +66,7 @@ def test_get_all_builds(client_mock: mock.Mock):
 @mock.patch("copr.v3.Client")
 def test_delete_project(
     client_mock: mock.Mock, get_all_builds_mock: mock.Mock, wait_mock: mock.Mock
-):
+) -> None:
     # Prepare a set of builds, some "active" and some not.
     build1 = munch.Munch(id=1, build_id=1, state=CoprBuildStatus.RUNNING)
     build2 = munch.Munch(id=2, build_id=2, state=CoprBuildStatus.FAILED)
@@ -102,17 +102,17 @@ def test_delete_project(
 
 
 @mock.patch("copr.v3.Client")
-def test_get_all_build_states(client_mock: mock.Mock):
+def test_get_all_build_states(client_mock: mock.Mock) -> None:
     # given
     ownername = "@fedora-llvm-team"
     projectname = "llvm-snapshots-big-merge-20250217"
-    chroot1 = {
-        "build_id": 8662297,
+    chroot1: dict[str, Any] = {
+        "build_id": int(8662297),
         "state": "succeeded",
         "url_build_log": "https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/llvm-snapshots-big-merge-20250217/rhel-9-x86_64/08662297-llvm/builder-live.log.gz",
     }
-    chroot2 = {
-        "build_id": 8662296,
+    chroot2: dict[str, Any] = {
+        "build_id": int(8662296),
         "state": "running",
         "url_build_log": "https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/llvm-snapshots-big-merge-20250217/rhel-9-s390x/08662296-llvm/builder-live.log",
         "url_build": "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-20250217/build/8662296/",
@@ -147,7 +147,7 @@ def test_get_all_build_states(client_mock: mock.Mock):
             err_cause=None,
             package_name="llvm",
             chroot="rhel-9-x86_64",
-            url_build_log=chroot1["url_build_log"],
+            url_build_log=str(chroot1["url_build_log"]),
             url_build="",
             build_id=chroot1["build_id"],
             copr_build_state=chroot1["state"],
@@ -172,7 +172,9 @@ def test_get_all_build_states(client_mock: mock.Mock):
     assert actual == expected
 
 
-def load_tests(loader, tests, ignore):
+def load_tests(
+    loader: unittest.TestLoader, standard_tests: unittest.TestSuite, pattern: str
+) -> unittest.TestSuite:
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol
@@ -182,8 +184,8 @@ def load_tests(loader, tests, ignore):
 
     import snapshot_manager.copr_util
 
-    tests.addTests(doctest.DocTestSuite(snapshot_manager.copr_util))
-    return tests
+    standard_tests.addTests(doctest.DocTestSuite(snapshot_manager.copr_util))
+    return standard_tests
 
 
 if __name__ == "__main__":

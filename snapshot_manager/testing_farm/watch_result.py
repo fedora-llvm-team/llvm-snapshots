@@ -40,10 +40,10 @@ class WatchResult(enum.StrEnum):
             return ":x:"
         if self == self.TESTS_ERROR:
             return ":x:"
-        if self == self.TESTS_UNKNOWN:
-            return ":grey_question:"
         if self == self.PIPELINE_ERROR:
             return ":warning:"
+        # self == self.TESTS_UNKNOWN:
+        return ":grey_question:"
 
     @classmethod
     def all_watch_results(cls) -> list["WatchResult"]:
@@ -118,14 +118,14 @@ class WatchResult(enum.StrEnum):
         return string in cls.all_watch_results()
 
     @classmethod
-    def from_output(cls, string: str) -> tuple["WatchResult", str]:
+    def from_output(cls, string: str) -> tuple["WatchResult", str] | tuple[None, str]:
         """Inspects the output of a testing-farm watch call and returns a tuple of result and artifacts url (if any).
 
         Args:
             string (str): The output of a testing-farm watch call.
 
         Returns:
-            tuple[str, WatchResult]: _description_
+            tuple[WatchResult, str]: The constructed WatchResult object and the artifacts URL (if any)
 
         Examples:
         >>> s='''8J+UjiBhcGkgaHR0cHM6Ly9hcGkuZGV2LnRlc3RpbmctZmFybS5pby92MC4xL3JlcXVlc3RzLzI3
@@ -142,7 +142,7 @@ class WatchResult(enum.StrEnum):
         ... cnJvcicgc3RhdGUKCg=='''
         >>> s = base64.b64decode(s).decode()
         >>> WatchResult.from_output(s)
-        (<WatchResult.PIPELINE_ERROR: 'pipeline error'>, None)
+        (<WatchResult.PIPELINE_ERROR: 'pipeline error'>, '')
         >>> s='''8J+UjiBhcGkgaHR0cHM6Ly9hcGkuZGV2LnRlc3RpbmctZmFybS5pby92MC4xL3JlcXVlc3RzLzk3
         ... YTdjYzI0LTY5MjYtNDA1OS04NGFjLWQwMDc4Mjk3YzMxOQrwn5qAIHJlcXVlc3QgaXMgcnVubmlu
         ... Zwrwn5qiIGFydGlmYWN0cyBodHRwczovL2FydGlmYWN0cy5kZXYudGVzdGluZy1mYXJtLmlvLzk3
@@ -163,13 +163,14 @@ class WatchResult(enum.StrEnum):
             if not re.search(pattern=str(watch_result), string=string):
                 continue
             if not watch_result.expect_artifacts_url:
-                return (watch_result, None)
+                return (watch_result, "")
             url_match = re.search(pattern=r"artifacts http[s]?://.*", string=string)
             if not url_match:
-                raise ValueError(f"expected an artifacts URL but couldn't find one")
-            artifacts_url = str(
-                re.search(pattern=r"http[s]?://.*", string=url_match[0])[0]
-            ).strip()
+                raise ValueError("expected an artifacts URL but couldn't find one")
+            artifact_match = re.search(pattern=r"http[s]?://.*", string=url_match[0])
+            artifacts_url = ""
+            if artifact_match is not None:
+                artifacts_url = str(artifact_match[0]).strip()
             return (watch_result, artifacts_url)
 
-        return (None, None)
+        return (None, "")

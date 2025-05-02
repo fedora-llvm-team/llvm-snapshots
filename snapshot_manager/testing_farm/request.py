@@ -1,6 +1,5 @@
 import dataclasses
 import logging
-import os
 import pathlib
 import re
 import uuid
@@ -17,13 +16,13 @@ import snapshot_manager.util as util
 
 @dataclasses.dataclass(kw_only=True, unsafe_hash=True)
 class Request:
-    request_id: uuid.UUID
+    request_id: uuid.UUID | None = None
     """The request ID returned from a call to testing-farm request' """
 
     chroot: str
     """The chroot for which this testing-farm request was issues"""
 
-    copr_build_ids: list[int]
+    copr_build_ids: list[int] = dataclasses.field(default_factory=list)
     """The copr build IDs associated with the testing-farm request at the time
     the request was made."""
 
@@ -35,7 +34,6 @@ class Request:
     """The plan name. Old test plans default to 'snapshot-gating' because there
     we didn't differentiate between different test plans."""
 
-    @property
     def are_build_ids_still_valid(self, copr_build_ids: list[int]) -> bool:
         """Returns True if the given copr builds are the same as the ones
         associated with this testing-farm request"""
@@ -143,11 +141,11 @@ class Request:
         # logging.info(f"Recovered testing-farm-requests: {requests}")
         return reqs
 
-    def watch(self) -> tuple["WatchResult", str]:
+    def watch(self) -> tuple["WatchResult", str] | tuple[None, str]:
         tfutil.adjust_token_env(self.chroot)
 
         request_id = tfutil.sanitize_request_id(request_id=self.request_id)
-        cmd = f"testing-farm watch --no-wait --id {self.request_id}"
+        cmd = f"testing-farm watch --no-wait --id {request_id}"
         # We ignore the exit code because in case of a test error, 1 is the exit code
         try:
             logging.info(f"Watching for testing-farm request: {cmd}")
@@ -159,15 +157,17 @@ class Request:
                 )
         except Exception as ex:
             logging.warning(f"failed to watch for testing-farm result {ex}")
-            return (None, None)
+            return (None, "")
         return (watch_result, artifacts_url)
 
     def fetch_failed_test_cases(
         self, artifacts_url_origin: str
     ) -> list["FailedTestCase"]:
-        request_file = tfutil.get_request_file(request_id=self.request_id)
+        request_id = tfutil.sanitize_request_id(request_id=self.request_id)
+        request_file = tfutil.get_request_file(request_id=request_id)
         xunit_file = tfutil.get_xunit_file_from_request_file(
-            request_file=request_file, request_id=self.request_id
+            request_file=request_file,
+            request_id=request_id,
         )
         # The xunit file is None, if it is only available internally.
         if xunit_file is None:
@@ -187,27 +187,47 @@ class Request:
         failed_testcases = root.findall('./testsuite/testcase[@result="failed"]')
 
         for failed_testcase in failed_testcases:
-            distro = failed_testcase.find(
+            distro = ""
+            arch = ""
+            log_output_url = ""
+            log_output = ""
+
+            distro_ele = failed_testcase.find(
                 './properties/property[@name="baseosci.distro"]'
-            ).get("value")
-            arch = failed_testcase.find(
+            )
+            if distro_ele is not None:
+                distro_attr = distro_ele.get("value")
+                if distro_attr is not None:
+                    distro = distro_attr
+
+            arch_ele = failed_testcase.find(
                 './properties/property[@name="baseosci.arch"]'
-            ).get("value")
-            log_output_url = failed_testcase.find(
-                './logs/log[@name="testout.log"]'
-            ).get("href")
+            )
+            if arch_ele is not None:
+                arch_attr = arch_ele.get("value")
+                if arch_attr is not None:
+                    arch = arch_attr
+
+            log_output_url_ele = failed_testcase.find('./logs/log[@name="testout.log"]')
+            if log_output_url_ele is not None:
+                log_output_url_attr = log_output_url_ele.get("href")
+                if log_output_url_attr is not None:
+                    log_output_url = log_output_url_attr
 
             log_file: pathlib.Path
             if not tfutil._IN_TEST_MODE:
-                log_file = util.read_url_response_into_file(log_output_url)
+                if log_output_url != "":
+                    log_file = util.read_url_response_into_file(log_output_url)
+                    log_output = log_file.read_text()
             else:
                 p = tfutil._test_path(f"{self.request_id}/failed_test_cases.txt")
                 log_file = pathlib.Path(p)
+                log_output = log_file.read_text()
             tc = FailedTestCase(
-                test_name=failed_testcase.get("name"),
+                test_name=str(failed_testcase.get("name")),
                 log_output_url=log_output_url,
-                log_output=log_file.read_text(),
-                request_id=self.request_id,
+                log_output=log_output,
+                request_id=tfutil.sanitize_request_id(self.request_id),
                 chroot=f"{distro.lower()}-{arch}",
                 artifacts_url=artifacts_url_origin,
             )
@@ -313,12 +333,12 @@ def make_compare_compile_time_request(
     cmd = f"""testing-farm \
         request \
         --compose {tfutil.get_compose_from_chroot(chroot=chroot)} \
-        --git-url {config.test_repo_url} \
+        --git-url {config_a.package_clone_url} \
         --arch {util.chroot_arch(chroot)} \
         --plan /tests/{test_plan_name} \
         --context distro={util.chroot_os(chroot)} \
         --context arch={util.chroot_arch(chroot)} \
-        --context snapshot={config.yyyymmdd} \
+        --context snapshot={config_a.yyyymmdd} \
         --environment YYYYMMDD={config_a.yyyymmdd} \
         --environment CONFIG_A={config_a.build_strategy} \
         --environment CONFIG_B={config_b.build_strategy} \

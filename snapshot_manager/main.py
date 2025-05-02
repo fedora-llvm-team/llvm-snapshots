@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import pathlib
+from types import GenericAlias
 
 import github
 
@@ -17,21 +18,22 @@ from snapshot_manager.snapshot_manager import (  # isort:skip_file
 )
 from snapshot_manager.performance_diagrams import build_performance_diagrams
 
-# This shows the default value of arguments in the help text.
-# See https://docs.python.org/3/library/argparse.html#argparse.ArgumentDefaultsHelpFormatter
-ARG_PARSE_SHOW_DEFAULT_VALUE = {
-    "formatter_class": argparse.ArgumentDefaultsHelpFormatter
-}
+# We want to type annotate subparsers parameters below.
+# This is a hack taken from https://github.com/python/typeshed/issues/7539#issuecomment-1076640854
+setattr(argparse._SubParsersAction, "__class_getitem__", classmethod(GenericAlias))
+_SubparserType = argparse._SubParsersAction[
+    argparse.ArgumentParser
+]  # hey look, _SubParsersAction is now generic!
 
 
-def file_path(path) -> pathlib.Path:
+def file_path(path: str) -> pathlib.Path:
     if os.path.isfile(path):
         return pathlib.Path(path)
     else:
         raise argparse.ArgumentTypeError(f"{path} is not a valid file")
 
 
-def main():
+def main() -> None:
     logging.basicConfig(
         level=logging.INFO,
         format="[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d %(funcName)s] %(message)s",
@@ -161,7 +163,9 @@ def main():
 def build_argument_parser(cfg: config.Config) -> argparse.ArgumentParser:
     mainparser = argparse.ArgumentParser(
         description="Program for managing LLVM snapshots",
-        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+        # This shows the default value of arguments in the help text.
+        # See https://docs.python.org/3/library/argparse.html#argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     mainparser.add_argument(
@@ -189,12 +193,12 @@ def build_argument_parser(cfg: config.Config) -> argparse.ArgumentParser:
 
 
 def add_strategy_argument(argparser: argparse.ArgumentParser) -> argparse.Action:
-    argparser.add_argument(
+    return argparser.add_argument(
         "--strategy",
         dest="strategy",
         type=str,
         required=True,
-        help=f"Strategy to use",
+        help="Strategy to use",
     )
 
 
@@ -208,11 +212,13 @@ def add_yyyymmdd_argument(argparser: argparse.ArgumentParser) -> argparse.Action
     )
 
 
-def argument_parser_has_all_good_builds(subparsers) -> None:
+def argument_parser_has_all_good_builds(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "has-all-good-builds",
         description="Checks if the given packages were successfully built ",
-        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     sp.add_argument(
         "--packages",
@@ -227,11 +233,13 @@ def argument_parser_has_all_good_builds(subparsers) -> None:
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_perf_comparison(subparsers) -> None:
+def argument_parser_perf_comparison(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "run-perf-comparison",
         description="Run a performance comparison between two strategies A and B on testing-farm",
-        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     sp.add_argument(
@@ -239,7 +247,7 @@ def argument_parser_perf_comparison(subparsers) -> None:
         dest="strategy_a",
         type=str,
         required=True,
-        help=f"Strategy A",
+        help="Strategy A",
     )
 
     sp.add_argument(
@@ -247,17 +255,19 @@ def argument_parser_perf_comparison(subparsers) -> None:
         dest="strategy_b",
         type=str,
         required=True,
-        help=f"Strategy B",
+        help="Strategy B",
     )
 
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_collect_perf_comparison_results(subparsers) -> None:
+def argument_parser_collect_perf_comparison_results(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "collect-perf-results",
         description="Collect performance comparison results",
-        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     sp.add_argument(
@@ -265,7 +275,7 @@ def argument_parser_collect_perf_comparison_results(subparsers) -> None:
         dest="strategy_a",
         type=str,
         required=True,
-        help=f"Strategy A",
+        help="Strategy A",
     )
 
     sp.add_argument(
@@ -273,14 +283,14 @@ def argument_parser_collect_perf_comparison_results(subparsers) -> None:
         dest="strategy_b",
         type=str,
         required=True,
-        help=f"Strategy B",
+        help="Strategy B",
     )
 
     sp.add_argument(
         "--csv-file-in",
         dest="csv_file_in",
         type=str,
-        required="results-in.csv",
+        default="results-in.csv",
         help="CSV file to load and merge with all the collected performance CSV results files",
     )
 
@@ -288,18 +298,20 @@ def argument_parser_collect_perf_comparison_results(subparsers) -> None:
         "--csv-file-out",
         dest="csv_file_out",
         type=str,
-        required="results-out.csv",
+        default="results-out.csv",
         help="Where to write the collected performance CSV results file",
     )
 
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_performance_diagrams(subparsers) -> None:
+def argument_parser_performance_diagrams(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "perf-diagrams",
         description="Create performance diagrams for a given CSV file",
-        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     sp.add_argument(
@@ -307,15 +319,17 @@ def argument_parser_performance_diagrams(subparsers) -> None:
         dest="datafile",
         type=file_path,
         required=True,
-        help=f"perf-results.csv",
+        help="perf-results.csv",
     )
 
 
-def argument_parser_retest(subparsers) -> None:
+def argument_parser_retest(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "retest",
         description="Issues a new testing-farm request for one or more chroots",
-        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     sp.add_argument(
         "--chroots",
@@ -342,30 +356,36 @@ def argument_parser_retest(subparsers) -> None:
     )
 
 
-def argument_parser_get_chroots(subparsers) -> None:
+def argument_parser_get_chroots(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "get-chroots",
         description="Prints a space separated list of chroots for a given strategy",
-        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     add_strategy_argument(sp)
 
 
-def argument_parser_delete_project(subparsers) -> None:
+def argument_parser_delete_project(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "delete-project",
         description="Deletes a project for the given day and strategy",
-        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     add_strategy_argument(sp)
     add_yyyymmdd_argument(sp)
 
 
-def argument_parser_github_matrix(subparsers) -> None:
+def argument_parser_github_matrix(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "github-matrix",
         description="Prints the github workflow matrix for a given or all strategies",
-        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     add_strategy_argument(sp)
     sp.add_argument(
@@ -379,11 +399,13 @@ def argument_parser_github_matrix(subparsers) -> None:
     )
 
 
-def argument_parser_check(subparsers) -> None:
+def argument_parser_check(
+    subparsers: _SubparserType,
+) -> None:
     sp = subparsers.add_parser(
         "check",
         description="Check Copr status and update today's github issue",
-        **ARG_PARSE_SHOW_DEFAULT_VALUE,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     add_strategy_argument(sp)
     add_yyyymmdd_argument(sp)

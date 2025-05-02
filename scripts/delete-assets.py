@@ -30,7 +30,7 @@ def delete_assets(
     )
     try:
         release = repo.get_release(release_name)
-    except UnknownObjectException as ex:
+    except UnknownObjectException:
         print(
             "release '{}' not found and so there's nothing to delete".format(
                 release_name
@@ -45,22 +45,22 @@ def delete_assets(
                         asset.name, asset.created_at
                     )
                 )
-                if asset.delete_asset() != True:
+                if not asset.delete_asset():
                     return False
-            if delete_today == True and asset.created_at.strftime(
+            if delete_today and asset.created_at.strftime("%Y%m%d") == now.strftime(
                 "%Y%m%d"
-            ) == now.strftime("%Y%m%d"):
+            ):
                 print(
                     "deleting asset '{}' created at {}".format(
                         asset.name, asset.created_at
                     )
                 )
-                if asset.delete_asset() != True:
+                if not asset.delete_asset():
                     return False
     return True
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Delete assets from today and older than a week (by default)."
     )

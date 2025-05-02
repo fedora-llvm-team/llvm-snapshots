@@ -1,5 +1,7 @@
 import datetime
 import os
+import unittest
+import uuid
 from unittest import mock
 
 import pytest
@@ -21,7 +23,7 @@ import snapshot_manager.github_util as github_util
     },
     clear=True,
 )
-def test_adjust_token_env():
+def test_adjust_token_env() -> None:
     os.getenv("TESTING_FARM_API_TOKEN") is None
 
     adjust_token_env("fedora-rawhide-x86_64")
@@ -32,7 +34,7 @@ def test_adjust_token_env():
 
 
 class TestTestingFarmUtil(base_test.TestBase):
-    def test_make_with_missing_compose(self):
+    def test_make_with_missing_compose(self) -> None:
         cfg = self.config
         cfg.datetime = datetime.datetime(year=2024, month=2, day=27)
         self.assertEqual("20240227", cfg.yyyymmdd)
@@ -57,13 +59,13 @@ class TestTestingFarmUtil(base_test.TestBase):
                 copr_build_ids=[1, 2, 3],
             )
 
-    def test_fetch_failed_test_cases_from_file(self):
+    def test_fetch_failed_test_cases_from_file(self) -> None:
         tfutil._IN_TEST_MODE = True
 
-        request_id = "1f25b0df-71f1-4a13-a4b8-c066f6f5f116"
+        request_id = uuid.UUID("1f25b0df-71f1-4a13-a4b8-c066f6f5f116")
         chroot = "fedora-39-x86_64"
         req = Request(
-            request_id=request_id,
+            request_id=tfutil.sanitize_request_id(request_id),
             chroot=chroot,
             copr_build_ids=[11, 22, 33],
         )
@@ -90,7 +92,9 @@ class TestTestingFarmUtil(base_test.TestBase):
         self.assertEqual(actual, expected)
 
 
-def load_tests(loader, tests, ignore):
+def load_tests(
+    loader: unittest.TestLoader, standard_tests: unittest.TestSuite, pattern: str
+) -> unittest.TestSuite:
     """We want unittest to pick up all of our doctests
 
     See https://docs.python.org/3/library/unittest.html#load-tests-protocol
@@ -100,8 +104,8 @@ def load_tests(loader, tests, ignore):
 
     import testing_farm
 
-    tests.addTests(doctest.DocTestSuite(testing_farm))
-    return tests
+    standard_tests.addTests(doctest.DocTestSuite(testing_farm))
+    return standard_tests
 
 
 if __name__ == "__main__":

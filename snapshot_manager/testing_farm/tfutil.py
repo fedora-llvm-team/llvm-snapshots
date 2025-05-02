@@ -19,7 +19,7 @@ import snapshot_manager.util as util
 _IN_TEST_MODE = False
 
 # Use this for constructing paths when _IN_TEST_MODE is on
-_DIRNAME: str = pathlib.Path(os.path.dirname(__file__))
+_DIRNAME = pathlib.Path(os.path.dirname(__file__))
 
 
 def _test_path(path: pathlib.Path | str) -> pathlib.Path:
@@ -43,40 +43,8 @@ def results_html_comment() -> str:
     return "<!--TESTING_FARM_RESULTS-->"
 
 
-def sanitize_request_id(request_id: str | uuid.UUID) -> uuid.UUID:
-    """Sanitizes a testing-farm request ID by ensuring that it is a UUID.
-
-    Args:
-        request_id (str | uuid.UUID): A testing-farm request ID
-
-    Raises:
-        ValueError: if the given string is not in the right format
-
-    Returns:
-        uuid.UUID: the uuid object that matched the pattern
-
-    Examples:
-
-    >>> sanitize_request_id(request_id="271a79e8-fc9a-4e1d-95fe-567cc9d62ad4")
-    UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad4')
-
-    >>> import uuid
-    >>> sanitize_request_id(uuid.UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad5'))
-    UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad5')
-
-    >>> sanitize_request_id(request_id="; cat /etc/passwd")
-    Traceback (most recent call last):
-     ...
-    ValueError: string is not a valid testing-farm request ID: badly formed hexadecimal UUID string
-    """
-    if isinstance(request_id, uuid.UUID):
-        return request_id
-    res: uuid.UUID = None
-    try:
-        res = uuid.UUID(request_id)
-    except Exception as e:
-        raise ValueError(f"string is not a valid testing-farm request ID: {e}")
-    return res
+def sanitize_request_id(request_id: str | uuid.UUID | None) -> uuid.UUID:
+    return util.sanitize_uuid(id=request_id)
 
 
 def adjust_token_env(chroot: str) -> None:
@@ -139,8 +107,8 @@ def parse_output_for_request_id(string: str) -> uuid.UUID:
     return uuid.UUID(match[0])
 
 
-def is_chroot_supported_by_ranch(chroot: str, ranch: str | None = None) -> bool:
-    if ranch is None:
+def is_chroot_supported_by_ranch(chroot: str, ranch: str = "") -> bool:
+    if ranch == "":
         ranch = select_ranch(chroot=chroot)
     return is_arch_supported_by_ranch(arch=util.chroot_arch(chroot), ranch=ranch)
 
@@ -174,10 +142,10 @@ def is_arch_supported_by_ranch(arch: str, ranch: str) -> bool:
     if arch == "i386":
         return False
     if ranch == "public":
-        if not arch in ("x86_64", "aarch64"):
+        if arch not in ("x86_64", "aarch64"):
             return False
     elif ranch == "redhat":
-        if not arch in ("x86_64", "aarch64", "ppc64le", "s390x"):
+        if arch not in ("x86_64", "aarch64", "ppc64le", "s390x"):
             return False
     else:
         raise ValueError(f"unknown ranch: {ranch}")
@@ -217,7 +185,7 @@ def get_compose_from_chroot(chroot: str) -> str:
     return util.chroot_os(chroot).capitalize()
 
 
-def get_request_file(request_id: str) -> pathlib.Path:
+def get_request_file(request_id: uuid.UUID) -> pathlib.Path:
     """Downloads the JSON request for a given request ID and returns the path to the downloaded location.
 
     Args:
@@ -241,7 +209,7 @@ def get_request_file(request_id: str) -> pathlib.Path:
 
 
 def get_xunit_file_from_request_file(
-    request_file: pathlib.Path, request_id: str
+    request_file: pathlib.Path, request_id: uuid.UUID
 ) -> pathlib.Path | None:
     result_json = json.loads(request_file.read_text())
     if "result" not in result_json:
@@ -300,7 +268,7 @@ def is_redhat_reachable() -> bool:
     reachable = False
     try:
         reachable = requests.options("https://artifacts.osci.redhat.com").ok
-    except:
+    except:  # noqa: E722
         pass
     return reachable
 
@@ -324,7 +292,7 @@ def select_ranch(chroot: str) -> str:
         chroot (str): chroot to use for determination of ranch
 
     Returns:
-        str: "public", "redhat" or None
+        str: "public", "redhat" or ""
 
     Examples:
 
@@ -353,7 +321,7 @@ def select_ranch(chroot: str) -> str:
     'redhat'
     """
     util.expect_chroot(chroot)
-    ranch = None
+    ranch = ""
     arch = util.chroot_arch(chroot)
     if arch in ["x86_64", "aarch64"]:
         ranch = "public"
@@ -364,7 +332,7 @@ def select_ranch(chroot: str) -> str:
     return ranch
 
 
-def remove_chroot_html_comment(comment_body: str, chroot: str):
+def remove_chroot_html_comment(comment_body: str, chroot: str) -> str:
     """
     Removes any testing-farm HTML comment from an input string that are meant for the given chroot.
 
