@@ -14,13 +14,6 @@ class Config:
     chroots: list[str] = dataclasses.field(default_factory=list)
     """A list of chroot names. To be filled automatically for you from the chroot_pattern. See util.augment_config_with_chroots()"""
 
-    packages: list[str] = dataclasses.field(
-        default_factory=lambda: [
-            "llvm",
-        ]
-    )
-    """List of packages that are relevant to you."""
-
     additional_copr_buildtime_repos: list[str] = dataclasses.field(
         default_factory=lambda: []
     )

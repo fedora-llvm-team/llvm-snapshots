@@ -107,10 +107,8 @@ def main() -> None:
             ownername=cfg.copr_ownername,
             projectname=cfg.copr_projectname,
         )
-        cfg.packages = args.packages
         builds_succeeded = copr_util.has_all_good_builds(
             required_chroots=cfg.chroots,
-            required_packages=cfg.packages,
             states=states,
         )
         if not builds_succeeded:
@@ -217,17 +215,8 @@ def argument_parser_has_all_good_builds(
 ) -> None:
     sp = subparsers.add_parser(
         "has-all-good-builds",
-        description="Checks if the given packages were successfully built ",
+        description="Checks if the llvm package was successfully built for the chroots associated with the given strategy",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    sp.add_argument(
-        "--packages",
-        metavar="PKG",
-        type=str,
-        nargs="+",
-        dest="packages",
-        default=["llvm"],
-        help="Which packages check (e.g. llvm)",
     )
     add_strategy_argument(sp)
     add_yyyymmdd_argument(sp)
