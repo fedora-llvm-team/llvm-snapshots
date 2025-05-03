@@ -18,6 +18,8 @@ jobs:
       - name: "start-performance-comparison"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TESTING_FARM_API_TOKEN_PUBLIC_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_PUBLIC_RANCH }}
+          TESTING_FARM_API_TOKEN_REDHAT_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_REDHAT_RANCH }}
         run: |
           today=$(date +%Y%m%d)
           yesterday=$(date -d "${today} -1 day" +%Y%m%d)
