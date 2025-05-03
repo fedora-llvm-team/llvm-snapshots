@@ -8,6 +8,10 @@ on:
 
   workflow_dispatch:
 
+permissions:
+  # We need this in order to create or update issues
+  issues: write
+
 jobs:
   start-performance-comparison:
     if: github.repository_owner == 'fedora-llvm-team'
