@@ -13,13 +13,12 @@ jobs:
   check-for-rebuild:
     if: github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-24.04
-    permissions:
-      issues: write
     container:
       image: "registry.fedoraproject.org/fedora:41"
     outputs:
-      bisect-list: ${{ steps.report.outputs.bisect-list }}
-      issue-id: ${{ steps.report.outputs.issue-id }}
+      last-report: ${{ steps.last-report.outputs.result }}
+      rebuild-completed: ${{ steps.new-rebuild.outputs.completed }}
+      REGRESSIONS: ${{ steps.regressions.outputs.REGRESSIONS }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,8 +74,67 @@ jobs:
           python3 scripts/rebuilder.py get-regressions --start-date ${{ steps.last-report.outputs.result }} > regressions
           echo "REGRESSIONS=$(cat regressions)" >> "$GITHUB_OUTPUT"
 
+  rebuild-failures:
+    if: >-
+      github.repository_owner == 'fedora-llvm-team' &&
+      needs.check-for-rebuild.outputs.rebuild-completed == 'true'
+    runs-on: ubuntu-22.04
+    needs:
+      - check-for-rebuild
+    permissions:
+      contents: read
+      issues: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.check-for-rebuild.outputs.REGRESSIONS) }}
+    container:
+      image: "registry.fedoraproject.org/fedora:41"
+    steps:
+      - name: Setup Copr config file
+        env:
+          # You need to have those secrets in your repo.
+          # See also: https://copr.fedorainfracloud.org/api/.
+          COPR_CONFIG_FILE: ${{ secrets.COPR_CONFIG }}
+        run: |
+          mkdir -p ~/.config
+          echo "$COPR_CONFIG_FILE" > ~/.config/copr
+
+      - run: |
+          sudo dnf install -y copr-cli jq
+          copr build-distgit \
+            --commit "$(copr get-package  --name ${{ matrix.name }} @fedora-llvm-team/clang-monthly-fedora-rebuild | jq -r .source_dict.committish)" \
+            --name "${{ matrix.name }}" \
+            @fedora-llvm-team/clang-monthly-fedora-rebuild \
+            || true
+
+  create-report:
+    name: "Create Report"
+    runs-on: ubuntu-22.04
+    permissions:
+      issues: write
+    needs:
+      - rebuild-failures
+      - check-for-rebuild
+    container:
+      image: "registry.fedoraproject.org/fedora:41"
+    outputs:
+      bisect-list: ${{ steps.report.outputs.bisect-list }}
+      issue-id: ${{ steps.report.outputs.issue-id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/rebuilder.py
+          sparse-checkout-cone-mode: false
+      - name: Collect Regressions
+        id: regressions
+        run: |
+          sudo dnf install -y python3-dnf python3-copr python3-koji
+          python3 scripts/rebuilder.py get-regressions --start-date ${{ needs.check-for-rebuild.outputs.last-report }} > regressions
+          echo "REGRESSIONS=$(cat regressions)" >> "$GITHUB_OUTPUT"
+
       - name: Create Report
-        if: steps.new-rebuild.outputs.completed == 'true'
         id: report
         uses: actions/github-script@v7
         env:
@@ -114,6 +172,7 @@ jobs:
     if: github.repository_owner == 'fedora-llvm-team'
     needs:
       - check-for-rebuild
+      - create-report
     permissions:
       contents: read
       issues: write
@@ -121,11 +180,11 @@ jobs:
       max-parallel: 1
       fail-fast: false
       matrix:
-        name: ${{ fromJson(needs.check-for-rebuild.outputs.bisect-list) }}
+        name: ${{ fromJson(needs.create-report.outputs.bisect-list) }}
     uses: ./.github/workflows/mass-rebuild-bisect.yml
     with:
       pkg: ${{ matrix.name }}
-      issue: ${{ needs.check-for-rebuild.outputs.issue-id }}
+      issue: ${{ needs.create-report.outputs.issue-id }}
 
   notify-bisect-complete:
     if: always() && github.repository_owner == 'fedora-llvm-team'
@@ -133,6 +192,7 @@ jobs:
     needs:
       - check-for-rebuild
       - bisect-failures
+      - create-report
     permissions:
       issues: write
     steps:
@@ -142,6 +202,6 @@ jobs:
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: '${{ needs.check-for-rebuild.outputs.issue-id }}',
+              issue_number: '${{ needs.create-report.outputs.issue-id }}',
               body: "Bisect Complete"
             })
