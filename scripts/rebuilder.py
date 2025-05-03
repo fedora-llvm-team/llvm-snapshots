@@ -337,7 +337,6 @@ def select_snapshot_project(
         day = datetime.date.today() - datetime.timedelta(days=i)
         project_name = day.strftime("llvm-snapshots-big-merge-%Y%m%d")
         logging.info("Trying:", project_name)
-        print("Trying:", project_name
         try:
             p = copr_client.project_proxy.get(project_owner, project_name)
             if not p:
@@ -348,7 +347,6 @@ def select_snapshot_project(
             for pkg in pkgs:
                 chroots.update(pkg["chroots"])
 
-            print(project_name, chroots, target_chroots)
             logging.info(project_name, chroots)
             if all(t in chroots for t in target_chroots):
                 logging.info("PASS", project_name)
