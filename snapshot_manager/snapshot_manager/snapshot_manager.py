@@ -3,6 +3,7 @@ SnapshotManager
 """
 
 import logging
+import os
 import pathlib
 
 import copr.v3
@@ -555,6 +556,8 @@ fetching the artifacts of the performance runs.
 {tf.requests_to_html_list(reqs)}
 
 {tf.requests_to_html_comment(reqs)}
+
+This issue was created by [this action run]({os.getenv(key="ACTION_RUN_URL", default="")}).
 """
     repo = github_client.get_repo(github_repo)
     issue = repo.create_issue(

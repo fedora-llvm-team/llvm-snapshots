@@ -324,7 +324,7 @@ def make_compare_compile_time_request(
     Returns:
         Request: testing-farm request object
     """
-    test_plan_name = "compare-comile-time"
+    test_plan_name = "compare-compile-time"
 
     logging.info(f"Kicking off new {test_plan_name} test for chroot {chroot}.")
 
@@ -333,7 +333,7 @@ def make_compare_compile_time_request(
     cmd = f"""testing-farm \
         request \
         --compose {tfutil.get_compose_from_chroot(chroot=chroot)} \
-        --git-url {config_a.package_clone_url} \
+        --git-url {config_a.test_repo_url} \
         --arch {util.chroot_arch(chroot)} \
         --plan /tests/{test_plan_name} \
         --context distro={util.chroot_os(chroot)} \
@@ -351,6 +351,7 @@ def make_compare_compile_time_request(
     exit_code, stdout, stderr = util.run_cmd(cmd, timeout_secs=None)
     if exit_code == 0:
         return Request(
+            request_id=tfutil.parse_output_for_request_id(stdout),
             test_plan_name=test_plan_name,
             chroot=chroot,
         )
