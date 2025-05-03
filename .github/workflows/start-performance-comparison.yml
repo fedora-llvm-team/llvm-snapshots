@@ -24,6 +24,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TESTING_FARM_API_TOKEN_PUBLIC_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_PUBLIC_RANCH }}
           TESTING_FARM_API_TOKEN_REDHAT_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_REDHAT_RANCH }}
+          ACTION_RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         run: |
           today=$(date +%Y%m%d)
           yesterday=$(date -d "${today} -1 day" +%Y%m%d)
