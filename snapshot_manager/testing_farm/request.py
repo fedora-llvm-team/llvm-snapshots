@@ -324,7 +324,7 @@ def make_compare_compile_time_request(
     Returns:
         Request: testing-farm request object
     """
-    test_plan_name = "compare-comile-time"
+    test_plan_name = "compare-compile-time"
 
     logging.info(f"Kicking off new {test_plan_name} test for chroot {chroot}.")
 
