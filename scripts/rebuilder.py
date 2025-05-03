@@ -436,12 +436,11 @@ def main() -> None:
     args = parser.parse_args()
     copr_client = copr.v3.Client.create_from_config_file()
 
-    os_name = "fedora-41"
-    clang_version = "21"
+    os_name = "fedora-rawhide"
     target_arches = ["aarch64", "ppc64le", "s390x", "x86_64"]
     target_chroots = [f"{os_name}-{a}" for a in target_arches]
     project_owner = "@fedora-llvm-team"
-    project_name = f"{os_name}-clang-{clang_version}"
+    project_name = f"clang-monthly-fedora-rebuild"
 
     if args.command == "rebuild":
         exclusions = get_exclusions()
