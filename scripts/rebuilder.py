@@ -329,7 +329,7 @@ def start_rebuild(
 
 
 def select_snapshot_project(
-    copr_client: copr.v3.Client, target_chroots: list[str], max_lookback_days: int = 14
+    copr_client: copr.v3.Client, target_chroots: list[str], max_lookback_days: int = 21
 ) -> str | None:
     project_owner = "@fedora-llvm-team"
     for i in range(max_lookback_days):
@@ -337,6 +337,7 @@ def select_snapshot_project(
         day = datetime.date.today() - datetime.timedelta(days=i)
         project_name = day.strftime("llvm-snapshots-big-merge-%Y%m%d")
         logging.info("Trying:", project_name)
+        print("Trying:", project_name
         try:
             p = copr_client.project_proxy.get(project_owner, project_name)
             if not p:
@@ -347,6 +348,7 @@ def select_snapshot_project(
             for pkg in pkgs:
                 chroots.update(pkg["chroots"])
 
+            print(project_name, chroots, target_chroots)
             logging.info(project_name, chroots)
             if all(t in chroots for t in target_chroots):
                 logging.info("PASS", project_name)
@@ -440,7 +442,7 @@ def main() -> None:
     target_arches = ["aarch64", "ppc64le", "s390x", "x86_64"]
     target_chroots = [f"{os_name}-{a}" for a in target_arches]
     project_owner = "@fedora-llvm-team"
-    project_name = f"clang-monthly-fedora-rebuild"
+    project_name = "clang-monthly-fedora-rebuild"
 
     if args.command == "rebuild":
         exclusions = get_exclusions()
