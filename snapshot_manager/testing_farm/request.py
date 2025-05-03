@@ -333,7 +333,7 @@ def make_compare_compile_time_request(
     cmd = f"""testing-farm \
         request \
         --compose {tfutil.get_compose_from_chroot(chroot=chroot)} \
-        --git-url {config_a.package_clone_url} \
+        --git-url {config_a.test_repo_url} \
         --arch {util.chroot_arch(chroot)} \
         --plan /tests/{test_plan_name} \
         --context distro={util.chroot_os(chroot)} \
