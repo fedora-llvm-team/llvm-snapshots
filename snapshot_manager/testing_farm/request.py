@@ -351,6 +351,7 @@ def make_compare_compile_time_request(
     exit_code, stdout, stderr = util.run_cmd(cmd, timeout_secs=None)
     if exit_code == 0:
         return Request(
+            request_id=tfutil.parse_output_for_request_id(stdout),
             test_plan_name=test_plan_name,
             chroot=chroot,
         )
