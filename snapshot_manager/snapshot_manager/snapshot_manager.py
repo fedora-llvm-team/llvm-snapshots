@@ -537,11 +537,11 @@ def run_performance_comparison(
 
         # TODO(kwk): Only run performance comparison if not already run.
         logging.info(f"Making performance request for chroot {chroot}")
-        reqs.append(
-            tf.make_compare_compile_time_request(
-                config_a=conf_a, config_b=conf_b, chroot=chroot
-            )
+        req = tf.make_compare_compile_time_request(
+            config_a=conf_a, config_b=conf_b, chroot=chroot
         )
+        logging.info(f"testing-farm request ID for {chroot}: {req.request_id}")
+        reqs.append(req)
 
     if len(reqs) == 0:
         logging.info("No performance requests were made")
