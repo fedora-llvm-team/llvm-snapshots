@@ -535,7 +535,7 @@ def markdown_build_status_matrix(
         if state is not None:
             if state.copr_build_state is not None:
                 cols.append(
-                    f"[{state.copr_build_state.to_icon()}]({state.build_page_url})"
+                    f"[{CoprBuildStatus(state.copr_build_state).to_icon()}]({state.build_page_url})"
                 )
         else:
             cols.append(init_state)
