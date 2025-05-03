@@ -329,7 +329,7 @@ def start_rebuild(
 
 
 def select_snapshot_project(
-    copr_client: copr.v3.Client, target_chroots: list[str], max_lookback_days: int = 21
+    copr_client: copr.v3.Client, target_chroots: list[str], max_lookback_days: int = 14
 ) -> str | None:
     project_owner = "@fedora-llvm-team"
     for i in range(max_lookback_days):
