@@ -201,7 +201,7 @@ def test_run_performance_comparison__full(
 
     # Check that we search for a github issue
     github_client_mock.search_issues.assert_called_once_with(
-        "is:issue repo:foo/bar author:github-actions[bot] label:strategy/strategy A label:strategy/strategy B label:performance-comparison 20250402 in:title"
+        f'is:issue repo:foo/bar author:github-actions[bot] label:strategy/strategy A label:strategy/strategy B label:"{config.Config().performance_comparison_label}" 20250402 in:title'
     )
 
     # Check that issue was created with proper values
@@ -220,7 +220,7 @@ def test_run_performance_comparison__full(
     assert kwargs["labels"] == [
         "strategy/strategy A",
         "strategy/strategy B",
-        "performance-comparison",
+        f"{config.Config().performance_comparison_label}",
     ]
     assert tf.requests_to_html_list([req1, req2, req3]) in str(kwargs["body"])
     assert tf.requests_to_html_comment([req1, req2, req3]) in str(kwargs["body"])

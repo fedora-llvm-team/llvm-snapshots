@@ -108,7 +108,7 @@ class GithubClient:
 
         # See https://docs.github.com/en/search-github/searching-on-github/searching-issues-and-pull-requests
         # label:broken_snapshot_detected
-        query = f"is:issue repo:{github_repo} author:{creator} label:strategy/{strategy} {self.config.yyyymmdd} in:title"
+        query = f'is:issue repo:{github_repo} author:{creator} label:strategy/{strategy} -label:"{config.Config().performance_comparison_label}" {self.config.yyyymmdd} in:title'
         issues = self.github.search_issues(query)
         if issues is None:
             logging.info(f"Found no issue for today ({self.config.yyyymmdd})")
