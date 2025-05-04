@@ -566,7 +566,7 @@ This issue was created by [this action run]({os.getenv(key="ACTION_RUN_URL", def
         labels=[
             f"strategy/{conf_a.build_strategy}",
             f"strategy/{conf_b.build_strategy}",
-            "performance-comparison",
+            config.Config().performance_comparison_label,
         ],
         body=comment_body,
     )
@@ -708,7 +708,7 @@ def get_performance_github_issue(
     """
     # See https://docs.github.com/en/search-github/searching-on-github/searching-issues-and-pull-requests
     # label:broken_snapshot_detected
-    query = f"is:issue repo:{github_repo} author:{creator} label:strategy/{conf_a.build_strategy} label:strategy/{conf_b.build_strategy} label:performance-comparison {conf_a.yyyymmdd} in:title"
+    query = f'is:issue repo:{github_repo} author:{creator} label:strategy/{conf_a.build_strategy} label:strategy/{conf_b.build_strategy} label:"{config.Config().performance_comparison_label}" {conf_a.yyyymmdd} in:title'
     issues = github_client.search_issues(query)
     if issues is None:
         logging.info(f"Found no issue for query ({query})")

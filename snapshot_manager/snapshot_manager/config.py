@@ -25,6 +25,9 @@ class Config:
     build_strategy: str = "big-merge"
     """The build strategy to use a by default."""
 
+    performance_comparison_label: str = "performance-comparison"
+    """Label used to identify performance comparison issue"""
+
     github_repo: str = "fedora-llvm-team/llvm-snapshots-test"
     """Default github repo to use for creating issues"""
 

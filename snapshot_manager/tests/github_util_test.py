@@ -81,7 +81,7 @@ def test_get_todays_issue_search_query(
 
         assert res is None
         yyyymmdd = datetime.datetime.now().strftime("%Y%m%d")
-        query_str = f"is:issue repo:{gh.config.github_repo} author:github-actions[bot] label:strategy/big-merge {yyyymmdd} in:title"
+        query_str = f'is:issue repo:{gh.config.github_repo} author:github-actions[bot] label:strategy/big-merge -label:"{config.Config().performance_comparison_label}" {yyyymmdd} in:title'
         search_issues_mock.assert_called_once_with(query_str)
 
 
