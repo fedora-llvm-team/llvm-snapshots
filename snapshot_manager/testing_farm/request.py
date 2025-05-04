@@ -342,8 +342,8 @@ def make_compare_compile_time_request(
         --environment YYYYMMDD={config_a.yyyymmdd} \
         --environment CONFIG_A={config_a.build_strategy} \
         --environment CONFIG_B={config_b.build_strategy} \
-        --environment CONFIG_A_COPR_PROJECT={config_a.copr_projectname} \
-        --environment CONFIG_B_COPR_PROJECT={config_b.copr_projectname} \
+        --environment CONFIG_A_PROJECT_NAME={config_a.copr_projectname} \
+        --environment CONFIG_B_PROJECT_NAME={config_b.copr_projectname} \
         --environment COPR_CHROOT={chroot}
         --no-wait
         """
