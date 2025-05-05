@@ -292,31 +292,33 @@ def build_pkg(
     project_name: str,
     copr_client: copr.v3.Client,
     pkg,
-    koji_server = "https://koji.fedoraproject.org/kojihub",
-    default_commitish = 'rawhide',
-    build_tag = 'f43',
-    distgit = 'fedora',
-    chroots = None
+    koji_server="https://koji.fedoraproject.org/kojihub",
+    default_commitish="rawhide",
+    build_tag="f43",
+    distgit="fedora",
+    chroots=None
 ):
 
-    buildopts = {
-        "background": True,
-        "chroots": chroots
-    }
+    buildopts = {"background": True, "chroots": chroots}
 
     koji_session = koji.ClientSession(koji_server)
     try:
         build = koji_session.getLatestBuilds(tag=build_tag, package=pkg)[0]
         build_info = koji_session.getBuild(build["build_id"])
         commitish = build_info["source"].split("#")[1]
-    except:
+    except:  # noqa: E722
         logging.warn(
             "Could not determine git commit for latest build of {p}.  Defaulting to {default_commitish}."
         )
         commitish = default_commitish
 
     copr_client.build_proxy.create_from_distgit(
-        project_owner, project_name, pkg, commitish, buildopts=buildopts, distgit=distgit
+        project_owner,
+        project_name,
+        pkg, 
+        commitish,
+        buildopts=buildopts,
+        distgit=distgit
     )
 
 
@@ -326,7 +328,7 @@ def start_rebuild(
     copr_client: copr.v3.Client,
     pkgs: set[str],
     snapshot_project_name: str,
-    chroots : list[str]
+    chroots: list[str]
 ) -> None:
     print("START", pkgs, "END")
     # Update the rebuild project to use the latest snapshot
@@ -341,7 +343,7 @@ def start_rebuild(
 
     logging.info("Rebuilding", len(pkgs), "packages")
     for p in pkgs:
-        build_pkg(project_owner, project_name, copr_client, p, chroots = chroots)
+        build_pkg(project_owner, project_name, copr_client, p, chroots=chroots)
 
 
 def select_snapshot_project(
@@ -473,7 +475,12 @@ def main() -> None:
         snapshot_project = select_snapshot_project(copr_client, target_chroots)
         if snapshot_project is not None:
             start_rebuild(
-                project_owner, project_name, copr_client, pkgs, snapshot_project, target_chroots
+                project_owner,
+                project_name,
+                copr_client,
+                pkgs,
+                snapshot_project,
+                target_chroots
             )
     elif args.command == "get-regressions":
         start_time = datetime.datetime.fromisoformat(args.start_date)
