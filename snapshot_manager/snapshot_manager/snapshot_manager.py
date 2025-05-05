@@ -562,7 +562,7 @@ This issue was created by [this action run]({os.getenv(key="ACTION_RUN_URL", def
     repo = github_client.get_repo(github_repo)
     issue = repo.create_issue(
         title=f"Performance comparison: {conf_a.build_strategy} vs. {conf_b.build_strategy} - {conf_a.yyyymmdd}",
-        assignees=[conf_a.maintainer_handle, conf_b.maintainer_handle],
+        assignees=[conf_a.maintainer_handle],
         labels=[
             f"strategy/{conf_a.build_strategy}",
             f"strategy/{conf_b.build_strategy}",

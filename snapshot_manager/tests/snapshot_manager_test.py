@@ -216,7 +216,7 @@ def test_run_performance_comparison__full(
         kwargs["title"]
         == "Performance comparison: strategy A vs. strategy B - 20250402"
     )
-    assert kwargs["assignees"] == ["maintainerA", "maintainerB"]
+    assert kwargs["assignees"] == ["maintainerA"]
     assert kwargs["labels"] == [
         "strategy/strategy A",
         "strategy/strategy B",
