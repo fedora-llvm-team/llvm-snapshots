@@ -315,7 +315,7 @@ def build_pkg(
     copr_client.build_proxy.create_from_distgit(
         project_owner,
         project_name,
-        pkg, 
+        pkg,
         commitish,
         buildopts=buildopts,
         distgit=distgit
