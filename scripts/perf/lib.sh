@@ -106,7 +106,7 @@ function build_test_suite() {
 
     # Install and enable the repository that provides the LLVM Toolchain
     if [[ -n "${COPR_PROJECT}" ]]; then
-        dnf copr enable -y ${COPR_OWNER}/${COPR_PROJECT}
+        dnf copr enable -y ${COPR_OWNER}/${COPR_PROJECT} ${CHROOT}
         local repo_file=$(dnf repoinfo --json *${COPR_PROJECT}* | jq -r ".[0].repo_file_path")
         distname=$(rpm --eval "%{?fedora:fedora}%{?rhel:rhel}")
         sed -i "s/\$distname/$distname/g" $repo_file
