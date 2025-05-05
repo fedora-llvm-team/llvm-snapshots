@@ -296,7 +296,7 @@ def build_pkg(
     default_commitish="rawhide",
     build_tag="f43",
     distgit="fedora",
-    chroots=None
+    chroots=None,
 ):
 
     buildopts = {"background": True, "chroots": chroots}
@@ -318,7 +318,7 @@ def build_pkg(
         pkg,
         commitish,
         buildopts=buildopts,
-        distgit=distgit
+        distgit=distgit,
     )
 
 
@@ -328,7 +328,7 @@ def start_rebuild(
     copr_client: copr.v3.Client,
     pkgs: set[str],
     snapshot_project_name: str,
-    chroots: list[str]
+    chroots: list[str],
 ) -> None:
     print("START", pkgs, "END")
     # Update the rebuild project to use the latest snapshot
@@ -480,7 +480,7 @@ def main() -> None:
                 copr_client,
                 pkgs,
                 snapshot_project,
-                target_chroots
+                target_chroots,
             )
     elif args.command == "get-regressions":
         start_time = datetime.datetime.fromisoformat(args.start_date)
