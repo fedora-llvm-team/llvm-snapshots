@@ -38,10 +38,10 @@ prepare:
       # Use a newer llvm-test-suite version from copr.
       - dnf copr enable -y @fedora-llvm-team/llvm-test-suite $COPR_CHROOT
 
-  - name: "Check that snapshot (~pre) version of LLVM is installed"
+  - name: "Check that snapshot version of LLVM is installed"
     how: shell
     order: 99
-    script: rpm -q --qf "%{version}" llvm-libs | grep '~pre'
+    script: rpm -q --qf "%{nvr}" llvm-libs | grep -P '~pre|pre\.'
 adjust:
   - discover+:
       - name: redhat-rpm-config-tests
