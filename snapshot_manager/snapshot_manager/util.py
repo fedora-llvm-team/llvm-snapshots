@@ -136,6 +136,7 @@ def read_url_response_into_file(url: str, **kw_args: Any) -> pathlib.Path:
     """
     logging.info(f"Getting URL {url}")
     response = requests.get(url)
+    response.raise_for_status()
     prefix: str | None = None
     if "prefix" in kw_args:
         prefix = kw_args.get("prefix", None)

@@ -652,9 +652,10 @@ def collect_performance_comparison_results(
 
     logging.info(requests)
     for req in requests:
-        req_file = tf.get_request_file(tfutil.sanitize_request_id(req.request_id))
+        req_id = tfutil.sanitize_request_id(req.request_id)
+        req_file = tf.get_request_file(req_id)
         xunit_file = tf.get_xunit_file_from_request_file(
-            request_file=req_file, request_id=tfutil.sanitize_request_id(req.request_id)
+            request_file=req_file, request_id=req_id
         )
         if xunit_file is None:
             # This is not necessarily an error. It could b that the xuint URL
@@ -668,14 +669,17 @@ def collect_performance_comparison_results(
 
         results_url = data_url + "/results.csv"
         logging.info(f"Downloading CSV file from {results_url}")
-        if not tfutil._IN_TEST_MODE:
-            csv_filepath = util.read_url_response_into_file(results_url)
+        try:
+            if not tfutil._IN_TEST_MODE:
+                csv_filepath = util.read_url_response_into_file(results_url)
+            else:
+                csv_filepath = tfutil._test_path(f"{req.request_id}/results.csv")
+        except Exception as ex:
+            logging.info(f"Failed to download CSV file from {results_url}: {ex}")
         else:
-            csv_filepath = tfutil._test_path(f"{req.request_id}/results.csv")
-
-        # Append CSV rows from just downloaded CSV file to dataframe
-        df_new = pd.read_csv(csv_filepath)
-        df = pd.concat(objs=[df, df_new])
+            # Append CSV rows from just downloaded CSV file to dataframe
+            df_new = pd.read_csv(csv_filepath)
+            df = pd.concat(objs=[df, df_new])
 
     # Write CSV file
     logging.info(f"Writing merged CSV file to {csv_file_out}")
