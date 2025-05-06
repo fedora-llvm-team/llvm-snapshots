@@ -3641,3 +3641,8 @@ date,package,chroot,build_time,state,build_id,timestamp
 2025/05/06,llvm,fedora-rawhide-aarch64,-1,running,8999690,1746514337
 2025/05/06,llvm,centos-stream-9-x86_64,5208,succeeded,8999689,1746514337
 2025/05/06,llvm,centos-stream-10-x86_64,4529,succeeded,8999688,1746514337
+2025/05/06,llvm,fedora-rawhide-x86_64,5993,succeeded,8999692,1746573289
+2025/05/06,llvm,fedora-rawhide-ppc64le,51146,failed,8999691,1746573289
+2025/05/06,llvm,fedora-rawhide-aarch64,29231,failed,8999690,1746573289
+2025/05/06,llvm,centos-stream-9-x86_64,5208,succeeded,8999689,1746573289
+2025/05/06,llvm,centos-stream-10-x86_64,4529,succeeded,8999688,1746573289
