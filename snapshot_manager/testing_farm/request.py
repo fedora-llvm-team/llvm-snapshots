@@ -102,19 +102,27 @@ class Request:
         ... Foo bAr. <!--TESTING_FARM:invalid-chroot/33333333-fc9a-4e1d-95fe-567cc9d62ad4/8,9,10--> fafa
         ... FOO bar. <!--TESTING_FARM: fedora-40-x86_64/; cat /tmp/secret/file/11--> fafa
         ... FOO bar. <!--TESTING_FARM: fedora-40-x86_64/33333333-fc9a-4e1d-95fe-567cc9d62ad4/12,13,14--> fafa
-        ... This next request ID is missing build IDs. We allow it because there used to be comment IDs
-        ... that didn't have these IDs.
-        ... FOO bar. <!--TESTING_FARM: fedora-38-x86_64/44444444-fc9a-4e1d-95fe-567cc9d62ad4--> fafa
+        ... This next request ID is missing build IDs. We allow it because we don't store build IDs for performance-comparison requests.
+        ... FOO bar. <!--TESTING_FARM: fedora-38-x86_64/44444444-fc9a-4e1d-95fe-567cc9d62ad4/--> fafa
+        ... FOO bar. <!--TESTING_FARM: fedora-42-x86_64/55555555-fc9a-4e1d-95fe-567cc9d62ad4/--> fafa
         ... '''
         >>> reqs = Request.parse(s)
         >>> [req.chroot for req in reqs]
-        ['fedora-38-x86_64', 'fedora-39-x86_64', 'fedora-40-x86_64', 'fedora-rawhide-x86_64']
-        >>> [req.request_id for req in reqs]
-        [UUID('44444444-fc9a-4e1d-95fe-567cc9d62ad4'), UUID('22222222-fc9a-4e1d-95fe-567cc9d62ad4'), UUID('33333333-fc9a-4e1d-95fe-567cc9d62ad4'), UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad4')]
+        ['fedora-38-x86_64', 'fedora-39-x86_64', 'fedora-40-x86_64', 'fedora-42-x86_64', 'fedora-rawhide-x86_64']
+        >>> [req.request_id for req in reqs]  # doctest: +NORMALIZE_WHITESPACE
+        [UUID('44444444-fc9a-4e1d-95fe-567cc9d62ad4'),
+        UUID('22222222-fc9a-4e1d-95fe-567cc9d62ad4'),
+        UUID('33333333-fc9a-4e1d-95fe-567cc9d62ad4'),
+        UUID('55555555-fc9a-4e1d-95fe-567cc9d62ad4'),
+        UUID('271a79e8-fc9a-4e1d-95fe-567cc9d62ad4')]
         >>> [req.copr_build_ids for req in reqs]
-        [[], [5, 6, 7], [12, 13, 14], [1, 2, 3]]
+        [[], [5, 6, 7], [12, 13, 14], [], [1, 2, 3]]
         """
-        matches = re.findall(r"<!--TESTING_FARM:([^/]+)/([^/]+)(/([^/]+))?-->", string)
+        matches = re.findall(
+            pattern=r"<!--TESTING_FARM:([^/]+)/([^/]+)(/([^/]*))?-->",
+            string=string,
+            flags=re.MULTILINE,
+        )
         if not matches:
             logging.debug("No testing-farm requests found to recover.")
             return []
