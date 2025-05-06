@@ -6,7 +6,7 @@ function get_clang_commit {
   buildid=$1
   pkg=$2
 
-  curl "https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/fedora-41-clang-21/fedora-41-x86_64/0$buildid-$pkg/root.log.gz" | gunzip |  grep -o 'clang[[:space:]]\+x86_64[[:space:]]\+[0-9a-g~pre.]\+' | cut -d 'g' -f 3
+  curl "https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/clang-monthly-fedora-rebuild/fedora-rawhide-x86_64/0$buildid-$pkg/root.log.gz" | gunzip |  grep -o 'clang[[:space:]]\+x86_64[[:space:]]\+[0-9a-g~pre.]\+' | cut -d 'g' -f 3
 }
 
 function get_clang_copr_project {
@@ -14,7 +14,7 @@ function get_clang_copr_project {
   pkg=$2
   arch=$(rpm --eval %{_arch})
 
-  date=$(curl "https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/fedora-41-clang-21/fedora-41-$arch/0$buildid-$pkg/root.log.gz" | gunzip |  grep -o "clang[[:space:]]\+$arch[[:space:]]\+[0-9.]\+~pre[0-9]\+" | cut -d '~' -f 2 | sed 's/pre//g')
+  date=$(curl "https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/clang-monthly-fedora-rebuild/fedora-rawhide-$arch/0$buildid-$pkg/root.log.gz" | gunzip |  grep -o "clang[[:space:]]\+$arch[[:space:]]\+[0-9.]\+~pre[0-9]\+" | cut -d '~' -f 2 | sed 's/pre//g')
   echo "@fedora-llvm-team/llvm-snapshots-big-merge-$date"
 }
 
@@ -84,7 +84,7 @@ else
 fi
 
 read -r buildid last_success_id <<<$(curl -X 'GET' \
-  "https://copr.fedorainfracloud.org/api_3/package/?ownername=%40fedora-llvm-team&projectname=fedora-41-clang-21&packagename=$pkg&with_latest_build=true&with_latest_succeeded_build=true" \
+  "https://copr.fedorainfracloud.org/api_3/package/?ownername=%40fedora-llvm-team&projectname=clang-monthly-fedora-rebuild&packagename=$pkg&with_latest_build=true&with_latest_succeeded_build=true" \
   -H 'accept: application/json' | jq -r '[.builds.latest.id,.builds.latest_succeeded.id] | join(" ")' )
 
 
