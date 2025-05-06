@@ -238,7 +238,7 @@ function _csv() {
 # Sets cpu_header_line and cpu_line variables for usage in CSV
 function _gather_cpu_info() {
     local lscpu_out=$(mktemp)
-    lscpu --hierarchic=never --json --bytes > $lscpu_out
+    lscpu --json --bytes > $lscpu_out
 
     cpu_header_line=""
     cpu_line=""
