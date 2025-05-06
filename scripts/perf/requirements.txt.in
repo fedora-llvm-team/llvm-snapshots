@@ -3,5 +3,5 @@
 # pip install pip-tools
 # pip-compile -o requirements.txt  requirements.txt.in
 
-pandas>=2.2.3
-scipy>=1.15.2
+pandas>=2.0.2
+scipy>=1.6.2
