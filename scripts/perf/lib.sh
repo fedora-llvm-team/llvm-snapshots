@@ -166,7 +166,7 @@ function compare_compile_time() {
         python3 -m venv .venv
     fi
     source ./.venv/bin/activate
-    pip install -r ${SCRIPT_DIR}/requirements.txt
+    pip install pandas scipy
 
     for i in $(seq -w 1 ${NUM_TEST_RUNS}); do
         local LHS_DATA=$RESULT_DIR/$LHS_NAME.$i.json
