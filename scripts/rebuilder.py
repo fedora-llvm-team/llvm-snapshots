@@ -5,7 +5,7 @@ import logging
 import re
 import sys
 import unittest
-from typing import Any, Optional
+from typing import Any
 
 import copr.v3
 import dnf
@@ -296,7 +296,7 @@ def build_pkg(
     default_commitish: str = "rawhide",
     build_tag: str = "f43",
     distgit: str = "fedora",
-    chroots: Optional[list[str]] = None,
+    chroots: list[str] | None = None,
 ) -> None:
 
     buildopts = {"background": True, "chroots": chroots}
