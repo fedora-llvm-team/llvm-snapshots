@@ -296,7 +296,7 @@ def build_pkg(
     default_commitish: str = "rawhide",
     build_tag: str = "f43",
     distgit: str = "fedora",
-    chroots:list[str] = None,
+    chroots: list[str] = None,
 ) -> None:
 
     buildopts = {"background": True, "chroots": chroots}
