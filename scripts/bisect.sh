@@ -20,7 +20,7 @@ function get_clang_copr_project {
 
 function configure_llvm {
 
-  if [ -n "$LLVM_SYSROOT" ] -a [ -e "$LLVM_SYSROOT/bin/clang" ]; then
+  if [ -n "$LLVM_SYSROOT" ] && [ -e "$LLVM_SYSROOT/bin/clang" ]; then
     cc=$LLVM_SYSROOT/bin/clang
     cxx=$LLVM_SYSROOT/bin/clang++
   else
