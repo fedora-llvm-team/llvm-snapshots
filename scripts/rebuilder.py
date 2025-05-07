@@ -5,7 +5,7 @@ import logging
 import re
 import sys
 import unittest
-from typing import Any
+from typing import Any, Optional
 
 import copr.v3
 import dnf
