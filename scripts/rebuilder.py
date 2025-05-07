@@ -291,13 +291,13 @@ def build_pkg(
     project_owner: str,
     project_name: str,
     copr_client: copr.v3.Client,
-    pkg,
-    koji_server="https://koji.fedoraproject.org/kojihub",
-    default_commitish="rawhide",
-    build_tag="f43",
-    distgit="fedora",
-    chroots=None,
-):
+    pkg: str,
+    koji_server="https://koji.fedoraproject.org/kojihub": str,
+    default_commitish="rawhide": str,
+    build_tag="f43": str,
+    distgit="fedora": str,
+    chroots=None: list[str],
+) -> None:
 
     buildopts = {"background": True, "chroots": chroots}
 
