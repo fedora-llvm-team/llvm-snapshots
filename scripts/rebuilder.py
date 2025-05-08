@@ -287,12 +287,48 @@ def get_chroot_results(
                 p["failed_chroots"].append(c)
 
 
+def build_pkg(
+    project_owner: str,
+    project_name: str,
+    copr_client: copr.v3.Client,
+    pkg: str,
+    koji_server: str = "https://koji.fedoraproject.org/kojihub",
+    default_commitish: str = "rawhide",
+    build_tag: str = "f43",
+    distgit: str = "fedora",
+    chroots: list[str] | None = None,
+) -> None:
+
+    buildopts = {"background": True, "chroots": chroots}
+
+    koji_session = koji.ClientSession(koji_server)
+    try:
+        build = koji_session.getLatestBuilds(tag=build_tag, package=pkg)[0]
+        build_info = koji_session.getBuild(build["build_id"])
+        commitish = build_info["source"].split("#")[1]
+    except:  # noqa: E722
+        logging.warn(
+            "Could not determine git commit for latest build of {p}.  Defaulting to {default_commitish}."
+        )
+        commitish = default_commitish
+
+    copr_client.build_proxy.create_from_distgit(
+        project_owner,
+        project_name,
+        pkg,
+        commitish,
+        buildopts=buildopts,
+        distgit=distgit,
+    )
+
+
 def start_rebuild(
     project_owner: str,
     project_name: str,
     copr_client: copr.v3.Client,
     pkgs: set[str],
     snapshot_project_name: str,
+    chroots: list[str],
 ) -> None:
     print("START", pkgs, "END")
     # Update the rebuild project to use the latest snapshot
@@ -305,27 +341,9 @@ def start_rebuild(
         ],
     )
 
-    buildopts = {
-        "background": True,
-    }
     logging.info("Rebuilding", len(pkgs), "packages")
-    koji_session = koji.ClientSession("https://koji.fedoraproject.org/kojihub")
-    default_commitish = "f41"
     for p in pkgs:
-        logging.info("Rebuild", p)
-        try:
-            build = koji_session.getLatestBuilds(tag="f41-updates", package=p)[0]
-            build_info = koji_session.getBuild(build["build_id"])
-            commitish = build_info["source"].split("#")[1]
-        except:  # noqa: E722
-            logging.warning(
-                "Could not determine git commit for latest build of {p}.  Defaulting to {default_commitish}."
-            )
-            commitish = default_commitish
-
-        copr_client.build_proxy.create_from_distgit(
-            project_owner, project_name, p, commitish, buildopts=buildopts
-        )
+        build_pkg(project_owner, project_name, copr_client, p, chroots=chroots)
 
 
 def select_snapshot_project(
@@ -457,7 +475,12 @@ def main() -> None:
         snapshot_project = select_snapshot_project(copr_client, target_chroots)
         if snapshot_project is not None:
             start_rebuild(
-                project_owner, project_name, copr_client, pkgs, snapshot_project
+                project_owner,
+                project_name,
+                copr_client,
+                pkgs,
+                snapshot_project,
+                target_chroots,
             )
     elif args.command == "get-regressions":
         start_time = datetime.datetime.fromisoformat(args.start_date)
