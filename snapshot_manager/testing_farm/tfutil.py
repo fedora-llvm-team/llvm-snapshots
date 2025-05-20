@@ -212,8 +212,16 @@ def get_xunit_file_from_request_file(
     request_file: pathlib.Path, request_id: uuid.UUID
 ) -> pathlib.Path | None:
     result_json = json.loads(request_file.read_text())
+    if result_json is None:
+        logging.info(f"Loading request file returned None: {request_file}")
+        return None
     if "result" not in result_json:
         raise KeyError("failed to find 'result' key in JSON result response")
+    if result_json["result"] is None:
+        logging.info(
+            f"'result' key in JSON request file (state={result_json["state"]}) is None: {request_file}"
+        )
+        return None
     if "xunit_url" not in result_json["result"]:
         raise KeyError("failed to find 'xunit_url' key in result dict response")
     xunit_url = result_json["result"]["xunit_url"]
