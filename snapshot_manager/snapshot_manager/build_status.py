@@ -122,10 +122,11 @@ class BuildState:
 
     def render_as_markdown(self) -> str:
         """Return an HTML string representation of this Build State to be used in a github issue"""
-        quoted_build_log_link = urllib.parse.quote(self.build_log_url)
-        link = f'<a href="{self.build_log_url}">build log</a>, <a href="https://logdetective.com/contribute/copr/{self.build_id:08}/{self.chroot}">Teach AI</a>, <a href="https://log-detective.com/explain?url={quoted_build_log_link}">Ask AI</a>'
-        if self.url_build_log is None:
+        if self.url_build_log is None or self.url_build_log.strip() == "":
             link = f'<a href="{self.build_page_url}">build page</a>'
+        else:
+            quoted_build_log_link = urllib.parse.quote(self.url_build_log)
+            link = f'<a href="{self.url_build_log}">build log</a>, <a href="https://logdetective.com/contribute/copr/{self.build_id:08}/{self.chroot}">Teach AI</a>, <a href="https://log-detective.com/explain?url={quoted_build_log_link}">Ask AI</a>'
 
         return f"""
 <details>
@@ -192,11 +193,6 @@ class BuildState:
         'https://copr.fedorainfracloud.org/coprs/build/123'
         """
         return f"https://copr.fedorainfracloud.org/coprs/build/{self.build_id}"
-
-    @property
-    def build_log_url(self) -> str:
-        """Returns the URL to to the build log page for this build state"""
-        return self.url_build_log
 
     def augment_with_error(self) -> "BuildState":
         """Inspects the build status and if it is an error it will get and scan the logs"""
