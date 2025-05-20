@@ -72,7 +72,7 @@ class TestErrorCauseAndBuildStatus(base_test.TestBase):
 </details>"""
         self.assertEqual(expected_result, matrix)
 
-    def test_render_as_markdown(self) -> None:
+    def test_render_as_markdown__normal(self) -> None:
         """Test HTML string representation of a BuildState"""
         state = build_status.BuildState(
             err_cause=build_status.ErrorCause.ISSUE_NETWORK,
@@ -95,6 +95,31 @@ This is the context for the error
 </details>
 """
         self.assertEqual(expected, state.render_as_markdown())
+
+
+def test_render_as_markdown__no_build_log_url() -> None:
+    """Test HTML string representation of a BuildState without a build log URL"""
+    state = build_status.BuildState(
+        err_cause=build_status.ErrorCause.ISSUE_NETWORK,
+        package_name="foo",
+        chroot="fedora-40-x86_64",
+        url_build_log="",
+        url_build="https://example.com/url_build",
+        build_id=1234,
+        err_ctx="This is the context for the error",
+        copr_ownername="foo",
+        copr_projectname="bar",
+    )
+
+    expected = f"""
+<details>
+<summary>
+<code>foo</code> on <code>fedora-40-x86_64</code> (see <a href="{state.build_page_url}">build page</a>)
+</summary>
+This is the context for the error
+</details>
+"""
+    assert expected == state.render_as_markdown()
 
 
 class TestErrorList(base_test.TestBase):
