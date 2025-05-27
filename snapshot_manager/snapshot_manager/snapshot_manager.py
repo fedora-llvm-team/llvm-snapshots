@@ -240,7 +240,7 @@ class SnapshotManager:
                     marker=marker,
                     comment_body=f"""{marker}
 <h3>Errors found in Copr builds on <code>{chroot}</code></h3>
-{build_status.render_as_markdown(errors_for_this_chroot)}
+{build_status.render_as_markdown(f'{errors_for_this_chroot:.64000s}')}
 """,
                 )
                 self.github.unminimize_comment(comment)
