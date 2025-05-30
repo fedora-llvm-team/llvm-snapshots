@@ -235,13 +235,19 @@ class SnapshotManager:
             ]
             marker = f"<!--ERRORS_FOR_CHROOT/{chroot}-->"
             if errors_for_this_chroot is not None and len(errors_for_this_chroot) > 0:
+                # Github limits the maximum length of a comment at 65536 characters.
+                max_length = 65536
+                body = f"""{marker}
+<h3>Errors found in Copr builds on <code>{chroot}</code></h3>
+{build_status.render_as_markdown(errors_for_this_chroot)}"""
+                if len(body) > max_length:
+                    body = f"""{marker}
+<h3>Errors found in Copr builds on <code>{chroot}</code></h3>
+{build_status.render_as_markdown(errors_for_this_chroot, shortened=True)}"""
                 comment = self.github.create_or_update_comment(
                     issue=issue,
                     marker=marker,
-                    comment_body=f"""{marker}
-<h3>Errors found in Copr builds on <code>{chroot}</code></h3>
-{build_status.render_as_markdown(errors_for_this_chroot)}
-""",
+                    comment_body=body,
                 )
                 self.github.unminimize_comment(comment)
                 build_status_matrix = build_status_matrix.replace(

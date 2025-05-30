@@ -120,7 +120,7 @@ class BuildState:
     copr_ownername: str = ""
     copr_projectname: str = ""
 
-    def render_as_markdown(self) -> str:
+    def render_as_markdown(self, shortened: bool = False) -> str:
         """Return an HTML string representation of this Build State to be used in a github issue"""
         if self.url_build_log is None or self.url_build_log.strip() == "":
             link = f'<a href="{self.build_page_url}">build page</a>'
@@ -128,12 +128,16 @@ class BuildState:
             quoted_build_log_link = urllib.parse.quote(self.url_build_log)
             link = f'<a href="{self.url_build_log}">build log</a>, <a href="https://logdetective.com/contribute/copr/{self.build_id:08}/{self.chroot}">Teach AI</a>, <a href="https://log-detective.com/explain?url={quoted_build_log_link}">Ask AI</a>'
 
+        if shortened:
+            details = "The log of errors is too long for Github. See the details in the build log."
+        else:
+            details = self.err_ctx
         return f"""
 <details>
 <summary>
 <code>{self.package_name}</code> on <code>{self.chroot}</code> (see {link})
 </summary>
-{self.err_ctx}
+{details}
 </details>
 """
 
@@ -485,7 +489,7 @@ def list_only_errors(states: BuildStateList) -> BuildStateList:
     ]
 
 
-def render_as_markdown(states: BuildStateList) -> str:
+def render_as_markdown(states: BuildStateList, shortened: bool = False) -> str:
     """Sorts the build state list and renders it as HTML
 
     Args:
@@ -502,7 +506,7 @@ def render_as_markdown(states: BuildStateList) -> str:
             if last_cause is not None:
                 html += "</ol></li>"
             html += f"<li><b>{state.err_cause}</b><ol>"
-        html += f"<li>{state.render_as_markdown()}</li>"
+        html += f"<li>{state.render_as_markdown(shortened=shortened)}</li>"
         last_cause = state.err_cause
     if html != "":
         html += "</ol></li></ul>"
