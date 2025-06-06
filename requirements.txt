@@ -70,7 +70,7 @@ packaging==23.2
     # via
     #   plotly
     #   pytest
-pandas==2.2.3
+pandas==2.3.0
     # via -r requirements.txt.in
 plotly==6.1.2
     # via -r requirements.txt.in
