@@ -66,19 +66,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           today=$(date +%Y%m%d)
-          yesterday=$(date -d "${today} -1 day" +%Y%m%d)
+          #yesterday=$(date -d "${today} -1 day" +%Y%m%d)
 
           if ${{ env.get_stats }}; then
             main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-${today}" | tee -a gh-pages/build-stats-big-merge.csv
-            main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-pgo-${today}" | tee -a gh-pages/build-stats-pgo.csv
-            python3 ./main/snapshot_manager/main.py \
-              --github-repo "${GITHUB_REPOSITORY}" \
-              collect-perf-results \
-              --strategy-a pgo \
-              --strategy-b big-merge \
-              --csv-file-in gh-pages/perf-results.csv \
-              --csv-file-out gh-pages/perf-results.csv \
-              --yyyymmdd "${yesterday}"
+            # main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-pgo-${today}" | tee -a gh-pages/build-stats-pgo.csv
+            # python3 ./main/snapshot_manager/main.py \
+            #   --github-repo "${GITHUB_REPOSITORY}" \
+            #   collect-perf-results \
+            #   --strategy-a pgo \
+            #   --strategy-b big-merge \
+            #   --csv-file-in gh-pages/perf-results.csv \
+            #   --csv-file-out gh-pages/perf-results.csv \
+            #   --yyyymmdd "${yesterday}"
             git -C gh-pages add build-stats-big-merge.csv build-stats-pgo.csv perf-results.csv
           fi
           if ${{ env.create_diagrams }}; then
