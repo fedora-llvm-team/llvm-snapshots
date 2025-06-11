@@ -1,0 +1,131 @@
+name: "Submit pre-annotated build to log-detective"
+
+on:
+  issue_comment:
+    types: created
+
+permissions:
+  issues: write
+
+jobs:
+  show-reaction-eyes:
+    if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/submit-to-log-detective')}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add reaction to trigger comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const mutation = `mutation($comment_id: ID!, $reaction: ReactionContent!) {
+              addReaction(input: {subjectId: $comment_id, content: $reaction}) {
+                reaction {
+                  content
+                }
+                subject {
+                  id
+                }
+              }
+            }`;
+            const variables = {
+              comment_id: '${{ github.event.comment.node_id }}',
+              reaction: 'EYES'
+            }
+            const result = await github.graphql(mutation, variables)
+            console.log(result)
+  # check-team-membership:
+  #   if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/submit-to-log-detective')}}
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check if commenter is member of the required team.
+  #       uses: actions/github-script@v7
+  #       with:
+  #         github-token: ${{secrets.GH_ORG_READ_MEMBERS_PAT}}
+  #         script: |
+  #           const query = `query check_if_user_is_team_member($user_login: String!, $org: String!, $team_slug: String!) {
+  #             organization(login: $org) {
+  #               team(slug: $team_slug) {
+  #                 members(query: $user_login) {
+  #                   totalCount
+  #                 }
+  #               }
+  #             }
+  #           }`;
+  #           const variables = {
+  #             "user_login": "${{github.event.comment.user.login}}",
+  #             "org": "${{github.repository_owner}}",
+  #             "team_slug": "llvm-toolset-engineers"
+  #           }
+  #           const result = await github.graphql(query, variables)
+  #           console.log(result)
+
+  #           if(result['organization']['team']['members']['totalCount'] != 1) {
+  #             core.setFailed("User is not allowed to use the /submit-to-log-detective command");
+  #           }
+  submit-to-log-detective:
+    # needs: check-team-membership
+    if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/submit-to-log-detective')}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Chroots
+        id: chroots-step
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          echo "$COMMENT_BODY" | grep -Pe '^\s*/submit-to-log-detective\s+'
+          chroots=$(echo "$COMMENT_BODY" | sed 's/^\s*\/submit-to-log-detective\s*//g')
+          echo "chroots=$chroots" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-python
+      - name: Run submit-to-logdetective script
+        shell: bash -e {0}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          chroots: ${{ env.chroots }}
+        run: |
+          python3 snapshot_manager/main.py \
+            --github-repo "${GITHUB_REPOSITORY}" \
+            submit-to-log-detective \
+            --trigger-comment-id ${{ github.event.comment.id }} \
+            --issue-number ${{ github.event.issue.number }} \
+            --chroots ${{ env.chroots }}
+  show-reaction-thumbs-up:
+    needs: submit-to-log-detective
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add reaction to trigger comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const add_reaction = `mutation($comment_id: ID!, $reaction: ReactionContent!) {
+              addReaction(input: {subjectId: $comment_id, content: $reaction}) {
+                reaction {
+                  content
+                }
+                subject {
+                  id
+                }
+              }
+            }`;
+            const remove_reaction = `mutation($comment_id: ID!, $reaction: ReactionContent!) {
+              removeReaction(input: {subjectId: $comment_id, content: $reaction}) {
+                reaction {
+                  content
+                }
+                subject {
+                  id
+                }
+              }
+            }`;
+            const add_reaction_variables = {
+              comment_id: '${{ github.event.comment.node_id }}',
+              reaction: 'THUMBS_UP'
+            }
+            const result = await github.graphql(add_reaction, add_reaction_variables)
+            console.log(result)
+
+            const remove_reaction_variables = {
+              comment_id: '${{ github.event.comment.node_id }}',
+              reaction: 'EYES'
+            }
+            const result_removal = await github.graphql(remove_reaction, remove_reaction_variables)
+            console.log(result_removal)

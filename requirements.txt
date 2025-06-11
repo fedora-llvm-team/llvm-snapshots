@@ -4,6 +4,8 @@
 #
 #    pip-compile --output-file=requirements.txt requirements.txt.in
 #
+annotated-types==0.7.0
+    # via pydantic
 certifi==2024.7.4
     # via requests
 cffi==1.17.1
@@ -78,6 +80,10 @@ pluggy==1.5.0
     # via pytest
 pycparser==2.21
     # via cffi
+pydantic==2.7.4
+    # via -r requirements.txt.in
+pydantic-core==2.18.4
+    # via pydantic
 pygithub==2.6.1
     # via -r requirements.txt.in
 pygments==2.17.2
@@ -124,7 +130,10 @@ tft-cli==0.0.16
 typer[all]==0.7.0
     # via tft-cli
 typing-extensions==4.8.0
-    # via pygithub
+    # via
+    #   pydantic
+    #   pydantic-core
+    #   pygithub
 tzdata==2023.4
     # via pandas
 urllib3==1.26.19

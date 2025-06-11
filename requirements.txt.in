@@ -16,3 +16,4 @@ fnc
 coverage==7.8.2
 koji
 pytest==8.4.0
+pydantic==2.7.4
