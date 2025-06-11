@@ -9,6 +9,7 @@ import pathlib
 import copr.v3
 import github
 import github.Issue
+import log_detective as ld
 import pandas as pd
 import testing_farm as tf
 import testing_farm.tfutil as tfutil
@@ -192,6 +193,9 @@ class SnapshotManager:
         logging.info("Recover testing-farm requests")
         requests = tf.Request.parse(comment_body)
 
+        logging.info("Recover log detective contributions")
+        ld_contributions = ld.parse_for_contributions(comment_body)
+
         # Migrate recovered requests without build IDs.
         # Just assign the build IDs of the current chroot respectively.
         for req in requests:
@@ -209,6 +213,7 @@ class SnapshotManager:
 {self.github.initial_comment}
 {build_status_matrix}
 {tf.requests_to_html_comment(requests)}
+{ld.contributions_to_html_comment(ld_contributions)}
 """
         issue.edit(body=comment_body, title=self.github.issue_title())
 
@@ -237,12 +242,12 @@ class SnapshotManager:
             if errors_for_this_chroot is not None and len(errors_for_this_chroot) > 0:
                 # Github limits the maximum length of a comment at 65536 characters.
                 max_length = 65536
-                body = f"""{marker}
-<h3>Errors found in Copr builds on <code>{chroot}</code></h3>
+                body_start = f"""{marker}
+<h3>Errors found in Copr builds on <code>{chroot}</code></h3>"""
+                body = f"""{body_start}
 {build_status.render_as_markdown(errors_for_this_chroot)}"""
                 if len(body) > max_length:
-                    body = f"""{marker}
-<h3>Errors found in Copr builds on <code>{chroot}</code></h3>
+                    body = f"""{body_start}
 {build_status.render_as_markdown(errors_for_this_chroot, shortened=True)}"""
                 comment = self.github.create_or_update_comment(
                     issue=issue,
@@ -279,6 +284,17 @@ class SnapshotManager:
             current_copr_build_ids = [
                 state.build_id for state in states if state.chroot == chroot
             ]
+
+            # Remove any log detective contributions if the build ID no longer matches
+            contrib = ld.get_contrib_for_chroot(
+                contributions=ld_contributions, chroot=chroot
+            )
+            if contrib is not None:
+                if {contrib.build_id} != set(current_copr_build_ids):
+                    logging.info(
+                        f"Recovered contribution ({contrib.review_id}) invalid (build ID changed)\\nRecovered: {contrib.build_id}\\Current: {current_copr_build_ids}"
+                    )
+                ld_contributions.remove(contrib)
 
             # Check if we need to invalidate a recovered testing-farm requests.
             # Background: It can be that we have old testing-farm request IDs in the issue comment.
@@ -368,11 +384,29 @@ class SnapshotManager:
                     ),
                 )
 
+        # Walk over chroots to see if we need to submit logs to log-detective
+        for error in errors:
+            if error.chroot not in self.config.chroots:
+                continue
+            # Do we already have a log-detective contribution for this chroot?
+            contrib = ld.get_contrib_for_chroot(
+                contributions=ld_contributions, chroot=chroot
+            )
+            if contrib is not None:
+                continue
+
+            submitted_contribution = ld.upload(cfg=self.config, state=error)
+            if submitted_contribution is None:
+                continue
+
+            ld_contributions.append(submitted_contribution)
+
         logging.info("Constructing issue comment body")
         comment_body = f"""
 {self.github.initial_comment}
 {build_status_matrix}
 {tf.requests_to_html_comment(requests)}
+{ld.contributions_to_html_comment(ld_contributions)}
 """
         issue.edit(body=comment_body, title=self.github.issue_title())
 
