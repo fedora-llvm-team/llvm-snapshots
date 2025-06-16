@@ -1,3 +1,4 @@
+import dataclasses
 import json
 import logging
 import pathlib
@@ -5,7 +6,6 @@ import uuid
 from typing import Any
 
 import requests
-from pydantic import BaseModel
 
 import snapshot_manager.build_status as build_status
 import snapshot_manager.config as config
@@ -107,7 +107,8 @@ def _contrib_prefix() -> str:
     return "LOG_DETECTIVE_CONTRIBUTION_ID"
 
 
-class Contribution(BaseModel):
+@dataclasses.dataclass(kw_only=True)
+class Contribution:
     review_id: uuid.UUID | str
     chroot: str
     build_id: int
