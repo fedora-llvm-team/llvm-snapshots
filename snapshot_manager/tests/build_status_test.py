@@ -23,7 +23,7 @@ class TestErrorCauseAndBuildStatus(base_test.TestBase):
 
         for expectedCause in causes:
             with self.subTest(expectedCause=expectedCause):
-                actualCause, actualCtx = build_status.get_cause_from_build_log(
+                actualCause, actualCtx, _ = build_status.get_cause_from_build_log(
                     build_log_file=self.abspath(
                         f"test_logs/cause_{expectedCause}.log.gz"
                     ),

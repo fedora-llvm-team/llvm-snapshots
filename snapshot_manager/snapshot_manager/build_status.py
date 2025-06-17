@@ -120,6 +120,23 @@ class BuildState:
     copr_ownername: str = ""
     copr_projectname: str = ""
 
+    def get_spec_file_url(self) -> str:
+        """
+        Returns the URL to the "llvm.spec" file associated with this build.
+
+        Example:
+
+        >>> state = BuildState(
+        ...   chroot="fedora-42-x86_64",
+        ...   build_id=8896511,
+        ...   copr_ownername="@fedora-llvm-team",
+        ...   copr_projectname="llvm-snapshots",
+        ...   package_name="llvm")
+        >>> state.get_spec_file_url()
+        'https://download.copr.fedorainfracloud.org/results/@fedora-llvm-team/llvm-snapshots/fedora-42-x86_64/08896511-llvm/llvm.spec'
+        """
+        return f"https://download.copr.fedorainfracloud.org/results/{self.copr_ownername}/{self.copr_projectname}/{self.chroot}/{self.build_id:08}-{self.package_name}/{self.package_name}.spec"
+
     def render_as_markdown(self, shortened: bool = False) -> str:
         """Return an HTML string representation of this Build State to be used in a github issue"""
         if self.url_build_log is None or self.url_build_log.strip() == "":
@@ -200,6 +217,9 @@ class BuildState:
 
     def augment_with_error(self) -> "BuildState":
         """Inspects the build status and if it is an error it will get and scan the logs"""
+        self._build_log_file = None
+        self._source_build_file = None
+
         if self.copr_build_state != CoprBuildStatus.FAILED:
             logging.debug(
                 f"package {self.chroot}/{self.package_name} didn't fail no need to look for errors"
@@ -212,12 +232,12 @@ class BuildState:
             logging.debug(
                 f"No build log found for package {self.chroot}/{self.package_name}. Falling back to scanning the SRPM build log: {self.source_build_url}"
             )
-            file = util.read_url_response_into_file(
+            self._source_build_file = util.read_url_response_into_file(
                 url=self.source_build_url,
                 prefix=f"{self.package_name}-{self.chroot}-source-build-log",
             )
             _, match, _ = util.grep_file(
-                filepath=file,
+                filepath=self._source_build_file,
                 pattern=r"error:",
                 lines_after=3,
                 lines_before=3,
@@ -241,13 +261,13 @@ for <code>error:</code> (case insesitive) and here's what we've found:
 
         # Now analyze the build log but store it in a file first
         logging.debug(f"Reading build log: {self.url_build_log}")
-        build_log_file = util.read_url_response_into_file(
+        self._build_log_file = util.read_url_response_into_file(
             url=self.url_build_log,
             prefix=f"{self.package_name}-{self.chroot}-source-log",
         )
 
-        self.err_cause, self.err_ctx = get_cause_from_build_log(
-            build_log_file=build_log_file
+        self.err_cause, self.err_ctx, self._err_orig_ctx = get_cause_from_build_log(
+            build_log_file=self._build_log_file
         )
 
         return self
@@ -256,10 +276,10 @@ for <code>error:</code> (case insesitive) and here's what we've found:
 def get_cause_from_build_log(
     build_log_file: str | pathlib.Path,
     write_golden_file: bool = False,
-) -> tuple[ErrorCause, str]:
+) -> tuple[ErrorCause, str, str]:
     """Analyzes the given build log for recognizable error patterns and categorized the overall error.
 
-    The function returns a tuple of the error pattern and the error context.
+    The function returns a tuple of the error pattern, the augmented error context and the original log snippet.
     An error context is a string that has some markup to be rendered inside a github issue.
 
     If write_to_golden_file is True, the error context is written to a golden file.
@@ -270,15 +290,17 @@ def get_cause_from_build_log(
         write_golden_file (bool, optional): If True, error context is written to a golden file. Defaults to False.
 
     Returns:
-        tuple[ErrorCause, str]: The tuple of identied error pattern and the error context.
+        tuple[ErrorCause, str, str]: The tuple of identied error pattern, the augmente error context and the original log snippet.
     """
     cause = ErrorCause.ISSUE_UNKNOWN
     ctx = ""
 
-    def handle_golden_file(cause: ErrorCause, ctx: str) -> tuple[ErrorCause, str]:
+    def handle_golden_file(
+        cause: ErrorCause, ctx: str, orig_ctx: str
+    ) -> tuple[ErrorCause, str, str]:
         if write_golden_file:
             util.golden_file_path(basename=f"cause_{str(cause)}").write_text(ctx)
-        return (cause, ctx)
+        return (cause, ctx, orig_ctx)
 
     logging.info(f"Determine error cause for: {build_log_file}")
 
@@ -289,8 +311,9 @@ def get_cause_from_build_log(
     ret, ctx, err = util.grep_file(pattern=r"!! Copr timeout", filepath=build_log_file)
     if ret == 0:
         return handle_golden_file(
-            ErrorCause.ISSUE_COPR_TIMEOUT,
-            util.fenced_code_block(ctx),
+            cause=ErrorCause.ISSUE_COPR_TIMEOUT,
+            ctx=util.fenced_code_block(ctx),
+            orig_ctx=ctx,
         )
 
     logging.info(" Checking for network issue...")
@@ -300,8 +323,9 @@ def get_cause_from_build_log(
     )
     if ret == 0:
         return handle_golden_file(
-            ErrorCause.ISSUE_NETWORK,
-            util.fenced_code_block(ctx),
+            cause=ErrorCause.ISSUE_NETWORK,
+            ctx=util.fenced_code_block(ctx),
+            orig_ctx=ctx,
         )
 
     logging.info(" Checking for downstream patch application issue...")
@@ -314,8 +338,9 @@ def get_cause_from_build_log(
     )
     if ret == 0:
         return handle_golden_file(
-            ErrorCause.ISSUE_DOWNSTREAM_PATCH_APPLICATION,
-            util.fenced_code_block(ctx),
+            cause=ErrorCause.ISSUE_DOWNSTREAM_PATCH_APPLICATION,
+            ctx=util.fenced_code_block(ctx),
+            orig_ctx=ctx,
         )
 
     logging.info(" Checking for dependency issues...")
@@ -326,8 +351,9 @@ def get_cause_from_build_log(
     )
     if ret == 0:
         return handle_golden_file(
-            ErrorCause.ISSUE_DEPENDENCY,
-            util.fenced_code_block(ctx),
+            cause=ErrorCause.ISSUE_DEPENDENCY,
+            ctx=util.fenced_code_block(ctx),
+            orig_ctx=ctx,
         )
 
     logging.info(" Checking for test issues...")
@@ -355,7 +381,9 @@ def get_cause_from_build_log(
 
 </details>
 """
-        return handle_golden_file(ErrorCause.ISSUE_TEST, new_ctx)
+        return handle_golden_file(
+            cause=ErrorCause.ISSUE_TEST, ctx=new_ctx, orig_ctx=ctx
+        )
 
     logging.info(" Checking for installed but unackaged files...")
     ret, ctx, _ = util.grep_file(
@@ -367,8 +395,9 @@ def get_cause_from_build_log(
         # Remove trailing binary zero
         ctx = ctx.rstrip("\x00")
         return handle_golden_file(
-            ErrorCause.ISSUE_RPM__INSTALLED_BUT_UNPACKAGED_FILES_FOUND,
-            util.fenced_code_block(ctx),
+            cause=ErrorCause.ISSUE_RPM__INSTALLED_BUT_UNPACKAGED_FILES_FOUND,
+            ctx=util.fenced_code_block(ctx),
+            orig_ctx=ctx,
         )
 
     logging.info(" Checking for alternative installed but unackaged files...")
@@ -381,8 +410,9 @@ def get_cause_from_build_log(
         # Remove trailing binary zero
         ctx = ctx.rstrip("\x00")
         return handle_golden_file(
-            ErrorCause.ISSUE_RPM__INSTALLED_BUT_UNPACKAGED_FILES_FOUND,
-            util.fenced_code_block(ctx),
+            cause=ErrorCause.ISSUE_RPM__INSTALLED_BUT_UNPACKAGED_FILES_FOUND,
+            ctx=util.fenced_code_block(ctx),
+            orig_ctx=ctx,
         )
 
     logging.info(" Checking for directory not found...")
@@ -395,8 +425,9 @@ def get_cause_from_build_log(
         # Remove trailing binary zero
         ctx = ctx.rstrip("\x00")
         return handle_golden_file(
-            ErrorCause.ISSUE_RPM__DIRECTORY_NOT_FOUND,
-            util.fenced_code_block(ctx),
+            cause=ErrorCause.ISSUE_RPM__DIRECTORY_NOT_FOUND,
+            ctx=util.fenced_code_block(ctx),
+            orig_ctx=ctx,
         )
 
     logging.info(" Checking for file not found...")
@@ -409,8 +440,9 @@ def get_cause_from_build_log(
         # Remove trailing binary zero
         ctx = ctx.rstrip("\x00")
         return handle_golden_file(
-            ErrorCause.ISSUE_RPM__FILE_NOT_FOUND,
-            util.fenced_code_block(ctx),
+            cause=ErrorCause.ISSUE_RPM__FILE_NOT_FOUND,
+            ctx=util.fenced_code_block(ctx),
+            orig_ctx=ctx,
         )
 
     logging.info(" Checking for CMake error...")
@@ -423,8 +455,9 @@ def get_cause_from_build_log(
         # Remove trailing binary zero
         ctx = ctx.rstrip("\x00")
         return handle_golden_file(
-            ErrorCause.ISSUE_CMAKE_ERROR,
-            util.fenced_code_block(ctx),
+            cause=ErrorCause.ISSUE_CMAKE_ERROR,
+            ctx=util.fenced_code_block(ctx),
+            orig_ctx=ctx,
         )
 
     # TODO: Feel free to add your check here...
@@ -468,7 +501,7 @@ you'll find all occurrences here together with the preceding lines.
 {util.shorten_text(errors_to_look_into)}
 ```
 """
-    return handle_golden_file(cause, ctx)
+    return handle_golden_file(cause=cause, ctx=ctx, orig_ctx="")
 
 
 BuildStateList = list[BuildState]

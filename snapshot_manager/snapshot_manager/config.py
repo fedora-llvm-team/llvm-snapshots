@@ -75,6 +75,8 @@ class Config:
 
     label_prefix_llvm_release: str = "release/"
 
+    log_detective_username: str = "FAS:kkleine"
+
     @property
     def copr_projectname(self) -> str:
         """Takes the copr_project_tpl and replaces the YYYYMMDD placeholder (if any) with a date.
