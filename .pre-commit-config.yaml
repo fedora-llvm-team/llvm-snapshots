@@ -67,7 +67,6 @@ repos:
       args: [--strict, --ignore-missing-imports]
       additional_dependencies:
         - types-requests
-        - pydantic
 
   # autoflake removes unused imports and unused variables from Python code.
   - repo: https://github.com/PyCQA/autoflake
