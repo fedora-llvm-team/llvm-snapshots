@@ -127,7 +127,7 @@ typing-extensions==4.8.0
     # via pygithub
 tzdata==2023.4
     # via pandas
-urllib3==1.26.19
+urllib3==2.5.0
     # via
     #   pygithub
     #   requests
