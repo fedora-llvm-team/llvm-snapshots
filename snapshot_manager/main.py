@@ -58,6 +58,7 @@ def main() -> None:
         "github-matrix",
         "run-perf-comparison",
         "collect-perf-comparison-results",
+        "submit-to-log-detective",
     ):
         copr_client = copr_util.make_client()
         all_chroots = copr_util.get_all_chroots(client=copr_client)
@@ -80,6 +81,13 @@ def main() -> None:
     elif cmd == "retest":
         cfg.github_repo = args.github_repo
         SnapshotManager(config=cfg).retest(
+            issue_number=args.issue_number,
+            trigger_comment_id=args.trigger_comment_id,
+            chroots=args.chroots,
+        )
+    elif cmd == "submit-to-log-detective":
+        cfg.github_repo = args.github_repo
+        SnapshotManager(config=cfg).submit_to_log_detective(
             issue_number=args.issue_number,
             trigger_comment_id=args.trigger_comment_id,
             chroots=args.chroots,
@@ -178,6 +186,7 @@ def build_argument_parser(cfg: config.Config) -> argparse.ArgumentParser:
     subparsers = mainparser.add_subparsers(help="Command to run", dest="command")
 
     argument_parser_retest(subparsers)
+    argument_parser_submit_to_log_detective(subparsers)
     argument_parser_get_chroots(subparsers)
     argument_parser_delete_project(subparsers)
     argument_parser_github_matrix(subparsers)
@@ -335,6 +344,39 @@ def argument_parser_retest(
         dest="trigger_comment_id",
         required=True,
         help="ID of the comment that contains the /retest <CHROOT> string",
+    )
+    sp.add_argument(
+        "--issue-number",
+        type=int,
+        dest="issue_number",
+        required=True,
+        help="In what issue number did the comment appear in.",
+    )
+
+
+def argument_parser_submit_to_log_detective(
+    subparsers: _SubparserType,
+) -> None:
+    sp = subparsers.add_parser(
+        "submit-to-log-detective",
+        description="Pre-annotates builds for given chroots and uploads them to log-detective",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    sp.add_argument(
+        "--chroots",
+        metavar="CHROOT",
+        type=str,
+        nargs="+",
+        dest="chroots",
+        required=True,
+        help="Builds of these chroots to will be pre-annotated and uploaded to log-detective (e.g. fedora-rawhide-x86_64)",
+    )
+    sp.add_argument(
+        "--trigger-comment-id",
+        type=int,
+        dest="trigger_comment_id",
+        required=True,
+        help="ID of the comment that contains the /submit-to-log-detective <CHROOT> string",
     )
     sp.add_argument(
         "--issue-number",

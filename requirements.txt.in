@@ -11,7 +11,7 @@ tft-cli==0.0.16
 regex==2024.11.6
 munch==4.0.0
 copr==2.1
-requests==2.32.3
+requests==2.32.4
 fnc
 coverage==7.9.1
 koji
