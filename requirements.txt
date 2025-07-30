@@ -96,7 +96,7 @@ python-dateutil==2.8.2
     #   pandas
 pytz==2023.4
     # via pandas
-regex==2024.11.6
+regex==2025.7.31
     # via -r requirements.txt.in
 requests==2.32.4
     # via
