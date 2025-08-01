@@ -3,7 +3,7 @@
 # pip install pip-tools
 # pip-compile -o requirements.txt  requirements.txt.in
 
-PyGithub==2.6.1
+PyGithub==2.7.0
 pandas
 plotly==6.2.0
 copr-cli

@@ -36,8 +36,6 @@ decorator==5.1.1
     # via gssapi
 defusedxml==0.7.1
     # via koji
-deprecated==1.2.13
-    # via pygithub
 dynaconf==3.2.4
     # via tft-cli
 filelock==3.13.1
@@ -78,7 +76,7 @@ pluggy==1.5.0
     # via pytest
 pycparser==2.21
     # via cffi
-pygithub==2.6.1
+pygithub==2.7.0
     # via -r requirements.txt.in
 pygments==2.17.2
     # via
@@ -131,8 +129,6 @@ urllib3==2.5.0
     # via
     #   pygithub
     #   requests
-wrapt==1.14.1
-    # via deprecated
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
