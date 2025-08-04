@@ -28,7 +28,7 @@ copr==2.1
     #   copr-cli
 copr-cli==2.1
     # via -r requirements.txt.in
-coverage==7.10.0
+coverage==7.10.2
     # via -r requirements.txt.in
 cryptography==44.0.1
     # via pyjwt
