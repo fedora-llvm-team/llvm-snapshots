@@ -24,19 +24,19 @@ class CoprProject:
         return self.name < other.name
 
     @property
-    def commit(self):
+    def commit(self) -> str:
         return self._commit
 
     @commit.setter
-    def commit(self, commit):
+    def commit(self, commit: str):
         self._commit = commit
 
     @property
-    def status(self):
+    def status(self) -> int:
         return self._status
 
     @status.setter
-    def status(self, status):
+    def status(self, status: int):
         self._status = status
 
 
@@ -165,7 +165,7 @@ def git_bisect(
     return True
 
 
-def main() -> None:
+def main() -> bool:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--good-commit")
@@ -230,7 +230,7 @@ def main() -> None:
             return git_bisect(
                 repo,
                 p.commit,
-                p.bad_commit,
+                args.bad_commit,
                 args.configure_command,
                 args.build_command,
                 args.test_command,
