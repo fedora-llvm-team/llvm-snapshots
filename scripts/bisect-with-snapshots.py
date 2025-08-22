@@ -20,15 +20,15 @@ class CoprProject:
         self._commit = None
         self._status = CoprProject.UNTESTED
 
-    def __lt__(self, other: CoprProject) -> bool:
+    def __lt__(self, other: Self) -> bool:
         return self.name < other.name
 
     @property
-    def commit(self) -> str:
+    def commit(self) -> str | None:
         return self._commit
 
     @commit.setter
-    def commit(self, commit: str):
+    def commit(self, commit: str | None) -> None:
         self._commit = commit
 
     @property
@@ -36,7 +36,7 @@ class CoprProject:
         return self._status
 
     @status.setter
-    def status(self, status: int):
+    def status(self, status: int) -> None:
         self._status = status
 
 
