@@ -20,8 +20,24 @@ class CoprProject:
         self._commit = None
         self._status = CoprProject.UNTESTED
 
-    def __lt__(self, other: CoprProject):
+    def __lt__(self, other: CoprProject) -> bool:
         return self.name < other.name
+
+    @property
+    def commit(self):
+        return self._commit
+
+    @commit.setter
+    def commit(self, commit):
+        self._commit = commit
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, status):
+        self._status = status
 
 
 def get_snapshot_projects(chroot: str | None = None) -> list[CoprProject]:
@@ -55,7 +71,7 @@ def get_clang_commit_for_snapshot_project(project_name: str, chroot: str) -> str
     return None
 
 
-def test_with_copr_builds(copr_project: str, test_command: str):
+def test_with_copr_builds(copr_project: str, test_command: str) -> bool:
     rpms = {"llvm", "clang"}
 
     print(f"Testing {copr_project}\n")
@@ -149,7 +165,7 @@ def git_bisect(
     return True
 
 
-def main():
+def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--good-commit")
