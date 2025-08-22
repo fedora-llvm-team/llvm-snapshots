@@ -2,7 +2,7 @@ import argparse
 import re
 import subprocess
 import tempfile
-from typing import Self
+from typing import Self, Optional
 
 import copr.v3
 import dnf
