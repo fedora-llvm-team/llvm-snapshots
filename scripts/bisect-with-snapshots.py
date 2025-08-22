@@ -7,7 +7,7 @@ import copr.v3
 import dnf
 import dnf.cli
 import git
-import sys
+
 
 class CoprProject:
     UNTESTED = 0
@@ -46,7 +46,7 @@ def get_clang_commit_for_snapshot_project(project_name: str, chroot: str) -> str
         "@fedora-llvm-team", project_name, packagename="llvm", status="succeeded"
     )
     regex = re.compile("llvm-[0-9.]+~pre[0-9]+.g([0-9a-f]+)")
-    for  b in builds:
+    for b in builds:
         if chroot in b["chroots"]:
             print(b)
             m = regex.search(b["source_package"]["url"])
@@ -97,20 +97,27 @@ def test_with_copr_builds(copr_project: str, test_command: str):
     print("{} project".format("Good" if success else "Bad"))
     return success
 
-def git_bisect(repo: git.Repo, good_commit: str, bad_commit: str, configure_command: str, build_command: str, test_command: str):
+def git_bisect(
+    repo: git.Repo,
+    good_commit: str,
+    bad_commit: str,
+    configure_command: str,
+    build_command: str,
+    test_command: str,
+):
     print(f"Running git bisect with {good_commit} and {bad_commit}")
     print(configure_command)
     print(build_command)
     print(test_command)
 
     # Configure llvm
-    subprocess.run(configure_command.split(), cwd = repo.working_tree_dir)
+    subprocess.run(configure_command.split(), cwd=repo.working_tree_dir)
 
     # Use subprocess.run here instead of builtin commands so we can stream output.
     subprocess.run(
         ["git", "-C", repo.working_tree_dir, "bisect", "start", bad_commit, good_commit]
     )
-    with tempfile.NamedTemporaryFile(mode='w+', delete = False) as bisect_script:
+    with tempfile.NamedTemporaryFile(mode="w+", delete = False) as bisect_script:
         print(
             f"""
             set -x
@@ -134,8 +141,8 @@ def git_bisect(repo: git.Repo, good_commit: str, bad_commit: str, configure_comm
         # run in the llvm-project directory.
         subprocess.run(
             ["git", "bisect", "run", "/usr/bin/bash", bisect_script.name],
-            cwd = repo.working_tree_dir,
-            shell = True
+            cwd=repo.working_tree_dir,
+            shell=True
         )
     print(repo.git.bisect("log"))
     return True
@@ -149,11 +156,11 @@ def main():
     parser.add_argument("--llvm-project-dir")
     parser.add_argument(
         "--configure-command",
-        default = "cmake -S llvm -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=Native -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache",
+        default="cmake -S llvm -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=Native -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache",
     )
     parser.add_argument(
         "--build-command",
-        default = "ninja -C build install-clang install-clang-resource-headers install-LLVMgold install-llvm-ar install-llvm-ranlib",
+        default="ninja -C build install-clang install-clang-resource-headers install-LLVMgold install-llvm-ar install-llvm-ranlib",
     )
     parser.add_argument("--test-command")
     parser.add_argument("--srpm")
@@ -172,7 +179,7 @@ def main():
         p.commit = get_clang_commit_for_snapshot_project(p.name, chroot)
         try:
             repo.git.merge_base("--is-ancestor", args.good_commit, p.commit)
-        except:
+        except Exception:
             continue
         print(p.commit, p.name, p.index, "/", len(projects))
 
@@ -182,10 +189,10 @@ def main():
             return git_bisect(
                 repo,
                 args.good_commit,
-                p.commit, 
+                p.commit,
                 args.configure_command,
                 args.build_command,
-                args.test_command
+                args.test_command,
             )
         good_project = p
         break
@@ -195,7 +202,7 @@ def main():
         p.commit = get_clang_commit_for_snapshot_project(p.name, chroot)
         try:
             repo.git.merge_base("--is-ancestor", p.commit, args.bad_commit)
-        except:
+        except Exception:
             continue
         print(p.commit, p.name, p.index, "/", len(projects))
 
@@ -213,7 +220,6 @@ def main():
             )
         bad_project = p
         break
-
 
     # Bisect using copr builds
     if good_project and bad_project:
