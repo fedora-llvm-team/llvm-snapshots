@@ -97,6 +97,7 @@ def test_with_copr_builds(copr_project: str, test_command: str):
     print("{} project".format("Good" if success else "Bad"))
     return success
 
+
 def git_bisect(
     repo: git.Repo,
     good_commit: str,
@@ -117,7 +118,7 @@ def git_bisect(
     subprocess.run(
         ["git", "-C", repo.working_tree_dir, "bisect", "start", bad_commit, good_commit]
     )
-    with tempfile.NamedTemporaryFile(mode="w+", delete = False) as bisect_script:
+    with tempfile.NamedTemporaryFile(mode="w+", delete=False) as bisect_script:
         print(
             f"""
             set -x
@@ -142,7 +143,7 @@ def git_bisect(
         subprocess.run(
             ["git", "bisect", "run", "/usr/bin/bash", bisect_script.name],
             cwd=repo.working_tree_dir,
-            shell=True
+            shell=True,
         )
     print(repo.git.bisect("log"))
     return True
