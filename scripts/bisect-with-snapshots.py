@@ -14,17 +14,17 @@ class CoprProject:
     GOOD = 1
     BAD = 2
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
         self.index = -1
         self._commit = None
         self._status = CoprProject.UNTESTED
 
-    def __lt__(self, other):
+    def __lt__(self, other: CoprProject):
         return self.name < other.name
 
 
-def get_snapshot_projects(chroot: str = None) -> list[str]:
+def get_snapshot_projects(chroot: str | None = None) -> list[CoprProject]:
     copr_client = copr.v3.Client.create_from_config_file()
     projects = []
     for p in copr_client.project_proxy.get_list(ownername="@fedora-llvm-team"):
@@ -39,7 +39,7 @@ def get_snapshot_projects(chroot: str = None) -> list[str]:
     return projects
 
 
-def get_clang_commit_for_snapshot_project(project_name: str, chroot: str) -> str:
+def get_clang_commit_for_snapshot_project(project_name: str, chroot: str) -> str | None:
     copr_client = copr.v3.Client.create_from_config_file()
 
     builds = copr_client.build_proxy.get_list(
@@ -105,7 +105,7 @@ def git_bisect(
     configure_command: str,
     build_command: str,
     test_command: str,
-):
+) -> bool:
     print(f"Running git bisect with {good_commit} and {bad_commit}")
     print(configure_command)
     print(build_command)
