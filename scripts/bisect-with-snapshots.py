@@ -41,7 +41,7 @@ class CoprProject:
         self._status = status
 
 
-def get_snapshot_projects(chroot: str | None = None) -> list[CoprProject]:
+def get_snapshot_projects(chroot: Optional[str] = None) -> list[CoprProject]:
     copr_client = copr.v3.Client.create_from_config_file()
     projects = []
     for p in copr_client.project_proxy.get_list(ownername="@fedora-llvm-team"):
@@ -56,7 +56,7 @@ def get_snapshot_projects(chroot: str | None = None) -> list[CoprProject]:
     return projects
 
 
-def get_clang_commit_for_snapshot_project(project_name: str, chroot: str) -> str | None:
+def get_clang_commit_for_snapshot_project(project_name: str, chroot: str) -> Optional[str]:
     copr_client = copr.v3.Client.create_from_config_file()
 
     builds = copr_client.build_proxy.get_list(
