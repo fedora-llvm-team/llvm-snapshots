@@ -25,11 +25,11 @@ class CoprProject:
         return self.name < other.name
 
     @property
-    def commit(self) -> str | None:
+    def commit(self) -> Optional[str]:
         return self._commit
 
     @commit.setter
-    def commit(self, commit: str | None) -> None:
+    def commit(self, commit: Optional[str]) -> None:
         self._commit = commit
 
     @property
