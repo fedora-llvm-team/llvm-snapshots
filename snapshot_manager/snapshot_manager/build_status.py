@@ -8,6 +8,8 @@ import logging
 import pathlib
 import urllib
 
+import requests
+
 import snapshot_manager.util as util
 
 
@@ -120,6 +122,9 @@ class BuildState:
     copr_ownername: str = ""
     copr_projectname: str = ""
 
+    _build_log_file: pathlib.Path | None = None
+    _source_build_file: pathlib.Path | None = None
+
     def get_spec_file_url(self) -> str:
         """
         Returns the URL to the "llvm.spec" file associated with this build.
@@ -226,23 +231,47 @@ class BuildState:
             )
             return self
 
-        # Treat errors with no build logs as unknown and tell user to visit the
-        # build URL manually.
         if not self.url_build_log:
-            logging.debug(
-                f"No build log found for package {self.chroot}/{self.package_name}. Falling back to scanning the SRPM build log: {self.source_build_url}"
+            return self.report_missing_build_log()
+
+        # Now analyze the build log but store it in a file first
+        logging.debug(f"Reading build log: {self.url_build_log}")
+        try:
+            self._build_log_file = util.read_url_response_into_file(
+                url=self.url_build_log,
+                prefix=f"{self.package_name}-{self.chroot}-source-log",
             )
-            self._source_build_file = util.read_url_response_into_file(
-                url=self.source_build_url,
-                prefix=f"{self.package_name}-{self.chroot}-source-build-log",
-            )
-            _, match, _ = util.grep_file(
-                filepath=self._source_build_file,
-                pattern=r"error:",
-                lines_after=3,
-                lines_before=3,
-            )
-            self.err_ctx = f"""
+        except requests.exceptions.HTTPError as e:
+            # It's possible for a build log link to exist, but the actual file to not exist.
+            # Treat this the same way as the link missing in the first place.
+            if e.response.status_code == 404:
+                return self.report_missing_build_log()
+            raise
+
+        self.err_cause, self.err_ctx, self._err_orig_ctx = get_cause_from_build_log(
+            build_log_file=self._build_log_file
+        )
+
+        return self
+
+    def report_missing_build_log(self) -> "BuildState":
+        """Treat errors with no build logs as unknown and tell user to visit the
+        build URL manually."""
+
+        logging.debug(
+            f"No build log found for package {self.chroot}/{self.package_name}. Falling back to scanning the SRPM build log: {self.source_build_url}"
+        )
+        self._source_build_file = util.read_url_response_into_file(
+            url=self.source_build_url,
+            prefix=f"{self.package_name}-{self.chroot}-source-build-log",
+        )
+        _, match, _ = util.grep_file(
+            filepath=self._source_build_file,
+            pattern=r"error:",
+            lines_after=3,
+            lines_before=3,
+        )
+        self.err_ctx = f"""
 <h4>No build log available</h4>
 Sorry, but this build contains no build log file, please consult the
 <a href="{self.build_page_url}">build page</a> to find out more.
@@ -256,20 +285,7 @@ for <code>error:</code> (case insesitive) and here's what we've found:
 ```
 """
 
-            self.err_cause = ErrorCause.ISSUE_SRPM_BUILD
-            return self
-
-        # Now analyze the build log but store it in a file first
-        logging.debug(f"Reading build log: {self.url_build_log}")
-        self._build_log_file = util.read_url_response_into_file(
-            url=self.url_build_log,
-            prefix=f"{self.package_name}-{self.chroot}-source-log",
-        )
-
-        self.err_cause, self.err_ctx, self._err_orig_ctx = get_cause_from_build_log(
-            build_log_file=self._build_log_file
-        )
-
+        self.err_cause = ErrorCause.ISSUE_SRPM_BUILD
         return self
 
 
