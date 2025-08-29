@@ -121,14 +121,14 @@ def run_cmd(cmd: str, timeout_secs: int | None = 5) -> tuple[int, str, str]:
         stderr = proc.stderr.decode()
         exit_code = proc.returncode
     except subprocess.TimeoutExpired as e:
-        exit_code = -1
+        exit_code = 124
         stdout = e.stdout.decode() if e.stdout is not None else ""
         stderr = e.stderr.decode() if e.stderr is not None else ""
         stderr += f"\n\nCommand timed out after {e.timeout} seconds."
 
     if exit_code != 0:
         logging.debug(
-            f"exit code: {proc.returncode} for cmd: {cmd}\n\nstdout={stdout}\n\nstderr={stderr}"
+            f"exit code: {exit_code} for cmd: {cmd}\n\nstdout={stdout}\n\nstderr={stderr}"
         )
 
     return exit_code, stdout, stderr
