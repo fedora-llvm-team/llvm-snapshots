@@ -242,7 +242,7 @@ def main() -> bool:
     # Bisect using copr builds
     if good_project and bad_project:
         while good_project.index + 1 < bad_project.index:
-            test_project = projects[(good_project.index + bad_project.index) / 2]
+            test_project = projects[(good_project.index + bad_project.index) // 2]
             print(f"Testing: {test_project.name} - {test_project.commit}")
             if test_with_copr_builds(test_project.name, args.test_command):
                 print("Good")
