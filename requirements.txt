@@ -28,7 +28,7 @@ copr==2.1
     #   copr-cli
 copr-cli==2.1
     # via -r requirements.txt.in
-coverage==7.8.0
+coverage==7.10.5
     # via -r requirements.txt.in
 cryptography==44.0.1
     # via pyjwt
@@ -36,8 +36,6 @@ decorator==5.1.1
     # via gssapi
 defusedxml==0.7.1
     # via koji
-deprecated==1.2.13
-    # via pygithub
 dynaconf==3.2.4
     # via tft-cli
 filelock==3.13.1
@@ -74,23 +72,25 @@ packaging==23.2
     # via
     #   plotly
     #   pytest
-pandas==2.2.3
+pandas==2.3.2
     # via -r requirements.txt.in
-plotly==6.1.1
+plotly==6.3.0
     # via -r requirements.txt.in
 pluggy==1.5.0
     # via pytest
 pycparser==2.21
     # via cffi
-pygithub==2.6.1
+pygithub==2.7.0
     # via -r requirements.txt.in
 pygments==2.17.2
-    # via rich
+    # via
+    #   pytest
+    #   rich
 pyjwt[crypto]==2.6.0
     # via pygithub
 pynacl==1.5.0
     # via pygithub
-pytest==8.3.5
+pytest==8.4.1
     # via -r requirements.txt.in
 python-dateutil==2.8.2
     # via
@@ -98,9 +98,9 @@ python-dateutil==2.8.2
     #   pandas
 pytz==2023.4
     # via pandas
-regex==2024.11.6
+regex==2025.7.34
     # via -r requirements.txt.in
-requests==2.32.3
+requests==2.32.5
     # via
     #   -r requirements.txt.in
     #   copr
@@ -131,12 +131,10 @@ typing-extensions==4.8.0
     # via pygithub
 tzdata==2023.4
     # via pandas
-urllib3==1.26.19
+urllib3==2.5.0
     # via
     #   pygithub
     #   requests
-wrapt==1.14.1
-    # via deprecated
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

@@ -2,6 +2,7 @@
 SnapshotManager
 """
 
+import datetime
 import logging
 import os
 import pathlib
@@ -9,6 +10,7 @@ import pathlib
 import copr.v3
 import github
 import github.Issue
+import log_detective as ld
 import pandas as pd
 import testing_farm as tf
 import testing_farm.tfutil as tfutil
@@ -144,6 +146,171 @@ class SnapshotManager:
         # )
         logging.info(f"All done! Workflow dispatch event created with inputs: {inputs}")
 
+    def submit_to_log_detective(
+        self, issue_number: int, trigger_comment_id: int, chroots: list[str]
+    ) -> None:
+        """Pre-annotates the build for the chroots and submits them to log-detective.
+
+        Whenever something doesn't work we bail and leave a message in the logs.
+
+        Args:
+            issue_number (int): The issue for the day a submission is requested
+            trigger_comment_id (int): The ID of the comment in which the user requested a submission
+            chroots (list[str]): The list of chroots whose builds shall be annotated and submitted to log-detective.
+        """
+        # Get repo
+        repo = self.github.github.get_repo(self.config.github_repo)
+
+        # Get issue
+        logging.info(
+            f"Getting issue with number {issue_number} from repo {self.config.github_repo}"
+        )
+        issue = repo.get_issue(number=issue_number)
+        if issue is None:
+            return
+        logging.info(f"Got issue: {issue.html_url}")
+
+        # Get strategy from issue
+        strategy: str | None = None
+        labels = issue.get_labels()
+        for label in labels:
+            if label.name.startswith("strategy/"):
+                strategy = label.name.removeprefix("strategy/")
+                break
+        if strategy is None:
+            logging.info(
+                f"No strategy label found in labels: {[label.name for label in labels]}"
+            )
+            return
+
+        # Get proper config based on the strategy
+        config_map = config.build_config_map()
+        if strategy not in config_map:
+            logging.info(
+                f"Strategy {strategy} was not found in the config map: {config_map}"
+            )
+            return
+
+        # Get YYYYMMDD from issue.title
+        try:
+            yyyymmdd = util.get_yyyymmdd_from_string(issue.title)
+        except ValueError as ex:
+            logging.info(
+                f"issue title doesn't appear to look like a snapshot issue: {issue.title}: {ex}"
+            )
+            return
+
+        cfg = config_map[strategy]
+        cfg.datetime = datetime.datetime.strptime(yyyymmdd, "%Y%m%d")
+
+        # Augment config with chroots of interest
+        if len(cfg.chroots) == 0:
+            all_chroots = copr_util.get_all_chroots(client=self.copr)
+            util.augment_config_with_chroots(config=cfg, all_chroots=all_chroots)
+
+        # Get trigger comment
+        trigger_comment = issue.get_comment(id=trigger_comment_id)
+        if trigger_comment is None:
+            logging.info(f"Trigger comment with ID {trigger_comment_id} not found")
+            return
+
+        # Check chroots
+        if chroots is None or len(chroots) == 0:
+            logging.info("No chroots found")
+            return
+
+        logging.info(
+            "Checking if all given chroots are really relevant for us or even chroots"
+        )
+        for chroot in chroots:
+            logging.info(f"Checking chroot: {chroot}")
+            if not util.is_chroot(chroot):
+                logging.info(f"Chroot {chroot} is not a valid chroot.")
+                return
+            if chroot not in cfg.chroots:
+                logging.info(
+                    f"Chroot {chroot} is not in the list of chroots that we consider: {cfg.chroots}"
+                )
+                return
+
+        # Now everything is validated!
+
+        # Fetch all builds, filter them by chroots and pre-annotated them before
+        # we finally submit them to log-detective
+
+        logging.info(
+            f"Fetch all builds for {cfg.copr_ownername}/{cfg.copr_projectname}"
+        )
+        states = copr_util.get_all_build_states(
+            client=self.copr,
+            ownername=cfg.copr_ownername,
+            projectname=cfg.copr_projectname,
+        )
+
+        logging.info(f"chroots of interest: {cfg.chroots}")
+        logging.info(f"requested chroots: {chroots}")
+
+        states = [state for state in states if state.chroot in chroots]
+        logging.info(
+            f"Filtered states by chroots of interest: {[state.chroot for state in states]}"
+        )
+
+        states = build_status.list_only_errors(states)
+        logging.info(
+            f"Left over error states after eliminating non-error states: {[state.chroot for state in states]}"
+        )
+
+        logging.info(
+            "Augmenting states with information from the build logs (pre-annotation)"
+        )
+        states = [state.augment_with_error() for state in states]
+
+        upload_states: dict[str, str] = {
+            chroot: f"<b>{chroot}:</b> (not started yet)" for chroot in chroots
+        }
+
+        repository = os.getenv("GITHUB_REPOSITORY", "")
+        server_url = os.getenv("GITHUB_SERVER_URL", "")
+        run_id = os.getenv("GITHUB_RUN_ID", "")
+        action_run_link = f"{server_url}/{repository}/actions/runs/{run_id}"
+
+        def build_response_comment(upload_states: dict[str, str]) -> str:
+            res = f"""Thank you @{trigger_comment.user.login} for <a href="{trigger_comment.html_url}">your request</a>. <a href="{action_run_link}">We're uploading</a> the builds to log-detective:\n<ul>"""
+            for chroot, msg in upload_states.items():
+                res += "<li>" + msg + "</li>"
+            res += "</ul>"
+            return res
+
+        if states is None or not (len(states) > 0):
+            return
+
+        logging.info("Creating response comment.")
+        response_comment = self.github.create_or_update_comment(
+            issue=issue,
+            marker=f"<!--SUBMIT-TO-LOG-DETECTIVE-RESPONSE:{trigger_comment_id}-->",
+            comment_body=build_response_comment(upload_states),
+        )
+
+        for state in states:
+            logging.info(
+                f"Uploading pre-annotated build to log-detective for chroot: {chroot}"
+            )
+            contrib = ld.upload(cfg=cfg, state=state)
+            if contrib is None:
+                logging.info("Failed to upload to to log-detective. Aborting")
+                upload_states[state.chroot] = (
+                    f"<b>{state.chroot}:</b> There was an error when uploading to log-detective! Process is aborting"
+                )
+                response_comment.edit(body=build_response_comment(upload_states))
+                return
+            logging.info(f"Uploaded build to log-detective with review ID: {contrib}")
+            upload_states[state.chroot] = (
+                f"""<b>{state.chroot}:</b> We've uploaded the pre-annotated build log to log-detective for review <a href="{contrib.website_url}">here</a>."""
+            )
+            response_comment.edit(body=build_response_comment(upload_states))
+
+        logging.info("All done!")
+
     def check_todays_builds(self) -> None:
         """This method is driven from the config settings"""
         issue, issue_is_newly_created = self.github.create_or_get_todays_github_issue(
@@ -235,13 +402,19 @@ class SnapshotManager:
             ]
             marker = f"<!--ERRORS_FOR_CHROOT/{chroot}-->"
             if errors_for_this_chroot is not None and len(errors_for_this_chroot) > 0:
+                # Github limits the maximum length of a comment at 65536 characters.
+                max_length = 65536
+                body_start = f"""{marker}
+<h3>Errors found in Copr builds on <code>{chroot}</code></h3>"""
+                body = f"""{body_start}
+{build_status.render_as_markdown(errors_for_this_chroot)}"""
+                if len(body) > max_length:
+                    body = f"""{body_start}
+{build_status.render_as_markdown(errors_for_this_chroot, shortened=True)}"""
                 comment = self.github.create_or_update_comment(
                     issue=issue,
                     marker=marker,
-                    comment_body=f"""{marker}
-<h3>Errors found in Copr builds on <code>{chroot}</code></h3>
-{build_status.render_as_markdown(errors_for_this_chroot)}
-""",
+                    comment_body=body,
                 )
                 self.github.unminimize_comment(comment)
                 build_status_matrix = build_status_matrix.replace(
