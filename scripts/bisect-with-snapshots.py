@@ -2,7 +2,7 @@ import argparse
 import re
 import subprocess
 import tempfile
-from typing import Self, Optional
+from typing import Self
 
 import copr.v3
 import dnf
@@ -18,18 +18,17 @@ class CoprProject:
     def __init__(self, name: str):
         self.name = name
         self.index = -1
-        self._commit = None
         self._status = CoprProject.UNTESTED
 
     def __lt__(self, other: Self) -> bool:
         return self.name < other.name
 
     @property
-    def commit(self) -> Optional[str]:
+    def commit(self) -> str:
         return self._commit
 
     @commit.setter
-    def commit(self, commit: Optional[str]) -> None:
+    def commit(self, commit: str) -> None:
         self._commit = commit
 
     @property
@@ -41,7 +40,7 @@ class CoprProject:
         self._status = status
 
 
-def get_snapshot_projects(chroot: Optional[str] = None) -> list[CoprProject]:
+def get_snapshot_projects(chroot: str | None = None) -> list[CoprProject]:
     copr_client = copr.v3.Client.create_from_config_file()
     projects = []
     for p in copr_client.project_proxy.get_list(ownername="@fedora-llvm-team"):
@@ -56,7 +55,7 @@ def get_snapshot_projects(chroot: Optional[str] = None) -> list[CoprProject]:
     return projects
 
 
-def get_clang_commit_for_snapshot_project(project_name: str, chroot: str) -> Optional[str]:
+def get_clang_commit_for_snapshot_project(project_name: str, chroot: str) -> str:
     copr_client = copr.v3.Client.create_from_config_file()
 
     builds = copr_client.build_proxy.get_list(
@@ -69,7 +68,7 @@ def get_clang_commit_for_snapshot_project(project_name: str, chroot: str) -> Opt
             m = regex.search(b["source_package"]["url"])
             if m:
                 return m.group(1)
-    return None
+    raise Exception(f"Could not find commit for {project_name}, {chroot}")
 
 
 def test_with_copr_builds(copr_project: str, test_command: str) -> bool:
@@ -194,8 +193,8 @@ def main() -> bool:
 
     # Find for the oldest COPR project that is newer than the good commit.
     for p in projects:
-        p.commit = get_clang_commit_for_snapshot_project(p.name, chroot)
         try:
+            p.commit = get_clang_commit_for_snapshot_project(p.name, chroot)
             repo.git.merge_base("--is-ancestor", args.good_commit, p.commit)
         except Exception:
             continue
@@ -217,8 +216,8 @@ def main() -> bool:
 
     # Find the newest COPR project that is older than the bad commit.
     for p in reversed(projects):
-        p.commit = get_clang_commit_for_snapshot_project(p.name, chroot)
         try:
+            p.commit = get_clang_commit_for_snapshot_project(p.name, chroot)
             repo.git.merge_base("--is-ancestor", p.commit, args.bad_commit)
         except Exception:
             continue
@@ -268,4 +267,3 @@ def main() -> bool:
 
 if __name__ == "__main__":
     main()
-
