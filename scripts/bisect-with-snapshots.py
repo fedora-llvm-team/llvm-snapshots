@@ -135,8 +135,7 @@ def git_bisect(
         ["git", "-C", repo.working_tree_dir, "bisect", "start", bad_commit, good_commit]
     )
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as bisect_script:
-        print(
-            f"""
+        cmd = f"""
             set -x
             pwd
             if ! {build_command}; then
@@ -145,15 +144,8 @@ def git_bisect(
             {test_command}
         """
         )
-        bisect_script.write(
-            f"""
-            set -x
-            if ! {build_command}; then
-              exit 125
-            fi
-            {test_command}
-        """
-        )
+        print(cmd)
+        bisect_script.write(cmd)
         # Use the cwd argument instead of passing -C to git, so that the bisect script is
         # run in the llvm-project directory.
         subprocess.run(
