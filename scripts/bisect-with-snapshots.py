@@ -143,7 +143,6 @@ def git_bisect(
             fi
             {test_command}
         """
-        )
         print(cmd)
         bisect_script.write(cmd)
         # Use the cwd argument instead of passing -C to git, so that the bisect script is
