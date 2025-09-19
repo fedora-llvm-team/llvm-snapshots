@@ -42,6 +42,10 @@ filelock==3.13.1
     # via copr
 fnc==0.5.3
     # via -r requirements.txt.in
+gitdb==4.0.12
+    # via gitpython
+gitpython==3.1.45
+    # via -r requirements.txt.in
 gssapi==1.9.0
     # via requests-gssapi
 humanize==4.9.0
@@ -117,6 +121,8 @@ six==1.16.0
     # via
     #   koji
     #   python-dateutil
+smmap==5.0.2
+    # via gitdb
 tft-cli==0.0.16
     # via -r requirements.txt.in
 typer[all]==0.7.0

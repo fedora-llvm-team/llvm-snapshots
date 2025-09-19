@@ -16,3 +16,4 @@ fnc
 coverage==7.10.6
 koji
 pytest==8.4.1
+GitPython
