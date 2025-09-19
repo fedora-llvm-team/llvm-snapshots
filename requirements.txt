@@ -26,7 +26,7 @@ copr==2.1
     # via
     #   -r requirements.txt.in
     #   copr-cli
-copr-cli==2.1
+copr-cli==2.2
     # via -r requirements.txt.in
 coverage==7.10.6
     # via -r requirements.txt.in
