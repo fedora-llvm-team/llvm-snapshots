@@ -524,12 +524,16 @@ def filter_chroots(chroots: list[str], pattern: str) -> list[str]:
 
 
 def sanitize_chroots(chroots: list[str]) -> list[str]:
-    """Removes all s390x chroots but these:
+    """Sanitizes chroots:
+
+    Removes all s390x chroots but these:
 
     fedora-rawhide-s390x
     centos-stream-10-s390x
     rhel-8-s390x
     centos-stream-9-s390x
+
+    Keeps only the latest 3 fedora versions, not more.
 
     Args:
         chroots (list[str]): A list of chroots
@@ -537,7 +541,7 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     Returns:
         list[str]: The sanitized list of chroots
 
-    Example:
+    Example which removes s390x chroots but the aforementioned:
 
     >>> chroots = [
     ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le", "centos-stream-10-s390x",
@@ -552,18 +556,53 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     >>> expected = [
     ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le", "centos-stream-10-s390x",
     ...   "centos-stream-10-x86_64", "centos-stream-9-aarch64", "centos-stream-9-ppc64le",
-    ...   "centos-stream-9-s390x", "centos-stream-9-x86_64", "fedora-40-aarch64",
-    ...   "fedora-40-i386", "fedora-40-ppc64le",                    "fedora-40-x86_64",
+    ...   "centos-stream-9-s390x", "centos-stream-9-x86_64",
     ...   "fedora-41-aarch64", "fedora-41-i386", "fedora-41-ppc64le",
     ...   "fedora-41-x86_64", "fedora-42-aarch64", "fedora-42-i386", "fedora-42-ppc64le",
-    ...                      "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
+    ...   "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
     ...   "fedora-rawhide-ppc64le", "fedora-rawhide-s390x", "fedora-rawhide-x86_64",
     ...   "rhel-8-aarch64", "rhel-8-s390x", "rhel-8-x86_64" ]
     >>> actual = sanitize_chroots(chroots)
     >>> actual == expected
     True
+
+    Example to show that we only keep the latest 3 fedora versions (with rawhide)
+
+    >>> chroots = [
+    ...   "fedora-40-i386",
+    ...   "fedora-41-aarch64",
+    ...   "fedora-41-x86_64",
+    ...   "fedora-42-ppc64le",
+    ...   "fedora-43-aarch64",
+    ...   "fedora-rawhide-ppc64le"]
+    >>> expected = [
+    ...   "fedora-42-ppc64le",
+    ...   "fedora-43-aarch64",
+    ...   "fedora-rawhide-ppc64le"]
+    >>> actual = sanitize_chroots(chroots)
+    >>> actual == expected
+    True
+
+    Example to show that we only keep the latest 3 fedora versions (without rawhide)
+
+    >>> chroots = [
+    ...   "fedora-40-i386",
+    ...   "fedora-41-aarch64",
+    ...   "fedora-42-x86_64",
+    ...   "fedora-42-ppc64le",
+    ...   "fedora-100-ppc64le",
+    ...   "fedora-43-aarch64"]
+    >>> expected = [
+    ...   "fedora-42-x86_64",
+    ...   "fedora-42-ppc64le",
+    ...   "fedora-100-ppc64le",
+    ...   "fedora-43-aarch64"]
+    >>> actual = sanitize_chroots(chroots)
+    >>> actual == expected
+    True
     """
-    return [
+    # s390x sanitization
+    res = [
         expect_chroot(chroot)
         for chroot in chroots
         if chroot_arch(chroot) != "s390x"
@@ -575,6 +614,32 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
             "rhel-8-s390x",
         )
     ]
+
+    # 3 latest fedora versions to keep
+    fedora_versions_to_keep = [
+        chroot_version(chroot) for chroot in res if chroot_name(chroot) == "fedora"
+    ]
+    # Deduplicate versions
+    fedora_versions_to_keep = list(dict.fromkeys(fedora_versions_to_keep))
+    contains_rawhide = "rawhide" in fedora_versions_to_keep
+    if contains_rawhide:
+        fedora_versions_to_keep.remove("rawhide")
+    fedora_versions_to_keep.sort(key=int)
+    # Keep the latest two (at most) members
+    if contains_rawhide:
+        fedora_versions_to_keep = fedora_versions_to_keep[-2:]
+        fedora_versions_to_keep.append("rawhide")
+    else:
+        fedora_versions_to_keep = fedora_versions_to_keep[-3:]
+
+    res = [
+        chroot
+        for chroot in res
+        if chroot_name(chroot) != "fedora"
+        or chroot_version(chroot) in fedora_versions_to_keep
+    ]
+
+    return res
 
 
 def augment_config_with_chroots(config: config.Config, all_chroots: list[str]) -> None:
