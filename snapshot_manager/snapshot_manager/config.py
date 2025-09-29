@@ -196,7 +196,7 @@ def build_config_map() -> dict[str, Config]:
             copr_target_project="@fedora-llvm-team/llvm-snapshots-with-flang",
             package_clone_url="https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git",
             package_clone_ref="flang",
-            maintainer_handle="kkleine",
+            maintainer_handle="kwk",
             copr_project_tpl="llvm-snapshots-with-flang-YYYYMMDD",
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-with-flang-YYYYMMDD/monitor/",
             chroot_pattern="^(fedora-(rawhide|42|43))",
