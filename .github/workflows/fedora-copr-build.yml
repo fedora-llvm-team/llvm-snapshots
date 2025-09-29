@@ -16,7 +16,7 @@ on:
         options:
         - all
         - big-merge
-        - pgo
+        - with-flang
 
 jobs:
   generate-matrix:
