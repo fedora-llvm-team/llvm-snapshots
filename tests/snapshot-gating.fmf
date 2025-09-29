@@ -21,16 +21,16 @@ prepare:
       # parsing ourselves.
       # Check https://github.com/fedora-copr/copr/issues/3387
       - sed -i "s/\$distname/$(echo "$COPR_CHROOT" | cut -d '-' -f 1)/" /etc/yum.repos.d/*$COPR_PROJECT*
-      # Ensure that latest llvm-libs (from our snapshot) is installed to prevent
-      # potential dependency solving issues when rpms depending on llvm-libs are
-      # already in the system.
-      - dnf -y install --best llvm-libs
       # Use a newer llvm-test-suite version from copr.
       - dnf copr enable -y @fedora-llvm-team/llvm-test-suite $COPR_CHROOT
       # Increase the priority of the copr repositories in order to prefer packages from them.
       # Testing Farm uses priority=9 by default.
       # Source: https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_tag_repository
       - dnf config-manager --save --setopt="copr:copr.fedorainfracloud.org:group_fedora-llvm-team:*.priority=8" || dnf config-manager setopt "copr:copr.fedorainfracloud.org:group_fedora-llvm-team:*.priority=8"
+      # Ensure that latest llvm-libs (from our snapshot) is installed to prevent
+      # potential dependency solving issues when rpms depending on llvm-libs are
+      # already in the system.
+      - dnf -y install --best llvm-libs
 
   - name: "Check that snapshot version of LLVM is installed"
     how: shell
