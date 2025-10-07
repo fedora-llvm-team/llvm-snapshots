@@ -188,7 +188,8 @@ def build_config_map() -> dict[str, Config]:
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
             chroot_pattern="^(fedora-(rawhide|[0-9]+)|centos-stream-[10,9]|rhel-8)",
             additional_copr_buildtime_repos=[
-                "copr://@fedora-llvm-team/llvm-test-suite/"
+                "copr://@fedora-llvm-team/llvm-test-suite/",
+                "copr://@fedora-llvm-team/python-nanobind/",
             ],
         ),
         Config(
