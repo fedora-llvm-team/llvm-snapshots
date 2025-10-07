@@ -191,6 +191,19 @@ def build_config_map() -> dict[str, Config]:
                 "copr://@fedora-llvm-team/llvm-test-suite/"
             ],
         ),
+        Config(
+            build_strategy="with-flang",
+            copr_target_project="@fedora-llvm-team/llvm-snapshots-with-flang",
+            package_clone_url="https://src.fedoraproject.org/forks/kkleine/rpms/llvm.git",
+            package_clone_ref="flang",
+            maintainer_handle="kwk",
+            copr_project_tpl="llvm-snapshots-with-flang-YYYYMMDD",
+            copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-with-flang-YYYYMMDD/monitor/",
+            chroot_pattern="^(fedora-rawhide)",
+            additional_copr_buildtime_repos=[
+                "copr://@fedora-llvm-team/llvm-test-suite/"
+            ],
+        ),
     ]
 
     return {config.build_strategy: config for config in configs}
