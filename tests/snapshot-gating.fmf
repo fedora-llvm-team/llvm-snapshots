@@ -46,6 +46,15 @@ adjust:
         test: brp-llvm-compile-lto-elf
     when: distro > fedora-37
 
+  # TODO Remove after MLIR builds are enabled
+  # MLIR builds on fedora < 44 were disabled recently due to nanobind
+  # dependency version
+  - discover+:
+      adjust-tests:
+      - require-~:
+        - '^mlir'
+    when: distro <= fedora-43
+
 discover:
     - name: llvm-tests
       how: fmf
