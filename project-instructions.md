@@ -1,14 +1,10 @@
 For instructions on how to use this repository, consult the [official docs](https://docs.pagure.org/copr.copr/how_to_enable_repo.html#how-to-enable-repo).
 
-We need a bit of post-configuration after enabling the copr repository for this project:
+You should be good to enable the copr repository and then install a package from it.
 
 ```
-$ dnf -y install jq envsubst
 $ dnf -y install --skip-broken 'dnf-command(copr)' 'dnf5-command(copr)'
 $ dnf -y copr enable @fedora-llvm-team/llvm-snapshots
-$ repo_file=$(dnf repoinfo --json *llvm-snapshots* | jq -r ".[0].repo_file_path")
-$ distname=$(rpm --eval "%{?fedora:fedora}%{?rhel:rhel}") envsubst '$distname' < $repo_file > /tmp/new_repo_file
-$ cat /tmp/new_repo_file > $repo_file
 ```
 
 Then install `clang` or some of the other packages.
