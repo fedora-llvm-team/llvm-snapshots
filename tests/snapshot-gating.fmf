@@ -16,11 +16,6 @@ prepare:
       - dnf install -y 'dnf5-command(copr)' || dnf install -y 'dnf-command(copr)'
       - dnf install -y 'dnf5-command(config-manager)' || dnf install -y 'dnf-command(config-manager)'
       - dnf -y copr enable @fedora-llvm-team/$COPR_PROJECT $COPR_CHROOT
-      # dnf5's copr plugin has trouble resolving the runtime dependency repos,
-      # and is not replacing the $distname special var. Hence we need to do that
-      # parsing ourselves.
-      # Check https://github.com/fedora-copr/copr/issues/3387
-      - sed -i "s/\$distname/$(echo "$COPR_CHROOT" | cut -d '-' -f 1)/" /etc/yum.repos.d/*$COPR_PROJECT*
       # Use a newer llvm-test-suite version from copr.
       - dnf copr enable -y @fedora-llvm-team/llvm-test-suite $COPR_CHROOT
       # Increase the priority of the copr repositories in order to prefer packages from them.

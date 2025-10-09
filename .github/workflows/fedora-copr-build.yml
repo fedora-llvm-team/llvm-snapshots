@@ -128,7 +128,7 @@ jobs:
             --description  "$(cat project-description.md)" \
             --unlisted-on-hp on \
             --enable-net on \
-            --runtime-repo-dependency "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/\$distname-\$releasever-\$basearch" \
+            --runtime-repo-dependency "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/\$chroot" \
             $additional_copr_buildtime_repos \
             --multilib on \
             --appstream off \
