@@ -41,6 +41,19 @@ adjust:
         test: brp-llvm-compile-lto-elf
     when: distro > fedora-37
 
+  # TODO: this will be removed when flang is integrated into regular Fedora llvm
+  # and tests/flang integrated into tests/llvm as well.
+  - discover+:
+      - name: flang-tests
+        how: fmf
+        url: https://src.fedoraproject.org/tests/flang.git
+        ref: main
+    when: >
+      build-strategy == with-flang
+        and distro ~>= fedora-44
+        and arch == x86_64, ppc64le, aarch64
+        and snapshot is defined
+
   # TODO Remove after MLIR builds are enabled
   # MLIR builds on fedora < 44 were disabled recently due to nanobind
   # dependency version
