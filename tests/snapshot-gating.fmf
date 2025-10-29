@@ -49,8 +49,7 @@ adjust:
         url: https://src.fedoraproject.org/tests/flang.git
         ref: main
     when: >
-      build-strategy == with-flang
-        and distro ~>= fedora-44
+        distro ~>= fedora-44
         and arch == x86_64, ppc64le, aarch64
         and snapshot is defined
 
