@@ -56,7 +56,7 @@ jobs:
           yyyymmdd_yesterday=$(date -d "${yyyymmdd_today} -1 day" +%Y%m%d)
 
           echo "Today: ${yyyymmdd_today}"
-          echo "Yesterday: ${yyyymmdd_today}"
+          echo "Yesterday: ${yyyymmdd_yesterday}"
 
           if [[ "${{github.event_name}}" == "workflow_dispatch"  ]]; then
             rev_today=${{inputs.rev_today}}
@@ -83,7 +83,7 @@ jobs:
           rev_today_short="${rev_today:0:14}"
           echo "Rev today (short): ${rev_today_short}"
 
-          rev_yesterday=$(curl -sfL "https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/llvm-test-suite-version-sync/llvm-test-suite-release-${yyyymmdd_yesterday}.txt")
+          rev_yesterday=$(curl -sfL "https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/llvm-test-suite-version-sync/llvm-test-suite-git-revision-${yyyymmdd_yesterday}.txt")
           echo "Rev yesterday: ${rev_yesterday}"
 
           llvm_release_today=$(curl -sfL "https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-release-${yyyymmdd_today}.txt")
