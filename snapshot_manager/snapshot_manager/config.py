@@ -77,6 +77,18 @@ class Config:
 
     log_detective_username: str = "FAS:kkleine"
 
+    copr_project_description_file: str = "project-description.md"
+    """ Path to the file that holds a description for the project's page on Copr """
+
+    copr_project_instructions_file: str = "project-instructions.md"
+    """ Path to the file that holds a installation instructions for the project's page on Copr """
+
+    spec_file: str = "my-package.spec"
+    """ Name of the spec file to be build on Copr """
+
+    copr_package_name: str = "my-package"
+    """ Name of the main package to build on Copr """
+
     @property
     def copr_projectname(self) -> str:
         """Takes the copr_project_tpl and replaces the YYYYMMDD placeholder (if any) with a date.
@@ -136,10 +148,14 @@ class Config:
         ...   package_clone_ref="mainbranch",
         ...   maintainer_handle="fakeperson",
         ...   copr_project_tpl="SomeProjectTemplate-YYYYMMDD",
+        ...   copr_project_description_file="description.md",
+        ...   copr_project_instructions_file="instructions.md",
         ...   copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/",
         ...   chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
         ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"],
-        ...   additional_copr_buildtime_repos=["copr://@fedora-llvm-team/llvm-test-suite", "https://example.com"]
+        ...   additional_copr_buildtime_repos=["copr://@fedora-llvm-team/llvm-test-suite", "https://example.com"],
+        ...   spec_file="mypackage.spec",
+        ...   copr_package_name="my-package",
         ... ).to_github_dict())
         {'additional_copr_buildtime_repos': 'copr://@fedora-llvm-team/llvm-test-suite '
                                             'https://example.com',
@@ -149,10 +165,14 @@ class Config:
          'clone_url': 'https://src.fedoraproject.org/rpms/mypackage.git',
          'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/',
          'copr_ownername': '@fedora-llvm-team',
+         'copr_package_name': 'my-package',
+         'copr_project_description_file': 'description.md',
+         'copr_project_instructions_file': 'instructions.md',
          'copr_project_tpl': 'SomeProjectTemplate-YYYYMMDD',
          'copr_target_project': '@mycoprgroup/mycoprproject',
          'maintainer_handle': 'fakeperson',
-         'name': 'mybuildstrategy'}
+         'name': 'mybuildstrategy',
+         'spec_file': 'mypackage.spec'}
         """
         return {
             "name": self.build_strategy,
@@ -161,13 +181,17 @@ class Config:
             "clone_ref": self.package_clone_ref,
             "maintainer_handle": self.maintainer_handle,
             "copr_ownername": self.copr_ownername,
+            "copr_package_name": self.copr_package_name,
             "copr_project_tpl": self.copr_project_tpl,
             "copr_monitor_tpl": self.copr_monitor_tpl,
             "chroot_pattern": self.chroot_pattern,
             "chroots": " ".join(self.chroots),
+            "copr_project_description_file": self.copr_project_description_file,
+            "copr_project_instructions_file": self.copr_project_instructions_file,
             "additional_copr_buildtime_repos": " ".join(
                 self.additional_copr_buildtime_repos
             ),
+            "spec_file": self.spec_file,
         }
 
 
@@ -180,6 +204,8 @@ def build_config_map() -> dict[str, Config]:
     configs = [
         Config(
             build_strategy="big-merge",
+            spec_file="llvm.spec",
+            copr_package_name="llvm",
             copr_target_project="@fedora-llvm-team/llvm-snapshots",
             package_clone_url="https://src.fedoraproject.org/rpms/llvm.git",
             package_clone_ref="rawhide",
@@ -187,9 +213,25 @@ def build_config_map() -> dict[str, Config]:
             copr_project_tpl="llvm-snapshots-big-merge-YYYYMMDD",
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
             chroot_pattern="^(fedora-(rawhide|[0-9]+)|centos-stream-[10,9]|rhel-8)",
+            copr_project_description_file="llvm-project-description.md",
+            copr_project_instructions_file="llvm-project-instructions.md",
             additional_copr_buildtime_repos=[
                 "copr://@fedora-llvm-team/llvm-test-suite/"
             ],
+        ),
+        Config(
+            build_strategy="llvm-test-suite",
+            spec_file="llvm-test-suite.spec",
+            copr_package_name="llvm-test-suite",
+            copr_target_project="@fedora-llvm-team/llvm-test-suite",
+            package_clone_url="https://src.fedoraproject.org/rpms/llvm-test-suite.git",
+            package_clone_ref="rawhide",
+            maintainer_handle="kkleine",
+            copr_project_tpl="llvm-test-suite-YYYYMMDD",
+            copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-test-suite-YYYYMMDD/monitor/",
+            chroot_pattern="^(fedora-(rawhide|[0-9]+)|centos-stream-[10,9]|rhel-8)",
+            copr_project_description_file="llvm-test-suite-project-description.md",
+            copr_project_instructions_file="llvm-test-suite-project-instructions.md",
         ),
     ]
 
