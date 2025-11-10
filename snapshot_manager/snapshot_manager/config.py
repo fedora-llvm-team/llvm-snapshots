@@ -183,7 +183,7 @@ def build_config_map() -> dict[str, Config]:
             copr_target_project="@fedora-llvm-team/llvm-snapshots",
             package_clone_url="https://src.fedoraproject.org/rpms/llvm.git",
             package_clone_ref="rawhide",
-            maintainer_handle="nikic",
+            maintainer_handle="tuliom",
             copr_project_tpl="llvm-snapshots-big-merge-YYYYMMDD",
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
             chroot_pattern="^(fedora-(rawhide|[0-9]+)|centos-stream-[10,9]|rhel-8)",
