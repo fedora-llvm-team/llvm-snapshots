@@ -45,8 +45,7 @@ jobs:
             --token ${{ secrets.GITHUB_TOKEN }} \
             --project ${{ github.repository }} \
             --release-name llvm-test-suite-version-sync \
-            --delete-older 33 \
-            --delete-today
+            --delete-older 33
 
       - name: "Generate snapshot version info"
         shell: bash -e {0}
