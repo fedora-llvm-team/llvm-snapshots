@@ -1,0 +1,116 @@
+name: "Sync on LLVM test suite version"
+
+on:
+  # Trigger after "Sync on LLVM version" workflow completes
+  # See https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflow_run
+  workflow_run:
+    workflows: ["Sync on LLVM version"]
+    types:
+      - completed
+
+  workflow_dispatch:
+    inputs:
+      rev_today:
+        description: 'Commit hash to use without tests'
+        required: true
+        default: main
+        type: string
+
+permissions:
+  # For release assets to be deletable we need this permission
+  contents: write
+
+jobs:
+
+  # In order to re-build source snapshots and upload them, we must first delete
+  # the old ones from today; otherwise there would be a conflict. As a measure
+  # of not storing old snapshots for too long we'll delete older ones here as
+  # well.
+  regenerate-assets:
+    name: "(Re)generate assets"
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/prepare-python
+
+      - name: "delete assets older than 33 days and from today"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./scripts/delete-assets.py \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --project ${{ github.repository }} \
+            --release-name llvm-test-suite-version-sync \
+            --delete-older 33 \
+            --delete-today
+
+      - name: "Generate snapshot version info"
+        shell: bash -e {0}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          yyyymmdd_today=$(date +%Y%m%d)
+          yyyymmdd_yesterday=$(date -d "${yyyymmdd_today} -1 day" +%Y%m%d)
+
+          echo "Today: ${yyyymmdd_today}"
+          echo "Yesterday: ${yyyymmdd_today}"
+
+          if [[ "${{github.event_name}}" == "workflow_dispatch"  ]]; then
+            rev_today=${{inputs.rev_today}}
+          else
+            rev_today=main
+          fi
+
+          if [[ "$rev_today" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "rev_today looks like a SHA1. No need to resolve: ${rev_today}"
+          else
+            echo "rev_today doesn't look like a SHA1 (maybe it is a branch or tag name). Trying to resolve it: ${rev_today}"
+            # See https://docs.github.com/de/rest/commits/commits?apiVersion=2022-11-28#list-branches-for-head-commit
+            rev_today=$(curl -L \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{env.GITHUB_TOKEN}}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/llvm/llvm-test-suite/commits/${rev_today}/branches-where-head" \
+            | jq -r '.[0].commit.sha')
+          fi
+
+          echo "Rev today: ${rev_today}"
+          echo "${rev_today}" > "llvm-test-suite-git-revision-${yyyymmdd_today}.txt"
+
+          rev_today_short="${rev_today:0:14}"
+          echo "Rev today (short): ${rev_today_short}"
+
+          rev_yesterday=$(curl -sfL "https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/llvm-test-suite-version-sync/llvm-test-suite-release-${yyyymmdd_yesterday}.txt")
+          echo "Rev yesterday: ${rev_yesterday}"
+
+          llvm_release_today=$(curl -sfL "https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-release-${yyyymmdd_today}.txt")
+          echo "LLVM release today: ${llvm_release_today}"
+
+          llvm_release_yesterday=$(curl -sfL "https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-release-${yyyymmdd_yesterday}.txt")
+          echo "LLVM release yesterday: ${llvm_release_yesterday}"
+
+          cat << EOF > "llvm-test-suite-version-${yyyymmdd_today}.txt"
+          %global llvm_test_suite_version ${llvm_release_today}
+          %global llvm_test_suite_date ${yyyymmdd_today}
+          %global llvm_test_suite_git_revision ${rev_today}
+          %global llvm_test_suite_git_revision_short ${rev_today_short}
+          EOF
+
+          if [[ "$rev_yesterday" == "$rev_today" && "$llvm_release_today" == "$llvm_release_yesterday" ]]; then
+            # The decision to build or not to build llvm-test-suite
+            # depends on having a broken llvm-test-suite-version-YYYYMMDD.txt file.
+            # Therefore we break it on purpose.
+            cat << EOF >> "llvm-test-suite-version-${yyyymmdd_today}.txt"
+          %{error: No need to build today. llvm-test-suite's git revision ($rev_today_short) and the LLVM version ($llvm_release_today) were the same yesterday.}
+          EOF
+          fi
+
+          ./scripts/upload-source-snapshots.py \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --project ${{ github.repository }} \
+            --release-name llvm-test-suite-version-sync \
+            --yyyymmdd "${yyyymmdd_today}"

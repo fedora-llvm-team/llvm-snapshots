@@ -32,9 +32,9 @@ def main(args: argparse.Namespace) -> None:
         print(f"looking for source snapshots in directory: {dir}")
         glob_patterns = [
             "*-{}.src.tar.xz",
-            "llvm-release-{}.txt",
-            "llvm-rc-{}.txt",
-            "llvm-git-revision-{}.txt",
+            "llvm*-release-{}.txt",
+            "llvm*-rc-{}.txt",
+            "llvm*-git-revision-{}.txt",
         ]
         for pattern in glob_patterns:
             for name in glob(pattern.format(yyyymmdd)):
