@@ -109,8 +109,12 @@ jobs:
         run: |
           curl -sfL -o version.spec.inc "https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/llvm-test-suite-version-sync/llvm-test-suite-version-${{ env.today }}.txt"
           set +e
-          if [[ ! $(rpm --eval="$(cat version.spec.inc)") ]]; then
+          if ! rpm --eval="$(cat version.spec.inc)"; then
+            echo "Skipping build steps"
             echo "skip_build_steps=yes" >> "$GITHUB_ENV"
+          else
+            echo "Not skipping build steps"
+            echo "skip_build_steps=no" >> "$GITHUB_ENV"
           fi
           set -e
 
