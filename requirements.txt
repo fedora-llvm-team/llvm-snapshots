@@ -86,7 +86,7 @@ pyjwt[crypto]==2.6.0
     # via pygithub
 pynacl==1.5.0
     # via pygithub
-pytest==9.0.0
+pytest==9.0.1
     # via -r requirements.txt.in
 python-dateutil==2.8.2
     # via
