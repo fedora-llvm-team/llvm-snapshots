@@ -89,6 +89,9 @@ class Config:
     copr_package_name: str = "my-package"
     """ Name of the main package to build on Copr """
 
+    run_check_snapshots_workflow: bool = False
+    """ Turn this on if you want to run the 'check-snapshots.yml' workflow in github for this configuration """
+
     @property
     def copr_projectname(self) -> str:
         """Takes the copr_project_tpl and replaces the YYYYMMDD placeholder (if any) with a date.
@@ -156,6 +159,7 @@ class Config:
         ...   additional_copr_buildtime_repos=["copr://@fedora-llvm-team/llvm-test-suite", "https://example.com"],
         ...   spec_file="mypackage.spec",
         ...   copr_package_name="my-package",
+        ...   run_check_snapshots_workflow=True,
         ... ).to_github_dict())
         {'additional_copr_buildtime_repos': 'copr://@fedora-llvm-team/llvm-test-suite '
                                             'https://example.com',
@@ -172,6 +176,7 @@ class Config:
          'copr_target_project': '@mycoprgroup/mycoprproject',
          'maintainer_handle': 'fakeperson',
          'name': 'mybuildstrategy',
+         'run_check_snapshots_workflow': True,
          'spec_file': 'mypackage.spec'}
         """
         return {
@@ -191,6 +196,7 @@ class Config:
             "additional_copr_buildtime_repos": " ".join(
                 self.additional_copr_buildtime_repos
             ),
+            "run_check_snapshots_workflow": self.run_check_snapshots_workflow,
             "spec_file": self.spec_file,
         }
 
@@ -218,6 +224,7 @@ def build_config_map() -> dict[str, Config]:
             additional_copr_buildtime_repos=[
                 "copr://@fedora-llvm-team/llvm-test-suite/"
             ],
+            run_check_snapshots_workflow=True,
         ),
         Config(
             build_strategy="llvm-test-suite",
@@ -232,6 +239,7 @@ def build_config_map() -> dict[str, Config]:
             chroot_pattern="^(fedora-(rawhide|[0-9]+)|centos-stream-[10,9]|rhel-8)",
             copr_project_description_file="llvm-test-suite-project-description.md",
             copr_project_instructions_file="llvm-test-suite-project-instructions.md",
+            run_check_snapshots_workflow=False,
         ),
     ]
 

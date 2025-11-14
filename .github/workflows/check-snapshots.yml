@@ -73,6 +73,16 @@ jobs:
       matrix: ${{fromJson(needs.generate-matrix.outputs.mymatrix)}}
     runs-on: ubuntu-latest
     steps:
+      - name: Cancelling this workflow run if needed.
+        if: matrix.run_check_snapshots_workflow != 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.actions.cancelWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
       - name: Setup Copr config file
         if: github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name)
         env:
