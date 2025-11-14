@@ -30,6 +30,8 @@ on:
 permissions:
   # We need this in order to create or update snapshot issues
   issues: write
+  # We need this in order to cancel workflow runs when needed
+  actions: write
 
 jobs:
   generate-matrix:
