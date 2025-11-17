@@ -30,8 +30,6 @@ on:
 permissions:
   # We need this in order to create or update snapshot issues
   issues: write
-  # We need this in order to cancel workflow runs when needed
-  actions: write
 
 jobs:
   generate-matrix:
@@ -75,12 +73,8 @@ jobs:
       matrix: ${{fromJson(needs.generate-matrix.outputs.mymatrix)}}
     runs-on: ubuntu-latest
     steps:
-      - name: Show matrix.run_check_snapshots_workflow
-        run: |
-          echo "${{matrix.run_check_snapshots_workflow}}"
-
       - name: Setup Copr config file
-        if: matrix.run_check_snapshots_workflow == 'true' && (github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name))
+        if: matrix.run_check_snapshots_workflow && (github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name))
         env:
           # You need to have those secrets in your repo.
           # See also: https://copr.fedorainfracloud.org/api/.
@@ -90,18 +84,18 @@ jobs:
           echo "$COPR_CONFIG" > ~/.config/copr
 
       - name: Install Copr CLI
-        if: matrix.run_check_snapshots_workflow == 'true' && (github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name))
+        if: matrix.run_check_snapshots_workflow && (github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name))
         run: |
           sudo apt-get install -y lsb-release diffutils pcre2-utils jq
 
       - uses: actions/checkout@v4
-        if: matrix.run_check_snapshots_workflow == 'true' && (github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name))
+        if: matrix.run_check_snapshots_workflow && (github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name))
 
       - uses: ./.github/actions/prepare-python
-        if: matrix.run_check_snapshots_workflow == 'true' && (github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name))
+        if: matrix.run_check_snapshots_workflow && (github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name))
 
       - name: "Check day (today minus ${{matrix.today_minus_n_days}} days)"
-        if: matrix.run_check_snapshots_workflow == 'true' && (github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name))
+        if: matrix.run_check_snapshots_workflow && (github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name))
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TESTING_FARM_API_TOKEN_PUBLIC_RANCH: ${{ secrets.TESTING_FARM_API_TOKEN_PUBLIC_RANCH }}
