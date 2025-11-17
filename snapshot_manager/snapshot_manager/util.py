@@ -718,7 +718,8 @@ def serialize_config_map_to_github_matrix(
     ...   copr_project_tpl="SomeProjectTemplate-YYYYMMDD",
     ...   copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/",
     ...   chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
-    ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"]
+    ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"],
+    ...   run_check_snapshots_workflow=True,
     ... )
     >>> config_map["mybuildstrategy2"] = config.Config(build_strategy="mybuildstrategy2",
     ...   copr_target_project="@mycoprgroup2/mycoprproject2",
@@ -751,6 +752,7 @@ def serialize_config_map_to_github_matrix(
                   'copr_target_project': '@mycoprgroup/mycoprproject',
                   'maintainer_handle': 'fakeperson',
                   'name': 'mybuildstrategy',
+                  'run_check_snapshots_workflow': True,
                   'spec_file': 'my-package.spec'},
                  {'additional_copr_buildtime_repos': '',
                   'chroot_pattern': 'rhel-[8,9]',
@@ -766,6 +768,7 @@ def serialize_config_map_to_github_matrix(
                   'copr_target_project': '@mycoprgroup2/mycoprproject2',
                   'maintainer_handle': 'fakeperson2',
                   'name': 'mybuildstrategy2',
+                  'run_check_snapshots_workflow': False,
                   'spec_file': 'my-package.spec'}],
      'name': ['mybuildstrategy', 'mybuildstrategy2'],
      'today_minus_n_days': [0, 1, 2, 3]}
