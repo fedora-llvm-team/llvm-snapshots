@@ -752,7 +752,7 @@ def serialize_config_map_to_github_matrix(
                   'copr_target_project': '@mycoprgroup/mycoprproject',
                   'maintainer_handle': 'fakeperson',
                   'name': 'mybuildstrategy',
-                  'run_check_snapshots_workflow': 'yes',
+                  'run_check_snapshots_workflow': True,
                   'spec_file': 'my-package.spec'},
                  {'additional_copr_buildtime_repos': '',
                   'chroot_pattern': 'rhel-[8,9]',
@@ -768,7 +768,7 @@ def serialize_config_map_to_github_matrix(
                   'copr_target_project': '@mycoprgroup2/mycoprproject2',
                   'maintainer_handle': 'fakeperson2',
                   'name': 'mybuildstrategy2',
-                  'run_check_snapshots_workflow': 'no',
+                  'run_check_snapshots_workflow': False,
                   'spec_file': 'my-package.spec'}],
      'name': ['mybuildstrategy', 'mybuildstrategy2'],
      'today_minus_n_days': [0, 1, 2, 3]}
