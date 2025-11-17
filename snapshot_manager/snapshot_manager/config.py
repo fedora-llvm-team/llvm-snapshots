@@ -176,7 +176,7 @@ class Config:
          'copr_target_project': '@mycoprgroup/mycoprproject',
          'maintainer_handle': 'fakeperson',
          'name': 'mybuildstrategy',
-         'run_check_snapshots_workflow': 'yes',
+         'run_check_snapshots_workflow': True,
          'spec_file': 'mypackage.spec'}
         """
         return {
@@ -196,9 +196,7 @@ class Config:
             "additional_copr_buildtime_repos": " ".join(
                 self.additional_copr_buildtime_repos
             ),
-            "run_check_snapshots_workflow": (
-                "yes" if self.run_check_snapshots_workflow else "no"
-            ),
+            "run_check_snapshots_workflow": self.run_check_snapshots_workflow,
             "spec_file": self.spec_file,
         }
 
