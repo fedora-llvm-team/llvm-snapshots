@@ -75,6 +75,10 @@ jobs:
       matrix: ${{fromJson(needs.generate-matrix.outputs.mymatrix)}}
     runs-on: ubuntu-latest
     steps:
+      - name: Show matrix.run_check_snapshots_workflow
+        run: |
+          echo "${{matrix.run_check_snapshots_workflow}}"
+
       - name: Setup Copr config file
         if: matrix.run_check_snapshots_workflow == 'true' && (github.event_name != 'workflow_dispatch' || (matrix.today_minus_n_days == 0 && inputs.strategy == matrix.name))
         env:
