@@ -91,6 +91,83 @@ class TestTestingFarmUtil(base_test.TestBase):
         ]
         self.assertEqual(actual, expected)
 
+    def test_render_list_as_markdown_truncation(self) -> None:
+        """Test that render_list_as_markdown properly truncates when exceeding GitHub's limit"""
+        # GitHub's comment limit is 65536 characters
+        max_length = 65536
+
+        # Create many test cases with large log outputs to exceed the limit
+        large_test_cases = []
+        for i in range(50):
+            large_test_cases.append(
+                FailedTestCase(
+                    test_name=f"test_large_case_{i}",
+                    request_id=f"request_{i}",
+                    chroot="fedora-rawhide-x86_64",
+                    log_output_url=f"http://example.com/log_{i}",
+                    log_output="X" * 2000,  # 2000 character log
+                    artifacts_url=f"http://example.com/artifacts_{i}",
+                )
+            )
+
+        # Render the markdown
+        result = FailedTestCase.render_list_as_markdown(large_test_cases)
+
+        # Verify the result is within GitHub's limit
+        self.assertLessEqual(
+            len(result),
+            max_length,
+            f"Result length {len(result)} exceeds GitHub's limit of {max_length}",
+        )
+
+        # Verify truncation notice is present when content is truncated
+        self.assertIn(
+            "Output truncated!",
+            result,
+            "Truncation notice should be present when content exceeds limit",
+        )
+
+        # Verify that fewer test cases are shown than total
+        self.assertIn(
+            "failed test cases",
+            result,
+            "Should mention number of failed test cases",
+        )
+
+    def test_render_list_as_markdown_no_truncation(self) -> None:
+        """Test that render_list_as_markdown doesn't truncate when under the limit"""
+        # Create a small number of test cases
+        small_test_cases = []
+        for i in range(3):
+            small_test_cases.append(
+                FailedTestCase(
+                    test_name=f"test_small_case_{i}",
+                    request_id=f"request_{i}",
+                    chroot="fedora-rawhide-x86_64",
+                    log_output_url=f"http://example.com/log_{i}",
+                    log_output="Small log output",
+                    artifacts_url=f"http://example.com/artifacts_{i}",
+                )
+            )
+
+        # Render the markdown
+        result = FailedTestCase.render_list_as_markdown(small_test_cases)
+
+        # Verify no truncation notice when under limit
+        self.assertNotIn(
+            "Output truncated!",
+            result,
+            "Truncation notice should NOT be present when content is under limit",
+        )
+
+        # Verify all test cases are present
+        for tc in small_test_cases:
+            self.assertIn(
+                tc.test_name,
+                result,
+                f"Test case {tc.test_name} should be in the output",
+            )
+
 
 def load_tests(
     loader: unittest.TestLoader, standard_tests: unittest.TestSuite, pattern: str
