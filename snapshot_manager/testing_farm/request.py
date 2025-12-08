@@ -169,7 +169,8 @@ class Request:
             request_file=request_file,
             request_id=request_id,
         )
-        # The xunit file is None, if it is only available internally.
+        # The xunit file is None if it is only available internally or if an
+        # infrastructure error happened.
         if xunit_file is None:
             return []
         return self.get_failed_test_cases_from_xunit_file(

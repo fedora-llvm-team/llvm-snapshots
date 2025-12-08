@@ -226,6 +226,10 @@ def get_xunit_file_from_request_file(
         raise KeyError("failed to find 'xunit_url' key in result dict response")
     xunit_url = result_json["result"]["xunit_url"]
 
+    # When there is a very early failure, xunit_url is unset.
+    if xunit_url is None:
+        return None
+
     # Get xunit file to log all testcases that have errors
     if not is_url_expectably_reachable(xunit_url):
         logging.info(
