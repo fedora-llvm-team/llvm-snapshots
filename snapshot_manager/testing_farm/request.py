@@ -279,6 +279,7 @@ def make_snapshot_gating_request(
         --environment COPR_CHROOT={chroot} \
         --context distro={util.chroot_os(chroot)} \
         --context arch={util.chroot_arch(chroot)} \
+        --context build-strategy={config.build_strategy} \
         --no-wait \
         --user-webpage={issue.html_url} \
         --user-webpage-name="GitHub Issue: {issue.title}" \

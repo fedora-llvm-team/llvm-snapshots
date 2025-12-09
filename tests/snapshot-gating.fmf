@@ -10,33 +10,22 @@
 
 summary: LLVM Tests for snapshot gating
 prepare:
-  # Lower the priority of the testing-farm-tag-repository so that our copr repo is picked up.
-  # See: https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_tag_repository
-  - name: Set testing-farm-tag-repository priority
-    how: shell
-    script: |
-      if dnf repolist | grep -q testing-farm-tag-repository; then
-        dnf install -y 'dnf5-command(config-manager)' || dnf install -y 'dnf-command(config-manager)'
-        dnf config-manager --save --setopt="testing-farm-tag-repository.priority=999" || \
-          dnf config-manager setopt "testing-farm-tag-repository.priority=999"
-      fi
-
   - name: Enable copr repo
     how: shell
     script:
       - dnf install -y 'dnf5-command(copr)' || dnf install -y 'dnf-command(copr)'
+      - dnf install -y 'dnf5-command(config-manager)' || dnf install -y 'dnf-command(config-manager)'
       - dnf -y copr enable @fedora-llvm-team/$COPR_PROJECT $COPR_CHROOT
-      # dnf5's copr plugin has trouble resolving the runtime dependency repos,
-      # and is not replacing the $distname special var. Hence we need to do that
-      # parsing ourselves.
-      # Check https://github.com/fedora-copr/copr/issues/3387
-      - sed -i "s/\$distname/$(echo "$COPR_CHROOT" | cut -d '-' -f 1)/" /etc/yum.repos.d/*$COPR_PROJECT*
+      # Use a newer llvm-test-suite version from copr.
+      - dnf copr enable -y @fedora-llvm-team/llvm-test-suite $COPR_CHROOT
+      # Increase the priority of the copr repositories in order to prefer packages from them.
+      # Testing Farm uses priority=9 by default.
+      # Source: https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_tag_repository
+      - dnf config-manager --save --setopt="copr:copr.fedorainfracloud.org:group_fedora-llvm-team:*.priority=8" || dnf config-manager setopt "copr:copr.fedorainfracloud.org:group_fedora-llvm-team:*.priority=8"
       # Ensure that latest llvm-libs (from our snapshot) is installed to prevent
       # potential dependency solving issues when rpms depending on llvm-libs are
       # already in the system.
       - dnf -y install --best llvm-libs
-      # Use a newer llvm-test-suite version from copr.
-      - dnf copr enable -y @fedora-llvm-team/llvm-test-suite $COPR_CHROOT
 
   - name: "Check that snapshot version of LLVM is installed"
     how: shell
@@ -51,6 +40,27 @@ adjust:
         filter: "tag:-spoils-installation & tag:-not-in-default"
         test: brp-llvm-compile-lto-elf
     when: distro > fedora-37
+
+  # TODO: this will be removed when flang is integrated into regular Fedora llvm
+  # and tests/flang integrated into tests/llvm as well.
+  - discover+:
+      - name: flang-tests
+        how: fmf
+        url: https://src.fedoraproject.org/tests/flang.git
+        ref: main
+    when: >
+        distro ~>= fedora-44
+        and arch == x86_64, ppc64le, aarch64
+        and snapshot is defined
+
+  # TODO Remove after MLIR builds are enabled
+  # MLIR builds on fedora < 44 were disabled recently due to nanobind
+  # dependency version
+  - discover+:
+      adjust-tests:
+      - require-~:
+        - '^mlir'
+    when: distro <= fedora-43
 
 discover:
     - name: llvm-tests

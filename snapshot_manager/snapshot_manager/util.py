@@ -113,13 +113,22 @@ def run_cmd(cmd: str, timeout_secs: int | None = 5) -> tuple[int, str, str]:
     'hello\\n'
     """
 
-    proc = subprocess.run(shlex.split(cmd), timeout=timeout_secs, capture_output=True)
-    stdout = proc.stdout.decode()
-    stderr = proc.stderr.decode()
-    exit_code = proc.returncode
+    try:
+        proc = subprocess.run(
+            shlex.split(cmd), timeout=timeout_secs, capture_output=True
+        )
+        stdout = proc.stdout.decode()
+        stderr = proc.stderr.decode()
+        exit_code = proc.returncode
+    except subprocess.TimeoutExpired as e:
+        exit_code = 124
+        stdout = e.stdout.decode() if e.stdout is not None else ""
+        stderr = e.stderr.decode() if e.stderr is not None else ""
+        stderr += f"\n\nCommand timed out after {e.timeout} seconds."
+
     if exit_code != 0:
         logging.debug(
-            f"exit code: {proc.returncode} for cmd: {cmd}\n\nstdout={stdout}\n\nstderr={stderr}"
+            f"exit code: {exit_code} for cmd: {cmd}\n\nstdout={stdout}\n\nstderr={stderr}"
         )
 
     return exit_code, stdout, stderr
@@ -515,12 +524,16 @@ def filter_chroots(chroots: list[str], pattern: str) -> list[str]:
 
 
 def sanitize_chroots(chroots: list[str]) -> list[str]:
-    """Removes all s390x chroots but these:
+    """Sanitizes chroots:
+
+    Removes all s390x chroots but these:
 
     fedora-rawhide-s390x
     centos-stream-10-s390x
     rhel-8-s390x
     centos-stream-9-s390x
+
+    Keeps only the latest 3 fedora versions, not more.
 
     Args:
         chroots (list[str]): A list of chroots
@@ -528,7 +541,7 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     Returns:
         list[str]: The sanitized list of chroots
 
-    Example:
+    Example which removes s390x chroots but the aforementioned:
 
     >>> chroots = [
     ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le", "centos-stream-10-s390x",
@@ -543,18 +556,53 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     >>> expected = [
     ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le", "centos-stream-10-s390x",
     ...   "centos-stream-10-x86_64", "centos-stream-9-aarch64", "centos-stream-9-ppc64le",
-    ...   "centos-stream-9-s390x", "centos-stream-9-x86_64", "fedora-40-aarch64",
-    ...   "fedora-40-i386", "fedora-40-ppc64le",                    "fedora-40-x86_64",
+    ...   "centos-stream-9-s390x", "centos-stream-9-x86_64",
     ...   "fedora-41-aarch64", "fedora-41-i386", "fedora-41-ppc64le",
     ...   "fedora-41-x86_64", "fedora-42-aarch64", "fedora-42-i386", "fedora-42-ppc64le",
-    ...                      "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
+    ...   "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
     ...   "fedora-rawhide-ppc64le", "fedora-rawhide-s390x", "fedora-rawhide-x86_64",
     ...   "rhel-8-aarch64", "rhel-8-s390x", "rhel-8-x86_64" ]
     >>> actual = sanitize_chroots(chroots)
     >>> actual == expected
     True
+
+    Example to show that we only keep the latest 3 fedora versions (with rawhide)
+
+    >>> chroots = [
+    ...   "fedora-40-i386",
+    ...   "fedora-41-aarch64",
+    ...   "fedora-41-x86_64",
+    ...   "fedora-42-ppc64le",
+    ...   "fedora-43-aarch64",
+    ...   "fedora-rawhide-ppc64le"]
+    >>> expected = [
+    ...   "fedora-42-ppc64le",
+    ...   "fedora-43-aarch64",
+    ...   "fedora-rawhide-ppc64le"]
+    >>> actual = sanitize_chroots(chroots)
+    >>> actual == expected
+    True
+
+    Example to show that we only keep the latest 3 fedora versions (without rawhide)
+
+    >>> chroots = [
+    ...   "fedora-40-i386",
+    ...   "fedora-41-aarch64",
+    ...   "fedora-42-x86_64",
+    ...   "fedora-42-ppc64le",
+    ...   "fedora-100-ppc64le",
+    ...   "fedora-43-aarch64"]
+    >>> expected = [
+    ...   "fedora-42-x86_64",
+    ...   "fedora-42-ppc64le",
+    ...   "fedora-100-ppc64le",
+    ...   "fedora-43-aarch64"]
+    >>> actual = sanitize_chroots(chroots)
+    >>> actual == expected
+    True
     """
-    return [
+    # s390x sanitization
+    res = [
         expect_chroot(chroot)
         for chroot in chroots
         if chroot_arch(chroot) != "s390x"
@@ -566,6 +614,32 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
             "rhel-8-s390x",
         )
     ]
+
+    # 3 latest fedora versions to keep
+    fedora_versions_to_keep = [
+        chroot_version(chroot) for chroot in res if chroot_name(chroot) == "fedora"
+    ]
+    # Deduplicate versions
+    fedora_versions_to_keep = list(dict.fromkeys(fedora_versions_to_keep))
+    contains_rawhide = "rawhide" in fedora_versions_to_keep
+    if contains_rawhide:
+        fedora_versions_to_keep.remove("rawhide")
+    fedora_versions_to_keep.sort(key=int)
+    # Keep the latest two (at most) members
+    if contains_rawhide:
+        fedora_versions_to_keep = fedora_versions_to_keep[-2:]
+        fedora_versions_to_keep.append("rawhide")
+    else:
+        fedora_versions_to_keep = fedora_versions_to_keep[-3:]
+
+    res = [
+        chroot
+        for chroot in res
+        if chroot_name(chroot) != "fedora"
+        or chroot_version(chroot) in fedora_versions_to_keep
+    ]
+
+    return res
 
 
 def augment_config_with_chroots(config: config.Config, all_chroots: list[str]) -> None:
@@ -644,7 +718,8 @@ def serialize_config_map_to_github_matrix(
     ...   copr_project_tpl="SomeProjectTemplate-YYYYMMDD",
     ...   copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/",
     ...   chroot_pattern="^(fedora-(rawhide|[0-9]+)|rhel-[8,9]-)",
-    ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"]
+    ...   chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le"],
+    ...   run_check_snapshots_workflow=True,
     ... )
     >>> config_map["mybuildstrategy2"] = config.Config(build_strategy="mybuildstrategy2",
     ...   copr_target_project="@mycoprgroup2/mycoprproject2",
@@ -670,10 +745,15 @@ def serialize_config_map_to_github_matrix(
                   'clone_url': 'https://src.fedoraproject.org/rpms/mypackage.git',
                   'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate-YYYYMMDD/monitor/',
                   'copr_ownername': '@fedora-llvm-team',
+                  'copr_package_name': 'my-package',
+                  'copr_project_description_file': 'project-description.md',
+                  'copr_project_instructions_file': 'project-instructions.md',
                   'copr_project_tpl': 'SomeProjectTemplate-YYYYMMDD',
                   'copr_target_project': '@mycoprgroup/mycoprproject',
                   'maintainer_handle': 'fakeperson',
-                  'name': 'mybuildstrategy'},
+                  'name': 'mybuildstrategy',
+                  'run_check_snapshots_workflow': True,
+                  'spec_file': 'my-package.spec'},
                  {'additional_copr_buildtime_repos': '',
                   'chroot_pattern': 'rhel-[8,9]',
                   'chroots': 'rhel-9-ppc64le',
@@ -681,10 +761,15 @@ def serialize_config_map_to_github_matrix(
                   'clone_url': 'https://src.fedoraproject.org/rpms/mypackage2.git',
                   'copr_monitor_tpl': 'https://copr.fedorainfracloud.org/coprs/g/mycoprgroup/SomeProjectTemplate2-YYYYMMDD/monitor/',
                   'copr_ownername': '@fedora-llvm-team',
+                  'copr_package_name': 'my-package',
+                  'copr_project_description_file': 'project-description.md',
+                  'copr_project_instructions_file': 'project-instructions.md',
                   'copr_project_tpl': 'SomeProjectTemplate2-YYYYMMDD',
                   'copr_target_project': '@mycoprgroup2/mycoprproject2',
                   'maintainer_handle': 'fakeperson2',
-                  'name': 'mybuildstrategy2'}],
+                  'name': 'mybuildstrategy2',
+                  'run_check_snapshots_workflow': False,
+                  'spec_file': 'my-package.spec'}],
      'name': ['mybuildstrategy', 'mybuildstrategy2'],
      'today_minus_n_days': [0, 1, 2, 3]}
     """

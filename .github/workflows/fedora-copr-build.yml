@@ -16,7 +16,7 @@ on:
         options:
         - all
         - big-merge
-        - pgo
+        - llvm-test-suite
 
 jobs:
   generate-matrix:
@@ -104,8 +104,22 @@ jobs:
             echo "target_project_exists=$target_project_exists"
           } >> "$GITHUB_ENV"
 
+      - name: "Check if we want to build llvm-test-suite today"
+        if: ${{ matrix.name == 'llvm-test-suite' }}
+        run: |
+          curl -sfL -o version.spec.inc "https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/llvm-test-suite-version-sync/llvm-test-suite-version-${{ env.today }}.txt"
+          set +e
+          if ! rpm --eval="$(cat version.spec.inc)"; then
+            echo "Skipping build steps"
+            echo "skip_build_steps=yes" >> "$GITHUB_ENV"
+          else
+            echo "Not skipping build steps"
+            echo "skip_build_steps=no" >> "$GITHUB_ENV"
+          fi
+          set -e
+
       - name: "Canceling active builds (if any) in today's Copr project and deleting it: ${{ env.project_today }}"
-        if: ${{ env.todays_project_exists == 'yes' }}
+        if: ${{ env.todays_project_exists == 'yes' && env.skip_build_steps != 'yes' }}
         run: |
           python3 snapshot_manager/main.py \
             delete-project \
@@ -113,6 +127,7 @@ jobs:
             --yyyymmdd "${{env.today}}"
 
       - name: "Create today's Copr project: ${{ env.project_today }}"
+        if: ${{ env.skip_build_steps != 'yes' }}
         run: |
           # shellcheck disable=SC2207
           chroot_opts=($(for c in ${{ matrix.chroots }}; do echo -n " --chroot $c "; done))
@@ -124,11 +139,11 @@ jobs:
 
           # shellcheck disable=SC2086
           copr-cli create \
-            --instructions "$(cat project-instructions.md)" \
-            --description  "$(cat project-description.md)" \
+            --instructions "$(cat ${{ matrix.copr_project_instructions_file }})" \
+            --description  "$(cat ${{ matrix.copr_project_description_file }})" \
             --unlisted-on-hp on \
             --enable-net on \
-            --runtime-repo-dependency "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/\$distname-\$releasever-\$basearch" \
+            --runtime-repo-dependency "https://download.copr.fedorainfracloud.org/results/%40fedora-llvm-team/llvm-compat-packages/\$chroot" \
             $additional_copr_buildtime_repos \
             --multilib on \
             --appstream off \
@@ -137,6 +152,7 @@ jobs:
             "${chroot_opts[@]}" "${{ env.project_today }}"
 
       - name: "Enable snapshot_build build condition for all and swig:4.0 module in RHEL 8 build chroots (if any)"
+        if: ${{ env.skip_build_steps != 'yes' }}
         run: |
           for chroot in ${{ matrix.chroots }}; do
             copr-cli edit-chroot --rpmbuild-with "snapshot_build" "${{ env.project_today }}/$chroot"
@@ -149,26 +165,28 @@ jobs:
           done
 
       - name: "Create today's package"
+        if: ${{ env.skip_build_steps != 'yes' }}
         run: |
           copr-cli add-package-scm \
             --clone-url ${{ matrix.clone_url }} \
             --commit ${{ matrix.clone_ref }} \
-            --spec "llvm.spec" \
+            --spec ${{ matrix.spec_file }} \
             --type git \
             --method make_srpm \
-            --name "llvm" \
+            --name ${{ matrix.copr_package_name }} \
             "${{ env.project_today }}"
 
-      - name: "Build llvm package"
+      - name: "Build package in all relevant chroots"
+        if: ${{ env.skip_build_steps != 'yes' }}
         run: |
           for chroot in ${{ matrix.chroots }}; do
             copr-cli build-package \
               --timeout $((30*3600)) \
               --nowait \
-              --name "llvm" \
+              --name ${{ matrix.copr_package_name }} \
               --chroot "${chroot}" \
               ${{ env.project_today }} \
-              | tee "llvm.log"
+              | tee -a "${{ matrix.copr_package_name }}.log"
           done
 
       - name: "Delete target Copr project at ${{ env.project_target }} before forking to it"
