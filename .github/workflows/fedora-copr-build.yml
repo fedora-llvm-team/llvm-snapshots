@@ -67,14 +67,17 @@ jobs:
         run: |
           today=$(date +%Y%m%d)
           yesterday=$(date -d "${today} -1 day" +%Y%m%d)
+          day_before_yesterday=$(date -d "${yesterday} -1 day" +%Y%m%d)
 
           username=@fedora-llvm-team
           {
             echo "username=$username"
-            echo "yesterday=$yesterday"
             echo "today=$today"
+            echo "yesterday=$yesterday"
+            echo "day_before_yesterday=$day_before_yesterday"
             echo "project_today=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$today/"
             echo "project_yesterday=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$yesterday/"
+            echo "project_day_before_yesterday=${{ matrix.copr_ownername }}/${{ matrix.copr_project_tpl }}" | sed "s/YYYYMMDD/$day_before_yesterday/"
             echo "project_target=${{ matrix.copr_target_project }}"
           } >> "$GITHUB_ENV"
 
@@ -89,18 +92,25 @@ jobs:
           # Check general availability of projects
           copr_project_exists ${{ env.project_today }} && todays_project_exists=yes
           copr_project_exists ${{ env.project_yesterday }} && yesterdays_project_exists=yes
+          copr_project_exists ${{ env.project_day_before_yesterday }} && project_day_before_yesterday_exists=yes
           copr_project_exists ${{ env.project_target }} && target_project_exists=yes
 
           # Check if yesterday's project exists and all builds succeeded
           if [[ "$yesterdays_project_exists" == "yes" ]]; then
-            if ! python3 snapshot_manager/main.py has-all-good-builds --strategy ${{matrix.name}} --yyyymmdd ${{env.yesterday}}; then
-              yesterdays_project_exists=no
+            if python3 snapshot_manager/main.py has-all-good-builds --strategy ${{matrix.name}} --yyyymmdd ${{env.yesterday}}; then
+              promote_yesterdays_build=yes
+            else
+              promote_yesterdays_build=no
             fi
+          else
+            promote_yesterdays_build=no
           fi
 
           {
             echo "todays_project_exists=$todays_project_exists"
             echo "yesterdays_project_exists=$yesterdays_project_exists"
+            echo "project_day_before_yesterday_exists=$project_day_before_yesterday_exists"
+            echo "promote_yesterdays_build=$promote_yesterdays_build"
             echo "target_project_exists=$target_project_exists"
           } >> "$GITHUB_ENV"
 
@@ -115,6 +125,31 @@ jobs:
           else
             echo "Not skipping build steps"
             echo "skip_build_steps=no" >> "$GITHUB_ENV"
+          fi
+          set -e
+
+      - name: "Check if we want to promote llvm-test-suite from yesterday"
+        if: ${{ matrix.name == 'llvm-test-suite' && env.promote_yesterdays_build == 'yes' && env.project_yesterday_exists == 'yes' && env.project_day_before_yesterday_exists == 'yes' }}
+        run: |
+          curl -sfL -o git_rev_yesterday.txt "https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/llvm-test-suite-version-sync/llvm-test-suite-git-revision-${{ env.yesterday }}.txt"
+          curl -sfL -o git_rev_day_before_yesterday.txt "https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/llvm-test-suite-version-sync/llvm-test-suite-git-revision-${{ env.day_before_yesterday }}.txt"
+
+          curl -sfL -o llvm_version_yesterday.txt "https://github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-release-${{ env.yesterday }}.txt"
+          curl -sfL -o llvm_version_day_before_yesterday.txt "https:////github.com/fedora-llvm-team/llvm-snapshots/releases/download/snapshot-version-sync/llvm-release-${{ env.day_before_yesterday }}.txt"
+
+          set +e
+          cmp -s git_rev_yesterday.txt git_rev_day_before_yesterday.txt
+          git_rev_same=$?
+
+          cmp -s llvm_version_yesterday.txt.txt llvm_version_day_before_yesterday.txt
+          llvm_version_same=$?
+
+          if [[ $git_rev_same && $llvm_version_same ]] ; then
+            echo "Not promoting llvm-test-suite build from yesterday because both git revision and LLVM version are the same as day before yesterday"
+            echo "promote_yesterdays_build=no" >> "$GITHUB_ENV"
+          else
+            echo "Promoting llvm-test-suite build from yesterday"
+            echo "promote_yesterdays_build=yes" >> "$GITHUB_ENV"
           fi
           set -e
 
@@ -190,7 +225,7 @@ jobs:
           done
 
       - name: "Delete target Copr project at ${{ env.project_target }} before forking to it"
-        if: ${{ env.yesterdays_project_exists == 'yes' && env.target_project_exists == 'yes' }}
+        if: ${{ env.promote_yesterdays_build == 'yes' && env.target_project_exists == 'yes' }}
         run: |
           copr-cli delete "${{ env.project_target }}"
           # Give Copr some time to process the deletion, to avoid race conditions with forking.
@@ -198,7 +233,7 @@ jobs:
           sleep 1m
 
       - name: "Fork Copr project from ${{ env.project_yesterday }} to ${{ env.project_target }}"
-        if: ${{ env.yesterdays_project_exists == 'yes' }}
+        if: ${{ env.promote_yesterdays_build == 'yes' }}
         run: |
           copr-cli fork --confirm ${{ env.project_yesterday }} ${{ env.project_target }}
           copr-cli modify --delete-after-days -1 --unlisted-on-hp off ${{ env.project_target }}
@@ -206,6 +241,6 @@ jobs:
       - name: "Regenerate repos for target project ${{ env.project_target }}"
         # If yesterday's project didn't exist, we haven't forked and so we don't
         # need to regenerate the repos.
-        if: ${{ env.yesterdays_project_exists == 'yes' }}
+        if: ${{ env.promote_yesterdays_build == 'yes' }}
         run: |
           copr-cli regenerate-repos ${{ env.project_target }}
