@@ -589,6 +589,7 @@ def main() -> None:
     target_chroots = [f"{os_name}-{a}" for a in target_arches]
     project_owner = "@fedora-llvm-team"
     project_name = "clang-monthly-fedora-rebuild"
+
     if args.command == "rebuild":
         exclusions = get_exclusions()
         pkgs = get_pkgs(exclusions)
