@@ -15,6 +15,12 @@ import koji
 from munch import Munch
 
 
+def get_rawhide_tag() -> Any:
+    koji_session = koji.ClientSession("https://koji.fedoraproject.org/kojihub")
+    target = koji_session.getBuildTarget("rawhide")
+    return target["build_tag_name"].split("-")[0]
+
+
 def is_tier0_package(pkg: str) -> bool:
     return pkg in [
         "dotnet6.0",
@@ -375,9 +381,9 @@ def build_pkg(
     project_name: str,
     copr_client: copr.v3.Client,
     pkg: str,
+    default_commitish: str,
+    build_tag: str,
     koji_server: str = "https://koji.fedoraproject.org/kojihub",
-    default_commitish: str = "rawhide",
-    build_tag: str = "f43",
     distgit: str = "fedora",
     chroots: list[str] | None = None,
 ) -> None:
@@ -432,8 +438,17 @@ def start_rebuild(
     )
 
     logging.info("Rebuilding", len(pkgs), "packages")
+    rawhide_tag = get_rawhide_tag()
     for p in pkgs:
-        build_pkg(project_owner, project_name, copr_client, p, chroots=chroots)
+        build_pkg(
+            project_owner,
+            project_name,
+            copr_client,
+            p,
+            default_commitish="rawhide",
+            build_tag=rawhide_tag,
+            chroots=chroots,
+        )
 
 
 def select_snapshot_project(
@@ -531,7 +546,7 @@ def find_midpoint_project(
     return good
 
 
-def pkg_is_ftbfs(ftbfs_data: list[dict[str, str]], pkg: str, tag: str = "f44") -> bool:
+def pkg_is_ftbfs(ftbfs_data: list[dict[str, str]], pkg: str, tag: str) -> bool:
 
     for ftbfs_pkg in ftbfs_data:
         if ftbfs_pkg["name"] != pkg:
@@ -574,7 +589,6 @@ def main() -> None:
     target_chroots = [f"{os_name}-{a}" for a in target_arches]
     project_owner = "@fedora-llvm-team"
     project_name = "clang-monthly-fedora-rebuild"
-
     if args.command == "rebuild":
         exclusions = get_exclusions()
         pkgs = get_pkgs(exclusions)
@@ -709,15 +723,15 @@ def main() -> None:
         ]
         for pkg in centos9_pkgs:
             build_pkg(
-                project_owner,
-                project_name,
-                copr_client,
-                pkg,
-                "https://kojihub.stream.centos.org/kojihub",
-                "c9s",
-                "c9s-candidate",
-                "centos-stream",
-                centos_stream9_chroots,
+                project_owner=project_owner,
+                project_name=project_name,
+                copr_client=copr_client,
+                pkg=pkg,
+                koji_server="https://kojihub.stream.centos.org/kojihub",
+                default_commitish="c9s",
+                build_tag="c9s-candidate",
+                distgit="centos-stream",
+                chroots=centos_stream9_chroots,
             )
 
         centos_stream10_chroots = [
@@ -725,15 +739,15 @@ def main() -> None:
         ]
         for pkg in centos10_pkgs:
             build_pkg(
-                project_owner,
-                project_name,
-                copr_client,
-                pkg,
-                "https://kojihub.stream.centos.org/kojihub",
-                "c10s",
-                "c10s-candidate",
-                "centos-stream",
-                centos_stream10_chroots,
+                project_owner=project_owner,
+                project_name=project_name,
+                copr_client=copr_client,
+                pkg=pkg,
+                koji_server="https://kojihub.stream.centos.org/kojihub",
+                default_commitish="c10s",
+                build_tag="c10s-candidate",
+                distgit="centos-stream",
+                chroots=centos_stream10_chroots,
             )
 
         fedora_chroots = [c for c in fedora_chroots if c in target_chroots]
@@ -748,18 +762,19 @@ def main() -> None:
         with urllib.request.urlopen(request) as url:
             ftbfs_data = json.loads(url.read().decode())
 
+        rawhide_tag = get_rawhide_tag()
         for pkg in fedora_pkgs:
-            if pkg_is_ftbfs(ftbfs_data, pkg):
+            if pkg_is_ftbfs(ftbfs_data, pkg, tag=rawhide_tag):
                 print(f"Skip building {pkg} on rawhide, because it is FTBFS")
                 continue
             print(f"Building {pkg}")
             build_pkg(
-                project_owner,
-                project_name,
-                copr_client,
-                pkg,
+                project_owner=project_owner,
+                project_name=project_name,
+                copr_client=copr_client,
+                pkg=pkg,
                 default_commitish="rawhide",
-                build_tag="f44",
+                build_tag=rawhide_tag,
                 chroots=fedora_chroots,
             )
 
