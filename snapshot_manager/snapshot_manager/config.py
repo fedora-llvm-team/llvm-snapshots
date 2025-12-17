@@ -177,6 +177,7 @@ class Config:
          'copr_project_instructions_file': 'instructions.md',
          'copr_project_tpl': 'SomeProjectTemplate-YYYYMMDD',
          'copr_target_project': '@mycoprgroup/mycoprproject',
+         'forked_repo': True,
          'maintainer_handle': 'fakeperson',
          'name': 'mybuildstrategy',
          'run_check_snapshots_workflow': True,
@@ -201,6 +202,7 @@ class Config:
             ),
             "run_check_snapshots_workflow": self.run_check_snapshots_workflow,
             "spec_file": self.spec_file,
+            "forked_repo": self.forked_repo,
         }
 
 
