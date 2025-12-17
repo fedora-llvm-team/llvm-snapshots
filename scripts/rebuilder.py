@@ -34,20 +34,24 @@ def is_tier0_package(pkg: str) -> bool:
     ]
 
 
-def filter_unsupported_pkgs(pkgs: set[str]) -> set[str]:
+def filter_unsupported_pkgs(pkgs: set[str]|list[str]) -> set[str]:
     """Filters out unsupported packages and returns the rest.
 
     Args:
-        pkgs (set[str]): List of package names
+        pkgs (set[str]|list[str]): List of package names
 
     Returns:
-        set[str]: List of package names without unsupported packages
+        set[str]: Set of package names without unsupported packages
 
+    Example:
+
+    >>> pkgs={"foo", "dotnet6.0", "bar"}
+    >>> filtered=list(filter_unsupported_pkgs(pkgs))
+    >>> filtered.sort()
+    >>> print(filtered)
+    ['bar', 'foo']
     """
-    unsupported_pkgs = {"dotnet6.0", "dotnet7.0"}
-    for p in unsupported_pkgs:
-        pkgs.discard(p)
-    return pkgs
+    return set(pkgs) - {"dotnet6.0", "dotnet7.0"}
 
 
 # Packages in CentOS Stream that are built by clang
