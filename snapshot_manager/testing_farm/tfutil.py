@@ -233,6 +233,12 @@ def get_xunit_file_from_request_file(
         )
         return None
 
+    if xunit_url is None:
+        logging.error(
+            f"Error: xunit URL is None. Overall: {result_json["overall"]} Summary: {result_json["summary"]}"
+        )
+        return None
+
     logging.info(f"Fetching xunit URL from URL: {xunit_url}")
 
     if not _IN_TEST_MODE:

@@ -58,6 +58,9 @@ class Config:
     copr_project_tpl: str = "llvm-snapshots-incubator-YYYYMMDD"
     """The Copr project name template of the project to work with. YYYYMMDD will be replace with the correct date"""
 
+    forked_repo: bool = True
+    """Indicates if project copr_project_tpl should be forked into copr_target_project. Otherwise, copr_project_tlp is treated as target repository"""
+
     copr_monitor_tpl: str = (
         "https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-incubator-YYYYMMDD/monitor/"
     )
@@ -215,8 +218,9 @@ def build_config_map() -> dict[str, Config]:
             copr_target_project="@fedora-llvm-team/llvm-snapshots",
             package_clone_url="https://src.fedoraproject.org/rpms/llvm.git",
             package_clone_ref="rawhide",
-            maintainer_handle="tuliom",
+            maintainer_handle="nikic",
             copr_project_tpl="llvm-snapshots-big-merge-YYYYMMDD",
+            forked_repo=True,
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
             chroot_pattern="^(fedora-(rawhide|[0-9]+)|centos-stream-[10,9]|rhel-8)",
             copr_project_description_file="llvm-project-description.md",
@@ -234,8 +238,9 @@ def build_config_map() -> dict[str, Config]:
             package_clone_url="https://src.fedoraproject.org/rpms/llvm-test-suite.git",
             package_clone_ref="rawhide",
             maintainer_handle="kkleine",
-            copr_project_tpl="llvm-test-suite-YYYYMMDD",
-            copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-test-suite-YYYYMMDD/monitor/",
+            copr_project_tpl="llvm-test-suite",
+            forked_repo=False,
+            copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-test-suite/monitor/",
             chroot_pattern="^(fedora-(rawhide|[0-9]+)|centos-stream-[10,9]|rhel-8)",
             copr_project_description_file="llvm-test-suite-project-description.md",
             copr_project_instructions_file="llvm-test-suite-project-instructions.md",

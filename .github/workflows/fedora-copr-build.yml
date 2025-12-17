@@ -190,7 +190,7 @@ jobs:
           done
 
       - name: "Delete target Copr project at ${{ env.project_target }} before forking to it"
-        if: ${{ env.yesterdays_project_exists == 'yes' && env.target_project_exists == 'yes' }}
+        if: ${{ matrix.forked_repo && env.yesterdays_project_exists == 'yes' && env.target_project_exists == 'yes' }}
         run: |
           copr-cli delete "${{ env.project_target }}"
           # Give Copr some time to process the deletion, to avoid race conditions with forking.
@@ -198,7 +198,7 @@ jobs:
           sleep 1m
 
       - name: "Fork Copr project from ${{ env.project_yesterday }} to ${{ env.project_target }}"
-        if: ${{ env.yesterdays_project_exists == 'yes' }}
+        if: ${{ matrix.forked_repo && env.yesterdays_project_exists == 'yes' }}
         run: |
           copr-cli fork --confirm ${{ env.project_yesterday }} ${{ env.project_target }}
           copr-cli modify --delete-after-days -1 --unlisted-on-hp off ${{ env.project_target }}
@@ -206,6 +206,6 @@ jobs:
       - name: "Regenerate repos for target project ${{ env.project_target }}"
         # If yesterday's project didn't exist, we haven't forked and so we don't
         # need to regenerate the repos.
-        if: ${{ env.yesterdays_project_exists == 'yes' }}
+        if: ${{ matrix.forked_repo && env.yesterdays_project_exists == 'yes' }}
         run: |
           copr-cli regenerate-repos ${{ env.project_target }}
