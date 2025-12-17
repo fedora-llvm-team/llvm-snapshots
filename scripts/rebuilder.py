@@ -16,7 +16,7 @@ from munch import Munch
 
 
 def get_rawhide_tag() -> str:
-    """ Returns the current tag for rawhide, i.e. "f44". """
+    """Returns the current tag for rawhide, i.e. "f44"."""
     koji_session = koji.ClientSession("https://koji.fedoraproject.org/kojihub")
     target = koji_session.getBuildTarget("rawhide")
     return target["build_tag_name"].split("-")[0]
@@ -35,7 +35,7 @@ def is_tier0_package(pkg: str) -> bool:
     ]
 
 
-def filter_unsupported_pkgs(pkgs: set[str]|list[str]) -> set[str]:
+def filter_unsupported_pkgs(pkgs: set[str] | list[str]) -> set[str]:
     """Filters out unsupported packages and returns the rest.
 
     Args:
