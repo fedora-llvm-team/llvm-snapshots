@@ -18,7 +18,7 @@ from munch import Munch
 def get_rawhide_tag() -> str:
     """Returns the current tag for rawhide, i.e. "f44"."""
     koji_session = koji.ClientSession("https://koji.fedoraproject.org/kojihub")
-    target = koji_session.getBuildTarget("rawhide")
+    target: str = koji_session.getBuildTarget("rawhide")
     return target["build_tag_name"].split("-")[0]
 
 
