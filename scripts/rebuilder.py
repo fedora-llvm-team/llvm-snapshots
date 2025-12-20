@@ -20,7 +20,7 @@ def get_rawhide_tag() -> str:
     koji_session = koji.ClientSession("https://koji.fedoraproject.org/kojihub")
     target = koji_session.getBuildTarget("rawhide")
     build_tag_name: str = target["build_tag_name"]
-    return build_tab_name.split("-")[0]
+    return build_tag_name.split("-")[0]
 
 
 def is_tier0_package(pkg: str) -> bool:
