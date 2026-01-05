@@ -2,6 +2,7 @@
 
 import collections
 import datetime
+import os
 import unittest
 from collections.abc import Callable, Generator
 from typing import Any
@@ -26,7 +27,16 @@ def config_fxt() -> config.Config:
 @pytest.fixture  # type: ignore[misc]
 def github_client_fxt(config_fxt: config.Config) -> Generator[github_util.GithubClient]:
     """Yields a github client with important parts mocked"""
-    gh = github_util.GithubClient(config=config_fxt, github_token="foobar")
+    try:
+        gh = github_util.GithubClient(config=config_fxt, github_token="foobar")
+    except github_util.MissingToken as ex:
+        # Only skip test when running locally, aka not in a Github runner
+        if os.getenv("GITHUB_RUN_ID") is None:
+            pytest.skip(
+                "Skip test because this local execution doesn't have access to a Github token"
+            )
+        else:
+            raise ex
     with mock.patch.object(gh.github, "get_repo", autospec=True) as get_repo_mock:
         get_repo_mock.return_value = mock.MagicMock()
         yield gh
