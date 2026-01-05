@@ -523,6 +523,67 @@ def filter_chroots(chroots: list[str], pattern: str) -> list[str]:
     return res
 
 
+def testable_fedora_versions(chroots: list[str]) -> list[str]:
+    """Return a sorted list of the Fedora versions that should be tested
+
+    In the most common case, returns the following:
+     - Previous branched Fedora version, aka. N-1;
+     - Latest branched Fedora version, aka. N;
+     - rawhide;
+
+    Args:
+        chroots (list[str]): A list of chroots
+
+    Returns:
+        list[str]: A list
+
+    Example which removes s390x chroots but the aforementioned:
+
+    >>> chroots = [
+    ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le", "centos-stream-10-s390x",
+    ...   "centos-stream-10-x86_64", "centos-stream-9-aarch64", "centos-stream-9-ppc64le",
+    ...   "centos-stream-9-s390x", "centos-stream-9-x86_64", "fedora-40-aarch64",
+    ...   "fedora-40-i386", "fedora-40-ppc64le", "fedora-40-s390x", "fedora-40-x86_64",
+    ...   "fedora-41-aarch64", "fedora-41-x86_64", "fedora-42-aarch64",
+    ...   "fedora-42-i386", "fedora-42-ppc64le", "fedora-42-s390x",
+    ...   "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
+    ...   "fedora-rawhide-ppc64le", "fedora-rawhide-s390x", "fedora-rawhide-x86_64",
+    ...   "rhel-8-aarch64", "rhel-8-s390x", "rhel-8-x86_64" ]
+    >>> expected = [ "41", "42", "rawhide" ]
+    >>> actual = testable_fedora_versions(chroots)
+    >>> actual == expected
+    True
+    >>> chroots = [
+    ...   "fedora-40-i386",
+    ...   "fedora-41-aarch64",
+    ...   "fedora-42-x86_64",
+    ...   "fedora-42-ppc64le",
+    ...   "fedora-100-ppc64le",
+    ...   "fedora-43-aarch64",
+    ...   "fedora-43-ppc64le"]
+    >>> expected = [ "42", "43", "100"]
+    >>> actual = testable_fedora_versions(chroots)
+    >>> actual == expected
+    True
+    """
+    fedora_versions = [
+        chroot_version(chroot) for chroot in chroots if chroot_name(chroot) == "fedora"
+    ]
+    # Deduplicate versions.
+    fedora_versions = list(dict.fromkeys(fedora_versions))
+
+    # Sort the versions. Remove rawhide temporarily, because it isn't an
+    # integer.
+    contains_rawhide = "rawhide" in fedora_versions
+    if contains_rawhide:
+        fedora_versions.remove("rawhide")
+    fedora_versions.sort(key=int)
+    if contains_rawhide:
+        fedora_versions.append("rawhide")
+
+    return fedora_versions[-3:]
+
+
 def sanitize_chroots(chroots: list[str]) -> list[str]:
     """Sanitizes chroots:
 
@@ -605,58 +666,38 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     >>> actual == expected
     True
     """
-    # s390x sanitization
+
+    # List of arches supported in the previous fedora version.
+    previous_fedora_version_arches = ["aarch64", "x86_64"]
+
+    fedora_versions = testable_fedora_versions(chroots)
+
+    # In some cases, it's possible that we have less than 3 fedora
+    # chroots. We set these versions to None in order to avoid matching them.
+    previous_fedora_version = None
+    last_fedora_version = None
+    rawhide_version = None
+
+    v = len(fedora_versions)
+    if v > 0:
+        rawhide_version = fedora_versions[-1]
+    if v > 1:
+        last_fedora_version = fedora_versions[-2]
+    if v > 2:
+        previous_fedora_version = fedora_versions[0]
+
     res = [
         expect_chroot(chroot)
         for chroot in chroots
-        if chroot_arch(chroot) != "s390x"
-        or chroot
-        in (
-            "fedora-rawhide-s390x",
-            "centos-stream-10-s390x",
-            "centos-stream-9-s390x",
-            "rhel-8-s390x",
-        )
-    ]
-
-    # 3 latest fedora versions to keep
-    fedora_versions_to_keep = [
-        chroot_version(chroot) for chroot in res if chroot_name(chroot) == "fedora"
-    ]
-    # Deduplicate versions
-    fedora_versions_to_keep = list(dict.fromkeys(fedora_versions_to_keep))
-    contains_rawhide = "rawhide" in fedora_versions_to_keep
-    if contains_rawhide:
-        fedora_versions_to_keep.remove("rawhide")
-    fedora_versions_to_keep.sort(key=int)
-    # In case we have a single branched release, we can't have an extra
-    # Fedora build with a reduced set of architectures.
-    # While this is unlikely to happen, our tests do check for this.
-    # This assumes we'll never have version = 0.
-    extra_fedora_version = "0"
-    extra_fedora_version_arches = ["aarch64", "x86_64"]
-    # Run the build on the latest branched Fedora for all architectures
-    # except s390x.
-    # Build a reduced set of architectures for Fedora N-1, aka.
-    # extra_fedora_version.
-    if contains_rawhide:
-        if len(fedora_versions_to_keep) >= 2:
-            extra_fedora_version = fedora_versions_to_keep[-2]
-        fedora_versions_to_keep = fedora_versions_to_keep[-1:]
-        fedora_versions_to_keep.append("rawhide")
-    else:
-        if len(fedora_versions_to_keep) >= 3:
-            extra_fedora_version = fedora_versions_to_keep[-3]
-        fedora_versions_to_keep = fedora_versions_to_keep[-2:]
-
-    res = [
-        chroot
-        for chroot in res
         if chroot_name(chroot) != "fedora"
-        or chroot_version(chroot) in fedora_versions_to_keep
+        or chroot_version(chroot) == rawhide_version
         or (
-            chroot_version(chroot) == extra_fedora_version
-            and chroot_arch(chroot) in extra_fedora_version_arches
+            chroot_version(chroot) == last_fedora_version
+            and chroot_arch(chroot) != "s390x"
+        )
+        or (
+            chroot_version(chroot) == previous_fedora_version
+            and chroot_arch(chroot) in previous_fedora_version_arches
         )
     ]
 
