@@ -68,9 +68,9 @@ def get_tier1_pkgs(version: int) -> set[str]:
 
     Example:
 
-    >>> pkgs = get_tier1_pkgs(9)
+    >>> pkgs=get_tier1_pkgs(9)
     >>> len(pkgs) > 0
-    >>> pkgs = get_tier1_pkgs(10)
+    >>> pkgs=get_tier1_pkgs(10)
     >>> len(pkgs) > 0
     True
     True
