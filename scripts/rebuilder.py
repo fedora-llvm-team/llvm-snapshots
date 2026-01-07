@@ -58,6 +58,23 @@ def filter_unsupported_pkgs(pkgs: set[str] | list[str]) -> set[str]:
 
 # Packages in CentOS Stream that are built by clang
 def get_tier1_pkgs(version: int) -> set[str]:
+    """
+
+    Args:
+        version (int): The CentOS Stream version to query.
+    Returns:
+      set: Set of pakcages in the specified CentOS Stream version that
+           BuildRequire clang.
+
+    Example:
+
+    >>> pkgs = get_tier1_pkgs(9)
+    >>> len(pkgs) > 0
+    True
+    >>> pkgs = get_tier1_pkgs(10)
+    >>> len(pkgs) > 0
+    True
+    """
     base = dnf.Base()
     conf = base.conf
     for c in "AppStream", "BaseOS", "CRB":
