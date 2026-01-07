@@ -228,7 +228,8 @@ def build_config_map() -> dict[str, Config]:
             copr_project_description_file="llvm-project-description.md",
             copr_project_instructions_file="llvm-project-instructions.md",
             additional_copr_buildtime_repos=[
-                "copr://@fedora-llvm-team/llvm-test-suite/"
+                "copr://@fedora-llvm-team/llvm-test-suite/",
+                "copr://@fedora-llvm-team/python-nanobind/",
             ],
             run_check_snapshots_workflow=True,
         ),
