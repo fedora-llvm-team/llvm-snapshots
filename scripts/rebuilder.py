@@ -70,9 +70,9 @@ def get_tier1_pkgs(version: int) -> set[str]:
 
     >>> pkgs = get_tier1_pkgs(9)
     >>> len(pkgs) > 0
-    True
     >>> pkgs = get_tier1_pkgs(10)
     >>> len(pkgs) > 0
+    True
     True
     """
     base = dnf.Base()
