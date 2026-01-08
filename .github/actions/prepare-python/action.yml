@@ -45,7 +45,7 @@ runs:
         if [ "${{ steps.os-check.outputs.is-fedora }}" = "true" ]; then
           # Install some dependencies required by pip to build the required 
           # modules.  These aren't installed by default in the Fedora container.
-          sudo dnf install -y python-unversioned-command pip gcc-c++
+          sudo dnf install -y python-unversioned-command pip gcc-c++ python3-devel
         fi
         python -m pip install --upgrade pip
         pip install pytest coverage
