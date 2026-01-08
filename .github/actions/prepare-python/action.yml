@@ -43,8 +43,9 @@ runs:
       shell: bash
       run: |
         if [ "${{ steps.os-check.outputs.is-fedora }}" = "true" ]; then
-          # Install unversioned python command
-          sudo dnf install -y python-unversioned-command
+          # Install unversioned python command and pip (not installed by default
+          # in the Fedora containre).
+          sudo dnf install -y python-unversioned-command pip
         fi
         python -m pip install --upgrade pip
         pip install pytest coverage
