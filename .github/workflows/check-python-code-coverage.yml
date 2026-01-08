@@ -6,6 +6,8 @@ jobs:
   coverage:
     name: coverage
     runs-on: ubuntu-latest
+    container:
+      image: "registry.fedoraproject.org/fedora:42"
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare-python

@@ -14,6 +14,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - id: os-check
+      run: |
+        if -e /etc/fedora-release; then
+          fedora=true
+        fi
+        echo "is-fedora=$fedora" >> $GITHUB_OUTPUT
     - name: "Setup python"
       uses: actions/setup-python@v5
       if: "${{ inputs.use-system-python != 'true' }}"
@@ -25,8 +31,12 @@ runs:
     - name: Install libkrb5-dev
       shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install libkrb5-dev
+        if [ "${{ steps.os-check.outputs.is-fedora }}" = "true" ]; then
+          sudo dnf install -y krb5-devel
+        else
+          sudo apt-get update
+          sudo apt-get install libkrb5-dev
+        fi
 
     - name: "Install and upgrade pip"
       shell: bash
@@ -45,5 +55,9 @@ runs:
       if: "${{ inputs.use-system-python == 'true' }}"
       shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install python3-dnf
+        if [ "${{ steps.os-check.outputs.is-fedora }}" = "true" ]; then
+          sudo dnf install -y python3-dnf
+        else
+          sudo apt-get update
+          sudo apt-get install python3-dnf
+        fi
