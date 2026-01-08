@@ -43,7 +43,7 @@ runs:
       shell: bash
       run: |
         if [ "${{ steps.os-check.outputs.is-fedora }}" = "true" ]; then
-          # Install some dependencies required by pip to build the required 
+          # Install some dependencies required by pip to build the required
           # modules.  These aren't installed by default in the Fedora container.
           sudo dnf install -y python-unversioned-command pip gcc-c++ python3-devel
         fi
