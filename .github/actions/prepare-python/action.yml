@@ -15,6 +15,7 @@ runs:
   using: "composite"
   steps:
     - id: os-check
+      shell: bash
       run: |
         if -e /etc/fedora-release; then
           fedora=true
