@@ -42,6 +42,10 @@ runs:
     - name: "Install and upgrade pip"
       shell: bash
       run: |
+        if [ "${{ steps.os-check.outputs.is-fedora }}" = "true" ]; then
+          # Install unversioned python command
+          sudo dnf install -y python-unversioned-command
+        fi
         python -m pip install --upgrade pip
         pip install pytest coverage
 
