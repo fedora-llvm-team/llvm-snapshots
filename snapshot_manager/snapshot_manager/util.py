@@ -523,25 +523,19 @@ def filter_chroots(chroots: list[str], pattern: str) -> list[str]:
     return res
 
 
-def testable_fedora_versions(
+def latest_branched_fedora_version(
     chroots: list[str],
-) -> tuple[str | None, str | None, str | None]:
-    """Return a tuple the Fedora versions that should be tested
+) -> str | None:
+    """Return the latest branched Fedora version
 
-    Returns the following versions:
-     - rawhide;
-     - Latest branched Fedora version, aka. N;
-     - Previous branched Fedora version, aka. N-1;
-
-    If one of those versions is not available, returns None instead.
+    Return the latest branched Fedora version as a string, if available.
+    Otherwise, returns None.
 
     Args:
         chroots (list[str]): A list of chroots
 
     Returns:
-        A tuple[str, str, str] with the versions of rawhide, the latest branched Fedora version N, and N-1.
-
-    Example which removes s390x chroots but the aforementioned:
+        A str with the latest branched Fedora version.
 
     >>> chroots = [
     ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le", "centos-stream-10-s390x",
@@ -553,8 +547,8 @@ def testable_fedora_versions(
     ...   "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
     ...   "fedora-rawhide-ppc64le", "fedora-rawhide-s390x", "fedora-rawhide-x86_64",
     ...   "rhel-8-aarch64", "rhel-8-s390x", "rhel-8-x86_64" ]
-    >>> expected = ( "rawhide", "42", "41" )
-    >>> actual = testable_fedora_versions(chroots)
+    >>> expected = "42"
+    >>> actual = latest_branched_fedora_version(chroots)
     >>> actual == expected
     True
     >>> chroots = [
@@ -565,8 +559,15 @@ def testable_fedora_versions(
     ...   "fedora-100-ppc64le",
     ...   "fedora-43-aarch64",
     ...   "fedora-43-ppc64le"]
-    >>> expected = ( None, "100", None )
-    >>> actual = testable_fedora_versions(chroots)
+    >>> expected = "100"
+    >>> actual = latest_branched_fedora_version(chroots)
+    >>> actual == expected
+    True
+    >>> chroots = [
+    ...   "fedora-rawhide-aarch64",
+    ...   "rhel-8-aarch64"]
+    >>> expected = None
+    >>> actual = latest_branched_fedora_version(chroots)
     >>> actual == expected
     True
     """
@@ -576,23 +577,18 @@ def testable_fedora_versions(
     # Deduplicate versions.
     fedora_versions = list(dict.fromkeys(fedora_versions))
 
-    # Default return values.
-    previous_fedora_version = None
+    # Default return value.
     last_fedora_version = None
-    rawhide_version = None
 
     if "rawhide" in fedora_versions:
         fedora_versions.remove("rawhide")
-        rawhide_version = "rawhide"
+
     fedora_versions.sort(key=int)
 
     if len(fedora_versions) >= 1:
         last_fedora_version = fedora_versions[-1]
-        p = int(last_fedora_version) - 1
-        if str(p) in fedora_versions:
-            previous_fedora_version = str(p)
 
-    return rawhide_version, last_fedora_version, previous_fedora_version
+    return last_fedora_version
 
 
 def sanitize_chroots(chroots: list[str]) -> list[str]:
@@ -677,15 +673,17 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     # List of arches supported in the previous fedora version.
     previous_fedora_version_arches = ["aarch64", "x86_64"]
 
-    rawhide_version, last_fedora_version, previous_fedora_version = (
-        testable_fedora_versions(chroots)
-    )
+    last_fedora_version = latest_branched_fedora_version(chroots)
+    if last_fedora_version is None:
+        previous_fedora_version = None
+    else:
+        previous_fedora_version = str(int(last_fedora_version) - 1)
 
     res = [
         expect_chroot(chroot)
         for chroot in chroots
         if chroot_name(chroot) != "fedora"
-        or chroot_version(chroot) == rawhide_version
+        or chroot_version(chroot) == "rawhide"
         or (
             chroot_version(chroot) == last_fedora_version
             and chroot_arch(chroot) != "s390x"
