@@ -38,7 +38,7 @@ defusedxml==0.7.1
     # via koji
 dynaconf==3.2.4
     # via tft-cli
-filelock==3.20.1
+filelock==3.20.3
     # via copr
 fnc==0.5.3
     # via -r requirements.txt.in
