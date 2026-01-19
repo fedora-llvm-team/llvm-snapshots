@@ -65,5 +65,5 @@ runs:
           sudo dnf install -y python3-dnf
         else
           sudo apt-get update
-          sudo apt-get install python3-dnf
+          sudo apt-get install -y python3-dnf
         fi
