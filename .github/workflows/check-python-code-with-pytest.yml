@@ -7,7 +7,7 @@ jobs:
     name: pytest
     runs-on: ubuntu-latest
     container:
-      image: "registry.fedoraproject.org/fedora:42"
+      image: "registry.fedoraproject.org/fedora:latest"
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare-python
