@@ -523,6 +523,74 @@ def filter_chroots(chroots: list[str], pattern: str) -> list[str]:
     return res
 
 
+def latest_branched_fedora_version(
+    chroots: list[str],
+) -> str | None:
+    """Return the latest branched Fedora version
+
+    Return the latest branched Fedora version as a string, if available.
+    Otherwise, returns None.
+
+    Args:
+        chroots (list[str]): A list of chroots
+
+    Returns:
+        A str with the latest branched Fedora version.
+
+    >>> chroots = [
+    ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le", "centos-stream-10-s390x",
+    ...   "centos-stream-10-x86_64", "centos-stream-9-aarch64", "centos-stream-9-ppc64le",
+    ...   "centos-stream-9-s390x", "centos-stream-9-x86_64", "fedora-40-aarch64",
+    ...   "fedora-40-i386", "fedora-40-ppc64le", "fedora-40-s390x", "fedora-40-x86_64",
+    ...   "fedora-41-aarch64", "fedora-41-x86_64", "fedora-42-aarch64",
+    ...   "fedora-42-i386", "fedora-42-ppc64le", "fedora-42-s390x",
+    ...   "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
+    ...   "fedora-rawhide-ppc64le", "fedora-rawhide-s390x", "fedora-rawhide-x86_64",
+    ...   "rhel-8-aarch64", "rhel-8-s390x", "rhel-8-x86_64" ]
+    >>> expected = "42"
+    >>> actual = latest_branched_fedora_version(chroots)
+    >>> actual == expected
+    True
+    >>> chroots = [
+    ...   "fedora-40-i386",
+    ...   "fedora-41-aarch64",
+    ...   "fedora-42-x86_64",
+    ...   "fedora-42-ppc64le",
+    ...   "fedora-100-ppc64le",
+    ...   "fedora-43-aarch64",
+    ...   "fedora-43-ppc64le"]
+    >>> expected = "100"
+    >>> actual = latest_branched_fedora_version(chroots)
+    >>> actual == expected
+    True
+    >>> chroots = [
+    ...   "fedora-rawhide-aarch64",
+    ...   "rhel-8-aarch64"]
+    >>> expected = None
+    >>> actual = latest_branched_fedora_version(chroots)
+    >>> actual == expected
+    True
+    """
+    fedora_versions = [
+        chroot_version(chroot) for chroot in chroots if chroot_name(chroot) == "fedora"
+    ]
+    # Deduplicate versions.
+    fedora_versions = list(dict.fromkeys(fedora_versions))
+
+    # Default return value.
+    last_fedora_version = None
+
+    if "rawhide" in fedora_versions:
+        fedora_versions.remove("rawhide")
+
+    fedora_versions.sort(key=int)
+
+    if len(fedora_versions) >= 1:
+        last_fedora_version = fedora_versions[-1]
+
+    return last_fedora_version
+
+
 def sanitize_chroots(chroots: list[str]) -> list[str]:
     """Sanitizes chroots:
 
@@ -533,7 +601,10 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     rhel-8-s390x
     centos-stream-9-s390x
 
-    Keeps only the latest 3 fedora versions, not more.
+    Keeps only:
+     - rawhide
+     - 1 branched Fedora version on all architectures except s390x.
+     - Another branched Fedora version on aarch64 and x86_64.
 
     Args:
         chroots (list[str]): A list of chroots
@@ -548,17 +619,17 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     ...   "centos-stream-10-x86_64", "centos-stream-9-aarch64", "centos-stream-9-ppc64le",
     ...   "centos-stream-9-s390x", "centos-stream-9-x86_64", "fedora-40-aarch64",
     ...   "fedora-40-i386", "fedora-40-ppc64le", "fedora-40-s390x", "fedora-40-x86_64",
-    ...   "fedora-41-aarch64", "fedora-41-i386", "fedora-41-ppc64le", "fedora-41-s390x",
-    ...   "fedora-41-x86_64", "fedora-42-aarch64", "fedora-42-i386", "fedora-42-ppc64le",
-    ...   "fedora-42-s390x", "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
+    ...   "fedora-41-aarch64", "fedora-41-x86_64", "fedora-42-aarch64",
+    ...   "fedora-42-i386", "fedora-42-ppc64le", "fedora-42-s390x",
+    ...   "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
     ...   "fedora-rawhide-ppc64le", "fedora-rawhide-s390x", "fedora-rawhide-x86_64",
     ...   "rhel-8-aarch64", "rhel-8-s390x", "rhel-8-x86_64" ]
     >>> expected = [
     ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le", "centos-stream-10-s390x",
     ...   "centos-stream-10-x86_64", "centos-stream-9-aarch64", "centos-stream-9-ppc64le",
     ...   "centos-stream-9-s390x", "centos-stream-9-x86_64",
-    ...   "fedora-41-aarch64", "fedora-41-i386", "fedora-41-ppc64le",
-    ...   "fedora-41-x86_64", "fedora-42-aarch64", "fedora-42-i386", "fedora-42-ppc64le",
+    ...   "fedora-41-aarch64", "fedora-41-x86_64",
+    ...   "fedora-42-aarch64", "fedora-42-i386", "fedora-42-ppc64le",
     ...   "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
     ...   "fedora-rawhide-ppc64le", "fedora-rawhide-s390x", "fedora-rawhide-x86_64",
     ...   "rhel-8-aarch64", "rhel-8-s390x", "rhel-8-x86_64" ]
@@ -566,18 +637,18 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     >>> actual == expected
     True
 
-    Example to show that we only keep the latest 3 fedora versions (with rawhide)
+    Example to show that we only keep the latest 2 fedora versions (plus rawhide)
 
     >>> chroots = [
     ...   "fedora-40-i386",
     ...   "fedora-41-aarch64",
     ...   "fedora-41-x86_64",
-    ...   "fedora-42-ppc64le",
-    ...   "fedora-43-aarch64",
+    ...   "fedora-42-aarch64",
+    ...   "fedora-43-ppc64le",
     ...   "fedora-rawhide-ppc64le"]
     >>> expected = [
-    ...   "fedora-42-ppc64le",
-    ...   "fedora-43-aarch64",
+    ...   "fedora-42-aarch64",
+    ...   "fedora-43-ppc64le",
     ...   "fedora-rawhide-ppc64le"]
     >>> actual = sanitize_chroots(chroots)
     >>> actual == expected
@@ -591,52 +662,36 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     ...   "fedora-42-x86_64",
     ...   "fedora-42-ppc64le",
     ...   "fedora-100-ppc64le",
-    ...   "fedora-43-aarch64"]
-    >>> expected = [
-    ...   "fedora-42-x86_64",
-    ...   "fedora-42-ppc64le",
-    ...   "fedora-100-ppc64le",
-    ...   "fedora-43-aarch64"]
+    ...   "fedora-43-aarch64",
+    ...   "fedora-43-ppc64le"]
+    >>> expected = [ "fedora-100-ppc64le" ]
     >>> actual = sanitize_chroots(chroots)
     >>> actual == expected
     True
     """
-    # s390x sanitization
+
+    # List of arches supported in the previous fedora version.
+    previous_fedora_version_arches = ["aarch64", "x86_64"]
+
+    last_fedora_version = latest_branched_fedora_version(chroots)
+    if last_fedora_version is None:
+        previous_fedora_version = None
+    else:
+        previous_fedora_version = str(int(last_fedora_version) - 1)
+
     res = [
         expect_chroot(chroot)
         for chroot in chroots
-        if chroot_arch(chroot) != "s390x"
-        or chroot
-        in (
-            "fedora-rawhide-s390x",
-            "centos-stream-10-s390x",
-            "centos-stream-9-s390x",
-            "rhel-8-s390x",
-        )
-    ]
-
-    # 3 latest fedora versions to keep
-    fedora_versions_to_keep = [
-        chroot_version(chroot) for chroot in res if chroot_name(chroot) == "fedora"
-    ]
-    # Deduplicate versions
-    fedora_versions_to_keep = list(dict.fromkeys(fedora_versions_to_keep))
-    contains_rawhide = "rawhide" in fedora_versions_to_keep
-    if contains_rawhide:
-        fedora_versions_to_keep.remove("rawhide")
-    fedora_versions_to_keep.sort(key=int)
-    # Keep the latest two (at most) members
-    if contains_rawhide:
-        fedora_versions_to_keep = fedora_versions_to_keep[-2:]
-        fedora_versions_to_keep.append("rawhide")
-    else:
-        fedora_versions_to_keep = fedora_versions_to_keep[-3:]
-
-    res = [
-        chroot
-        for chroot in res
         if chroot_name(chroot) != "fedora"
-        or chroot_version(chroot) in fedora_versions_to_keep
+        or chroot_version(chroot) == "rawhide"
+        or (
+            chroot_version(chroot) == last_fedora_version
+            and chroot_arch(chroot) != "s390x"
+        )
+        or (
+            chroot_version(chroot) == previous_fedora_version
+            and chroot_arch(chroot) in previous_fedora_version_arches
+        )
     ]
 
     return res
