@@ -583,12 +583,12 @@ def pkg_is_ftbfs(ftbfs_data: list[dict[str, str]], pkg: str, tag: str) -> bool:
 
     Example:
 
-    >>> ftbfs_data=[{"name":"0ad","collection":"f43","state":"failing","last_complete_build":{"task_id":140940683,"time_started":"2026-01-10T12:51:47.103144","time_finished":"2026-01-10T13:08:37.453064","epoch":null,"version":"0.27.1","release":"5.fc43"}},{"name":"0ad","collection":"f44","state":"ok","last_complete_build":{"task_id":141319389,"time_started":"2026-01-19T20:13:00.440847","time_finished":"2026-01-19T20:34:54.17938","epoch":null,"version":"0.27.1","release":"6.fc44"}}]
+    >>> ftbfs_data=json.loads('[{"name":"0ad","collection":"f43","state":"failing","last_complete_build":{"task_id":140940683,"time_started":"2026-01-10T12:51:47.103144","time_finished":"2026-01-10T13:08:37.453064","epoch":null,"version":"0.27.1","release":"5.fc43"}},{"name":"0ad","collection":"f44","state":"ok","last_complete_build":{"task_id":141319389,"time_started":"2026-01-19T20:13:00.440847","time_finished":"2026-01-19T20:34:54.17938","epoch":null,"version":"0.27.1","release":"6.fc44"}}]')
     >>> pkg_is_ftbfs(ftbfs_data, "0ad", "f43")
-    >>> pkg_is_ftbfs(ftbfs_data, "0ad", "f44")
-    >>> pkg_is_ftbfs(ftbfs_data, "llvm", "f44")
     True
+    >>> pkg_is_ftbfs(ftbfs_data, "0ad", "f44")
     False
+    >>> pkg_is_ftbfs(ftbfs_data, "llvm", "f44")
     False
     """
 
