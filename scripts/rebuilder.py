@@ -99,7 +99,7 @@ def get_tier1_pkgs(version: int) -> set[str]:
 
 
 def get_tier2_pkgs(version: str = "rawhide") -> set[str]:
-    """ Returns all packages that BuildRequires clang for the given Fedora version
+    """Returns all packages that BuildRequires clang for the given Fedora version
 
     Args:
         version (str): A Fedora version sring e.g. rawhide, 43, 42, etc.
