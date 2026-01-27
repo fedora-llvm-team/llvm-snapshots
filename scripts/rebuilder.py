@@ -5,6 +5,7 @@ import logging
 import re
 import sys
 import unittest
+import urllib.request
 from typing import Any
 
 import copr.v3
@@ -12,6 +13,22 @@ import dnf
 import hawkey
 import koji
 from munch import Munch
+
+
+def get_rawhide_tag() -> str:
+    """Returns the current tag for rawhide, i.e. "f44".
+
+
+    Example:
+
+    >>> tag=get_rawhide_tag()
+    >>> bool(re.match("f[0-9]+", tag))
+    True
+    """
+    koji_session = koji.ClientSession("https://koji.fedoraproject.org/kojihub")
+    target = koji_session.getBuildTarget("rawhide")
+    build_tag_name: str = target["build_tag_name"]
+    return build_tag_name.split("-")[0]
 
 
 def is_tier0_package(pkg: str) -> bool:
@@ -25,6 +42,124 @@ def is_tier0_package(pkg: str) -> bool:
         "golang",
         "wasi-lbc",
     ]
+
+
+def filter_unsupported_pkgs(pkgs: set[str] | list[str]) -> set[str]:
+    """Filters out unsupported packages and returns the rest.
+
+    Args:
+        pkgs (set[str]|list[str]): List of package names
+
+    Returns:
+        set[str]: Set of package names without unsupported packages
+
+    Example:
+
+    >>> pkgs={"foo", "dotnet6.0", "bar"}
+    >>> filtered=list(filter_unsupported_pkgs(pkgs))
+    >>> filtered.sort()
+    >>> print(filtered)
+    ['bar', 'foo']
+    """
+    return set(pkgs) - {"dotnet6.0", "dotnet7.0"}
+
+
+# Packages in CentOS Stream that are built by clang
+def get_tier1_pkgs(version: int) -> set[str]:
+    """
+
+    Args:
+        version (int): The CentOS Stream version to query.
+    Returns:
+      set: Set of pakcages in the specified CentOS Stream version that
+           BuildRequire clang.
+
+    Example:
+
+    >>> pkgs=get_tier1_pkgs(9)
+    >>> len(pkgs) > 0
+    True
+    >>> pkgs=get_tier1_pkgs(10)
+    >>> len(pkgs) > 0
+    True
+    """
+    base = dnf.Base()
+    conf = base.conf
+    for c in "AppStream", "BaseOS", "CRB":
+        base.repos.add_new_repo(
+            f"{c}-{version}-source",
+            conf,
+            baseurl=[
+                f"https://mirror.stream.centos.org/{version}-stream/{c}/source/tree/"
+            ],
+        )
+    repos = base.repos.get_matching("*")
+    repos.disable()
+    repos = base.repos.get_matching("*-source*")
+    repos.enable()
+
+    base.fill_sack()
+    q = base.sack.query(flags=hawkey.IGNORE_MODULAR_EXCLUDES)
+    q = q.available()
+    q = q.filter(requires=["clang"])
+    pkgs = [p.name for p in list(q)]
+    return filter_unsupported_pkgs(filter_llvm_pkgs(set(pkgs)))
+
+
+def get_tier2_pkgs(version: str = "rawhide") -> set[str]:
+    """Returns all packages that BuildRequires clang for the given Fedora version
+
+    Args:
+        version (str): A Fedora version sring e.g. rawhide, 43, 42, etc.
+    Returns:
+        set[str]: A set of package names.
+    Exmaple:
+
+    >>> pkgs=get_tier2_pkgs()
+    >>> len(pkgs) > 0
+    True
+    >>> pkgs=get_tier2_pkgs("42")
+    >>> len(pkgs) > 0
+    True
+    """
+    base = dnf.Base()
+    conf = base.conf
+
+    if version == "rawhide":
+        base.repos.add_new_repo(
+            f"{version}-source",
+            conf,
+            baseurl=[
+                f"https://download-ib01.fedoraproject.org/pub/fedora/linux/development/{version}/Everything/source/tree/"
+            ],
+        )
+    else:
+        base.repos.add_new_repo(
+            f"{version}-source",
+            conf,
+            baseurl=[
+                f"https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/{version}/Everything/source/tree/"
+            ],
+        )
+        base.repos.add_new_repo(
+            f"{version}-updates-source",
+            conf,
+            baseurl=[
+                f"https://download-ib01.fedoraproject.org/pub/fedora/linux/updates/{version}/Everything/source/tree/"
+            ],
+        )
+
+    repos = base.repos.get_matching("*")
+    repos.disable()
+    repos = base.repos.get_matching("*-source*")
+    repos.enable()
+
+    base.fill_sack()
+    q = base.sack.query(flags=hawkey.IGNORE_MODULAR_EXCLUDES)
+    q = q.available()
+    q = q.filter(requires=["clang"])
+    pkgs = [p.name for p in list(q)]
+    return filter_llvm_pkgs(set(pkgs))
 
 
 # In order to remove the type: ignore[misc] check for this ticket: see https://github.com/Infinidat/munch/issues/84
@@ -292,15 +427,22 @@ def build_pkg(
     project_name: str,
     copr_client: copr.v3.Client,
     pkg: str,
+    default_commitish: str,
+    build_tag: str,
     koji_server: str = "https://koji.fedoraproject.org/kojihub",
-    default_commitish: str = "rawhide",
-    build_tag: str = "f43",
     distgit: str = "fedora",
     chroots: list[str] | None = None,
 ) -> None:
 
-    buildopts = {"background": True, "chroots": chroots}
-
+    buildopts = {
+        "background": True,
+        "chroots": chroots,
+        # Increase default timeout because some packages take longer than 5
+        # hours.  This is easier to do globally tahn to maintain a list of
+        # long building packages and I don't think there is any downside to
+        # having a longer default timeout.
+        "timeout": 90000,
+    }
     koji_session = koji.ClientSession(koji_server)
     try:
         build = koji_session.getLatestBuilds(tag=build_tag, package=pkg)[0]
@@ -342,8 +484,17 @@ def start_rebuild(
     )
 
     logging.info("Rebuilding", len(pkgs), "packages")
+    rawhide_tag = get_rawhide_tag()
     for p in pkgs:
-        build_pkg(project_owner, project_name, copr_client, p, chroots=chroots)
+        build_pkg(
+            project_owner,
+            project_name,
+            copr_client,
+            p,
+            default_commitish="rawhide",
+            build_tag=rawhide_tag,
+            chroots=chroots,
+        )
 
 
 def select_snapshot_project(
@@ -380,15 +531,26 @@ def create_new_project(
     project_name: str,
     copr_client: copr.v3.Client,
     target_chroots: list[str],
+    additional_packages: list[str] | None = ["fedora-clang-default-cc"],
+    with_opts: list[str] | None = ["toolchain_clang", "clang_lto"],
 ) -> None:
     copr_client.project_proxy.add(project_owner, project_name, chroots=target_chroots)
     for c in target_chroots:
+        if c.startswith("centos-stream"):
+            centos_version = c.split("-")[2]
+            arch = c.split("-")[3]
+            # Add centos stream buildroot, because not all packages in the
+            # buildroot are shipped in the CRB.
+            additional_repos = [
+                f"https://kojihub.stream.centos.org/kojifiles/repos/c{centos_version}s-build/latest/{arch}/"
+            ]
         copr_client.project_chroot_proxy.edit(
             project_owner,
             project_name,
             c,
-            additional_packages=["fedora-clang-default-cc"],
-            with_opts=["toolchain_clang", "clang_lto"],
+            additional_packages=additional_packages,
+            with_opts=with_opts,
+            additional_repos=additional_repos,
         )
 
 
@@ -430,6 +592,38 @@ def find_midpoint_project(
     return good
 
 
+def pkg_is_ftbfs(ftbfs_data: list[dict[str, str]], pkg: str, tag: str) -> bool:
+    """Determines if a package is already FTBFS.
+
+    Args:
+        ftbfs_data (list[dict[str, str]]): JSON packge data from
+            https://koschei.fedoraproject.org/api/v1/packages
+        pkg (str): The package to query.
+        tag (str): The build tag to query.
+
+    Returns:
+        bool: True if this package is FTBFS, False otherwise.
+
+    Example:
+
+    >>> ftbfs_data=json.loads('[{"name":"0ad","collection":"f43","state":"failing","last_complete_build":{"task_id":140940683,"time_started":"2026-01-10T12:51:47.103144","time_finished":"2026-01-10T13:08:37.453064","epoch":null,"version":"0.27.1","release":"5.fc43"}},{"name":"0ad","collection":"f44","state":"ok","last_complete_build":{"task_id":141319389,"time_started":"2026-01-19T20:13:00.440847","time_finished":"2026-01-19T20:34:54.17938","epoch":null,"version":"0.27.1","release":"6.fc44"}}]')
+    >>> pkg_is_ftbfs(ftbfs_data, "0ad", "f43")
+    True
+    >>> pkg_is_ftbfs(ftbfs_data, "0ad", "f44")
+    False
+    >>> pkg_is_ftbfs(ftbfs_data, "llvm", "f44")
+    False
+    """
+
+    for ftbfs_pkg in ftbfs_data:
+        if ftbfs_pkg["name"] != pkg:
+            continue
+        if ftbfs_pkg["collection"] != tag:
+            continue
+        return ftbfs_pkg["state"] == "failing"
+    return False
+
+
 def main() -> None:
     logging.basicConfig(filename="rebuilder.log", level=logging.INFO)
     parser = argparse.ArgumentParser()
@@ -442,6 +636,7 @@ def main() -> None:
             "get-snapshot-date",
             "rebuild-in-progress",
             "bisect",
+            "test",
         ],
     )
     parser.add_argument(
@@ -450,6 +645,8 @@ def main() -> None:
     parser.add_argument("--chroot", type=str)
     parser.add_argument("--good", type=str)
     parser.add_argument("--bad", type=str)
+    parser.add_argument("--llvm-major", type=int)
+    parser.add_argument("--skip-same-version", action="store_true")
 
     args = parser.parse_args()
     copr_client = copr.v3.Client.create_from_config_file()
@@ -519,6 +716,135 @@ def main() -> None:
         sys.exit(1)
     elif args.command == "bisect":
         print(find_midpoint_project(copr_client, args.good, args.bad, args.chroot))
+    elif args.command == "test":
+        project_owner = "@fedora-llvm-team"
+        project_name = "clang-fedora-centos-testing"
+        centos_stream9_chroots = [f"centos-stream-9-{arch}" for arch in target_arches]
+        centos_stream10_chroots = [f"centos-stream-10-{arch}" for arch in target_arches]
+        fedora_chroots = [f"fedora-rawhide-{a}" for a in target_arches]
+        target_chroots = (
+            centos_stream10_chroots + centos_stream9_chroots + fedora_chroots
+        )
+        try:
+            copr_client.project_proxy.get(project_owner, project_name)
+        except Exception:
+            create_new_project(
+                project_owner,
+                project_name,
+                copr_client,
+                target_chroots,
+                additional_packages=None,
+                with_opts=None,
+            )
+            # Set repo priority so that built packages that depend on a specific
+            # LLVM snapshot version do not get installed.
+            copr_client.project_proxy.edit(
+                project_owner, project_name, repo_priority=1000
+            )
+        centos9_pkgs = get_tier1_pkgs(9)
+        centos10_pkgs = get_tier1_pkgs(10)
+        fedora_pkgs = get_tier2_pkgs()
+
+        copr_client.project_proxy.edit(
+            project_owner,
+            project_name,
+            additional_repos=[
+                "copr://@fedora-llvm-team/llvm-compat-packages",
+            ],
+        )
+
+        # Iterate over a copy of a list so we can remove items:
+        for chroot in list(target_chroots):
+            snapshot_project_name = select_snapshot_project(copr_client, [chroot])
+            if not snapshot_project_name:
+                print(f"Could not find snapshot for {chroot}")
+                target_chroots.remove(chroot)
+                continue
+            else:
+                print(f"Using {snapshot_project_name} for {chroot}")
+            snapshot_url = f"copr://@fedora-llvm-team/{snapshot_project_name}"
+            repos = []
+            for r in copr_client.project_chroot_proxy.get(
+                project_owner, project_name, chroot
+            )["additional_repos"]:
+                if args.skip_same_version and r == snapshot_url:
+                    print(
+                        f"Not building for {chroot} since snapshot version is the same as the last build"
+                    )
+                    target_chroots.remove(chroot)
+                if not r.startswith(
+                    "copr://@fedora-llvm-team/llvm-snapshots-big-merge"
+                ):
+                    repos.append(r)
+            if chroot not in target_chroots:
+                continue
+
+            copr_client.project_chroot_proxy.edit(
+                project_owner,
+                project_name,
+                chroot,
+                additional_repos=repos + [snapshot_url],
+            )
+
+        centos_stream9_chroots = [
+            c for c in centos_stream9_chroots if c in target_chroots
+        ]
+        for pkg in centos9_pkgs:
+            build_pkg(
+                project_owner=project_owner,
+                project_name=project_name,
+                copr_client=copr_client,
+                pkg=pkg,
+                koji_server="https://kojihub.stream.centos.org/kojihub",
+                default_commitish="c9s",
+                build_tag="c9s-candidate",
+                distgit="centos-stream",
+                chroots=centos_stream9_chroots,
+            )
+
+        centos_stream10_chroots = [
+            c for c in centos_stream10_chroots if c in target_chroots
+        ]
+        for pkg in centos10_pkgs:
+            build_pkg(
+                project_owner=project_owner,
+                project_name=project_name,
+                copr_client=copr_client,
+                pkg=pkg,
+                koji_server="https://kojihub.stream.centos.org/kojihub",
+                default_commitish="c10s",
+                build_tag="c10s-candidate",
+                distgit="centos-stream",
+                chroots=centos_stream10_chroots,
+            )
+
+        fedora_chroots = [c for c in fedora_chroots if c in target_chroots]
+
+        # Load FTBFS data so we can skip building packages that currently don't build.
+        request = urllib.request.Request(
+            "https://koschei.fedoraproject.org/api/v1/packages"
+        )
+        # We need to set these headers due to new anti-spam measures in Fedora infrastructure.
+        request.add_header("Accept", "text/plain")
+        request.add_header("User-Agent", "fedora-llvm-team/1.0")
+        with urllib.request.urlopen(request) as url:
+            ftbfs_data = json.loads(url.read().decode())
+
+        rawhide_tag = get_rawhide_tag()
+        for pkg in fedora_pkgs:
+            if pkg_is_ftbfs(ftbfs_data, pkg, tag=rawhide_tag):
+                print(f"Skip building {pkg} on rawhide, because it is FTBFS")
+                continue
+            print(f"Building {pkg}")
+            build_pkg(
+                project_owner=project_owner,
+                project_name=project_name,
+                copr_client=copr_client,
+                pkg=pkg,
+                default_commitish="rawhide",
+                build_tag=rawhide_tag,
+                chroots=fedora_chroots,
+            )
 
 
 if __name__ == "__main__":
