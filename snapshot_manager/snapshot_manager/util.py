@@ -261,9 +261,9 @@ def allowed_archs() -> list[str]:
     Example:
 
     >>> sorted(allowed_archs())
-    ['aarch64', 'i386', 'ppc64le', 's390x', 'x86_64']
+    ['aarch64', 'i386', 'ppc64le', 'riscv64', 's390x', 'x86_64']
     """
-    return ["aarch64", "i386", "ppc64le", "s390x", "x86_64"]
+    return ["aarch64", "i386", "ppc64le", "s390x", "x86_64", "riscv64"]
 
 
 def allowed_archs_as_regex_str() -> str:
@@ -272,7 +272,7 @@ def allowed_archs_as_regex_str() -> str:
     Example:
 
     >>> allowed_archs_as_regex_str()
-    '(aarch64|i386|ppc64le|s390x|x86_64)'
+    '(aarch64|i386|ppc64le|s390x|x86_64|riscv64)'
     """
     return "(" + "|".join(allowed_archs()) + ")"
 
@@ -304,6 +304,9 @@ def expect_chroot(chroot: str) -> str:
 
     >>> expect_chroot("centos-stream-10-x86_64")
     'centos-stream-10-x86_64'
+
+    >>> expect_chroot("fedora-42-riscv64")
+    'fedora-42-riscv64'
 
     >>> expect_chroot("fedora-rawhide-")
     Traceback (most recent call last):
@@ -466,6 +469,10 @@ def chroot_arch(chroot: str) -> str:
     >>> chroot_arch(chroot="fedora-40-ppc64le")
     'ppc64le'
 
+    >>> chroot_arch(chroot="fedora-42-riscv64")
+    'riscv64'
+
+
     >>> chroot_arch(chroot="fedora-rawhide-NEWARCH")
     Traceback (most recent call last):
       ...
@@ -594,6 +601,8 @@ def latest_branched_fedora_version(
 def sanitize_chroots(chroots: list[str]) -> list[str]:
     """Sanitizes chroots:
 
+    Removes all risc64 chroots.
+
     Removes all s390x chroots but these:
 
     fedora-rawhide-s390x
@@ -668,6 +677,16 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     >>> actual = sanitize_chroots(chroots)
     >>> actual == expected
     True
+
+    Example to show that we keep no risc64 chroots
+
+    >>> chroots = [
+    ...   "fedora-rawhide-riscv64",
+    ...   "fedora-rawhide-x86_64"]
+    >>> expected = [ "fedora-rawhide-x86_64" ]
+    >>> actual = sanitize_chroots(chroots)
+    >>> actual == expected
+    True
     """
 
     # List of arches supported in the previous fedora version.
@@ -693,6 +712,9 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
             and chroot_arch(chroot) in previous_fedora_version_arches
         )
     ]
+
+    # Filter out riscv64 chroots.
+    res = [chroot for chroot in res if chroot_arch(chroot) != "riscv64"]
 
     return res
 
