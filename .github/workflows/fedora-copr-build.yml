@@ -119,7 +119,7 @@ jobs:
           set -e
 
       - name: "Canceling active builds (if any) in today's Copr project and deleting it: ${{ env.project_today }}"
-        if: ${{ env.todays_project_exists == 'yes' && env.skip_build_steps != 'yes' }}
+        if: ${{ matrix.forked_repo && env.todays_project_exists == 'yes' && env.skip_build_steps != 'yes' }}
         run: |
           python3 snapshot_manager/main.py \
             delete-project \
@@ -127,7 +127,7 @@ jobs:
             --yyyymmdd "${{env.today}}"
 
       - name: "Create today's Copr project: ${{ env.project_today }}"
-        if: ${{ env.skip_build_steps != 'yes' }}
+        if: ${{ matrix.forked_repo && env.skip_build_steps != 'yes' }}
         run: |
           # shellcheck disable=SC2207
           chroot_opts=($(for c in ${{ matrix.chroots }}; do echo -n " --chroot $c "; done))
