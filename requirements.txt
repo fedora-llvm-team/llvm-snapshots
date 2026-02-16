@@ -30,7 +30,7 @@ copr-cli==2.4
     # via -r requirements.txt.in
 coverage==7.13.2
     # via -r requirements.txt.in
-cryptography==44.0.1
+cryptography==46.0.5
     # via pyjwt
 decorator==5.1.1
     # via gssapi
