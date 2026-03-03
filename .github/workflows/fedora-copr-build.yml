@@ -164,10 +164,15 @@ jobs:
             copr-cli get-chroot "${{ env.project_today }}/$chroot"
           done
 
-      - name: "Create today's package"
+      - name: "Create/Edit today's package"
         if: ${{ env.skip_build_steps != 'yes' }}
         run: |
-          copr-cli add-package-scm \
+          copr_cmd="add-package-scm"
+          if copr-cli get-package --name ${{ matrix.copr_package_name }} "${{ env.project_today }}" > /dev/null 2>&1; then
+            echo "Package ${{ matrix.copr_package_name }} already exists in project ${{ env.project_today }}, editing package."
+            copr_cmd="edit-package-scm"
+          fi
+          copr-cli "${copr_cmd}" \
             --clone-url ${{ matrix.clone_url }} \
             --commit ${{ matrix.clone_ref }} \
             --spec ${{ matrix.spec_file }} \
