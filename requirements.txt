@@ -39,7 +39,7 @@ decorator==5.1.1
     # via gssapi
 defusedxml==0.7.1
     # via koji
-dynaconf==3.2.4
+dynaconf==3.2.13
     # via tft-cli
 filelock==3.20.3
     # via copr
