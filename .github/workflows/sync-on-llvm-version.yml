@@ -5,14 +5,7 @@ on:
     # Everyday at 00:00am
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
     - cron:  '0 0 * * *'
-
   workflow_dispatch:
-    inputs:
-      commit_hash:
-        description: 'Commit hash to use without tests'
-        required: true
-        default: main
-        type: string
 
 permissions:
   # For release assets to be deletable we need this permission
@@ -53,18 +46,14 @@ jobs:
           checkout-path: .
           github-project: llvm/llvm-project
           start-ref: main
-          max-tries: 100
+          max-tries: 50
 
       - name: "Generate snapshot version info"
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ "${{github.event_name}}" == "workflow_dispatch"  ]]; then
-            commit_hash=${{inputs.commit_hash}}
-          else
-            commit_hash=${{ steps.good-commit.outputs.good-commit }}
-          fi
+          commit_hash=${{ steps.good-commit.outputs.good-commit }}
 
           if [[ "$commit_hash" =~ ^[0-9a-f]{40}$ ]]; then
             echo "commit_hash looks like a SHA1. No need to resolve: ${commit_hash}"
