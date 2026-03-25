@@ -6,14 +6,6 @@ on:
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
     - cron:  '0 0 * * *'
 
-  workflow_dispatch:
-    inputs:
-      commit_hash:
-        description: 'Commit hash to use without tests'
-        required: true
-        default: main
-        type: string
-
 permissions:
   # For release assets to be deletable we need this permission
   contents: write
@@ -53,7 +45,7 @@ jobs:
           checkout-path: .
           github-project: llvm/llvm-project
           start-ref: main
-          max-tries: 100
+          max-tries: 50
 
       - name: "Generate snapshot version info"
         shell: bash -e {0}
