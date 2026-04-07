@@ -43,12 +43,17 @@ def get_rawhide_tag() -> str:
 
 def is_tier0_package(pkg: str) -> bool:
     return pkg in [
+        "american-fuzzy-lop",
+        "clazy",
         "dotnet6.0",
         "dotnet7.0",
         "dotnet8.0",
         "dotnet9.0",
+        "mesa",
+        "pocl",
         "qemu-kvm",  # RHEL name
         "qemu",  # Fedora name
+        "spirv-llvm-translator",
         "golang",
         "wasi-lbc",
     ]
