@@ -14,6 +14,16 @@ import hawkey
 import koji
 from munch import Munch
 
+# Packages with any of the following requirements will be added to the test.
+llvm_requires = [
+    "clang",
+    "clang-devel",
+    "clang(major)",
+    "compiler-rt",
+    "llvm",
+    "llvm-devel",
+]
+
 
 def get_rawhide_tag() -> str:
     """Returns the current tag for rawhide, i.e. "f44".
@@ -33,12 +43,17 @@ def get_rawhide_tag() -> str:
 
 def is_tier0_package(pkg: str) -> bool:
     return pkg in [
+        "american-fuzzy-lop",
+        "clazy",
         "dotnet6.0",
         "dotnet7.0",
         "dotnet8.0",
         "dotnet9.0",
+        "mesa",
+        "pocl",
         "qemu-kvm",  # RHEL name
         "qemu",  # Fedora name
+        "spirv-llvm-translator",
         "golang",
         "wasi-lbc",
     ]
@@ -62,6 +77,33 @@ def filter_unsupported_pkgs(pkgs: set[str] | list[str]) -> set[str]:
     ['bar', 'foo']
     """
     return set(pkgs) - {"dotnet6.0", "dotnet7.0"}
+
+
+def filter_req_pkgs(base: dnf.Base) -> set[str]:
+    """Return a set of packages that require LLVM packages.
+
+    Args:
+        base (dnf.Base): A dnf settings that should be queried.
+
+    Returns:
+        set[str]: Set of package names that all require LLVM or its
+                  subpackages.
+    """
+    repos = base.repos.get_matching("*")
+    repos.disable()
+    repos = base.repos.get_matching("*-source*")
+    repos.enable()
+
+    base.fill_sack()
+    q = base.sack.query(flags=hawkey.IGNORE_MODULAR_EXCLUDES)
+
+    q = q.available()
+    ret = []
+    for p in llvm_requires:
+        tmp = q.filter(requires=p)
+        tmppkgs = [p.name for p in list(tmp)]
+        ret += tmppkgs
+    return filter_llvm_pkgs(set(ret))
 
 
 # Packages in CentOS Stream that are built by clang
@@ -93,17 +135,7 @@ def get_tier1_pkgs(version: int) -> set[str]:
                 f"https://mirror.stream.centos.org/{version}-stream/{c}/source/tree/"
             ],
         )
-    repos = base.repos.get_matching("*")
-    repos.disable()
-    repos = base.repos.get_matching("*-source*")
-    repos.enable()
-
-    base.fill_sack()
-    q = base.sack.query(flags=hawkey.IGNORE_MODULAR_EXCLUDES)
-    q = q.available()
-    q = q.filter(requires=["clang"])
-    pkgs = [p.name for p in list(q)]
-    return filter_unsupported_pkgs(filter_llvm_pkgs(set(pkgs)))
+    return filter_unsupported_pkgs(filter_req_pkgs(base))
 
 
 def get_tier2_pkgs(version: str = "rawhide") -> set[str]:
@@ -149,17 +181,7 @@ def get_tier2_pkgs(version: str = "rawhide") -> set[str]:
             ],
         )
 
-    repos = base.repos.get_matching("*")
-    repos.disable()
-    repos = base.repos.get_matching("*-source*")
-    repos.enable()
-
-    base.fill_sack()
-    q = base.sack.query(flags=hawkey.IGNORE_MODULAR_EXCLUDES)
-    q = q.available()
-    q = q.filter(requires=["clang"])
-    pkgs = [p.name for p in list(q)]
-    return filter_llvm_pkgs(set(pkgs))
+    return filter_req_pkgs(base)
 
 
 # In order to remove the type: ignore[misc] check for this ticket: see https://github.com/Infinidat/munch/issues/84
