@@ -634,14 +634,14 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
     ...   "fedora-rawhide-ppc64le", "fedora-rawhide-s390x", "fedora-rawhide-x86_64",
     ...   "rhel-8-aarch64", "rhel-8-s390x", "rhel-8-x86_64" ]
     >>> expected = [
-    ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le", "centos-stream-10-s390x",
+    ...   "centos-stream-10-aarch64", "centos-stream-10-ppc64le",
     ...   "centos-stream-10-x86_64", "centos-stream-9-aarch64", "centos-stream-9-ppc64le",
-    ...   "centos-stream-9-s390x", "centos-stream-9-x86_64",
+    ...   "centos-stream-9-x86_64",
     ...   "fedora-41-aarch64", "fedora-41-x86_64",
     ...   "fedora-42-aarch64", "fedora-42-i386", "fedora-42-ppc64le",
     ...   "fedora-42-x86_64", "fedora-rawhide-aarch64", "fedora-rawhide-i386",
-    ...   "fedora-rawhide-ppc64le", "fedora-rawhide-s390x", "fedora-rawhide-x86_64",
-    ...   "rhel-8-aarch64", "rhel-8-s390x", "rhel-8-x86_64" ]
+    ...   "fedora-rawhide-ppc64le", "fedora-rawhide-x86_64",
+    ...   "rhel-8-aarch64", "rhel-8-x86_64" ]
     >>> actual = sanitize_chroots(chroots)
     >>> actual == expected
     True
@@ -715,6 +715,11 @@ def sanitize_chroots(chroots: list[str]) -> list[str]:
 
     # Filter out riscv64 chroots.
     res = [chroot for chroot in res if chroot_arch(chroot) != "riscv64"]
+
+    # s390x on copr is currently emulated via qemu, which is too slow for our purposes.
+    # Disable s390x chroots for now.
+    # See: https://github.com/fedora-copr/copr/issues/4219
+    res = [chroot for chroot in res if chroot_arch(chroot) != "s390x"]
 
     return res
 
