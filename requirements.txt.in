@@ -15,4 +15,4 @@ requests==2.33.1
 fnc
 coverage==7.13.4
 koji
-pytest==9.0.2
+pytest==9.0.3
