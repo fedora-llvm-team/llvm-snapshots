@@ -13,6 +13,6 @@ munch==4.0.0
 copr==2.5
 requests==2.33.1
 fnc
-coverage==7.13.4
+coverage==7.13.5
 koji
 pytest==9.0.3
