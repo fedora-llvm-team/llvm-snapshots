@@ -91,7 +91,7 @@ pandas==2.3.3
     # via -r requirements.txt.in
 pendulum==3.2.0
     # via tft-cli
-plotly==6.6.0
+plotly==6.7.0
     # via -r requirements.txt.in
 pluggy==1.5.0
     # via pytest
