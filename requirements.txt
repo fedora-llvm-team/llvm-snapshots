@@ -22,7 +22,7 @@ colorama==0.4.6
     # via tft-cli
 commonmark==0.9.1
     # via rich
-copr==2.5
+copr==2.6
     # via
     #   -r requirements.txt.in
     #   copr-cli
