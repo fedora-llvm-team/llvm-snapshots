@@ -5,13 +5,13 @@
 
 PyGithub==2.9.1
 pandas
-plotly==6.6.0
+plotly==6.7.0
 copr-cli
 tft-cli==0.0.32
-regex==2026.2.28
+regex==2026.5.9
 munch==4.0.0
 copr==2.6
-requests==2.34.0
+requests==2.34.2
 fnc
 coverage==7.13.5
 koji
