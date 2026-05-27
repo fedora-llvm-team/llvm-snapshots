@@ -22,16 +22,6 @@ runs:
         fi
         echo "is-fedora=$fedora" >> $GITHUB_OUTPUT
 
-    - name: Install python setup prerequisites
-      shell: bash
-      run: |
-        if [ "${{ steps.os-check.outputs.is-fedora }}" = "true" ]; then
-          sudo dnf install -y lsb_release
-        else
-          sudo apt-get update
-          sudo apt-get install -y lsb-release
-        fi
-
     - name: "Setup python"
       uses: actions/setup-python@v6.2.0
       if: "${{ inputs.use-system-python != 'true' }}"
@@ -63,7 +53,7 @@ runs:
     - name: "Install python dependencies for project"
       shell: bash
       run: |
-        python -m pip install -r ${{ inputs.checkout-path }}/requirements.txt
+        pip install -r ${{ inputs.checkout-path }}/requirements.txt
 
     # The dnf module cannot be installed by pip, so it's only possible to use
     # it when using the system pyhton interpreter.
