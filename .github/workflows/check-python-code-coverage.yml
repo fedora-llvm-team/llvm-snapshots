@@ -9,7 +9,7 @@ jobs:
     container:
       image: "registry.fedoraproject.org/fedora:latest"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/prepare-python
         with:
           use-system-python: true

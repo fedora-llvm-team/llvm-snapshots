@@ -25,7 +25,7 @@ jobs:
     outputs:
       mymatrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - uses: ./.github/actions/prepare-python
     - name: Setup Copr config file
       env:
@@ -53,7 +53,7 @@ jobs:
       matrix: ${{fromJson(needs.generate-matrix.outputs.mymatrix)}}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/prepare-python
       - name: Setup Copr config file
         env:

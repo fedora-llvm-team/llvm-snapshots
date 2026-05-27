@@ -39,7 +39,7 @@ jobs:
           mkdir -p ~/.config
           echo "$COPR_CONFIG_FILE" > ~/.config/copr
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           path: main
 
@@ -48,7 +48,7 @@ jobs:
           checkout-path: main
 
       - name: Checkout gh-pages branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: 'gh-pages'
           path: 'gh-pages'
