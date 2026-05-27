@@ -12,21 +12,21 @@ multi-ecosystem-groups:
     assignees:
       - "kwk"
     labels: ["infrastructure", "dependencies", "dependabot"]
+    target-branch: "main"
+    commit-message:
+      prefix: "prod"
+      prefix-development: "dev"
+      include: "scope"
 
 updates:
   - package-ecosystem: "pip" # See documentation for possible values
     directory: "/" # Location of package manifests
     # Include a list of updated dependencies
     # with a prefix determined by the dependency group
-    commit-message:
-      prefix: "pip prod"
-      prefix-development: "pip dev"
-      include: "scope"
     # Specify labels for pip pull requests
     labels:
       - "pip"
       - "python"
-    target-branch: "main"
     patterns: ["*"]
     multi-ecosystem-group: "infrastructure"
 
