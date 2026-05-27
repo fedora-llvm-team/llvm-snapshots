@@ -60,7 +60,7 @@ jobs:
           fi
 
       - if: always() && inputs.issue != 0
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const jobs = await github.rest.actions.listJobsForWorkflowRunAttempt({
