@@ -20,7 +20,7 @@ jobs:
       rebuild-completed: ${{ steps.new-rebuild.outputs.completed }}
       REGRESSIONS: ${{ steps.regressions.outputs.REGRESSIONS }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           sparse-checkout: |
             scripts/rebuilder.py
@@ -122,7 +122,7 @@ jobs:
       bisect-list: ${{ steps.report.outputs.bisect-list }}
       issue-id: ${{ steps.report.outputs.issue-id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           sparse-checkout: |
             scripts/rebuilder.py

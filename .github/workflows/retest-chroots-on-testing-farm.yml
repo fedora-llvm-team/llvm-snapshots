@@ -74,7 +74,7 @@ jobs:
           echo "$COMMENT_BODY" | grep -Pe '^\s*/retest\s+'
           chroots=$(echo "$COMMENT_BODY" | sed 's/^\s*\/retest\s*//g')
           echo "chroots=$chroots" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/prepare-python
       - name: Run retest script
         shell: bash -e {0}
