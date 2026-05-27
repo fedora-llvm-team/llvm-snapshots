@@ -27,8 +27,6 @@ updates:
       - "pip"
       - "python"
     target-branch: "main"
-    reviewers:
-      - "kwk"
     patterns: ["*"]
     multi-ecosystem-group: "infrastructure"
 
