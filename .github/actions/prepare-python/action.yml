@@ -21,12 +21,22 @@ runs:
           fedora=true
         fi
         echo "is-fedora=$fedora" >> $GITHUB_OUTPUT
+
+    - name: Install python setup prerequisites
+      shell: bash
+      run: |
+        if [ "${{ steps.os-check.outputs.is-fedora }}" = "true" ]; then
+          sudo dnf install -y lsb_release
+        else
+          sudo apt-get update
+          sudo apt-get install -y lsb-release
+        fi
+
     - name: "Setup python"
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6.2.0
       if: "${{ inputs.use-system-python != 'true' }}"
       with:
         python-version: 3.12
-        cache: 'pip'
 
     # libkrb5-dev is needed to build the koji module with pip
     - name: Install libkrb5-dev
@@ -53,7 +63,7 @@ runs:
     - name: "Install python dependencies for project"
       shell: bash
       run: |
-        pip install -r ${{ inputs.checkout-path }}/requirements.txt
+        python -m pip install -r ${{ inputs.checkout-path }}/requirements.txt
 
     # The dnf module cannot be installed by pip, so it's only possible to use
     # it when using the system pyhton interpreter.
