@@ -4,6 +4,7 @@
 # pip-compile -o requirements.txt  requirements.txt.in
 
 PyGithub==2.9.1
+typing_extensions>=4.12.2
 pandas
 plotly==6.7.0
 copr-cli

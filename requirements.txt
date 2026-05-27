@@ -153,8 +153,10 @@ tft-cli==0.0.32
     # via -r requirements.txt.in
 typer==0.23.1
     # via tft-cli
-typing-extensions==4.8.0
-    # via pygithub
+typing-extensions>=4.12.2
+    # via
+    #   -r requirements.txt.in
+    #   pygithub
 tzdata==2023.4
     # via pendulum
 urllib3==2.7.0
