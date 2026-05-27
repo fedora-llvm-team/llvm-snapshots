@@ -28,7 +28,7 @@ copr==2.6
     #   copr-cli
 copr-cli==2.5
     # via -r requirements.txt.in
-coverage==7.13.5
+coverage==7.14.1
     # via -r requirements.txt.in
 cryptography==46.0.7
     # via
@@ -153,7 +153,7 @@ tft-cli==0.0.32
     # via -r requirements.txt.in
 typer==0.23.1
     # via tft-cli
-typing-extensions>=4.12.2
+typing-extensions==4.15.0
     # via
     #   -r requirements.txt.in
     #   pygithub
