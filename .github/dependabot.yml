@@ -4,11 +4,18 @@
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
 version: 2
+
+multi-ecosystem-groups:
+  infrastructure:
+    schedule:
+      interval: "daily"
+    assignees:
+      - "kwk"
+    labels: ["infrastructure", "dependencies", "dependabot"]
+
 updates:
   - package-ecosystem: "pip" # See documentation for possible values
     directory: "/" # Location of package manifests
-    schedule:
-      interval: "daily"
     # Include a list of updated dependencies
     # with a prefix determined by the dependency group
     commit-message:
@@ -19,15 +26,13 @@ updates:
     labels:
       - "pip"
       - "python"
-      - "dependencies"
-      - "dependabot"
     target-branch: "main"
-    reviewers:
-      - "kwk"
-    assignees:
-      - "kwk"
+    patterns: ["*"]
+    multi-ecosystem-group: "infrastructure"
+
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule:
-      # Check for updates to GitHub Actions every week
-      interval: "weekly"
+    patterns: ["*"]
+    labels:
+      - "github-actions"
+    multi-ecosystem-group: "infrastructure"
