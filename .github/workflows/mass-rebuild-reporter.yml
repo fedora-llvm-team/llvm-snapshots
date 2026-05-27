@@ -28,7 +28,7 @@ jobs:
 
 
       - name: Check for last report
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         id: last-report
         with:
           result-encoding: string
@@ -136,7 +136,7 @@ jobs:
 
       - name: Create Report
         id: report
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           REGRESSIONS: ${{ steps.regressions.outputs.REGRESSIONS }}
         with:
@@ -196,7 +196,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.createComment({
