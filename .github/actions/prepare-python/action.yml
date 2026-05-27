@@ -21,8 +21,9 @@ runs:
           fedora=true
         fi
         echo "is-fedora=$fedora" >> $GITHUB_OUTPUT
+
     - name: "Setup python"
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6.2.0
       if: "${{ inputs.use-system-python != 'true' }}"
       with:
         python-version: 3.12
