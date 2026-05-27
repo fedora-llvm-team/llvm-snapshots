@@ -20,7 +20,7 @@ jobs:
         run: |
           make ci-coverage
       - name: Coveralls
-        uses: coverallsapp/github-action@v2.2.3
+        uses: coverallsapp/github-action@v2.3.6
         with:
           format: python
           file: .coverage
