@@ -27,6 +27,7 @@ runs:
       if: "${{ inputs.use-system-python != 'true' }}"
       with:
         python-version: 3.12
+        cache: 'pip'
 
     # libkrb5-dev is needed to build the koji module with pip
     - name: Install libkrb5-dev
