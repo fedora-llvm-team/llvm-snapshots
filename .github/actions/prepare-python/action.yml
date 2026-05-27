@@ -48,7 +48,7 @@ runs:
           # modules.  These aren't installed by default in the Fedora container.
           sudo dnf install -y python-unversioned-command pip gcc-c++ python3-devel
         fi
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip typing_extensions
         pip install pytest coverage
 
     - name: "Install python dependencies for project"
