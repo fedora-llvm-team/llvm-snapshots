@@ -149,7 +149,7 @@ six==1.16.0
     # via
     #   koji
     #   python-dateutil
-tft-cli==0.0.32
+tft-cli==0.0.37
     # via -r requirements.txt.in
 typer==0.23.1
     # via tft-cli
