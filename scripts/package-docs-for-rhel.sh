@@ -19,13 +19,13 @@ function get_rawhide_tag {
 }
 
 # Prints the latest NVR (e.g. llvm-22.1.6-1.fc45) of the llvm package for the
-# given rawhide tag (e.g. f45). If no rawhide tag is provided, it will be
-# determined automatically.
+# given tag (e.g. f45). If no tag is provided, it will be determined
+# automatically from whatever tag is assigned to rawhide atm.
 function get_nvr {
-    local rawhide_tag=${1:-$(get_rawhide_tag)}
+    local tag=${1:-$(get_rawhide_tag)}
     local nvr
 
-    nvr=$(koji latest-build --quiet "${rawhide_tag}" llvm | cut -d ' ' -f1)
+    nvr=$(koji latest-build --quiet "${tag}" llvm | cut -d ' ' -f1)
     echo "INFO: NVR: ${nvr}" 1>&2
     echo "$nvr"
 }
