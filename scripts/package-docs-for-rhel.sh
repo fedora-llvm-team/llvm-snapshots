@@ -85,17 +85,14 @@ function main {
     local nvr
     local arch=x86_64
     local base_dir="${PWD}/package-rhel-docs"
-    local final_dir="${base_dir}/final"
     local rhel_version=${1:-9}
     local doc_files=${base_dir}/doc_files.txt
 
     rawhide_tag=$(get_rawhide_tag)
     nvr=$(get_nvr "${rawhide_tag}")
     mkdir -p "${base_dir}"
-    mkdir -p "${final_dir}"
 
     echo "INFO: Architecture: ${arch}" 1>&2
-    echo "INFO: Artifacts: ${final_dir}" 1>&2
     echo "INFO: Target RHEL version: ${rhel_version}" 1>&2
 
     download_rpms "${nvr}" "${arch}" "${base_dir}"
