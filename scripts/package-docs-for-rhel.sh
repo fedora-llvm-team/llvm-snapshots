@@ -70,7 +70,8 @@ function extract_srpm {
 }
 
 # Writes all files belonging to man page documentation from the given spec file
-# for a given RHEL version to the given destination file list.
+# in alphabetic order for a given RHEL version to the given destination file
+# list.
 function parse_spec_file_for_doc_files {
     local spec_file="${1:-${PWD}/srpm/llvm.spec}"
     local rhel_version="${2:-UNDEFINED_RHEL_VERSION}"
@@ -84,7 +85,7 @@ function parse_spec_file_for_doc_files {
         --undefine=fedora \
         --define="rhel ${rhel_version}" \
         -P llvm.spec 2>/dev/null \
-    | grep -P '^/usr/share/man' > "${dest_file_list}"
+    | grep -P '^/usr/share/man' | sort > "${dest_file_list}"
     popd
 }
 
@@ -102,6 +103,20 @@ function extract_files_from_rpm {
     # shellcheck disable=SC2046
     rpm2cpio "${rpm}" | cpio -idm $(cat "${files_list}" | tr '\n' ' ')
     popd
+}
+
+# Verifies that the extracted files match those expected from the doc files
+# list text file.
+function verify_extracted_files {
+    local extracted_dir="${1}"
+    local extracted_files="${base_dir}/extracted_files.txt"
+    local doc_files="${2:-doc_files.txt}"
+
+    echo "INFO: Verify that files extracted files are complete" 1>&2
+    pushd "${extracted_dir}"
+    find -L . -type f | sort | sed -s 's/^.//' > "${extracted_files}"
+    popd
+    diff -u "${extracted_files}" "${doc_files}"
 }
 
 function main {
@@ -130,6 +145,7 @@ function main {
     for rpm in "${base_dir}"/*.rpm; do
         extract_files_from_rpm "${rpm}" "${base_dir}/install" "${doc_files_cpio}"
     done
+    verify_extracted_files "${base_dir}/install" "${doc_files}"
 }
 
 main
