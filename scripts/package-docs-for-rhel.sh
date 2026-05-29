@@ -2,6 +2,12 @@
 
 set -e
 
+# This function ensures that all tools are installed.
+function check_tools {
+    echo "INFO: Checking that all required tools are installed" 1>&2
+    which cpio koji bsdtar rpmspec rpm2cpio grep sed find tar
+}
+
 # Prints whatever tag is currently assigned to rawhide in koji (e.g. f45).
 function get_rawhide_tag {
     local rawhide_tag
@@ -119,6 +125,18 @@ function verify_extracted_files {
     diff -u "${extracted_files}" "${doc_files}"
 }
 
+# Creates a *.tar.xz archive of the given directory. The name of the archive
+# file will be "<basename-of-archive-dir>.tar.xz".
+function create_archive_of_dir {
+    local extracted_dir="${1}"
+    local target_archive=$(basename "${extracted_dir}").tar.xz
+
+    echo "INFO: Creating archive of ${extracted_dir} in ${target_archive}" 1>&2
+    pushd "${extracted_dir}"
+    tar -cJf "${target_archive}" .
+    popd
+}
+
 function main {
     local rawhide_tag
     local nvr
@@ -127,6 +145,8 @@ function main {
     local rhel_version="${1:-9}"
     local doc_files="${base_dir}/doc_files.txt"
     local doc_files_cpio="${base_dir}/doc_files_cpio.txt"
+
+    check_tools
 
     rawhide_tag=$(get_rawhide_tag)
     nvr=$(get_nvr "${rawhide_tag}")
@@ -146,6 +166,7 @@ function main {
         extract_files_from_rpm "${rpm}" "${base_dir}/install" "${doc_files_cpio}"
     done
     verify_extracted_files "${base_dir}/install" "${doc_files}"
+    create_archive_of_dir "${base_dir}/install"
 }
 
 main
