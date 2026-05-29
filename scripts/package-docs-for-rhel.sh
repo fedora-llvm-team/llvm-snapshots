@@ -99,6 +99,7 @@ function main {
     echo "INFO: Target RHEL version: ${rhel_version}" 1>&2
 
     download_rpms "${nvr}" "${arch}" "${base_dir}"
+    download_rpms "${nvr}" "noarch" "${base_dir}"
     download_srpm "${nvr}" "${base_dir}"
     extract_srpm "${base_dir}/${nvr}.src.rpm" "${base_dir}/srpm"
     parse_spec_file_for_doc_files "${base_dir}/srpm/llvm.spec" "${rhel_version}" > "${doc_files}"
