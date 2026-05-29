@@ -5,7 +5,7 @@ set -e
 # This function ensures that all tools are installed.
 function check_tools {
     echo "INFO: Checking that all required tools are installed" 1>&2
-    which cpio koji bsdtar rpmspec rpm2cpio grep sed find tar
+    which cpio koji bsdtar rpmspec rpm2cpio grep sed find tar gpg centpkg
 }
 
 # Prints whatever tag is currently assigned to rawhide in koji (e.g. f45).
@@ -129,12 +129,23 @@ function verify_extracted_files {
 # file will be "<basename-of-archive-dir>.tar.xz".
 function create_archive_of_dir {
     local extracted_dir="${1}"
-    local target_archive=$(basename "${extracted_dir}").tar.xz
+    local target_archive
 
+    target_archive="${2:-$(basename "${extracted_dir}").tar.xz}"
     echo "INFO: Creating archive of ${extracted_dir} in ${target_archive}" 1>&2
     pushd "${extracted_dir}"
     tar -cJf "${target_archive}" .
     popd
+}
+
+# Creates a detached GPG signature from the given "<file>" and stores it under
+# "<file>.sig".
+function sign_file {
+    local file="${1}"
+    local signature_file_out="${2:-${file}.sig}"
+
+    echo "INFO: Signing file ${file} to ${signature_file_out}" 1>&2
+    gpg --output "${signature_file_out}" --detach-sig "${file}"
 }
 
 function main {
@@ -145,11 +156,15 @@ function main {
     local rhel_version="${1:-9}"
     local doc_files="${base_dir}/doc_files.txt"
     local doc_files_cpio="${base_dir}/doc_files_cpio.txt"
+    local docs_archive
 
     check_tools
 
     rawhide_tag=$(get_rawhide_tag)
     nvr=$(get_nvr "${rawhide_tag}")
+
+    docs_archive="${base_dir}/docs-${nvr}.tar.xz"
+
     mkdir -p "${base_dir}"
 
     echo "INFO: Architecture: ${arch}" 1>&2
@@ -166,7 +181,8 @@ function main {
         extract_files_from_rpm "${rpm}" "${base_dir}/install" "${doc_files_cpio}"
     done
     verify_extracted_files "${base_dir}/install" "${doc_files}"
-    create_archive_of_dir "${base_dir}/install"
+    create_archive_of_dir "${base_dir}/install" "${docs_archive}"
+    sign_file "${docs_archive}" "${docs_archive}.sig"
 }
 
 main
