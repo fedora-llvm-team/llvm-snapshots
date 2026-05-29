@@ -6,7 +6,14 @@ set -e
 function get_rawhide_tag {
     local rawhide_tag
 
-    rawhide_tag=$(koji list-targets --name=rawhide --quiet | grep -oP "f[0-9]+" | head -n1)
+    # We fetch the targets because the output contains a "Buildroot" column that
+    # gives us the current tag assigned to rawhide:
+    #
+    #   Name                           Buildroot                      Destination
+    #   ---------------------------------------------------------------------------------------------
+    #   rawhide                        f45-build                      f45-updates-candidate
+    #
+    rawhide_tag=$(koji list-targets --name=rawhide --quiet | grep -oP "\s+\Kf[0-9]+" | head -n1)
     echo "INFO: rawhide tag: ${rawhide_tag}" 1>&2
     echo "$rawhide_tag"
 }
