@@ -69,12 +69,13 @@ function extract_srpm {
     popd
 }
 
-# Prints all files belonging to man page documentation from the fiven spec file
-# for a given RHEL version.
+# Writes all files belonging to man page documentation from the given spec file
+# for a given RHEL version to the given destination file list.
 function parse_spec_file_for_doc_files {
     local spec_file=${1:-${PWD}/srpm/llvm.spec}
     local rhel_version=${2:-UNDEFINED_RHEL_VERSION}
     local spec_dir
+    local dest_file_list=${3}
 
     echo "INFO: Parsing spec file ${spec_file} for doc files" 1>&2
     spec_dir=$(dirname "${spec_file}")
@@ -83,7 +84,23 @@ function parse_spec_file_for_doc_files {
         --undefine=fedora \
         --define="rhel ${rhel_version}" \
         -P llvm.spec 2>/dev/null \
-    | grep -P '^/usr/share/man'
+    | grep -P '^/usr/share/man' > "${dest_file_list}"
+    popd
+}
+
+# Extracts all files from the given rpm that are in the files list to the given
+# target directory.
+function extract_files_from_rpm {
+    local rpm=${1}
+    local target_dir=${2}
+    local files_list=${3:-doc-files.txt}
+
+    echo "INFO: Extracting files from ${rpm} in ${target_dir}" 1>&2
+    mkdir -p "${target_dir}"
+    pushd "${target_dir}"
+    # We actually do want files_list to split here.
+    # shellcheck disable=SC2046
+    rpm2cpio "${rpm}" | cpio -idm $(cat "${files_list}" | tr '\n' ' ')
     popd
 }
 
@@ -93,7 +110,8 @@ function main {
     local arch=x86_64
     local base_dir="${PWD}/package-rhel-docs"
     local rhel_version=${1:-9}
-    local doc_files=${base_dir}/doc_files.txt
+    local doc_files="${base_dir}/doc_files.txt"
+    local doc_files_cpio="${base_dir}/doc_files_cpio.txt"
 
     rawhide_tag=$(get_rawhide_tag)
     nvr=$(get_nvr "${rawhide_tag}")
@@ -106,7 +124,12 @@ function main {
     download_rpms "${nvr}" "noarch" "${base_dir}"
     download_srpm "${nvr}" "${base_dir}"
     extract_srpm "${base_dir}/${nvr}.src.rpm" "${base_dir}/srpm"
-    parse_spec_file_for_doc_files "${base_dir}/srpm/llvm.spec" "${rhel_version}" > "${doc_files}"
+    parse_spec_file_for_doc_files "${base_dir}/srpm/llvm.spec" "${rhel_version}" "${doc_files}"
+    echo "INFO: Prepending files in list with . to match cpio operation: ${doc_files_cpio}" 1>&2
+    sed -e 's/^/./' "${doc_files}" > "${doc_files_cpio}"
+    for rpm in "${base_dir}"/*.rpm; do
+        extract_files_from_rpm "${rpm}" "${base_dir}/install" "${doc_files_cpio}"
+    done
 }
 
 main
