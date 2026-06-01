@@ -5,7 +5,7 @@ set -e
 # This function ensures that all tools are installed.
 function check_tools {
     echo "INFO: Checking that all required tools are installed" 1>&2
-    which cpio koji bsdtar rpmspec rpm2cpio grep sed find tar gpg centpkg
+    which cpio koji bsdtar rpmspec rpm2cpio grep sed find tar centpkg
 }
 
 # Prints whatever tag is currently assigned to rawhide in koji (e.g. f45).
@@ -138,16 +138,6 @@ function create_archive_of_dir {
     popd
 }
 
-# Creates a detached GPG signature from the given "<file>" and stores it under
-# "<file>.sig".
-function sign_file {
-    local file="${1}"
-    local signature_file_out="${2:-${file}.sig}"
-
-    echo "INFO: Signing file ${file} to ${signature_file_out}" 1>&2
-    gpg --output "${signature_file_out}" --detach-sig "${file}"
-}
-
 function main {
     local rawhide_tag
     local nvr
@@ -182,7 +172,6 @@ function main {
     done
     verify_extracted_files "${base_dir}/install" "${doc_files}"
     create_archive_of_dir "${base_dir}/install" "${docs_archive}"
-    sign_file "${docs_archive}" "${docs_archive}.sig"
 }
 
 main
