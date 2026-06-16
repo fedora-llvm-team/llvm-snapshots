@@ -25,6 +25,12 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Checkout rpms/llvm repo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git ninja-build clang cmake libclang-dev
+          git clone --depth 1 --branch rawhide https://src.fedoraproject.org/rpms/llvm.git rpms/llvm
+
       - uses: ./.github/actions/prepare-python
 
       - name: "delete assets older than 33 days and from today"
@@ -46,9 +52,9 @@ jobs:
           checkout-path: .
           github-project: llvm/llvm-project
           start-ref: main
-          max-tries: 50
+          max-tries: 1
 
-      - name: "Generate snapshot version info"
+      - name: "Generate snapshot version info and man pages"
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -86,6 +92,21 @@ jobs:
 
           echo "llvm_release=$(cat "llvm-release-${yyyymmdd}.txt")"
           echo "llvm_git_revision=$(cat "llvm-git-revision-${yyyymmdd}.txt")"
+
+          pushd rpms/llvm
+
+          # Manually fill in LLVM version information that gets picked up by build-man-pages.sh
+          cat <<EOF > llvm_version.inc
+          llvm_snapshot_version="${llvm_snapshot_version}"
+          llvm_snapshot_yyyymmdd="${yyyymmdd}"
+          llvm_snapshot_git_revision="${llvm_snapshot_git_revision}"
+          llvm_snapshot_version_suffix="pre${yyyymmdd}.g${llvm_snapshot_git_revision:0:14}"
+          EOF
+
+          .copr/build-man-pages.sh
+          popd
+
+          mv -v rpms/llvm/llvm_man_pages*.tar.xz .
 
           ./scripts/upload-source-snapshots.py \
             --token ${{ secrets.GITHUB_TOKEN }} \
