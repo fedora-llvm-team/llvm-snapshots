@@ -51,7 +51,7 @@ jobs:
           checkout-path: .
           github-project: llvm/llvm-project
           start-ref: main
-          max-tries: 1
+          max-tries: 50
 
       - name: "Generate snapshot version info and man pages"
         shell: bash -e {0}
