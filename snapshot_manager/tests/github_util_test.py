@@ -18,13 +18,13 @@ import snapshot_manager.github_util as github_util
 import snapshot_manager.util as util
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture  # type: ignore[untyped-decorator]
 def config_fxt() -> config.Config:
     """Returns an example config"""
     return config.Config(github_repo="fedora-llvm-team/llvm-snapshots")
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture  # type: ignore[untyped-decorator]
 def github_client_fxt(config_fxt: config.Config) -> Generator[github_util.GithubClient]:
     """Yields a github client with important parts mocked"""
     try:
@@ -47,7 +47,7 @@ MyComment = collections.namedtuple("MyComment", "body", defaults=[""])
 MyLabel = collections.namedtuple("MyLabel", "name, color", defaults=("", ""))
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture  # type: ignore[untyped-decorator]
 def label_cache_fxt(
     github_client_fxt: github_util.GithubClient,
 ) -> Generator[github_util.GithubClient]:
@@ -340,7 +340,7 @@ def label_testdata_ids() -> list[str]:
     return [str(list(t)[0]) for t in label_testdata()]
 
 
-@pytest.mark.parametrize(  # type: ignore[misc]
+@pytest.mark.parametrize(  # type: ignore[untyped-decorator]
     "test_id, label, create_func, expected_func",
     label_testdata(),
     ids=label_testdata_ids(),
@@ -706,7 +706,7 @@ def test_add_comment_reaction__unsupported_type(
     assert str(ex.value) == f"invalid comment object passed: {obj}"
 
 
-@pytest.mark.parametrize(  # type: ignore[misc]
+@pytest.mark.parametrize(  # type: ignore[untyped-decorator]
     "input, expected, func",
     [
         (
