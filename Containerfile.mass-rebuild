@@ -11,11 +11,17 @@ ENV LLVM_SYSROOT=${llvm_sysroot} \
 
 RUN dnf -y install jq cmake ninja-build git binutils-devel clang rpmbuild ccache
 
-WORKDIR /root
+RUN useradd -m rebuild-user
+
+RUN echo 'rebuild-user ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+USER rebuild-user
+
+WORKDIR /home/rebuild-user
 
 RUN git clone https://github.com/llvm/llvm-project
 
-WORKDIR /root/llvm-project
+WORKDIR /home/rebuild-user/llvm-project
 
 ADD bisect.sh git-bisect-script.sh .
 
