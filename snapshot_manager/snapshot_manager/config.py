@@ -139,6 +139,20 @@ class Config:
         """
         return self.datetime.strftime("%Y%m%d")
 
+    def yyyymmdd_minus_days(self, days: int) -> str:
+        """Returns the datetime minus the given days formatted as a YYYYMMDD string
+
+        Args:
+            days (int): Number of days to subtract from the datetime in this config object
+
+        Returns:
+            str: datetime in YYYYMMDD form
+
+        >>> Config(datetime = datetime.date(year=2024, month=2, day=29)).yyyymmdd_minus_days(1)
+        '20240228'
+        """
+        return (self.datetime - datetime.timedelta(days=days)).strftime("%Y%m%d")
+
     def to_github_dict(self) -> dict[str, object]:
         """Returns a subset of config entries to be used in a github workflow matrix.
 
