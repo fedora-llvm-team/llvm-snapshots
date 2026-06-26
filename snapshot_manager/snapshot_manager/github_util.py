@@ -128,10 +128,27 @@ class GithubClient:
     def initial_comment(self) -> str:
         llvm_release = util.get_release_for_yyyymmdd(self.config.yyyymmdd)
         llvm_git_revision = util.get_git_revision_for_yyyymmdd(self.config.yyyymmdd)
+        llvm_git_revision_minus_1 = util.get_git_revision_for_yyyymmdd(
+            self.config.yyyymmdd_minus_days(1)
+        )
+        llvm_git_revision_minus_2 = util.get_git_revision_for_yyyymmdd(
+            self.config.yyyymmdd_minus_days(2)
+        )
+        llvm_git_revision_minus_3 = util.get_git_revision_for_yyyymmdd(
+            self.config.yyyymmdd_minus_days(3)
+        )
         return f"""
 <p>
 This issue exists to let you know that we are about to monitor the builds
 of the LLVM (v{llvm_release}, <a href="https://github.com/llvm/llvm-project/commit/{llvm_git_revision}">llvm/llvm-project@ {llvm_git_revision[:7]}</a>) snapshot for <a href="{self.config.copr_monitor_url}">{self.config.yyyymmdd}</a>.
+
+* Here's a list of changes since:
+  * 1 day  back: https://github.com/llvm/llvm-project/compare/{llvm_git_revision_minus_1}...{llvm_git_revision}
+  * 2 days back: https://github.com/llvm/llvm-project/compare/{llvm_git_revision_minus_2}...{llvm_git_revision}
+  * 3 days back: https://github.com/llvm/llvm-project/compare/{llvm_git_revision_minus_3}...{llvm_git_revision}
+
+* Here's a list of changes since today's picked commit: https://github.com/llvm/llvm-project/compare/{llvm_git_revision}...main
+
 <details>
 <summary>At certain intervals the CI system will update this very comment over time to reflect the progress of builds.</summary>
 <dl>
