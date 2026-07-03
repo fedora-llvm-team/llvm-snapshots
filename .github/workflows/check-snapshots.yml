@@ -2,9 +2,9 @@ name: "Check snapshots of the last days"
 
 on:
   schedule:
-    # At every 60th minute.
+    # Once every hour.
     # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    - cron: "*/60 * * * *"
+    - cron: "17 * * * *"
 
   # This is used when a /retest command asks for a re-check.
   workflow_dispatch:
