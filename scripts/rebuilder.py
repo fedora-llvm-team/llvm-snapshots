@@ -142,7 +142,7 @@ def get_tier2_pkgs(version: str = "rawhide") -> set[str]:
     """Returns all packages that BuildRequires clang for the given Fedora version
 
     Args:
-        version (str): A Fedora version sring e.g. rawhide, 43, 42, etc.
+        version (str): A Fedora version string e.g. rawhide, 44, 43, etc.
     Returns:
         set[str]: A set of package names.
     Exmaple:
@@ -150,7 +150,7 @@ def get_tier2_pkgs(version: str = "rawhide") -> set[str]:
     >>> pkgs=get_tier2_pkgs()
     >>> len(pkgs) > 0
     True
-    >>> pkgs=get_tier2_pkgs("42")
+    >>> pkgs=get_tier2_pkgs("44")
     >>> len(pkgs) > 0
     True
     """
