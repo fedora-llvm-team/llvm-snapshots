@@ -28,15 +28,13 @@ def get_good_commit(
     repo = g.get_repo(project)
     next_sha = start_ref
     logging.basicConfig(level=logging.INFO)
-    logging.info(
-        f"""
+    logging.info(f"""
 Scanning for best of commit
 Project:         {project}
 Start ref:       {start_ref}
 Max tries:       {max_tries}
 Required checks: {required_checks}
-"""
-    )
+""")
 
     required_checks_set = {(check, "success") for check in required_checks}
     for i in range(0, max_tries):

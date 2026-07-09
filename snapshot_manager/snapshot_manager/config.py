@@ -139,6 +139,20 @@ class Config:
         """
         return self.datetime.strftime("%Y%m%d")
 
+    def yyyymmdd_minus_days(self, days: int) -> str:
+        """Returns the datetime minus the given days formatted as a YYYYMMDD string
+
+        Args:
+            days (int): Number of days to subtract from the datetime in this config object
+
+        Returns:
+            str: datetime in YYYYMMDD form
+
+        >>> Config(datetime = datetime.date(year=2024, month=2, day=29)).yyyymmdd_minus_days(1)
+        '20240228'
+        """
+        return (self.datetime - datetime.timedelta(days=days)).strftime("%Y%m%d")
+
     def to_github_dict(self) -> dict[str, object]:
         """Returns a subset of config entries to be used in a github workflow matrix.
 
@@ -220,7 +234,7 @@ def build_config_map() -> dict[str, Config]:
             copr_target_project="@fedora-llvm-team/llvm-snapshots",
             package_clone_url="https://src.fedoraproject.org/rpms/llvm.git",
             package_clone_ref="rawhide",
-            maintainer_handle="tbaederr",
+            maintainer_handle="nikic",
             copr_project_tpl="llvm-snapshots-big-merge-YYYYMMDD",
             forked_repo=True,
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",

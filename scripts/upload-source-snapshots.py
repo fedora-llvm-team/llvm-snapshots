@@ -5,11 +5,12 @@ import datetime
 import os
 from glob import glob
 
-from github import Github, UnknownObjectException
+from github import Auth, Github, UnknownObjectException
 
 
 def main(args: argparse.Namespace) -> None:
-    g = Github(login_or_token=args.token)
+    auth = Auth.Token(token=args.token)
+    g = Github(auth=auth)
     repo = g.get_repo(args.project)
 
     yyyymmdd = args.yyyymmdd
@@ -33,6 +34,7 @@ def main(args: argparse.Namespace) -> None:
         glob_patterns = [
             "*-{}.src.tar.xz",
             "llvm*-{}.txt",
+            "llvm_man_pages-{}.tar.xz",
         ]
         for pattern in glob_patterns:
             for name in glob(pattern.format(yyyymmdd)):

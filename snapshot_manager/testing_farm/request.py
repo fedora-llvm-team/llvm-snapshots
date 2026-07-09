@@ -145,7 +145,7 @@ class Request:
         tfutil.adjust_token_env(self.chroot)
 
         request_id = tfutil.sanitize_request_id(request_id=self.request_id)
-        cmd = f"testing-farm watch --no-wait --id {request_id}"
+        cmd = f"testing-farm watch --no-wait --skip-summary --id {request_id}"
         # We ignore the exit code because in case of a test error, 1 is the exit code
         try:
             logging.info(f"Watching for testing-farm request: {cmd}")

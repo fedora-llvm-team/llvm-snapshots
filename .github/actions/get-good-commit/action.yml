@@ -38,6 +38,6 @@ runs:
           --project ${{ inputs.github-project }} \
           --start-ref ${{ inputs.start-ref }} \
           --required-checks \
-            clang-x86_64-debian-fast \
+            release-noassertions-warnings \
           --max-tries ${{ inputs.max-tries }} > good_commit.sha
         echo "good-commit=$(cat good_commit.sha)" >> $GITHUB_OUTPUT

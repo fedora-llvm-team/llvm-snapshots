@@ -25,6 +25,11 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Install build dependencies for man pages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git ninja-build clang cmake libclang-dev
+
       - uses: ./.github/actions/prepare-python
 
       - name: "delete assets older than 33 days and from today"
@@ -48,7 +53,7 @@ jobs:
           start-ref: main
           max-tries: 50
 
-      - name: "Generate snapshot version info"
+      - name: "Generate snapshot version info and man pages"
         shell: bash -e {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -86,6 +91,8 @@ jobs:
 
           echo "llvm_release=$(cat "llvm-release-${yyyymmdd}.txt")"
           echo "llvm_git_revision=$(cat "llvm-git-revision-${yyyymmdd}.txt")"
+
+          ./scripts/build-man-pages.sh -g "${llvm_snapshot_git_revision}"
 
           ./scripts/upload-source-snapshots.py \
             --token ${{ secrets.GITHUB_TOKEN }} \

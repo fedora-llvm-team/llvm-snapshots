@@ -2,12 +2,12 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/PyCQA/isort
-    rev: "6.0.1"
+    rev: "9.0.0a3"
     hooks:
       - id: isort
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-ast
       - id: check-case-conflict
@@ -31,7 +31,7 @@ repos:
       - id: requirements-txt-fixer
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
+    rev: v3.21.2
     hooks:
       - id: pyupgrade
         args:
@@ -39,14 +39,14 @@ repos:
 
   # See https://tmt.readthedocs.io/en/latest/guide.html#checking-data-validity
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.47.0
+    rev: 1.75.0
     hooks:
       - id: tmt-lint
 
   # See https://black.readthedocs.io/en/stable/integrations/source_version_control.html
   # Using this mirror lets us use mypyc-compiled black, which is about 2x faster
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.1.0
+    rev: 26.5.1
     hooks:
       - id: black
         # It is recommended to specify the latest version of Python
@@ -56,12 +56,12 @@ repos:
         language_version: python3.12
 
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.7
+    rev: v1.7.12
     hooks:
     - id: actionlint
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.15.0'
+    rev: 'v2.1.0'
     hooks:
     - id: mypy
       args: [--strict, --ignore-missing-imports]
@@ -70,7 +70,7 @@ repos:
 
   # autoflake removes unused imports and unused variables from Python code.
   - repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.1
+    rev: v2.3.3
     hooks:
     - id: autoflake
       args:
@@ -89,7 +89,7 @@ repos:
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.11.7
+    rev: v0.15.17
     hooks:
       # Run the linter.
       - id: ruff

@@ -38,7 +38,7 @@ class TestSnapshotManager(base_test.TestBase):
         pass
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture  # type: ignore[untyped-decorator]
 def config_fxt_a() -> config.Config:
     """Returns a configuration object for strategy A that has an overlap of chroots with the one returned by config_fxt_b."""
     return config.Config(
@@ -50,7 +50,7 @@ def config_fxt_a() -> config.Config:
     )
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture  # type: ignore[untyped-decorator]
 def config_fxt_b() -> config.Config:
     """Returns a configuration object for strategy A that has an overlap of chroots with the one returned by config_fxt_a."""
     return config.Config(
@@ -323,11 +323,9 @@ def test_collect_performance_comparison_results__end_to_end(
     get_performance_github_issue_mock.return_value = type(
         "object",
         (object,),
-        {
-            "body": f"""
+        {"body": f"""
     Some text before <!--TESTING_FARM:fedora-rawhide-aarch64/{request_id}/1,2,3--> Some text after
-    """
-        },
+    """},
     )
 
     github_repo_name = "foo/bar"
