@@ -76,11 +76,7 @@ jobs:
             main/scripts/create-build-time-diagrams.py --datafile-big-merge gh-pages/build-stats-big-merge.csv --datafile-pgo gh-pages/build-stats-pgo.csv
             mv index.html gh-pages/index.html
             mv fig-*.html gh-pages/
-            python3 ./main/snapshot_manager/main.py perf-diagrams --datafile gh-pages/perf-results.csv
-            mkdir -p gh-pages/perf-results
-            mv index.html gh-pages/perf-results/index.html
-            mv fig-*.html gh-pages/perf-results/
-            git -C gh-pages add index.html fig-*.html perf-results/index.html perf-results/fig-*.html
+            git -C gh-pages add index.html fig-*.html
           fi
           # shellcheck disable=SC2078
           if [[ ${{ env.get_stats }} || ${{ env.create_diagrams }} ]]; then
