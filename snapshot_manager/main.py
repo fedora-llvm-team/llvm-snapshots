@@ -6,17 +6,13 @@ import sys
 import pathlib
 from types import GenericAlias
 
-import github
 
 import snapshot_manager.config as config
 import snapshot_manager.copr_util as copr_util
 import snapshot_manager.util as util
 from snapshot_manager.snapshot_manager import (  # isort:skip_file
     SnapshotManager,
-    run_performance_comparison,
-    collect_performance_comparison_results,
 )
-from snapshot_manager.performance_diagrams import build_performance_diagrams
 
 # We want to type annotate subparsers parameters below.
 # This is a hack taken from https://github.com/python/typeshed/issues/7539#issuecomment-1076640854
@@ -56,8 +52,6 @@ def main() -> None:
         "has-all-good-builds",
         "delete-project",
         "github-matrix",
-        "run-perf-comparison",
-        "collect-perf-comparison-results",
         "submit-to-log-detective",
     ):
         copr_client = copr_util.make_client()
@@ -123,44 +117,6 @@ def main() -> None:
             logging.warning("Not all builds were successful")
             sys.exit(1)
         logging.info("All required builds were successful")
-    elif cmd in ("run-perf-comparison", "collect-perf-results"):
-        github_token = os.getenv(config.Config().github_token_env)
-        if github_token is None or len(github_token) == 0:
-            logging.error(
-                f"Could not retrieve github token from environment variable with name '{config.Config().github_token_env}'"
-            )
-            sys.exit(1)
-        auth = github.Auth.Token(github_token)
-        github_client = github.Github(auth=auth)
-        if args.strategy_a not in config_map or args.strategy_b not in config_map:
-            logging.error(
-                f"'{args.strategy_a}' and '{args.strategy_b}' need to be a named configuration but currently only these configurations exist: {config_map.keys()}"
-            )
-            sys.exit(1)
-        conf_a = config_map[args.strategy_a]
-        conf_b = config_map[args.strategy_b]
-        conf_a.datetime = args.datetime
-        conf_b.datetime = args.datetime
-
-        if cmd == "run-perf-comparison":
-            run_performance_comparison(
-                conf_a=conf_a,
-                conf_b=conf_b,
-                github_repo=args.github_repo,
-                copr_client=copr_client,
-                github_client=github_client,
-            )
-        elif cmd == "collect-perf-results":
-            collect_performance_comparison_results(
-                conf_a=conf_a,
-                conf_b=conf_b,
-                github_repo=args.github_repo,
-                github_client=github_client,
-                csv_file_out=args.csv_file_out,
-                csv_file_in=args.csv_file_in,
-            )
-    elif cmd == "perf-diagrams":
-        build_performance_diagrams(datafile=args.datafile)
     else:
         logging.error(f"Unsupported command: {cmd}")
         sys.exit(1)
@@ -192,9 +148,6 @@ def build_argument_parser(cfg: config.Config) -> argparse.ArgumentParser:
     argument_parser_github_matrix(subparsers)
     argument_parser_check(subparsers)
     argument_parser_has_all_good_builds(subparsers)
-    argument_parser_perf_comparison(subparsers)
-    argument_parser_collect_perf_comparison_results(subparsers)
-    argument_parser_performance_diagrams(subparsers)
 
     return mainparser
 
@@ -229,96 +182,6 @@ def argument_parser_has_all_good_builds(
     )
     add_strategy_argument(sp)
     add_yyyymmdd_argument(sp)
-
-
-def argument_parser_perf_comparison(
-    subparsers: _SubparserType,
-) -> None:
-    sp = subparsers.add_parser(
-        "run-perf-comparison",
-        description="Run a performance comparison between two strategies A and B on testing-farm",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-
-    sp.add_argument(
-        "--strategy-a",
-        dest="strategy_a",
-        type=str,
-        required=True,
-        help="Strategy A",
-    )
-
-    sp.add_argument(
-        "--strategy-b",
-        dest="strategy_b",
-        type=str,
-        required=True,
-        help="Strategy B",
-    )
-
-    add_yyyymmdd_argument(sp)
-
-
-def argument_parser_collect_perf_comparison_results(
-    subparsers: _SubparserType,
-) -> None:
-    sp = subparsers.add_parser(
-        "collect-perf-results",
-        description="Collect performance comparison results",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-
-    sp.add_argument(
-        "--strategy-a",
-        dest="strategy_a",
-        type=str,
-        required=True,
-        help="Strategy A",
-    )
-
-    sp.add_argument(
-        "--strategy-b",
-        dest="strategy_b",
-        type=str,
-        required=True,
-        help="Strategy B",
-    )
-
-    sp.add_argument(
-        "--csv-file-in",
-        dest="csv_file_in",
-        type=str,
-        default="results-in.csv",
-        help="CSV file to load and merge with all the collected performance CSV results files",
-    )
-
-    sp.add_argument(
-        "--csv-file-out",
-        dest="csv_file_out",
-        type=str,
-        default="results-out.csv",
-        help="Where to write the collected performance CSV results file",
-    )
-
-    add_yyyymmdd_argument(sp)
-
-
-def argument_parser_performance_diagrams(
-    subparsers: _SubparserType,
-) -> None:
-    sp = subparsers.add_parser(
-        "perf-diagrams",
-        description="Create performance diagrams for a given CSV file",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-
-    sp.add_argument(
-        "--datafile",
-        dest="datafile",
-        type=file_path,
-        required=True,
-        help="perf-results.csv",
-    )
 
 
 def argument_parser_retest(

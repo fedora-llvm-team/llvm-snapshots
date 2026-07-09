@@ -9,7 +9,6 @@ __all__ = [
     "file_access",
     "github_graphql",
     "github_util",
-    "performance_diagrams",
     "snapshot_manager",
     "util",
 ]

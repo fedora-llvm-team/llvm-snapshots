@@ -70,26 +70,13 @@ jobs:
 
           if ${{ env.get_stats }}; then
             main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-${today}" | tee -a gh-pages/build-stats-big-merge.csv
-            # main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-pgo-${today}" | tee -a gh-pages/build-stats-pgo.csv
-            # python3 ./main/snapshot_manager/main.py \
-            #   --github-repo "${GITHUB_REPOSITORY}" \
-            #   collect-perf-results \
-            #   --strategy-a pgo \
-            #   --strategy-b big-merge \
-            #   --csv-file-in gh-pages/perf-results.csv \
-            #   --csv-file-out gh-pages/perf-results.csv \
-            #   --yyyymmdd "${yesterday}"
             git -C gh-pages add build-stats-big-merge.csv build-stats-pgo.csv perf-results.csv
           fi
           if ${{ env.create_diagrams }}; then
             main/scripts/create-build-time-diagrams.py --datafile-big-merge gh-pages/build-stats-big-merge.csv --datafile-pgo gh-pages/build-stats-pgo.csv
             mv index.html gh-pages/index.html
             mv fig-*.html gh-pages/
-            python3 ./main/snapshot_manager/main.py perf-diagrams --datafile gh-pages/perf-results.csv
-            mkdir -p gh-pages/perf-results
-            mv index.html gh-pages/perf-results/index.html
-            mv fig-*.html gh-pages/perf-results/
-            git -C gh-pages add index.html fig-*.html perf-results/index.html perf-results/fig-*.html
+            git -C gh-pages add index.html fig-*.html
           fi
           # shellcheck disable=SC2078
           if [[ ${{ env.get_stats }} || ${{ env.create_diagrams }} ]]; then
