@@ -31,6 +31,8 @@ rpm -q podman meld copr-cli diffutils grep
 RESULTDIR=$(mktemp -d)
 CONTAINERFILE=$(mktemp)
 
+copr_project=${1:-@fedora-llvm-team/llvm-snapshots}
+
 cat <<EOF > $CONTAINERFILE
 FROM fedora:rawhide AS old
 
@@ -41,12 +43,11 @@ FROM fedora:rawhide AS new
 
 ARG INTERESTING_PKGS
 RUN dnf install -y 'dnf5-command(copr)'
-RUN dnf copr enable -y @fedora-llvm-team/llvm-snapshots
+RUN dnf copr enable -y $copr_project
 RUN dnf install -y \${INTERESTING_PKGS} --setopt=install_weak_deps=False
 EOF
 
 # Get list of packages that we're interested in:
-copr_project=@fedora-llvm-team/llvm-snapshots
 chroot=fedora-rawhide-x86_64
 build_url=$(copr-cli monitor --output-format text-row --fields "chroot,url_build" $copr_project | grep -Po "$chroot\s*\Khttps://.*")
 echo $build_url
