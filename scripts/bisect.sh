@@ -44,12 +44,12 @@ function test_with_copr_builds {
   copr_project=$1
   srpm_name=$2
 
-  dnf remove -y clang llvm
-  dnf copr enable -y $copr_project
-  dnf install --best -y clang llvm
-  dnf builddep -y $srpm_name
+  sudo dnf remove -y clang llvm
+  sudo dnf copr enable -y $copr_project
+  sudo dnf install --best -y clang llvm
+  sudo dnf builddep -y $srpm_name
   # Disable project so future installs don't use it.
-  dnf copr disable $copr_project
+  sudo dnf copr disable $copr_project
   if ! rpmbuild -D '%toolchain clang' -rb $srpm_name; then
     return 1
   fi
@@ -113,7 +113,7 @@ srpm_name=$(find $(rpm --eval %{_srcrpmdir}) -iname '*.src.rpm')
 # We need to do this because the runtime repo dependencies from
 # the snapshot copr projects is not resolved when using dnf5 see:
 # https://github.com/fedora-copr/copr/issues/3387
-dnf copr enable -y @fedora-llvm-team/llvm-compat-packages
+sudo dnf copr enable -y @fedora-llvm-team/llvm-compat-packages
 
 # Test if the good commit still succeeds. A failure may indicate an
 # intermittent failure or an issue that is unrelated to LLVM. In either case,
@@ -156,7 +156,7 @@ while [ True ]; do
   fi
 done
 
-dnf builddep -y $srpm_name
+sudo dnf builddep -y $srpm_name
 git bisect start
 git bisect good $good_commit
 git bisect bad $bad_commit
