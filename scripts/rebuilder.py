@@ -138,11 +138,9 @@ def get_tier1_pkgs(version: int) -> set[str]:
     return filter_unsupported_pkgs(filter_req_pkgs(base))
 
 
-def get_tier2_pkgs(version: str = "rawhide") -> set[str]:
-    """Returns all packages that BuildRequires clang for the given Fedora version
+def get_tier2_pkgs() -> set[str]:
+    """Returns all packages that BuildRequires clang for Fedora rawhide
 
-    Args:
-        version (str): A Fedora version string e.g. rawhide, 43, 42, etc.
     Returns:
         set[str]: A set of package names.
     Exmaple:
@@ -150,36 +148,18 @@ def get_tier2_pkgs(version: str = "rawhide") -> set[str]:
     >>> pkgs=get_tier2_pkgs()
     >>> len(pkgs) > 0
     True
-    >>> pkgs=get_tier2_pkgs(str(int(get_rawhide_tag()[1:])-1))
-    >>> len(pkgs) > 0
-    True
     """
     base = dnf.Base()
     conf = base.conf
+    version = "rawhide"
 
-    if version == "rawhide":
-        base.repos.add_new_repo(
-            f"{version}-source",
-            conf,
-            baseurl=[
-                f"https://download-ib01.fedoraproject.org/pub/fedora/linux/development/{version}/Everything/source/tree/"
-            ],
-        )
-    else:
-        base.repos.add_new_repo(
-            f"{version}-source",
-            conf,
-            baseurl=[
-                f"https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/{version}/Everything/source/tree/"
-            ],
-        )
-        base.repos.add_new_repo(
-            f"{version}-updates-source",
-            conf,
-            baseurl=[
-                f"https://download-ib01.fedoraproject.org/pub/fedora/linux/updates/{version}/Everything/source/tree/"
-            ],
-        )
+    base.repos.add_new_repo(
+        f"{version}-source",
+        conf,
+        baseurl=[
+            f"https://download-ib01.fedoraproject.org/pub/fedora/linux/development/{version}/Everything/source/tree/"
+        ],
+    )
 
     return filter_req_pkgs(base)
 
