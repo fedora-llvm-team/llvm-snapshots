@@ -30,8 +30,8 @@ def create_figure(df: pd.DataFrame, package_name: str = "") -> go.Figure:
         df = df[df.package == package_name]
         title = title.format(package_name)
     else:
-        package_names = df["package"].explode().drop_duplicates().values
-        title = title.format(package_names)
+        package_names = df["package"].explode().drop_duplicates().tolist()
+        title = title.format(", ".join(package_names))
     fig = px.line(
         data_frame=df,
         x="date",
@@ -156,11 +156,7 @@ def add_html_header_menu(filepath: str, plotly_div_id: str = "plotly_div_id") ->
     file = Path(filepath)
     header_menu = '<div id="headermenu">Build-Stats: '
     header_menu += ' <a href="index.html">big-merge (only success)</a>'
-    header_menu += (
-        ' | <a href="fig-big-merge-all-states.html">big-merge (all states)</a>'
-    )
-    # header_menu += ' | <a href="fig-pgo-succeeded.html">PGO (only success)</a>'
-    # header_menu += ' | <a href="fig-pgo-all-states.html">PGO (all states)</a>'
+    header_menu += ' | <a href="fig-big-merge-all-states.html">big-merge (all states)</a>'
     header_menu += f" <small>(Last updated: {last_updated})</small>"
     header_menu += "</div>"
     header_menu += replace_me
@@ -221,13 +217,6 @@ def main() -> None:
         default="build-stats-big-merge.csv",
         help="path to your build-stats-big-merge.csv file",
     )
-    parser.add_argument(
-        "--datafile-pgo",
-        dest="datafile_pgo",
-        type=str,
-        default="build-stats-pgo.csv",
-        help="path to your build-stats-pgo.csv file",
-    )
     args = parser.parse_args()
 
     # %%
@@ -247,16 +236,6 @@ def main() -> None:
     filter = df_big_merge["state"] == "succeeded"
     df_big_merge_succeeded = df_big_merge.where(filter, inplace=False).dropna()
 
-    # Create dataframe for PGO builds. The chroots are prefixed with "pgo-" on
-    # the fly to be able to distinguish the two cases.
-    df_pgo = prepare_data(filepath=args.datafile_pgo)
-    df_pgo["chroot"] = "pgo-" + df_pgo["chroot"]
-    # Convert build_id column with int64's in it to an array of int64's.
-    df_pgo.build_id = df_pgo.build_id.apply(lambda x: [x])
-
-    filter = df_pgo["state"] == "succeeded"
-    df_pgo_succeeded = df_pgo.where(filter, inplace=False).dropna()
-
     # Create dedicated big-merge figure with nothing else in it.
     fig = create_figure(df=df_big_merge)
     filepath = "fig-big-merge-all-states.html"
@@ -266,18 +245,6 @@ def main() -> None:
     # Create dedicated big-merge figure with nothing else in it.
     fig = create_figure(df=df_big_merge_succeeded)
     filepath = "index.html"
-    save_figure(fig=fig, filepath=filepath)
-    add_html_header_menu(filepath=filepath)
-
-    # Create dedicated PGO figure with nothing else in it.
-    fig = create_figure(df=df_pgo)
-    filepath = "fig-pgo-all-states.html"
-    save_figure(fig=fig, filepath=filepath)
-    add_html_header_menu(filepath=filepath)
-
-    # Create dedicated PGO figure with nothing else in it.
-    fig = create_figure(df=df_pgo_succeeded)
-    filepath = "fig-pgo-succeeded.html"
     save_figure(fig=fig, filepath=filepath)
     add_html_header_menu(filepath=filepath)
 

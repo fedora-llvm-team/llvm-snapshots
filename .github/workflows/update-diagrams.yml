@@ -70,10 +70,10 @@ jobs:
 
           if ${{ env.get_stats }}; then
             main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-${today}" | tee -a gh-pages/build-stats-big-merge.csv
-            git -C gh-pages add build-stats-big-merge.csv build-stats-pgo.csv perf-results.csv
+            git -C gh-pages add build-stats-big-merge.csv perf-results.csv
           fi
           if ${{ env.create_diagrams }}; then
-            main/scripts/create-build-time-diagrams.py --datafile-big-merge gh-pages/build-stats-big-merge.csv --datafile-pgo gh-pages/build-stats-pgo.csv
+            main/scripts/create-build-time-diagrams.py --datafile-big-merge gh-pages/build-stats-big-merge.csv
             mv index.html gh-pages/index.html
             mv fig-*.html gh-pages/
             git -C gh-pages add index.html fig-*.html
