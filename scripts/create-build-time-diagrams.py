@@ -182,7 +182,7 @@ def add_html_header_menu(filepath: str, plotly_div_id: str = "plotly_div_id") ->
     """
     replace_me = f'<div id="{plotly_div_id}"'
 
-    last_updated = datetime.today().strftime("%c")
+    last_updated = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
     current_file = Path(filepath).name
 
     menu_items = [

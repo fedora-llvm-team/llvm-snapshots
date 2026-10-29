@@ -18,7 +18,7 @@ import time
 import urllib.parse
 import urllib.request
 import urllib.error
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 COPR_API = "https://copr.fedorainfracloud.org/api_3/monitor"
 COPR_OWNERNAME = "@fedora-llvm-team"
@@ -393,7 +393,9 @@ a.header-link:hover { text-decoration: underline; }
     html.append("</style>")
     html.append("</head>")
     html.append("<body>")
+    last_updated = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
     html.append("<h1>LLVM Snapshot Builds Dashboard</h1>")
+    html.append(f'<p style="margin-top:-0.8rem;font-size:0.85rem;color:#666;text-align:center">(Last updated: {last_updated})</p>')
 
     html.append('<div class="legend">')
     for state in STATE_SYMBOLS:
