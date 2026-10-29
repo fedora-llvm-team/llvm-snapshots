@@ -69,11 +69,11 @@ jobs:
           #yesterday=$(date -d "${today} -1 day" +%Y%m%d)
 
           if ${{ env.get_stats }}; then
-            main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-${today}" | tee -a gh-pages/build-stats-big-merge.csv
-            git -C gh-pages add build-stats-big-merge.csv perf-results.csv
+            main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-${today}" | tee -a gh-pages/build-times.csv
+            git -C gh-pages add build-times.csv
           fi
           if ${{ env.create_diagrams }}; then
-            main/scripts/create-build-time-diagrams.py --datafile-big-merge gh-pages/build-stats-big-merge.csv
+            main/scripts/create-build-time-diagrams.py --datafile gh-pages/build-times.csv
             mv build-times-*.html gh-pages/
             git -C gh-pages add build-times-*.html
           fi

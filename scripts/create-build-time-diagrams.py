@@ -263,11 +263,10 @@ def main() -> None:
         description="Create build time diagrams for a given CSV file"
     )
     parser.add_argument(
-        "--datafile-big-merge",
-        dest="datafile_big_merge",
+        "--datafile",
         type=str,
-        default="build-stats-big-merge.csv",
-        help="path to your build-stats-big-merge.csv file",
+        default="build-times.csv",
+        help="path to your build-times.csv file",
     )
     args = parser.parse_args()
 
@@ -278,7 +277,7 @@ def main() -> None:
         "plotly"  # See https://plotly.com/python/templates/#theming-and-templates
     )
 
-    df_big_merge = prepare_data(filepath=args.datafile_big_merge)
+    df_big_merge = prepare_data(filepath=args.datafile)
     df_big_merge.build_id = df_big_merge.build_id.apply(lambda x: [x])
 
     filter = df_big_merge["state"] == "succeeded"
