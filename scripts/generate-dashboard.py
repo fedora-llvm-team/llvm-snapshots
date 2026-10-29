@@ -422,7 +422,7 @@ a.header-link:hover { text-decoration: underline; }
                 streak += 1
         broken_days[chroot] = streak
 
-    num_meta_cols = 7  # #, Date, Tracking issue, Assignee, LLVM Version, commit, changes yesterday
+    num_meta_cols = 7  # #, Date, Tracking issue, Maintainer, LLVM Version, commit, changes yesterday
 
     # Build ordered list of groups and sub-groups (versions)
     groups: list[tuple[str, int]] = []
@@ -481,7 +481,7 @@ a.header-link:hover { text-decoration: underline; }
     # Row 3: arch names (rotated)
     html.append("<tr>")
     html.append('<th class="rotated">#</th>')
-    for col in ["Date", "Tracking issue", "Assignee", "LLVM Version", "LLVM upstream commit", "Changes since yesterday"]:
+    for col in ["Date", "Tracking issue", "Maintainer", "LLVM Version", "LLVM upstream commit", "Changes since yesterday"]:
         html.append(f'<th class="rotated">{col}</th>')
     for chroot in chroots:
         grp, _ver, arch = parse_chroot(chroot)
@@ -555,7 +555,7 @@ a.header-link:hover { text-decoration: underline; }
         else:
             html.append('<td class="no-build">&mdash;</td>')
 
-        # Assignee
+        # Maintainer
         assignee = m.get("assignee")
         if assignee:
             html.append(f'<td><a class="issue-link" href="https://github.com/{assignee}">{assignee}</a></td>')
@@ -620,12 +620,12 @@ def main():
     parser = argparse.ArgumentParser(description="Generate LLVM snapshot builds dashboard")
     parser.add_argument(
         "--data-file",
-        default="copr-dashboard.csv",
+        default="dashboard.csv",
         help="Path to the CSV data file (read/write)",
     )
     parser.add_argument(
         "--output",
-        default="copr-dashboard.html",
+        default="dashboard.html",
         help="Path to the output HTML file",
     )
     parser.add_argument(

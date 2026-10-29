@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 """
-Backfills the Copr dashboard CSV from GitHub issues.
+Backfills the dashboard CSV from GitHub issues.
 
 Fetches all issues with label strategy/big-merge from the llvm-snapshots
 repo, parses the build matrix from the issue body, and writes the same
-CSV format used by generate-copr-dashboard.py.
+CSV format used by generate-dashboard.py.
 
 This is a one-time script for seeding historical data.
 """
@@ -135,7 +135,7 @@ def main():
         print("Error: GITHUB_TOKEN environment variable required", file=sys.stderr)
         sys.exit(1)
 
-    output_file = sys.argv[1] if len(sys.argv) > 1 else "copr-dashboard.csv"
+    output_file = sys.argv[1] if len(sys.argv) > 1 else "dashboard.csv"
 
     existing_keys: set[tuple[str, str]] = set()
     existing_rows: list[dict] = []

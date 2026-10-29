@@ -1,4 +1,4 @@
-name: "Update Copr dashboard"
+name: "Update dashboard"
 
 on:
   schedule:
@@ -17,7 +17,7 @@ permissions:
   contents: write
 
 jobs:
-  update-copr-dashboard:
+  update-dashboard:
     if: github.repository_owner == 'fedora-llvm-team'
     runs-on: ubuntu-latest
     steps:
@@ -42,18 +42,18 @@ jobs:
           lookback_days="${{ inputs.lookback_days }}"
           [[ -z "$lookback_days" ]] && lookback_days="1"
 
-          python3 main/scripts/generate-copr-dashboard.py \
-            --data-file gh-pages/copr-dashboard.csv \
-            --output gh-pages/copr-dashboard.html \
+          python3 main/scripts/generate-dashboard.py \
+            --data-file gh-pages/dashboard.csv \
+            --output gh-pages/dashboard.html \
             --lookback-days "$lookback_days"
 
       - name: Commit and push
         run: |
           cd gh-pages
-          git add copr-dashboard.csv copr-dashboard.html
+          git add dashboard.csv dashboard.html
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update Copr snapshot dashboard"
+            git commit -m "Update snapshot dashboard"
             git push origin HEAD:gh-pages
           fi
