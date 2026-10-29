@@ -251,15 +251,16 @@ def render_html(rows: list[dict], output_path: str, github_token: str | None = N
     html.append('<meta charset="utf-8">')
     html.append('<meta name="viewport" content="width=device-width, initial-scale=1">')
     html.append("<title>LLVM Snapshot Builds Dashboard</title>")
+    html.append('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;700&family=Red+Hat+Text:wght@400;700&family=Red+Hat+Mono&display=swap">')
     html.append("<style>")
     html.append("""
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-family: "Red Hat Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     margin: 1rem;
     background: #fff;
     color: #1f2328;
 }
-h1 { font-size: 1.5rem; text-align: center; }
+h1 { font-family: "Red Hat Display", sans-serif; font-size: 1.5rem; text-align: center; }
 table {
     border-collapse: collapse;
     font-size: 0.8rem;
@@ -305,6 +306,9 @@ a.date-link { color: #0969da; }
 a.issue-link { color: #0969da; text-decoration: none; }
 a.issue-link:hover { text-decoration: underline; }
 td.no-build { color: #8b949e; }
+tbody tr:nth-child(even) { background: #f6f8fa; }
+tbody tr.all-succeeded { background: #dafbe1; }
+tbody tr.all-succeeded:nth-child(even) { background: #c7f5d0; }
 .legend {
     margin-bottom: 1rem;
     font-size: 0.8rem;
@@ -357,7 +361,11 @@ td.no-build { color: #8b949e; }
         yyyymmdd = d.replace("-", "")
         monitor_url = COPR_MONITOR_URL_TPL.format(yyyymmdd=yyyymmdd)
         m = meta.get(d, {})
-        html.append("<tr>")
+        all_ok = entry and all(
+            info["state"] in ("succeeded", "forked") for info in entry.values()
+        )
+        row_class = ' class="all-succeeded"' if all_ok else ""
+        html.append(f"<tr{row_class}>")
         html.append(f'<td class="num-col">{idx}</td>')
         html.append(f'<td><a class="date-link" href="{monitor_url}">{d}</a></td>')
 
