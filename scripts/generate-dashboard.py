@@ -19,6 +19,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import UTC, date, datetime, timedelta
+from typing import Any
 
 COPR_API = "https://copr.fedorainfracloud.org/api_3/monitor"
 COPR_OWNERNAME = "@fedora-llvm-team"
@@ -68,7 +69,7 @@ STATE_SYMBOLS = {
 
 
 def fetch_with_retry(
-    url: str, headers: dict | None = None, max_retries: int = 3
+    url: str, headers: dict[str, str] | None = None, max_retries: int = 3
 ) -> bytes | None:
     """Fetch a URL with retries on transient errors. Returns None on 404."""
     req = urllib.request.Request(url)
@@ -78,7 +79,8 @@ def fetch_with_retry(
     for attempt in range(max_retries):
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
-                return resp.read()
+                result: bytes = resp.read()
+                return result
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 return None
@@ -95,19 +97,22 @@ def fetch_with_retry(
     return None
 
 
-def fetch_monitor(yyyymmdd: str) -> dict | None:
+def fetch_monitor(yyyymmdd: str) -> dict[str, Any] | None:
     projectname = COPR_PROJECT_TPL.format(yyyymmdd=yyyymmdd)
     url = f"{COPR_API}?ownername={COPR_OWNERNAME}&projectname={projectname}"
     data = fetch_with_retry(url)
     if data is None:
         return None
-    return json.loads(data)
+    result: dict[str, Any] = json.loads(data)
+    return result
 
 
 TITLE_RE = re.compile(r"Snapshot for \d+, v([\d.]+), ([0-9a-f]+)")
 
 
-def fetch_github_issue(yyyymmdd: str, github_token: str | None = None) -> dict:
+def fetch_github_issue(
+    yyyymmdd: str, github_token: str | None = None
+) -> dict[str, str]:
     """Returns {issue_url, assignee, llvm_version, commit_sha} or empty strings."""
     result = {"issue_url": "", "assignee": "", "llvm_version": "", "commit_sha": ""}
 
@@ -136,7 +141,7 @@ def fetch_github_issue(yyyymmdd: str, github_token: str | None = None) -> dict:
     return result
 
 
-def extract_chroots(monitor_data: dict) -> dict[str, dict]:
+def extract_chroots(monitor_data: dict[str, Any]) -> dict[str, dict[str, str]]:
     for pkg in monitor_data.get("packages", []):
         if pkg["name"] == "llvm":
             return {
@@ -149,7 +154,7 @@ def extract_chroots(monitor_data: dict) -> dict[str, dict]:
     return {}
 
 
-def load_csv(path: str) -> list[dict]:
+def load_csv(path: str) -> list[dict[str, str]]:
     if not os.path.exists(path):
         return []
     with open(path, newline="") as f:
@@ -163,7 +168,7 @@ def load_csv(path: str) -> list[dict]:
         return rows
 
 
-def save_csv(path: str, rows: list[dict]) -> None:
+def save_csv(path: str, rows: list[dict[str, str]]) -> None:
     rows.sort(key=lambda r: (r["date"], r["chroot"]))
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
@@ -171,7 +176,7 @@ def save_csv(path: str, rows: list[dict]) -> None:
         writer.writerows(rows)
 
 
-def chroot_sort_key(name: str) -> tuple:
+def chroot_sort_key(name: str) -> tuple[int, int, str]:
     """Sort order: rhel by version desc, centos-stream by version desc,
     fedora-rawhide, then fedora by version desc, then arch."""
     parts = name.rsplit("-", 1)
@@ -234,9 +239,9 @@ GROUP_LABELS = {
 }
 
 
-def render_html(rows: list[dict], output_path: str) -> None:
-    data: dict[str, dict[str, dict]] = {}
-    meta: dict[str, dict] = {}
+def render_html(rows: list[dict[str, str]], output_path: str) -> None:
+    data: dict[str, dict[str, dict[str, str]]] = {}
+    meta: dict[str, dict[str, str]] = {}
     all_chroots: set[str] = set()
 
     for row in rows:
@@ -656,7 +661,7 @@ a.header-link:hover { text-decoration: underline; }
         f.write("\n")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate LLVM snapshot builds dashboard"
     )

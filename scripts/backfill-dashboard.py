@@ -19,6 +19,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from typing import Any
 
 GITHUB_REPO = "fedora-llvm-team/llvm-snapshots"
 GITHUB_API = f"https://api.github.com/repos/{GITHUB_REPO}/issues"
@@ -57,7 +58,7 @@ BUILD_ROW_RE = re.compile(
 )
 
 
-def fetch_all_issues(github_token: str) -> list[dict]:
+def fetch_all_issues(github_token: str) -> list[dict[str, Any]]:
     """Fetches all big-merge issues, paginating through the API."""
     all_issues = []
     page = 1
@@ -119,7 +120,7 @@ def fetch_all_issues(github_token: str) -> list[dict]:
     return all_issues
 
 
-def parse_title(title: str) -> dict:
+def parse_title(title: str) -> dict[str, str]:
     m = TITLE_RE.search(title)
     if not m:
         return {}
@@ -128,7 +129,7 @@ def parse_title(title: str) -> dict:
     return {"date": date_str, "llvm_version": m.group(2), "commit_sha": m.group(3)}
 
 
-def parse_build_matrix(body: str) -> list[dict]:
+def parse_build_matrix(body: str) -> list[dict[str, str]]:
     """Parses build matrix rows from the issue body."""
     results = []
     for line in body.split("\n"):
@@ -142,7 +143,7 @@ def parse_build_matrix(body: str) -> list[dict]:
     return results
 
 
-def main():
+def main() -> None:
     github_token = os.environ.get("GITHUB_TOKEN")
     if not github_token:
         print("Error: GITHUB_TOKEN environment variable required", file=sys.stderr)
@@ -151,7 +152,7 @@ def main():
     output_file = sys.argv[1] if len(sys.argv) > 1 else "dashboard.csv"
 
     existing_keys: set[tuple[str, str]] = set()
-    existing_rows: list[dict] = []
+    existing_rows: list[dict[str, str]] = []
     if os.path.exists(output_file):
         with open(output_file, newline="") as f:
             existing_rows = list(csv.DictReader(f))
