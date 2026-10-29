@@ -461,7 +461,7 @@ a.header-link:hover { text-decoration: underline; }
         label = GROUP_LABELS.get(grp, grp)
         cls = f"grp-{grp}" + (" group-start" if not first_grp else "")
         chroot_params = "&amp;".join(f"chroot={c}" for c in group_chroots.get(grp, []))
-        link = f"fig-big-merge-all-states.html?{chroot_params}"
+        link = f"build-times-all-states.html?{chroot_params}"
         html.append(f'<th colspan="{count}" class="{cls}"><a class="header-link" href="{link}">{label}</a></th>')
         first_grp = False
     html.append("</tr>")
@@ -473,7 +473,7 @@ a.header-link:hover { text-decoration: underline; }
     for grp, ver, count in versions:
         cls = f"col-{grp}" + (" group-start" if grp != prev_grp and prev_grp is not None else "")
         chroot_params = "&amp;".join(f"chroot={c}" for c in version_chroots.get((grp, ver), []))
-        link = f"fig-big-merge-all-states.html?{chroot_params}"
+        link = f"build-times-all-states.html?{chroot_params}"
         html.append(f'<th colspan="{count}" class="{cls}"><a class="header-link" href="{link}">{ver}</a></th>')
         prev_grp = grp
     html.append("</tr>")
@@ -486,7 +486,7 @@ a.header-link:hover { text-decoration: underline; }
     for chroot in chroots:
         grp, _ver, arch = parse_chroot(chroot)
         gs = " group-start" if chroot in group_start_chroots and chroot != chroots[0] else ""
-        link = f"fig-big-merge-all-states.html?chroot={chroot}"
+        link = f"build-times-all-states.html?chroot={chroot}"
         html.append(f'<th class="rotated col-{grp}{gs}"><a class="header-link" href="{link}">{arch}</a></th>')
     html.append("</tr>")
 

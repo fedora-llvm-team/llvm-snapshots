@@ -25,13 +25,8 @@ def create_figure(df: pd.DataFrame, package_name: str = "") -> go.Figure:
     Returns:
         go.Figure: A line figure with all chroots in one graph
     """
-    title = "Build times for the package(s): {}"
     if package_name != "":
         df = df[df.package == package_name]
-        title = title.format(package_name)
-    else:
-        package_names = df["package"].explode().drop_duplicates().tolist()
-        title = title.format(", ".join(package_names))
     fig = px.line(
         data_frame=df,
         x="date",
@@ -39,9 +34,9 @@ def create_figure(df: pd.DataFrame, package_name: str = "") -> go.Figure:
         color="chroot",
         markers=True,
         line_shape="linear",
-        title=title,
         symbol="chroot",
         hover_data=["package", "date", "state", "build_id"],
+        category_orders={"chroot": sorted(df["chroot"].unique())},
         labels={
             "build_time": "Build time",
             "date": "Date",
@@ -114,7 +109,7 @@ def save_figure(fig: go.Figure, filepath: str) -> None:
             var matched = false;
             for (var j = 0; j < selectedChroots.length; j++) {
                 var sc = selectedChroots[j];
-                if (traces[i].name === sc || traces[i].name === 'big-merge-' + sc) {
+                if (traces[i].name === sc) {
                     matched = true;
                     break;
                 }
@@ -130,6 +125,42 @@ def save_figure(fig: go.Figure, filepath: str) -> None:
             Plotly.restyle(plot_element, {visible: true}, showIdx);
         }
     }
+
+    function updateChrootUrl() {
+        var traces = plot_element.data;
+        var visible = [];
+        var allVisible = true;
+        for (var i = 0; i < traces.length; i++) {
+            if (traces[i].visible === 'legendonly') {
+                allVisible = false;
+            } else {
+                visible.push(traces[i].name);
+            }
+        }
+        var url = new URL(window.location.href);
+        url.searchParams.delete('chroot');
+        if (!allVisible && visible.length > 0) {
+            for (var i = 0; i < visible.length; i++) {
+                url.searchParams.append('chroot', visible[i]);
+            }
+        }
+        window.history.replaceState(null, '', url.toString());
+        document.querySelectorAll('#headermenu a').forEach(function(a) {
+            var linkUrl = new URL(a.href);
+            linkUrl.searchParams.delete('chroot');
+            if (!allVisible && visible.length > 0) {
+                for (var i = 0; i < visible.length; i++) {
+                    linkUrl.searchParams.append('chroot', visible[i]);
+                }
+            }
+            a.href = linkUrl.toString();
+        });
+    }
+
+    plot_element.on('plotly_restyle', updateChrootUrl);
+    plot_element.on('plotly_legenddoubleclick', function() {
+        setTimeout(updateChrootUrl, 0);
+    });
     """
 
     fig.write_html(
@@ -152,13 +183,34 @@ def add_html_header_menu(filepath: str, plotly_div_id: str = "plotly_div_id") ->
     replace_me = f'<div id="{plotly_div_id}"'
 
     last_updated = datetime.today().strftime("%c")
+    current_file = Path(filepath).name
+
+    menu_items = [
+        ("📋", "dashboard.html", "Snapshot builds dashboard"),
+        ("📈", "build-times-all-states.html", "Build times (all states)"),
+        ("📈", "build-times-only-succeeded.html", "Build times (only succeeded)"),
+    ]
 
     file = Path(filepath)
-    header_menu = '<div id="headermenu">Build-Stats: '
-    header_menu += ' <a href="index.html">big-merge (only success)</a>'
-    header_menu += ' | <a href="fig-big-merge-all-states.html">big-merge (all states)</a>'
+    header_menu = '<div id="headermenu">'
+    parts = []
+    for icon, href, label in menu_items:
+        if href == current_file:
+            parts.append(f'{icon} <a href="{href}" style="font-weight:bold;color:inherit;text-decoration:none">{label}</a>')
+        else:
+            parts.append(f'{icon} <a href="{href}">{label}</a>')
+    header_menu += " | ".join(parts)
     header_menu += f" <small>(Last updated: {last_updated})</small>"
     header_menu += "</div>"
+    header_menu += '<script>document.addEventListener("DOMContentLoaded",function(){'
+    header_menu += "var q=window.location.search;"
+    header_menu += 'if(q){document.querySelectorAll("#headermenu a").forEach(function(a){'
+    header_menu += "var u=new URL(a.href);"
+    header_menu += "var p=new URLSearchParams(q);"
+    header_menu += 'p.forEach(function(v,k){u.searchParams.append(k,v)});'
+    header_menu += "a.href=u.toString();"
+    header_menu += "})}"
+    header_menu += "});</script>"
     header_menu += replace_me
 
     file.write_text(file.read_text().replace(replace_me, header_menu))
@@ -226,11 +278,7 @@ def main() -> None:
         "plotly"  # See https://plotly.com/python/templates/#theming-and-templates
     )
 
-    # Create dataframe of llvm in "big-merge mode". The chroots are prefixed
-    # with "big-merge-" on the fly to be able to distinguish the two cases.
     df_big_merge = prepare_data(filepath=args.datafile_big_merge)
-    df_big_merge["chroot"] = "big-merge-" + df_big_merge["chroot"]
-    # Convert build_id column with int64's in it to an array of int64's.
     df_big_merge.build_id = df_big_merge.build_id.apply(lambda x: [x])
 
     filter = df_big_merge["state"] == "succeeded"
@@ -238,13 +286,13 @@ def main() -> None:
 
     # Create dedicated big-merge figure with nothing else in it.
     fig = create_figure(df=df_big_merge)
-    filepath = "fig-big-merge-all-states.html"
+    filepath = "build-times-all-states.html"
     save_figure(fig=fig, filepath=filepath)
     add_html_header_menu(filepath=filepath)
 
     # Create dedicated big-merge figure with nothing else in it.
     fig = create_figure(df=df_big_merge_succeeded)
-    filepath = "index.html"
+    filepath = "build-times-only-succeeded.html"
     save_figure(fig=fig, filepath=filepath)
     add_html_header_menu(filepath=filepath)
 

@@ -74,9 +74,8 @@ jobs:
           fi
           if ${{ env.create_diagrams }}; then
             main/scripts/create-build-time-diagrams.py --datafile-big-merge gh-pages/build-stats-big-merge.csv
-            mv index.html gh-pages/index.html
-            mv fig-*.html gh-pages/
-            git -C gh-pages add index.html fig-*.html
+            mv build-times-*.html gh-pages/
+            git -C gh-pages add build-times-*.html
           fi
           # shellcheck disable=SC2078
           if [[ ${{ env.get_stats }} || ${{ env.create_diagrams }} ]]; then
