@@ -15,9 +15,9 @@ import json
 import os
 import re
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
-import urllib.error
 from datetime import UTC, date, datetime, timedelta
 
 COPR_API = "https://copr.fedorainfracloud.org/api_3/monitor"
@@ -29,7 +29,16 @@ COPR_BUILD_URL_TPL = "https://copr.fedorainfracloud.org/coprs/build/{build_id}"
 GITHUB_REPO = "fedora-llvm-team/llvm-snapshots"
 GITHUB_SEARCH_API = "https://api.github.com/search/issues"
 
-CSV_FIELDS = ["date", "chroot", "state", "build_id", "issue_url", "assignee", "llvm_version", "commit_sha"]
+CSV_FIELDS = [
+    "date",
+    "chroot",
+    "state",
+    "build_id",
+    "issue_url",
+    "assignee",
+    "llvm_version",
+    "commit_sha",
+]
 
 STATE_COLORS = {
     "succeeded": "#1a7f37",
@@ -58,7 +67,9 @@ STATE_SYMBOLS = {
 }
 
 
-def fetch_with_retry(url: str, headers: dict | None = None, max_retries: int = 3) -> bytes | None:
+def fetch_with_retry(
+    url: str, headers: dict | None = None, max_retries: int = 3
+) -> bytes | None:
     """Fetch a URL with retries on transient errors. Returns None on 404."""
     req = urllib.request.Request(url)
     for k, v in (headers or {}).items():
@@ -255,7 +266,9 @@ def render_html(rows: list[dict], output_path: str) -> None:
     html.append('<meta charset="utf-8">')
     html.append('<meta name="viewport" content="width=device-width, initial-scale=1">')
     html.append("<title>LLVM Snapshot Builds Dashboard</title>")
-    html.append('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;700&family=Red+Hat+Text:wght@400;700&family=Red+Hat+Mono&display=swap">')
+    html.append(
+        '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;700&family=Red+Hat+Text:wght@400;700&family=Red+Hat+Mono&display=swap">'
+    )
     html.append("<style>")
     html.append("""
 body {
@@ -370,7 +383,9 @@ a.header-link:hover { text-decoration: underline; }
     html.append("<body>")
     last_updated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     html.append("<h1>LLVM Snapshot Builds Dashboard</h1>")
-    html.append(f'<p style="margin-top:-0.8rem;font-size:0.85rem;color:#666;text-align:center">(Last updated: {last_updated})</p>')
+    html.append(
+        f'<p style="margin-top:-0.8rem;font-size:0.85rem;color:#666;text-align:center">(Last updated: {last_updated})</p>'
+    )
 
     html.append('<div class="legend">')
     for state in STATE_SYMBOLS:
@@ -382,7 +397,7 @@ a.header-link:hover { text-decoration: underline; }
         )
     html.append("</div>")
 
-    html.append('<div>')
+    html.append("<div>")
     html.append("<table>")
 
     # Compute broken streak and last OK date per chroot
@@ -439,7 +454,9 @@ a.header-link:hover { text-decoration: underline; }
         cls = f"grp-{grp}" + (" group-start" if not first_grp else "")
         chroot_params = "&amp;".join(f"chroot={c}" for c in group_chroots.get(grp, []))
         link = f"build-times-all-states.html?{chroot_params}"
-        html.append(f'<th colspan="{count}" class="{cls}"><a class="header-link" href="{link}">{label}</a></th>')
+        html.append(
+            f'<th colspan="{count}" class="{cls}"><a class="header-link" href="{link}">{label}</a></th>'
+        )
         first_grp = False
     html.append("</tr>")
 
@@ -448,37 +465,64 @@ a.header-link:hover { text-decoration: underline; }
     html.append(f'<th colspan="{num_meta_cols}"></th>')
     prev_grp = None
     for grp, ver, count in versions:
-        cls = f"col-{grp}" + (" group-start" if grp != prev_grp and prev_grp is not None else "")
-        chroot_params = "&amp;".join(f"chroot={c}" for c in version_chroots.get((grp, ver), []))
+        cls = f"col-{grp}" + (
+            " group-start" if grp != prev_grp and prev_grp is not None else ""
+        )
+        chroot_params = "&amp;".join(
+            f"chroot={c}" for c in version_chroots.get((grp, ver), [])
+        )
         link = f"build-times-all-states.html?{chroot_params}"
-        html.append(f'<th colspan="{count}" class="{cls}"><a class="header-link" href="{link}">{ver}</a></th>')
+        html.append(
+            f'<th colspan="{count}" class="{cls}"><a class="header-link" href="{link}">{ver}</a></th>'
+        )
         prev_grp = grp
     html.append("</tr>")
 
     # Row 3: arch names (rotated)
     html.append("<tr>")
     html.append('<th class="rotated">#</th>')
-    for col in ["Date", "Tracking issue", "Maintainer", "LLVM Version", "LLVM upstream commit", "Changes since yesterday"]:
+    for col in [
+        "Date",
+        "Tracking issue",
+        "Maintainer",
+        "LLVM Version",
+        "LLVM upstream commit",
+        "Changes since yesterday",
+    ]:
         html.append(f'<th class="rotated">{col}</th>')
     for chroot in chroots:
         grp, _ver, arch = parse_chroot(chroot)
-        gs = " group-start" if chroot in group_start_chroots and chroot != chroots[0] else ""
+        gs = (
+            " group-start"
+            if chroot in group_start_chroots and chroot != chroots[0]
+            else ""
+        )
         link = f"build-times-all-states.html?chroot={chroot}"
-        html.append(f'<th class="rotated col-{grp}{gs}"><a class="header-link" href="{link}">{arch}</a></th>')
+        html.append(
+            f'<th class="rotated col-{grp}{gs}"><a class="header-link" href="{link}">{arch}</a></th>'
+        )
     html.append("</tr>")
 
     # Streak row
     html.append('<tr class="streak-row">')
-    html.append(f'<th colspan="{num_meta_cols}" style="text-align: right; font-size: 0.7rem;">Days broken →</th>')
+    html.append(
+        f'<th colspan="{num_meta_cols}" style="text-align: right; font-size: 0.7rem;">Days broken →</th>'
+    )
     for chroot in chroots:
         grp = chroot_group(chroot)
-        gs = " group-start" if chroot in group_start_chroots and chroot != chroots[0] else ""
+        gs = (
+            " group-start"
+            if chroot in group_start_chroots and chroot != chroots[0]
+            else ""
+        )
         days = broken_days[chroot]
         ok_date = last_ok_date.get(chroot)
         if days == 0:
             html.append(f'<th class="col-{grp}{gs}"></th>')
         elif ok_date:
-            html.append(f'<th class="col-{grp}{gs}"><a href="#row-{ok_date}" class="streak-link">{days}</a></th>')
+            html.append(
+                f'<th class="col-{grp}{gs}"><a href="#row-{ok_date}" class="streak-link">{days}</a></th>'
+            )
         else:
             html.append(f'<th class="col-{grp}{gs}">{days}</th>')
     html.append("</tr>")
@@ -487,16 +531,26 @@ a.header-link:hover { text-decoration: underline; }
     diff_icon = "∆"
     latest_sha = meta.get(dates[0], {}).get("commit_sha", "") if dates else ""
     html.append('<tr class="streak-row">')
-    html.append(f'<th colspan="{num_meta_cols}" style="text-align: right; font-size: 0.7rem;">Changes since last OK →</th>')
+    html.append(
+        f'<th colspan="{num_meta_cols}" style="text-align: right; font-size: 0.7rem;">Changes since last OK →</th>'
+    )
     for chroot in chroots:
         grp = chroot_group(chroot)
-        gs = " group-start" if chroot in group_start_chroots and chroot != chroots[0] else ""
+        gs = (
+            " group-start"
+            if chroot in group_start_chroots and chroot != chroots[0]
+            else ""
+        )
         days = broken_days[chroot]
         ok_d = last_ok_date.get(chroot)
         ok_sha = meta.get(ok_d, {}).get("commit_sha", "") if ok_d else ""
         if days > 0 and latest_sha and ok_sha and latest_sha != ok_sha:
-            diff_url = f"https://github.com/llvm/llvm-project/compare/{ok_sha}...{latest_sha}"
-            html.append(f'<th class="col-{grp}{gs}"><a href="{diff_url}" class="diff-icon">{diff_icon}</a></th>')
+            diff_url = (
+                f"https://github.com/llvm/llvm-project/compare/{ok_sha}...{latest_sha}"
+            )
+            html.append(
+                f'<th class="col-{grp}{gs}"><a href="{diff_url}" class="diff-icon">{diff_icon}</a></th>'
+            )
         else:
             html.append(f'<th class="col-{grp}{gs}"></th>')
     html.append("</tr>")
@@ -513,7 +567,11 @@ a.header-link:hover { text-decoration: underline; }
             info["state"] in ("succeeded", "forked") for info in entry.values()
         )
         row_class = " all-succeeded" if all_ok else ""
-        html.append(f'<tr id="row-{d}" class="{row_class.strip()}">' if row_class else f'<tr id="row-{d}">')
+        html.append(
+            f'<tr id="row-{d}" class="{row_class.strip()}">'
+            if row_class
+            else f'<tr id="row-{d}">'
+        )
         html.append(f'<td class="num-col">{idx}</td>')
         html.append(f'<td><a class="date-link" href="{monitor_url}">{d}</a></td>')
 
@@ -521,14 +579,18 @@ a.header-link:hover { text-decoration: underline; }
         issue_url = m.get("issue_url")
         if issue_url:
             issue_num = issue_url.rstrip("/").split("/")[-1]
-            html.append(f'<td><a class="issue-link" href="{issue_url}">#{issue_num}</a></td>')
+            html.append(
+                f'<td><a class="issue-link" href="{issue_url}">#{issue_num}</a></td>'
+            )
         else:
             html.append('<td class="no-build">&mdash;</td>')
 
         # Maintainer
         assignee = m.get("assignee")
         if assignee:
-            html.append(f'<td><a class="issue-link" href="https://github.com/{assignee}">{assignee}</a></td>')
+            html.append(
+                f'<td><a class="issue-link" href="https://github.com/{assignee}">{assignee}</a></td>'
+            )
         else:
             html.append('<td class="no-build">&mdash;</td>')
 
@@ -544,7 +606,9 @@ a.header-link:hover { text-decoration: underline; }
         commit_sha = m.get("commit_sha", "")
         if commit_sha:
             commit_url = f"https://github.com/llvm/llvm-project/commit/{commit_sha}"
-            html.append(f'<td><a class="issue-link" href="{commit_url}">{commit_sha}</a></td>')
+            html.append(
+                f'<td><a class="issue-link" href="{commit_url}">{commit_sha}</a></td>'
+            )
         else:
             html.append('<td class="no-build">&mdash;</td>')
 
@@ -553,13 +617,19 @@ a.header-link:hover { text-decoration: underline; }
         prev_sha = meta.get(prev_date, {}).get("commit_sha", "") if prev_date else ""
         if commit_sha and prev_sha and commit_sha != prev_sha:
             diff_url = f"https://github.com/llvm/llvm-project/compare/{prev_sha}...{commit_sha}"
-            html.append(f'<td><a class="diff-icon" href="{diff_url}">{diff_icon}</a></td>')
+            html.append(
+                f'<td><a class="diff-icon" href="{diff_url}">{diff_icon}</a></td>'
+            )
         else:
             html.append('<td class="no-build">&mdash;</td>')
 
         for chroot in chroots:
             grp = chroot_group(chroot)
-            gs = " group-start" if chroot in group_start_chroots and chroot != chroots[0] else ""
+            gs = (
+                " group-start"
+                if chroot in group_start_chroots and chroot != chroots[0]
+                else ""
+            )
             if chroot in entry:
                 info = entry[chroot]
                 state = info["state"]
@@ -587,7 +657,9 @@ a.header-link:hover { text-decoration: underline; }
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate LLVM snapshot builds dashboard")
+    parser = argparse.ArgumentParser(
+        description="Generate LLVM snapshot builds dashboard"
+    )
     parser.add_argument(
         "--data-file",
         default="dashboard.csv",
@@ -641,16 +713,18 @@ def main():
         for chroot, info in chroots.items():
             if chroot in known:
                 continue
-            rows.append({
-                "date": key,
-                "chroot": chroot,
-                "state": info["state"],
-                "build_id": info["build_id"],
-                "issue_url": gh["issue_url"],
-                "assignee": gh["assignee"],
-                "llvm_version": gh["llvm_version"],
-                "commit_sha": gh["commit_sha"],
-            })
+            rows.append(
+                {
+                    "date": key,
+                    "chroot": chroot,
+                    "state": info["state"],
+                    "build_id": info["build_id"],
+                    "issue_url": gh["issue_url"],
+                    "assignee": gh["assignee"],
+                    "llvm_version": gh["llvm_version"],
+                    "commit_sha": gh["commit_sha"],
+                }
+            )
         existing.setdefault(key, set()).update(chroots.keys())
 
         new_entries += 1

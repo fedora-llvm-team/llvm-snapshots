@@ -196,7 +196,9 @@ def add_html_header_menu(filepath: str, plotly_div_id: str = "plotly_div_id") ->
     parts = []
     for icon, href, label in menu_items:
         if href == current_file:
-            parts.append(f'{icon} <a href="{href}" style="font-weight:bold;color:inherit;text-decoration:none">{label}</a>')
+            parts.append(
+                f'{icon} <a href="{href}" style="font-weight:bold;color:inherit;text-decoration:none">{label}</a>'
+            )
         else:
             parts.append(f'{icon} <a href="{href}">{label}</a>')
     header_menu += " | ".join(parts)
@@ -204,10 +206,12 @@ def add_html_header_menu(filepath: str, plotly_div_id: str = "plotly_div_id") ->
     header_menu += "</div>"
     header_menu += '<script>document.addEventListener("DOMContentLoaded",function(){'
     header_menu += "var q=window.location.search;"
-    header_menu += 'if(q){document.querySelectorAll("#headermenu a").forEach(function(a){'
+    header_menu += (
+        'if(q){document.querySelectorAll("#headermenu a").forEach(function(a){'
+    )
     header_menu += "var u=new URL(a.href);"
     header_menu += "var p=new URLSearchParams(q);"
-    header_menu += 'p.forEach(function(v,k){u.searchParams.append(k,v)});'
+    header_menu += "p.forEach(function(v,k){u.searchParams.append(k,v)});"
     header_menu += "a.href=u.toString();"
     header_menu += "})}"
     header_menu += "});</script>"

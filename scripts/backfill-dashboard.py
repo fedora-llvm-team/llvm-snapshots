@@ -16,14 +16,23 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
-import urllib.error
 
 GITHUB_REPO = "fedora-llvm-team/llvm-snapshots"
 GITHUB_API = f"https://api.github.com/repos/{GITHUB_REPO}/issues"
 
-CSV_FIELDS = ["date", "chroot", "state", "build_id", "issue_url", "assignee", "llvm_version", "commit_sha"]
+CSV_FIELDS = [
+    "date",
+    "chroot",
+    "state",
+    "build_id",
+    "issue_url",
+    "assignee",
+    "llvm_version",
+    "commit_sha",
+]
 
 TITLE_RE = re.compile(r"Snapshot for (\d{8}), v([\d.]+), ([0-9a-f]+) \(big-merge\)")
 
@@ -60,13 +69,15 @@ def fetch_all_issues(github_token: str) -> list[dict]:
     }
 
     while True:
-        params = urllib.parse.urlencode({
-            "labels": "strategy/big-merge",
-            "state": "all",
-            "per_page": str(per_page),
-            "page": str(page),
-            "direction": "desc",
-        })
+        params = urllib.parse.urlencode(
+            {
+                "labels": "strategy/big-merge",
+                "state": "all",
+                "per_page": str(per_page),
+                "page": str(page),
+                "direction": "desc",
+            }
+        )
         url = f"{GITHUB_API}?{params}"
 
         req = urllib.request.Request(url)
@@ -97,7 +108,9 @@ def fetch_all_issues(github_token: str) -> list[dict]:
             break
 
         all_issues.extend(data)
-        print(f"  page {page}: {len(data)} issues (total: {len(all_issues)})", flush=True)
+        print(
+            f"  page {page}: {len(data)} issues (total: {len(all_issues)})", flush=True
+        )
 
         if len(data) < per_page:
             break
@@ -144,7 +157,9 @@ def main():
             existing_rows = list(csv.DictReader(f))
             existing_keys = {(row["date"], row["chroot"]) for row in existing_rows}
         existing_dates = {row["date"] for row in existing_rows}
-        print(f"Loaded {len(existing_dates)} existing dates, {len(existing_keys)} entries from {output_file}")
+        print(
+            f"Loaded {len(existing_dates)} existing dates, {len(existing_keys)} entries from {output_file}"
+        )
 
     print("Fetching issues from GitHub...", flush=True)
     issues = fetch_all_issues(github_token)
@@ -179,22 +194,26 @@ def main():
             if key in existing_keys:
                 skipped += 1
                 continue
-            rows.append({
-                "date": date_str,
-                "chroot": build["chroot"],
-                "state": build["state"],
-                "build_id": build["build_id"],
-                "issue_url": issue_url,
-                "assignee": assignee,
-                "llvm_version": title_info.get("llvm_version", ""),
-                "commit_sha": title_info.get("commit_sha", ""),
-            })
+            rows.append(
+                {
+                    "date": date_str,
+                    "chroot": build["chroot"],
+                    "state": build["state"],
+                    "build_id": build["build_id"],
+                    "issue_url": issue_url,
+                    "assignee": assignee,
+                    "llvm_version": title_info.get("llvm_version", ""),
+                    "commit_sha": title_info.get("commit_sha", ""),
+                }
+            )
             existing_keys.add(key)
             added += 1
 
         if added:
             new_entries += added
-            print(f"  #{issue['number']} ({date_str}): {added} new chroots, assignee={assignee}")
+            print(
+                f"  #{issue['number']} ({date_str}): {added} new chroots, assignee={assignee}"
+            )
 
     rows.sort(key=lambda r: (r["date"], r["chroot"]))
 
@@ -204,7 +223,9 @@ def main():
         writer.writerows(rows)
 
     total_dates = len({r["date"] for r in rows})
-    print(f"\nDone: {total_dates} total dates, {new_entries} new entries, {skipped} skipped, {unparseable} unparseable")
+    print(
+        f"\nDone: {total_dates} total dates, {new_entries} new entries, {skipped} skipped, {unparseable} unparseable"
+    )
     print(f"Written to {output_file}")
 
 
