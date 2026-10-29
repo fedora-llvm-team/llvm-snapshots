@@ -23,7 +23,6 @@ class TestSnapshotManager(base_test.TestBase):
         # cfg.copr_project_tpl = "llvm-snapshots-incubator-20240405"
         # cfg.datetime = datetime.date(year=2024, month=4, day=5)
         # cfg.strategy = "standalone"
-        # cfg.maintainer_handle = "kwk"
         # cfg.creator_handle = "kwk"
         # cfg.github_repo = "fedora-llvm-team/llvm-snapshots-test"
         # mgr = snapshot_manager.SnapshotManager(config=cfg)
@@ -39,7 +38,6 @@ def config_fxt_a() -> config.Config:
         build_strategy="strategy A",
         copr_project_tpl="foo/strategy-A-YYYYMMDD",
         chroots=["fedora-rawhide-x86_64", "rhel-9-ppc64le", "fedora-42-aarch64"],
-        maintainer_handle="maintainerA",
     )
 
 
@@ -56,7 +54,6 @@ def config_fxt_b() -> config.Config:
             "fedora-42-aarch64",
             "rhel-9-ppc64le",
         ],
-        maintainer_handle="maintainerB",
     )
 
 
