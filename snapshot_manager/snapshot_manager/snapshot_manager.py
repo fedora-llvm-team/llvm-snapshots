@@ -327,11 +327,6 @@ class SnapshotManager:
                 )
                 self.github.minimize_comment_as_outdated(comment)
 
-        else:
-            # Only assign the issue now so that there are no notifications for
-            # all the error comments we've just created.
-            issue.add_to_assignees(self.config.maintainer_handle)
-
         logging.info("Get build states from copr")
         states = copr_util.get_all_build_states(
             client=self.copr,
@@ -556,7 +551,7 @@ class SnapshotManager:
             if tfutil.is_chroot_supported_by_ranch(chroot=chroot)
         ]
         if set(tested_chroot_labels) == set(required_chroot_abels):
-            msg = f"@{self.config.maintainer_handle}, all required packages have been successfully built and tested on all required chroots. We'll close this issue for you now as completed. Congratulations!"
+            msg = "All required packages have been successfully built and tested on all required chroots. We'll close this issue for you now as completed. Congratulations!"
             logging.info(msg)
             issue.create_comment(body=msg)
             issue.edit(
@@ -735,7 +730,6 @@ This issue was created by [this action run]({os.getenv(key="ACTION_RUN_URL", def
     repo = github_client.get_repo(github_repo)
     issue = repo.create_issue(
         title=f"Performance comparison: {conf_a.build_strategy} vs. {conf_b.build_strategy} - {conf_a.yyyymmdd}",
-        assignees=[conf_a.maintainer_handle],
         labels=[
             f"strategy/{conf_a.build_strategy}",
             f"strategy/{conf_b.build_strategy}",
