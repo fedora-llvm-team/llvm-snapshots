@@ -161,29 +161,29 @@ def save_csv(path: str, rows: list[dict]) -> None:
 
 
 def chroot_sort_key(name: str) -> tuple:
-    """Sort order: fedora-rawhide first, then fedora by version desc,
-    then rhel by version desc, then centos-stream by version desc, then arch."""
+    """Sort order: rhel by version desc, centos-stream by version desc,
+    fedora-rawhide, then fedora by version desc, then arch."""
     parts = name.rsplit("-", 1)
     arch = parts[1] if len(parts) > 1 else ""
     prefix = parts[0]
 
-    if prefix.startswith("fedora-rawhide"):
-        return (0, 0, arch)
-    elif prefix.startswith("fedora-"):
+    if prefix.startswith("rhel-"):
+        segments = prefix.rsplit("-", 1)
+        try:
+            version = -int(segments[1])
+        except (ValueError, IndexError):
+            version = 0
+        return (0, version, arch)
+    elif prefix.startswith("centos-stream-"):
         segments = prefix.rsplit("-", 1)
         try:
             version = -int(segments[1])
         except (ValueError, IndexError):
             version = 0
         return (1, version, arch)
-    elif prefix.startswith("rhel-"):
-        segments = prefix.rsplit("-", 1)
-        try:
-            version = -int(segments[1])
-        except (ValueError, IndexError):
-            version = 0
-        return (2, version, arch)
-    elif prefix.startswith("centos-stream-"):
+    elif prefix.startswith("fedora-rawhide"):
+        return (2, 0, arch)
+    elif prefix.startswith("fedora-"):
         segments = prefix.rsplit("-", 1)
         try:
             version = -int(segments[1])
@@ -192,6 +192,35 @@ def chroot_sort_key(name: str) -> tuple:
         return (3, version, arch)
     else:
         return (4, 0, arch)
+
+
+def parse_chroot(name: str) -> tuple[str, str, str]:
+    """Returns (group, version, arch) for a chroot name."""
+    parts = name.rsplit("-", 1)
+    arch = parts[1] if len(parts) > 1 else name
+    prefix = parts[0]
+
+    if prefix.startswith("fedora-rawhide"):
+        return ("fedora", "rawhide", arch)
+    elif prefix.startswith("fedora-"):
+        return ("fedora", prefix.split("-")[1], arch)
+    elif prefix.startswith("rhel-"):
+        return ("rhel", prefix.split("-")[1], arch)
+    elif prefix.startswith("centos-stream-"):
+        return ("centos-stream", prefix.split("-")[2], arch)
+    return ("other", "", arch)
+
+
+def chroot_group(name: str) -> str:
+    return parse_chroot(name)[0]
+
+
+GROUP_LABELS = {
+    "fedora": "Fedora",
+    "rhel": "RHEL",
+    "centos-stream": "CentOS Stream",
+    "other": "Other",
+}
 
 
 def fetch_issue_states(issue_urls: set[str], github_token: str | None = None) -> dict[str, str]:
@@ -256,32 +285,25 @@ def render_html(rows: list[dict], output_path: str, github_token: str | None = N
     html.append("""
 body {
     font-family: "Red Hat Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    margin: 1rem;
+    margin: 0;
     background: #fff;
     color: #1f2328;
 }
 h1 { font-family: "Red Hat Display", sans-serif; font-size: 1.5rem; text-align: center; }
 table {
     border-collapse: collapse;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     width: 100%;
 }
 th, td {
-    border-top: 1px solid #d1d9e0;
-    border-bottom: 1px solid #d1d9e0;
-    border-left: none;
-    border-right: none;
-    padding: 4px 8px;
+    border: none;
+    padding: 2px 4px;
     text-align: center;
     white-space: nowrap;
 }
+.group-start { border-left: 2px solid #888; }
 th {
     background: #f6f8fa;
-    z-index: 1;
-}
-thead th {
-    position: sticky;
-    top: 0;
 }
 td.num-col {
     font-weight: bold;
@@ -290,16 +312,16 @@ th.rotated {
     writing-mode: vertical-rl;
     text-orientation: mixed;
     transform: rotate(180deg);
-    max-width: 2rem;
-    height: 12rem;
+    max-width: 1.5rem;
+    height: 10rem;
     text-align: left;
     font-weight: normal;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 a.state-link {
     text-decoration: none;
     font-weight: bold;
-    font-size: 1rem;
+    font-size: 0.85rem;
 }
 a.state-link:hover { text-decoration: underline; }
 a.date-link { color: #0969da; }
@@ -309,6 +331,45 @@ td.no-build { color: #8b949e; }
 tbody tr:nth-child(even) { background: #f6f8fa; }
 tbody tr.all-succeeded { background: #dafbe1; }
 tbody tr.all-succeeded:nth-child(even) { background: #c7f5d0; }
+.streak-row th { font-size: 0.75rem; font-weight: bold; }
+a.streak-link { color: inherit; text-decoration: none; }
+a.streak-link:hover { text-decoration: underline; }
+a.diff-icon { color: #0969da; text-decoration: none; }
+a.diff-icon:hover { color: #0550ae; }
+.group-header th {
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+.version-header th {
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+/* Fedora blue (#3c6eb4) */
+.group-header .grp-fedora { background: #3c6eb4; color: #fff; }
+.version-header .col-fedora { background: #cedbec; }
+th.col-fedora { background: #e2eaf3; }
+td.col-fedora { background: #cedbec; }
+tbody tr:nth-child(even) td.col-fedora { background: #c8d6e9; }
+tbody tr.all-succeeded td.col-fedora { background: #dafbe1; }
+tbody tr.all-succeeded:nth-child(even) td.col-fedora { background: #c7f5d0; }
+/* Red Hat red (#ee0000) */
+.group-header .grp-rhel { background: #cc0000; color: #fff; }
+.version-header .col-rhel { background: #fcd1d1; }
+th.col-rhel { background: #feebeb; }
+td.col-rhel { background: #fccccc; }
+tbody tr:nth-child(even) td.col-rhel { background: #f4c6c8; }
+tbody tr.all-succeeded td.col-rhel { background: #dafbe1; }
+tbody tr.all-succeeded:nth-child(even) td.col-rhel { background: #c7f5d0; }
+/* CentOS Stream purple (#9c2fa0) */
+.group-header .grp-centos-stream { background: #9c2fa0; color: #fff; }
+.version-header .col-centos-stream { background: #eddaee; }
+th.col-centos-stream { background: #f5edf5; }
+td.col-centos-stream { background: #ebd5ec; }
+tbody tr:nth-child(even) td.col-centos-stream { background: #e4d0e8; }
+tbody tr.all-succeeded td.col-centos-stream { background: #dafbe1; }
+tbody tr.all-succeeded:nth-child(even) td.col-centos-stream { background: #c7f5d0; }
+a.header-link { color: inherit; text-decoration: none; }
+a.header-link:hover { text-decoration: underline; }
 .legend {
     margin-bottom: 1rem;
     font-size: 0.8rem;
@@ -344,16 +405,126 @@ tbody tr.all-succeeded:nth-child(even) { background: #c7f5d0; }
         )
     html.append("</div>")
 
-    html.append('<div style="overflow: auto; max-height: calc(100vh - 10rem);">')
+    html.append('<div>')
     html.append("<table>")
 
-    html.append("<thead><tr>")
+    # Compute broken streak and last OK date per chroot
+    broken_days: dict[str, int] = {}
+    last_ok_date: dict[str, str] = {}
+    for chroot in chroots:
+        streak = 0
+        for d in dates:
+            info = data[d].get(chroot)
+            if info and info["state"] in ("succeeded", "forked"):
+                last_ok_date[chroot] = d
+                break
+            if info and info["state"] not in ("succeeded", "forked"):
+                streak += 1
+        broken_days[chroot] = streak
+
+    num_meta_cols = 7  # #, Date, Tracking issue, Assignee, LLVM Version, commit, changes yesterday
+
+    # Build ordered list of groups and sub-groups (versions)
+    groups: list[tuple[str, int]] = []
+    versions: list[tuple[str, str, int]] = []  # (group, version, count)
+    for chroot in chroots:
+        grp, ver, _arch = parse_chroot(chroot)
+        if groups and groups[-1][0] == grp:
+            groups[-1] = (grp, groups[-1][1] + 1)
+        else:
+            groups.append((grp, 1))
+        if versions and versions[-1][0] == grp and versions[-1][1] == ver:
+            versions[-1] = (grp, ver, versions[-1][2] + 1)
+        else:
+            versions.append((grp, ver, 1))
+
+    # Determine first chroot index of each group for border separators
+    group_start_chroots: set[str] = set()
+    group_chroots: dict[str, list[str]] = {}
+    version_chroots: dict[tuple[str, str], list[str]] = {}
+    prev_grp = None
+    for chroot in chroots:
+        grp, ver, _arch = parse_chroot(chroot)
+        if grp != prev_grp:
+            group_start_chroots.add(chroot)
+            prev_grp = grp
+        group_chroots.setdefault(grp, []).append(chroot)
+        version_chroots.setdefault((grp, ver), []).append(chroot)
+
+    html.append("<thead>")
+
+    # Row 1: distro group header (Fedora / RHEL / CentOS Stream)
+    html.append('<tr class="group-header">')
+    html.append(f'<th colspan="{num_meta_cols}"></th>')
+    first_grp = True
+    for grp, count in groups:
+        label = GROUP_LABELS.get(grp, grp)
+        cls = f"grp-{grp}" + (" group-start" if not first_grp else "")
+        chroot_params = "&amp;".join(f"chroot={c}" for c in group_chroots.get(grp, []))
+        link = f"fig-big-merge-all-states.html?{chroot_params}"
+        html.append(f'<th colspan="{count}" class="{cls}"><a class="header-link" href="{link}">{label}</a></th>')
+        first_grp = False
+    html.append("</tr>")
+
+    # Row 2: version sub-header (rawhide, 45, 44, 8, 10, 9, ...)
+    html.append('<tr class="version-header">')
+    html.append(f'<th colspan="{num_meta_cols}"></th>')
+    prev_grp = None
+    for grp, ver, count in versions:
+        cls = f"col-{grp}" + (" group-start" if grp != prev_grp and prev_grp is not None else "")
+        chroot_params = "&amp;".join(f"chroot={c}" for c in version_chroots.get((grp, ver), []))
+        link = f"fig-big-merge-all-states.html?{chroot_params}"
+        html.append(f'<th colspan="{count}" class="{cls}"><a class="header-link" href="{link}">{ver}</a></th>')
+        prev_grp = grp
+    html.append("</tr>")
+
+    # Row 3: arch names (rotated)
+    html.append("<tr>")
     html.append('<th class="rotated">#</th>')
     for col in ["Date", "Tracking issue", "Assignee", "LLVM Version", "LLVM upstream commit", "Changes since yesterday"]:
         html.append(f'<th class="rotated">{col}</th>')
     for chroot in chroots:
-        html.append(f'<th class="rotated">{chroot}</th>')
-    html.append("</tr></thead>")
+        grp, _ver, arch = parse_chroot(chroot)
+        gs = " group-start" if chroot in group_start_chroots and chroot != chroots[0] else ""
+        link = f"fig-big-merge-all-states.html?chroot={chroot}"
+        html.append(f'<th class="rotated col-{grp}{gs}"><a class="header-link" href="{link}">{arch}</a></th>')
+    html.append("</tr>")
+
+    # Streak row
+    html.append('<tr class="streak-row">')
+    html.append(f'<th colspan="{num_meta_cols}" style="text-align: right; font-size: 0.7rem;">Days broken →</th>')
+    for chroot in chroots:
+        grp = chroot_group(chroot)
+        gs = " group-start" if chroot in group_start_chroots and chroot != chroots[0] else ""
+        days = broken_days[chroot]
+        ok_date = last_ok_date.get(chroot)
+        if days == 0:
+            html.append(f'<th class="col-{grp}{gs}"></th>')
+        elif ok_date:
+            html.append(f'<th class="col-{grp}{gs}"><a href="#row-{ok_date}" class="streak-link">{days}</a></th>')
+        else:
+            html.append(f'<th class="col-{grp}{gs}">{days}</th>')
+    html.append("</tr>")
+
+    # "Changes since last working build" row
+    diff_icon = "∆"
+    latest_sha = meta.get(dates[0], {}).get("commit_sha", "") if dates else ""
+    html.append('<tr class="streak-row">')
+    html.append(f'<th colspan="{num_meta_cols}" style="text-align: right; font-size: 0.7rem;">Changes since last OK →</th>')
+    for chroot in chroots:
+        grp = chroot_group(chroot)
+        gs = " group-start" if chroot in group_start_chroots and chroot != chroots[0] else ""
+        days = broken_days[chroot]
+        ok_d = last_ok_date.get(chroot)
+        ok_sha = meta.get(ok_d, {}).get("commit_sha", "") if ok_d else ""
+        if days > 0 and latest_sha and ok_sha and latest_sha != ok_sha:
+            diff_url = f"https://github.com/llvm/llvm-project/compare/{ok_sha}...{latest_sha}"
+            html.append(f'<th class="col-{grp}{gs}"><a href="{diff_url}" class="diff-icon">{diff_icon}</a></th>')
+        else:
+            html.append(f'<th class="col-{grp}{gs}"></th>')
+    html.append("</tr>")
+
+    html.append("</thead>")
 
     html.append("<tbody>")
     for idx, d in enumerate(dates):
@@ -364,8 +535,8 @@ tbody tr.all-succeeded:nth-child(even) { background: #c7f5d0; }
         all_ok = entry and all(
             info["state"] in ("succeeded", "forked") for info in entry.values()
         )
-        row_class = ' class="all-succeeded"' if all_ok else ""
-        html.append(f"<tr{row_class}>")
+        row_class = " all-succeeded" if all_ok else ""
+        html.append(f'<tr id="row-{d}" class="{row_class.strip()}">' if row_class else f'<tr id="row-{d}">')
         html.append(f'<td class="num-col">{idx}</td>')
         html.append(f'<td><a class="date-link" href="{monitor_url}">{d}</a></td>')
 
@@ -394,7 +565,8 @@ tbody tr.all-succeeded:nth-child(even) { background: #c7f5d0; }
         # LLVM Version
         llvm_version = m.get("llvm_version", "")
         if llvm_version:
-            html.append(f"<td>{llvm_version}</td>")
+            display_version = llvm_version.split(".")[0]
+            html.append(f"<td>{display_version}</td>")
         else:
             html.append('<td class="no-build">&mdash;</td>')
 
@@ -411,11 +583,13 @@ tbody tr.all-succeeded:nth-child(even) { background: #c7f5d0; }
         prev_sha = meta.get(prev_date, {}).get("commit_sha", "") if prev_date else ""
         if commit_sha and prev_sha and commit_sha != prev_sha:
             diff_url = f"https://github.com/llvm/llvm-project/compare/{prev_sha}...{commit_sha}"
-            html.append(f'<td><a class="issue-link" href="{diff_url}">diff</a></td>')
+            html.append(f'<td><a class="diff-icon" href="{diff_url}">{diff_icon}</a></td>')
         else:
             html.append('<td class="no-build">&mdash;</td>')
 
         for chroot in chroots:
+            grp = chroot_group(chroot)
+            gs = " group-start" if chroot in group_start_chroots and chroot != chroots[0] else ""
             if chroot in entry:
                 info = entry[chroot]
                 state = info["state"]
@@ -423,11 +597,11 @@ tbody tr.all-succeeded:nth-child(even) { background: #c7f5d0; }
                 symbol = STATE_SYMBOLS.get(state, "?")
                 build_url = COPR_BUILD_URL_TPL.format(build_id=build_id)
                 html.append(
-                    f'<td><a class="state-link" href="{build_url}" '
+                    f'<td class="col-{grp}{gs}"><a class="state-link" href="{build_url}" '
                     f'title="{chroot}: {state}">{symbol}</a></td>'
                 )
             else:
-                html.append('<td class="no-build">&mdash;</td>')
+                html.append(f'<td class="no-build col-{grp}{gs}">&mdash;</td>')
         html.append("</tr>")
     html.append("</tbody>")
 

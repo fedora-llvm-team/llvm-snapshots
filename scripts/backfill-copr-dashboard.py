@@ -42,7 +42,7 @@ EMOJI_TO_STATE = {
 }
 
 BUILD_ROW_RE = re.compile(
-    r"^\|([a-z][a-z0-9-]+)"
+    r"^\|([a-z][a-z0-9_-]+)"
     r"(?:<br\s*/?>.*?)?"
     r"\|\[:([\w]+):\]\(https://copr\.fedorainfracloud\.org/coprs/build/(\d+)\)\|"
 )
@@ -137,20 +137,21 @@ def main():
 
     output_file = sys.argv[1] if len(sys.argv) > 1 else "copr-dashboard.csv"
 
-    existing_dates: set[str] = set()
+    existing_keys: set[tuple[str, str]] = set()
     existing_rows: list[dict] = []
     if os.path.exists(output_file):
         with open(output_file, newline="") as f:
             existing_rows = list(csv.DictReader(f))
-            existing_dates = {row["date"] for row in existing_rows}
-        print(f"Loaded {len(existing_dates)} existing dates from {output_file}")
+            existing_keys = {(row["date"], row["chroot"]) for row in existing_rows}
+        existing_dates = {row["date"] for row in existing_rows}
+        print(f"Loaded {len(existing_dates)} existing dates, {len(existing_keys)} entries from {output_file}")
 
     print("Fetching issues from GitHub...", flush=True)
     issues = fetch_all_issues(github_token)
     print(f"Fetched {len(issues)} issues total\n")
 
     rows = list(existing_rows)
-    new_dates = 0
+    new_entries = 0
     skipped = 0
     unparseable = 0
 
@@ -161,9 +162,6 @@ def main():
             continue
 
         date_str = title_info["date"]
-        if date_str in existing_dates:
-            skipped += 1
-            continue
 
         body = issue.get("body") or ""
         builds = parse_build_matrix(body)
@@ -175,7 +173,12 @@ def main():
         assignee = (issue.get("assignee") or {}).get("login", "")
         issue_url = issue["html_url"]
 
+        added = 0
         for build in builds:
+            key = (date_str, build["chroot"])
+            if key in existing_keys:
+                skipped += 1
+                continue
             rows.append({
                 "date": date_str,
                 "chroot": build["chroot"],
@@ -186,10 +189,12 @@ def main():
                 "llvm_version": title_info.get("llvm_version", ""),
                 "commit_sha": title_info.get("commit_sha", ""),
             })
+            existing_keys.add(key)
+            added += 1
 
-        existing_dates.add(date_str)
-        new_dates += 1
-        print(f"  #{issue['number']} ({date_str}): {len(builds)} chroots, assignee={assignee}")
+        if added:
+            new_entries += added
+            print(f"  #{issue['number']} ({date_str}): {added} new chroots, assignee={assignee}")
 
     rows.sort(key=lambda r: (r["date"], r["chroot"]))
 
@@ -199,7 +204,7 @@ def main():
         writer.writerows(rows)
 
     total_dates = len({r["date"] for r in rows})
-    print(f"\nDone: {total_dates} total dates, {new_dates} new, {skipped} skipped, {unparseable} unparseable")
+    print(f"\nDone: {total_dates} total dates, {new_entries} new entries, {skipped} skipped, {unparseable} unparseable")
     print(f"Written to {output_file}")
 
 

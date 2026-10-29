@@ -93,15 +93,43 @@ def save_figure(fig: go.Figure, filepath: str) -> None:
     // We inject this script into the final HTML page in order to be able to click on
     // a point on a line and be taken to the build in Copr.
     var plot_element = document.getElementById("{plot_id}");
-    plot_element.on('plotly_click', function(data){{
+    plot_element.on('plotly_click', function(data){
         console.log(data);
         var point = data.points[0];
-        if (point) {{
+        if (point) {
             console.log(point.customdata);
             build_id = point.customdata[2]
             window.open('https://copr.fedorainfracloud.org/coprs/build/' + build_id);
-        }}
-    }})
+        }
+    })
+
+    // Pre-select chroots from URL ?chroot=<name>&chroot=<name2> (mimics legend double-click)
+    var params = new URLSearchParams(window.location.search);
+    var selectedChroots = params.getAll('chroot');
+    if (selectedChroots.length > 0) {
+        var traces = plot_element.data;
+        var hideIdx = [];
+        var showIdx = [];
+        for (var i = 0; i < traces.length; i++) {
+            var matched = false;
+            for (var j = 0; j < selectedChroots.length; j++) {
+                var sc = selectedChroots[j];
+                if (traces[i].name === sc || traces[i].name === 'big-merge-' + sc) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) {
+                showIdx.push(i);
+            } else {
+                hideIdx.push(i);
+            }
+        }
+        if (showIdx.length > 0 && hideIdx.length > 0) {
+            Plotly.restyle(plot_element, {visible: 'legendonly'}, hideIdx);
+            Plotly.restyle(plot_element, {visible: true}, showIdx);
+        }
+    }
     """
 
     fig.write_html(
