@@ -2,8 +2,8 @@ name: "Update Copr dashboard"
 
 on:
   schedule:
-    # At 23:30 UTC daily
-    - cron: "30 23 * * *"
+    # At 06:00 UTC daily
+    - cron: "0 6 * * *"
 
   workflow_dispatch:
     inputs:

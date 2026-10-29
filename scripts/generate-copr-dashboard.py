@@ -45,16 +45,16 @@ STATE_COLORS = {
 }
 
 STATE_SYMBOLS = {
-    "succeeded": "✔",
-    "forked": "✔",
-    "failed": "✘",
-    "running": "▶",
-    "pending": "⏳",
-    "starting": "⏳",
-    "importing": "⏳",
-    "waiting": "⏳",
-    "canceled": "―",
-    "skipped": "―",
+    "succeeded": "✅",
+    "forked": "☑️",
+    "failed": "❌",
+    "running": "🏃",
+    "pending": "🔜",
+    "starting": "⭐",
+    "importing": "📥",
+    "waiting": "⌛",
+    "canceled": "⭕",
+    "skipped": "🚫",
 }
 
 
@@ -194,7 +194,24 @@ def chroot_sort_key(name: str) -> tuple:
         return (4, 0, arch)
 
 
-def render_html(rows: list[dict], output_path: str) -> None:
+def fetch_issue_states(issue_urls: set[str], github_token: str | None = None) -> dict[str, str]:
+    """Fetches the current state (open/closed) for each issue URL via the GitHub API."""
+    states: dict[str, str] = {}
+    headers = {"Accept": "application/vnd.github+json"}
+    if github_token:
+        headers["Authorization"] = f"Bearer {github_token}"
+
+    for url in sorted(issue_urls):
+        api_url = url.replace("https://github.com/", "https://api.github.com/repos/").replace("/issues/", "/issues/")
+        raw = fetch_with_retry(api_url, headers=headers)
+        if raw is None:
+            continue
+        data = json.loads(raw)
+        states[url] = data.get("state", "")
+    return states
+
+
+def render_html(rows: list[dict], output_path: str, github_token: str | None = None) -> None:
     data: dict[str, dict[str, dict]] = {}
     meta: dict[str, dict] = {}
     all_chroots: set[str] = set()
@@ -219,6 +236,14 @@ def render_html(rows: list[dict], output_path: str) -> None:
     chroots = sorted(all_chroots, key=chroot_sort_key)
     dates = sorted(data.keys(), reverse=True)
 
+    all_issue_urls = {m.get("issue_url") for m in meta.values() if m.get("issue_url")}
+    if github_token:
+        print(f"Fetching state for {len(all_issue_urls)} issues...", flush=True)
+        issue_states = fetch_issue_states(all_issue_urls, github_token)
+    else:
+        print("Warning: no GITHUB_TOKEN set, skipping issue state fetch to avoid rate limiting")
+        issue_states = {}
+
     html = []
     html.append("<!DOCTYPE html>")
     html.append('<html lang="en">')
@@ -241,7 +266,10 @@ table {
     width: 100%;
 }
 th, td {
-    border: 1px solid #d1d9e0;
+    border-top: 1px solid #d1d9e0;
+    border-bottom: 1px solid #d1d9e0;
+    border-left: none;
+    border-right: none;
     padding: 4px 8px;
     text-align: center;
     white-space: nowrap;
@@ -254,8 +282,7 @@ thead th {
     position: sticky;
     top: 0;
 }
-th.date-col, td.date-col {
-    text-align: left;
+td.num-col {
     font-weight: bold;
 }
 th.rotated {
@@ -304,11 +331,11 @@ td.no-build { color: #8b949e; }
     html.append("<h1>LLVM Snapshot Builds Dashboard</h1>")
 
     html.append('<div class="legend">')
-    for state, color in STATE_COLORS.items():
-        symbol = STATE_SYMBOLS.get(state, "?")
+    for state in STATE_SYMBOLS:
+        symbol = STATE_SYMBOLS[state]
         html.append(
             f'<span class="legend-item">'
-            f'<span class="legend-swatch" style="background:{color};color:#fff">{symbol}</span>'
+            f'<span class="legend-swatch">{symbol}</span>'
             f"{state}</span>"
         )
     html.append("</div>")
@@ -317,8 +344,8 @@ td.no-build { color: #8b949e; }
     html.append("<table>")
 
     html.append("<thead><tr>")
-    html.append('<th class="date-col">Date</th>')
-    for col in ["Issue", "Assignee", "LLVM Version", "Commit", "Changes since yesterday"]:
+    html.append('<th class="rotated">#</th>')
+    for col in ["Date", "Tracking issue", "Assignee", "LLVM Version", "LLVM upstream commit", "Changes since yesterday"]:
         html.append(f'<th class="rotated">{col}</th>')
     for chroot in chroots:
         html.append(f'<th class="rotated">{chroot}</th>')
@@ -331,13 +358,21 @@ td.no-build { color: #8b949e; }
         monitor_url = COPR_MONITOR_URL_TPL.format(yyyymmdd=yyyymmdd)
         m = meta.get(d, {})
         html.append("<tr>")
-        html.append(f'<td class="date-col"><a class="date-link" href="{monitor_url}">{d}</a></td>')
+        html.append(f'<td class="num-col">{idx}</td>')
+        html.append(f'<td><a class="date-link" href="{monitor_url}">{d}</a></td>')
 
-        # Issue
+        # Tracking issue
         issue_url = m.get("issue_url")
         if issue_url:
             issue_num = issue_url.rstrip("/").split("/")[-1]
-            html.append(f'<td><a class="issue-link" href="{issue_url}">#{issue_num}</a></td>')
+            issue_state = issue_states.get(issue_url)
+            if issue_state == "closed":
+                issue_icon = "🟣"
+            elif issue_state == "open":
+                issue_icon = "🟢"
+            else:
+                issue_icon = "⚪"
+            html.append(f'<td><a class="issue-link" href="{issue_url}">{issue_icon} #{issue_num}</a></td>')
         else:
             html.append('<td class="no-build">&mdash;</td>')
 
@@ -377,12 +412,11 @@ td.no-build { color: #8b949e; }
                 info = entry[chroot]
                 state = info["state"]
                 build_id = info["build_id"]
-                color = STATE_COLORS.get(state, "#888")
                 symbol = STATE_SYMBOLS.get(state, "?")
                 build_url = COPR_BUILD_URL_TPL.format(build_id=build_id)
                 html.append(
                     f'<td><a class="state-link" href="{build_url}" '
-                    f'title="{chroot}: {state}" style="color:{color}">{symbol}</a></td>'
+                    f'title="{chroot}: {state}">{symbol}</a></td>'
                 )
             else:
                 html.append('<td class="no-build">&mdash;</td>')
@@ -477,7 +511,7 @@ def main():
     print(f"\nTotal dates: {len({r['date'] for r in rows})}, new: {new_entries}")
 
     save_csv(args.data_file, rows)
-    render_html(rows, args.output)
+    render_html(rows, args.output, github_token)
     print(f"Dashboard written to {args.output}")
 
 
