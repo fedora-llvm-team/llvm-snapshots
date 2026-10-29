@@ -223,24 +223,7 @@ GROUP_LABELS = {
 }
 
 
-def fetch_issue_states(issue_urls: set[str], github_token: str | None = None) -> dict[str, str]:
-    """Fetches the current state (open/closed) for each issue URL via the GitHub API."""
-    states: dict[str, str] = {}
-    headers = {"Accept": "application/vnd.github+json"}
-    if github_token:
-        headers["Authorization"] = f"Bearer {github_token}"
-
-    for url in sorted(issue_urls):
-        api_url = url.replace("https://github.com/", "https://api.github.com/repos/").replace("/issues/", "/issues/")
-        raw = fetch_with_retry(api_url, headers=headers)
-        if raw is None:
-            continue
-        data = json.loads(raw)
-        states[url] = data.get("state", "")
-    return states
-
-
-def render_html(rows: list[dict], output_path: str, github_token: str | None = None) -> None:
+def render_html(rows: list[dict], output_path: str) -> None:
     data: dict[str, dict[str, dict]] = {}
     meta: dict[str, dict] = {}
     all_chroots: set[str] = set()
@@ -264,14 +247,6 @@ def render_html(rows: list[dict], output_path: str, github_token: str | None = N
 
     chroots = sorted(all_chroots, key=chroot_sort_key)
     dates = sorted(data.keys(), reverse=True)
-
-    all_issue_urls = {m.get("issue_url") for m in meta.values() if m.get("issue_url")}
-    if github_token:
-        print(f"Fetching state for {len(all_issue_urls)} issues...", flush=True)
-        issue_states = fetch_issue_states(all_issue_urls, github_token)
-    else:
-        print("Warning: no GITHUB_TOKEN set, skipping issue state fetch to avoid rate limiting")
-        issue_states = {}
 
     html = []
     html.append("<!DOCTYPE html>")
@@ -546,14 +521,7 @@ a.header-link:hover { text-decoration: underline; }
         issue_url = m.get("issue_url")
         if issue_url:
             issue_num = issue_url.rstrip("/").split("/")[-1]
-            issue_state = issue_states.get(issue_url)
-            if issue_state == "closed":
-                issue_icon = "🟣"
-            elif issue_state == "open":
-                issue_icon = "🟢"
-            else:
-                issue_icon = "⚪"
-            html.append(f'<td><a class="issue-link" href="{issue_url}">{issue_icon} #{issue_num}</a></td>')
+            html.append(f'<td><a class="issue-link" href="{issue_url}">#{issue_num}</a></td>')
         else:
             html.append('<td class="no-build">&mdash;</td>')
 
@@ -695,7 +663,7 @@ def main():
     print(f"\nTotal dates: {len({r['date'] for r in rows})}, new: {new_entries}")
 
     save_csv(args.data_file, rows)
-    render_html(rows, args.output, github_token)
+    render_html(rows, args.output)
     print(f"Dashboard written to {args.output}")
 
 
