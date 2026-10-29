@@ -11,8 +11,8 @@ image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/check
 image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-diagrams.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-diagrams.yml"]
 image:https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-dashboard.yml/badge.svg[link="https://github.com/fedora-llvm-team/llvm-snapshots/actions/workflows/update-dashboard.yml"]
 image:https://img.shields.io/badge/code%20style-black-000000.svg[link="https://github.com/psf/black"]
-link:https://fedora-llvm-team.github.io/llvm-snapshots/[Dashboard]
 image:https://coveralls.io/repos/github/fedora-llvm-team/llvm-snapshots/badge.svg[link="https://coveralls.io/github/fedora-llvm-team/llvm-snapshots"]
+link:https://fedora-llvm-team.github.io/llvm-snapshots/[Dashboard]
 
 == Maintaining the LLVM Snapshots for Fedora
 Konrad Kleine <kkleine@redhat.com>
