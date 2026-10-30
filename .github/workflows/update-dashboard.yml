@@ -1,0 +1,59 @@
+name: "Update dashboard"
+
+on:
+  schedule:
+    # At 06:00 UTC daily
+    - cron: "0 6 * * *"
+
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: "How many days to look back for missing data"
+        default: "90"
+        type: string
+
+permissions:
+  pages: write
+  contents: write
+
+jobs:
+  update-dashboard:
+    if: github.repository_owner == 'fedora-llvm-team'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: main
+
+      - uses: actions/checkout@v6
+        with:
+          ref: 'gh-pages'
+          path: 'gh-pages'
+
+      - name: Setup git config
+        run: |
+          git config --global user.name "Github Actions Bot"
+          git config --global user.email "<>"
+
+      - name: Generate dashboard
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          lookback_days="${{ inputs.lookback_days }}"
+          [[ -z "$lookback_days" ]] && lookback_days="1"
+
+          python3 main/scripts/generate-dashboard.py \
+            --data-file gh-pages/dashboard.csv \
+            --output gh-pages/dashboard.html \
+            --lookback-days "$lookback_days"
+
+      - name: Commit and push
+        run: |
+          cd gh-pages
+          git add dashboard.csv dashboard.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update snapshot dashboard"
+            git push origin HEAD:gh-pages
+          fi
