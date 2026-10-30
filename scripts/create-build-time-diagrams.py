@@ -2,7 +2,7 @@
 
 # %%
 import argparse
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -25,13 +25,8 @@ def create_figure(df: pd.DataFrame, package_name: str = "") -> go.Figure:
     Returns:
         go.Figure: A line figure with all chroots in one graph
     """
-    title = "Build times for the package(s): {}"
     if package_name != "":
         df = df[df.package == package_name]
-        title = title.format(package_name)
-    else:
-        package_names = df["package"].explode().drop_duplicates().values
-        title = title.format(package_names)
     fig = px.line(
         data_frame=df,
         x="date",
@@ -39,9 +34,9 @@ def create_figure(df: pd.DataFrame, package_name: str = "") -> go.Figure:
         color="chroot",
         markers=True,
         line_shape="linear",
-        title=title,
         symbol="chroot",
         hover_data=["package", "date", "state", "build_id"],
+        category_orders={"chroot": sorted(df["chroot"].unique())},
         labels={
             "build_time": "Build time",
             "date": "Date",
@@ -93,15 +88,79 @@ def save_figure(fig: go.Figure, filepath: str) -> None:
     // We inject this script into the final HTML page in order to be able to click on
     // a point on a line and be taken to the build in Copr.
     var plot_element = document.getElementById("{plot_id}");
-    plot_element.on('plotly_click', function(data){{
+    plot_element.on('plotly_click', function(data){
         console.log(data);
         var point = data.points[0];
-        if (point) {{
+        if (point) {
             console.log(point.customdata);
             build_id = point.customdata[2]
             window.open('https://copr.fedorainfracloud.org/coprs/build/' + build_id);
-        }}
-    }})
+        }
+    })
+
+    // Pre-select chroots from URL ?chroot=<name>&chroot=<name2> (mimics legend double-click)
+    var params = new URLSearchParams(window.location.search);
+    var selectedChroots = params.getAll('chroot');
+    if (selectedChroots.length > 0) {
+        var traces = plot_element.data;
+        var hideIdx = [];
+        var showIdx = [];
+        for (var i = 0; i < traces.length; i++) {
+            var matched = false;
+            for (var j = 0; j < selectedChroots.length; j++) {
+                var sc = selectedChroots[j];
+                if (traces[i].name === sc) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) {
+                showIdx.push(i);
+            } else {
+                hideIdx.push(i);
+            }
+        }
+        if (showIdx.length > 0 && hideIdx.length > 0) {
+            Plotly.restyle(plot_element, {visible: 'legendonly'}, hideIdx);
+            Plotly.restyle(plot_element, {visible: true}, showIdx);
+        }
+    }
+
+    function updateChrootUrl() {
+        var traces = plot_element.data;
+        var visible = [];
+        var allVisible = true;
+        for (var i = 0; i < traces.length; i++) {
+            if (traces[i].visible === 'legendonly') {
+                allVisible = false;
+            } else {
+                visible.push(traces[i].name);
+            }
+        }
+        var url = new URL(window.location.href);
+        url.searchParams.delete('chroot');
+        if (!allVisible && visible.length > 0) {
+            for (var i = 0; i < visible.length; i++) {
+                url.searchParams.append('chroot', visible[i]);
+            }
+        }
+        window.history.replaceState(null, '', url.toString());
+        document.querySelectorAll('#headermenu a').forEach(function(a) {
+            var linkUrl = new URL(a.href);
+            linkUrl.searchParams.delete('chroot');
+            if (!allVisible && visible.length > 0) {
+                for (var i = 0; i < visible.length; i++) {
+                    linkUrl.searchParams.append('chroot', visible[i]);
+                }
+            }
+            a.href = linkUrl.toString();
+        });
+    }
+
+    plot_element.on('plotly_restyle', updateChrootUrl);
+    plot_element.on('plotly_legenddoubleclick', function() {
+        setTimeout(updateChrootUrl, 0);
+    });
     """
 
     fig.write_html(
@@ -123,18 +182,39 @@ def add_html_header_menu(filepath: str, plotly_div_id: str = "plotly_div_id") ->
     """
     replace_me = f'<div id="{plotly_div_id}"'
 
-    last_updated = datetime.today().strftime("%c")
+    last_updated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+    current_file = Path(filepath).name
+
+    menu_items = [
+        ("📋", "dashboard.html", "Snapshot builds dashboard"),
+        ("📈", "build-times-all-states.html", "Build times (all states)"),
+        ("📈", "build-times-only-succeeded.html", "Build times (only succeeded)"),
+    ]
 
     file = Path(filepath)
-    header_menu = '<div id="headermenu">Build-Stats: '
-    header_menu += ' <a href="index.html">big-merge (only success)</a>'
-    header_menu += (
-        ' | <a href="fig-big-merge-all-states.html">big-merge (all states)</a>'
-    )
-    # header_menu += ' | <a href="fig-pgo-succeeded.html">PGO (only success)</a>'
-    # header_menu += ' | <a href="fig-pgo-all-states.html">PGO (all states)</a>'
+    header_menu = '<div id="headermenu">'
+    parts = []
+    for icon, href, label in menu_items:
+        if href == current_file:
+            parts.append(
+                f'{icon} <a href="{href}" style="font-weight:bold;color:inherit;text-decoration:none">{label}</a>'
+            )
+        else:
+            parts.append(f'{icon} <a href="{href}">{label}</a>')
+    header_menu += " | ".join(parts)
     header_menu += f" <small>(Last updated: {last_updated})</small>"
     header_menu += "</div>"
+    header_menu += '<script>document.addEventListener("DOMContentLoaded",function(){'
+    header_menu += "var q=window.location.search;"
+    header_menu += (
+        'if(q){document.querySelectorAll("#headermenu a").forEach(function(a){'
+    )
+    header_menu += "var u=new URL(a.href);"
+    header_menu += "var p=new URLSearchParams(q);"
+    header_menu += "p.forEach(function(v,k){u.searchParams.append(k,v)});"
+    header_menu += "a.href=u.toString();"
+    header_menu += "})}"
+    header_menu += "});</script>"
     header_menu += replace_me
 
     file.write_text(file.read_text().replace(replace_me, header_menu))
@@ -187,18 +267,10 @@ def main() -> None:
         description="Create build time diagrams for a given CSV file"
     )
     parser.add_argument(
-        "--datafile-big-merge",
-        dest="datafile_big_merge",
+        "--datafile",
         type=str,
-        default="build-stats-big-merge.csv",
-        help="path to your build-stats-big-merge.csv file",
-    )
-    parser.add_argument(
-        "--datafile-pgo",
-        dest="datafile_pgo",
-        type=str,
-        default="build-stats-pgo.csv",
-        help="path to your build-stats-pgo.csv file",
+        default="build-times.csv",
+        help="path to your build-times.csv file",
     )
     args = parser.parse_args()
 
@@ -209,47 +281,21 @@ def main() -> None:
         "plotly"  # See https://plotly.com/python/templates/#theming-and-templates
     )
 
-    # Create dataframe of llvm in "big-merge mode". The chroots are prefixed
-    # with "big-merge-" on the fly to be able to distinguish the two cases.
-    df_big_merge = prepare_data(filepath=args.datafile_big_merge)
-    df_big_merge["chroot"] = "big-merge-" + df_big_merge["chroot"]
-    # Convert build_id column with int64's in it to an array of int64's.
+    df_big_merge = prepare_data(filepath=args.datafile)
     df_big_merge.build_id = df_big_merge.build_id.apply(lambda x: [x])
 
     filter = df_big_merge["state"] == "succeeded"
     df_big_merge_succeeded = df_big_merge.where(filter, inplace=False).dropna()
 
-    # Create dataframe for PGO builds. The chroots are prefixed with "pgo-" on
-    # the fly to be able to distinguish the two cases.
-    df_pgo = prepare_data(filepath=args.datafile_pgo)
-    df_pgo["chroot"] = "pgo-" + df_pgo["chroot"]
-    # Convert build_id column with int64's in it to an array of int64's.
-    df_pgo.build_id = df_pgo.build_id.apply(lambda x: [x])
-
-    filter = df_pgo["state"] == "succeeded"
-    df_pgo_succeeded = df_pgo.where(filter, inplace=False).dropna()
-
     # Create dedicated big-merge figure with nothing else in it.
     fig = create_figure(df=df_big_merge)
-    filepath = "fig-big-merge-all-states.html"
+    filepath = "build-times-all-states.html"
     save_figure(fig=fig, filepath=filepath)
     add_html_header_menu(filepath=filepath)
 
     # Create dedicated big-merge figure with nothing else in it.
     fig = create_figure(df=df_big_merge_succeeded)
-    filepath = "index.html"
-    save_figure(fig=fig, filepath=filepath)
-    add_html_header_menu(filepath=filepath)
-
-    # Create dedicated PGO figure with nothing else in it.
-    fig = create_figure(df=df_pgo)
-    filepath = "fig-pgo-all-states.html"
-    save_figure(fig=fig, filepath=filepath)
-    add_html_header_menu(filepath=filepath)
-
-    # Create dedicated PGO figure with nothing else in it.
-    fig = create_figure(df=df_pgo_succeeded)
-    filepath = "fig-pgo-succeeded.html"
+    filepath = "build-times-only-succeeded.html"
     save_figure(fig=fig, filepath=filepath)
     add_html_header_menu(filepath=filepath)
 
