@@ -6,7 +6,7 @@
 #
 annotated-doc==0.0.4
     # via typer
-certifi==2024.7.4
+certifi==2026.10.18
     # via requests
 cffi==2.0.0
     # via
@@ -41,7 +41,7 @@ defusedxml==0.7.1
     # via koji
 dynaconf==3.2.13
     # via tft-cli
-filelock==3.20.3
+filelock==4.2.1
     # via copr
 fnc==0.5.3
     # via -r requirements.txt.in
@@ -103,7 +103,7 @@ pygments==2.20.0
     # via
     #   pytest
     #   rich
-pyjwt[crypto]==2.15.0
+pyjwt[crypto]==2.15.1
     # via pygithub
 pynacl==1.6.2
     # via pygithub
