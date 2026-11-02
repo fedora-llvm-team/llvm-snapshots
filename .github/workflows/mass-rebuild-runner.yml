@@ -16,7 +16,7 @@ jobs:
     container:
       image: "registry.fedoraproject.org/fedora:41"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           sparse-checkout: |
             scripts/rebuilder.py

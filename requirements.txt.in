@@ -3,17 +3,17 @@
 # pip install pip-tools
 # pip-compile -o requirements.txt  requirements.txt.in
 
-PyGithub==2.9.1
-typing_extensions>=4.12.2
+PyGithub==2.10.0
+typing_extensions>=4.16.0
 pandas
-plotly==6.7.0
+plotly==7.1.0
 copr-cli
-tft-cli==0.0.37
-regex==2026.5.9
+tft-cli==0.0.39
+regex==2026.9.29
 munch==4.0.0
-copr==2.6
+copr==2.7
 requests==2.34.2
 fnc
-coverage==7.14.1
+coverage==7.17.0
 koji
-pytest==9.0.3
+pytest==9.2.0
