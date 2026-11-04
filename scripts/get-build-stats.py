@@ -21,6 +21,11 @@ def gather_build_stats(
         show_header (bool): Show a first line header
     """
 
+    print(
+        f"Gathering build stats for copr project: owner={copr_ownername}, project={copr_projectname} with separator={separator}",
+        file=sys.stderr,
+    )
+
     client = Client.create_from_config_file()
     current_GMT = time.gmtime()
     timestamp = calendar.timegm(current_GMT)
@@ -36,8 +41,9 @@ def gather_build_stats(
         monitor = client.monitor_proxy.monitor(
             ownername=copr_ownername, projectname=copr_projectname
         )
-    except CoprNoResultException:
-        pass
+    except CoprNoResultException as ex:
+        print(f"ERROR: {ex}", file=sys.stderr)
+        sys.exit(1)
     else:
         for package in monitor.packages:
             for chroot_name in package["chroots"]:
@@ -69,7 +75,7 @@ def gather_build_stats(
 def main() -> None:
     defaut_yyyymmdd = datetime.today().strftime("%Y%m%d")
     default_copr_ownername = "@fedora-llvm-team"
-    default_copr_projectname = f"llvm-snapshots-incubator-{defaut_yyyymmdd}"
+    default_copr_projectname = f"llvm-snapshots-big-merge-{defaut_yyyymmdd}"
 
     parser = argparse.ArgumentParser(
         description="Print stats for a snapshot run in CVS format for further consumption"
