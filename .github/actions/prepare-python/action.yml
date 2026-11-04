@@ -34,10 +34,10 @@ runs:
       shell: bash
       run: |
         if [ "${{ steps.os-check.outputs.is-fedora }}" = "true" ]; then
-          sudo dnf install -y krb5-devel
+          sudo dnf install -y krb5-devel libffi-devel
         else
           sudo apt-get update
-          sudo apt-get install -y libkrb5-dev
+          sudo apt-get install -y libkrb5-dev libffi-dev
         fi
 
     - name: "Install and upgrade pip"
