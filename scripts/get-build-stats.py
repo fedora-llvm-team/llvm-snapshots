@@ -69,7 +69,7 @@ def gather_build_stats(
 def main() -> None:
     defaut_yyyymmdd = datetime.today().strftime("%Y%m%d")
     default_copr_ownername = "@fedora-llvm-team"
-    default_copr_projectname = f"llvm-snapshots-incubator-{defaut_yyyymmdd}"
+    default_copr_projectname = f"llvm-snapshots-big-merge-{defaut_yyyymmdd}"
 
     parser = argparse.ArgumentParser(
         description="Print stats for a snapshot run in CVS format for further consumption"
