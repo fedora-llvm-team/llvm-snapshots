@@ -43,9 +43,6 @@ class Config:
     update_marker: str = "<!--UPDATES_FOLLOW_HERE-->"
     """Prints the marker after a broken snapshot issue comment body when the updates shall follow."""
 
-    maintainer_handle: str = "kwk"
-    """The GitHub maintainer handle without the @ sign"""
-
     creator_handle: str = "github-actions[bot]"
     """The Github user that is expected to have created the daily issue (TODO(kwk): Improve documentation)"""
 
@@ -157,7 +154,7 @@ class Config:
         """Returns a subset of config entries to be used in a github workflow matrix.
 
         The keys in this dict are accessed from github workflow files using the "matrix." object.
-        For example the maintainer handle will be accessed as `${{ matrix.maintainer_handle }}`.
+        For example the COPR package name will be accessed as `${{ matrix.copr_package_name }}`.
 
         Examples:
 
@@ -166,7 +163,6 @@ class Config:
         ...   copr_target_project="@mycoprgroup/mycoprproject",
         ...   package_clone_url="https://src.fedoraproject.org/rpms/mypackage.git",
         ...   package_clone_ref="mainbranch",
-        ...   maintainer_handle="fakeperson",
         ...   copr_project_tpl="SomeProjectTemplate-YYYYMMDD",
         ...   copr_project_description_file="description.md",
         ...   copr_project_instructions_file="instructions.md",
@@ -192,7 +188,6 @@ class Config:
          'copr_project_tpl': 'SomeProjectTemplate-YYYYMMDD',
          'copr_target_project': '@mycoprgroup/mycoprproject',
          'forked_repo': True,
-         'maintainer_handle': 'fakeperson',
          'name': 'mybuildstrategy',
          'run_check_snapshots_workflow': True,
          'spec_file': 'mypackage.spec'}
@@ -202,7 +197,6 @@ class Config:
             "copr_target_project": self.copr_target_project,
             "clone_url": self.package_clone_url,
             "clone_ref": self.package_clone_ref,
-            "maintainer_handle": self.maintainer_handle,
             "copr_ownername": self.copr_ownername,
             "copr_package_name": self.copr_package_name,
             "copr_project_tpl": self.copr_project_tpl,
@@ -234,7 +228,6 @@ def build_config_map() -> dict[str, Config]:
             copr_target_project="@fedora-llvm-team/llvm-snapshots",
             package_clone_url="https://src.fedoraproject.org/rpms/llvm.git",
             package_clone_ref="rawhide",
-            maintainer_handle="tuliom",
             copr_project_tpl="llvm-snapshots-big-merge-YYYYMMDD",
             forked_repo=True,
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots-big-merge-YYYYMMDD/monitor/",
@@ -253,7 +246,6 @@ def build_config_map() -> dict[str, Config]:
             copr_target_project="@fedora-llvm-team/llvm-test-suite",
             package_clone_url="https://src.fedoraproject.org/rpms/llvm-test-suite.git",
             package_clone_ref="rawhide",
-            maintainer_handle="kkleine",
             copr_project_tpl="llvm-test-suite",
             forked_repo=False,
             copr_monitor_tpl="https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-test-suite/monitor/",
