@@ -108,8 +108,8 @@ def delete_project(client: copr.v3.Client, ownername: str, projectname: str) -> 
     active_builds = filter_builds_by_state(builds=all_builds, state_pattern=pattern)
 
     for build in active_builds:
-        logging.info(f"Cancelling build with ID {build['build_id']}")
-        client.build_proxy.cancel(build_id=build["build_id"])
+        logging.info(f"Cancelling build with ID {build['id']}")
+        client.build_proxy.cancel(build_id=build["id"])
 
     logging.info("Waiting for cancelled builds to finish")
     copr.v3.helpers.wait(waitable=active_builds, timeout=0)
