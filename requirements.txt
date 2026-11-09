@@ -22,13 +22,13 @@ colorama==0.4.6
     # via tft-cli
 commonmark==0.9.1
     # via rich
-copr==2.7
+copr==2.9
     # via
     #   -r requirements.txt.in
     #   copr-cli
-copr-cli==2.6
+copr-cli==2.8
     # via -r requirements.txt.in
-coverage==7.17.0
+coverage==7.17.2
     # via -r requirements.txt.in
 cryptography==50.0.0
     # via
@@ -87,7 +87,7 @@ packaging==26.3
     # via
     #   plotly
     #   pytest
-pandas==3.1.0
+pandas==3.1.1
     # via -r requirements.txt.in
 pendulum==3.2.0
     # via tft-cli
