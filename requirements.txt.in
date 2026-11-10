@@ -8,8 +8,8 @@ typing_extensions>=4.16.0
 pandas
 plotly==7.1.0
 copr-cli
-tft-cli==0.0.39
-regex==2026.9.29
+tft-cli==0.0.40
+regex==2026.11.7
 munch==4.0.0
 copr==2.9
 requests==2.34.2

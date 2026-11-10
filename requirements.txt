@@ -116,7 +116,7 @@ python-dateutil==4.0.0
     #   pendulum
 python-dotenv==1.2.2
     # via tft-cli
-regex==2026.9.29
+regex==2026.11.7
     # via -r requirements.txt.in
 requests==2.34.2
     # via
@@ -148,7 +148,7 @@ shellingham==1.5.4
     #   typer
 six==1.16.0
     # via koji
-tft-cli==0.0.39
+tft-cli==0.0.40
     # via -r requirements.txt.in
 typer==0.23.1
     # via tft-cli
