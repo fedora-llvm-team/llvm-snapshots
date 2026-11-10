@@ -1,33 +1,25 @@
 name: "Update diagrams"
 
 on:
-  schedule:
-    # At 23:00
-    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    - cron: "0 23 * * *"
+  workflow_run:
+    workflows:
+      - "Snapshot-Build"
+    types:
+      - completed
+    branches:
+      - main
 
   workflow_dispatch:
-    inputs:
-      get_stats:
-        description: 'Get stats'
-        default: true
-        required: false
-        type: boolean
-      create_diagrams:
-          description: 'Create diagrams'
-          default: true
-          required: false
-          type: boolean
 
 permissions:
-  # This should allow the workflow to create github pages
+  # This allows the workflow to create github pages
   pages: write
-  # This should allow the workflow to create a new commit in the gh-branch
+  # This allows the workflow to create a new commit in the gh-branch
   contents: write
 
 jobs:
   update-build-time-diagrams:
-    if: github.repository_owner == 'fedora-llvm-team'
+    if: ${{ github.repository_owner == 'fedora-llvm-team' && github.event.workflow.run_conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Setup Copr config file
@@ -50,8 +42,8 @@ jobs:
       - name: Checkout gh-pages branch
         uses: actions/checkout@v7
         with:
-          ref: 'gh-pages'
-          path: 'gh-pages'
+          ref: "gh-pages"
+          path: "gh-pages"
 
       - name: Setup git config
         run: |
@@ -61,25 +53,23 @@ jobs:
       - name: "Update stats and re-generate diagrams"
         shell: bash -e {0}
         env:
-          get_stats: ${{ github.event_name == 'schedule' && true || github.event.inputs.get_stats }}
-          create_diagrams: ${{ github.event_name == 'schedule' && true || github.event.inputs.create_diagrams }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           today=$(date +%Y%m%d)
-          #yesterday=$(date -d "${today} -1 day" +%Y%m%d)
+          yesterday=$(date -d "${today} -1 day" +%Y%m%d)
 
-          if ${{ env.get_stats }}; then
-            main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-${today}" | tee -a gh-pages/build-times.csv
-            git -C gh-pages add build-times.csv
-          fi
-          if ${{ env.create_diagrams }}; then
-            main/scripts/create-build-time-diagrams.py --datafile gh-pages/build-times.csv
-            mv build-times-*.html gh-pages/
-            git -C gh-pages add build-times-*.html
-          fi
-          # shellcheck disable=SC2078
-          if [[ ${{ env.get_stats }} || ${{ env.create_diagrams }} ]]; then
-            cd gh-pages
-            git commit -m "Automatically update build and performance stats"
-            git push origin HEAD:gh-pages
-          fi
+          cd gh-pages
+
+          ../main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-${today}" | tee -a build-times.csv
+          git add build-times.csv
+          git commit -m "Get stats for just started builds of today (${today})"
+
+          ../main/scripts/get-build-stats.py --copr-projectname "llvm-snapshots-big-merge-${yesterday}" | tee -a build-times.csv
+          git add build-times.csv
+          git commit -m "Update stats for builds from yesterday (${yesterday})"
+
+          ../main/scripts/create-build-time-diagrams.py --datafile build-times.csv
+          git add build-times-*.html
+          git commit -m "Update build time diagrams"
+
+          git push origin HEAD:gh-pages

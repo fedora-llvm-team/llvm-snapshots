@@ -1,4 +1,4 @@
-name: "Build daily LLVM snapshots on Copr"
+name: "Snapshot-Build"
 
 on:
   schedule:
