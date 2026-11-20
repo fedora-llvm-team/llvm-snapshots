@@ -241,9 +241,6 @@ def build_config_map() -> dict[str, Config]:
             chroot_pattern="^(fedora-(rawhide|[0-9]+)|centos-stream-[10,9]|rhel-8)",
             copr_project_description_file="llvm-project-description.md",
             copr_project_instructions_file="llvm-project-instructions.md",
-            additional_copr_buildtime_repos=[
-                "copr://@fedora-llvm-team/llvm-test-suite/"
-            ],
             run_check_snapshots_workflow=True,
         ),
         Config(
