@@ -1,10 +1,12 @@
 name: "Snapshot-Build"
 
 on:
-  schedule:
-    # Everyday at 00:45am
-    # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#schedule
-    - cron: "45 0 * * *"
+  # Trigger after "Sync on LLVM test suite version" workflow completes,
+  # which in turn triggers after "Sync on LLVM version".
+  workflow_run:
+    workflows: ["Sync on LLVM test suite version"]
+    types:
+      - completed
 
   workflow_dispatch:
     inputs:
@@ -20,7 +22,10 @@ on:
 
 jobs:
   generate-matrix:
-    if: github.repository_owner == 'fedora-llvm-team'
+    if: >-
+      github.repository_owner == 'fedora-llvm-team' &&
+      (github.event_name == 'workflow_dispatch' ||
+       github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     outputs:
       mymatrix: ${{ steps.set-matrix.outputs.matrix }}
