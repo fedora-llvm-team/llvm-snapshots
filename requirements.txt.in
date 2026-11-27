@@ -9,11 +9,11 @@ pandas
 plotly==7.1.0
 copr-cli
 tft-cli==0.0.40
-regex==2026.11.9
+regex==2026.11.23
 munch==4.0.0
-copr==2.9
+copr==2.10
 requests==2.34.2
 fnc
-coverage==7.17.2
+coverage==7.17.5
 koji
 pytest==9.2.0
